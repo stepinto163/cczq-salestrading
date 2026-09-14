@@ -3,9 +3,11 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "3a74844",
-  "summary": "本轮按发起方「用 grep 快速核实」的提示，对上一轮实测发现的「中债估值双值」问题做了源码级核实并落实修复（testedCommit 3a74844）。**核实结论（以 sc-app-stc 源码为准）**：估值口径与 bondTypeFlag 是两个互相独立的概念，原实现把二者混为一谈是错的。① 估值口径由「是否存在双值」决定：STC 客户端按 '|' 拆分，第 1 段=行权、第 2 段=到期、单值=到期（stc-client/STC.InnerBoard.Plugin/ViewModel/InnerHistoryRequireViewModel.cs:1377-1385 的 ChinaBondExercise/ChinaBondDue）；BaseSvr getCbv() 亦取第 1 段为主值（sc-app-stc-basesvr/…/UserCommonDataManager.java:103 与 CommonDataManager.java:1528）。② bondTypeFlag 描述的是「含权债是否已行权」：1=含权债未行权、2=含权债已行权、空=非含权债（sc-app-stc-basesvr/…/CommonDataManager.java:1420-1438 为权威实现，ETS 默认未行权）。注：TBondValuationView.java 字段注释写 「1-行权 2-到期」，与其自身类注释及实际赋值逻辑不符，属源码注释错误。**因此修正 StcBaseMapper**：valuation() 的 valuationBasis 改为按双值存在与否判定（双值→EXERCISE，单值→MATURITY），yield/cleanPrice 取行权主值，并新增 exerciseYield/dueYield/exerciseCleanPrice/dueCleanPrice 与 optionState；security() 的 valuationYield 改为取主值（原先会把 \"2.0035|2.8155\" 原样透出，消费方无法数值化），bondRating 增加 Rating_Current→Issuer_Rating_Current 回退并新增 bondRatingSource 标注口径来源。**验证**：对该提交实测 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Reactor 5/5 SUCCESS，Tests run: 11, Failures: 0, Errors: 0（其中 AdapterContractTest 由 5 个增至 7 个，含 2 个新增口径回归测试）。**仍未闭环的原因不变**：验收项要求真实登录与单只债券端到端查询，缺 STC 测试账号与 server.lic，故 state 仍为 blocked。上一轮已达成的成果保持有效：依赖改由内网 Maven 解析（123 个冻结 JAR 阻塞解除）、GW 源码补齐并以 JDK8 编译成功、QA 库专用 schema ficc_demo 建 14 张表、以及通过 executor agent（HTTP 控制面 http://10.130.21.53:8899，仅 4 个只读操作、无 shell）配合 STC 各 JVM 上无需凭据的 JMX（60002–60022，15 个服务已逐一映射）建立的只读观测能力。已确认 LoginSvr 的 Druid 指向 10.130.21.51:11004/stc 用户 ficc_user——与本原型同库；线上 ATSConfig.ini 亦证实 SERVER.LoginSvr.ServiceName=ValidationServer。**字段映射实测**：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation。**关键数据事实：目标债 250001 为 PPN，债项评级 AAA 可得，但在 china_bond_valuation 中无任何估值行**（evaluation_date=NULL，按 bond_id 与 bond_key 两种关联均为 0 行），故「同一只债的评级+估值」无法在本库同时取到；端到端估值验证建议改用有中债覆盖的债券（如 269152）。剩余阻塞：STC 服务端日志对 agent 账号不可读（EACCES，非缺失，最小解法为开只读 ACL）；真实登录仍需 STC 测试账号；ATS 启动需 server.lic；gw 构件未 deploy 到 Nexus。",
+  "testedCommit": "339e423",
+  "summary": "本轮首次在本机真实启动了 QuoteSvr（ATS/STC 启动链路，非模拟）：服务以 server.lic 正常起服并打印「QuoteSvr READY (STC startup; registry configuration applied)」，进程内 ZooKeeper 客户端成功连上 QA 注册中心 10.130.21.53:2181（session 建立、negotiated timeout 120000）。**因此「server.lic 缺失」这一历史阻塞已解除**（许可证文件存在且被 ATS 接受）。同时用真实注册数据复核：/MDTService/BaseSvr=10.130.21.53:20041、/MDTService/ValidationServer=10.130.21.53:20040，且本机到 20040/20041/2181 的 TCP 均可达。**但消费者侧解析仍失败**：QuoteSvr 启动即报「BaseSvr reference refresh unavailable: SERVER.BaseSvr is unavailable」，即发现链路连通、业务服务解析不到。已按配置维度做过两轮对照实验（RegType 1→2、NetType gw→dps），两种组合均仍 unavailable，故该问题不在我们已掌握的配置项上，判断在 ATS 客户端组件的可用性强依赖（见 blockers）。本轮顺带修正了一处真实配置缺陷：iteration1/config/stc-consumers.example.ini 中消费者 RegType 原为 1，应为 2（与运行中的 QA ATSConfig.ini 一致），已提交（testedCommit 339e423，`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Tests run: 11, Failures: 0, Errors: 0）。本地 PostgreSQL 16.4 已在 127.0.0.1:55432 运行，本机原型库就绪。验收项 3（真实登录 + 单只债券端到端查询）仍未完成：无 STC 测试账号，且基础资料适配器当前取不到 BaseSvr。State 保持 blocked，未编造任何结果，未完成的检查项均标 not_run。",
   "changedFiles": [
+    "iteration1/config/stc-consumers.example.ini",
+    "handoff/tasks/codex-20260914-002/result.json",
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
     "iteration1/cczq-app-salestrading-common/src/test/java/ficc/common/client/AdapterContractTest.java",
     "iteration1/docs/stc-bond-field-mapping.zh-CN.md",
@@ -13,7 +15,6 @@
     "iteration1/pom.xml",
     "iteration1/cczq-app-salestrading-common/pom.xml",
     "iteration1/gateway/pom.xml",
-    "iteration1/config/stc-consumers.example.ini",
     "iteration1/scripts/build-foundations.ps1",
     "iteration1/scripts/foundation-classpath.ps1",
     "iteration1/scripts/probe-ibor-api.ps1",
@@ -24,84 +25,83 @@
   ],
   "checks": [
     {
-      "name": "中债「行权|到期」双值口径与 bondTypeFlag 语义（本轮新增）",
+      "name": "本机 QuoteSvr 真实启动（验收项 1，本轮新增）",
       "status": "pass",
-      "evidence": "源码级核实（sc-app-stc，非推断）：(a) 估值口径由双值是否存在决定——stc-client/STC.InnerBoard.Plugin/ViewModel/InnerHistoryRequireViewModel.cs:1377 用 chinaBondValuationFull.IndexOf('|') 判定，:1380 把第 1 段赋给 ChinaBondExercise（行权），:1381 把第 2 段赋给 ChinaBondDue（到期），:1385 单值分支只赋 ChinaBondDue（即单值=到期）；服务端 sc-app-stc-basesvr/…/UserCommonDataManager.java:103 与 sc-app-stc-parsersvr/…/CommonDataManager.java:262 的 getCbv() 取 split('|')[0] 作为主值，CommonDataManager.java:681 亦取 [0]。(b) bondTypeFlag 是另一概念——sc-app-stc-basesvr/…/CommonDataManager.java:1420-1438 实测赋值逻辑为：ifCumRights 且 option_type=ETS → '1'；含权债且 ifExercised(option_date) → '2'（已行权）；否则含权债未行权 → '1'；非含权债不赋值（空）。字段与类头注释明确为「1:含权债未行权 2:含权债已行权 空:非含权债」。故原实现用 bondTypeFlag 推断估值口径（1=EXERCISE/2=MATURITY）系概念混淆，已修正为按双值判定；bondTypeFlag 改由 optionState 承载。更正测试：AdapterContractTest.valuationSplitsChinaBondExerciseAndDueConventions 以真实观测值 269152.SH「100.0136|100.0136」「2.0035|2.8155」断言拆分结果，以 282644.SH 单值「1.793」「99.9622」断言 MATURITY 口径。**限制说明**：本项为源码级核对，未做运行时/库内复验；上一轮基于库内数据的统计（104583 行估值中 16971 行为双值，占 16.2%）本轮未重新连接数据库确认，对应核对项标 not_run。"
+      "evidence": "以部署机本地配置副本（`iteration1/runtime/quotesvr`，未入库）启动：`ATS_ROOT=.../runtime/quotesvr`，`java -Xms48m -Xmx256m -XX:ActiveProcessorCount=2 -cp <server jar;common jar;foundation classpath> ficc.quote.Main ./control/QuoteSvr.ini`。日志 `runtime/quotesvr-run*.log` 显示 30+ 业务 handler 注册完成并以「QuoteSvr READY (STC startup; registry configuration applied)」结束；stderr 仅 log4j 无 appender 告警，无许可证错误 → server.lic 被 ATS 接受（历史阻塞解除）。进程为本次任务启动，验证结束后已按约束停止（java 进程数 0）。启动目录为 runtime 副本，含环境地址的 ATSConfig 未提交入库。"
     },
     {
-      "name": "Maven 全模块构建与单元测试（对 testedCommit）",
-      "status": "pass",
-      "evidence": "对提交 3a74844 实测：`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Reactor 5 模块全 SUCCESS（stc-foundation-runtime 0.161s / parent 0.061s / common 8.778s / quotesvr 7.577s / notificationsvr 5.576s），总耗时约 28.5s。Common 模块 Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、CrmPluginTest 1、FilterEngineTest 3）；surefire 报告中 AdapterContractTest 由上一版 5 个测试增至 7 个，新增 2 个口径回归测试全部通过。早期实测（提交 1fb8c30）：`clean verify -DskipTests` 同样 BUILD SUCCESS。较早记录的另一条：`-DskipTests` 版本用于纯构建，本轮改为含测试的 verify 作为判据。注意：reactor 根 POM 位于 iteration1/，仓库根目录无 POM。"
+      "name": "注册中心连接（发现成功）与业务服务解析（失败）的区分（验收项 2，本轮新增）",
+      "status": "fail",
+      "evidence": "发现链路成功：QuoteSvr 进程内日志实测 `Initiating client connection, connectString=10.130.21.53:2181` → `Socket connection established` → `Session establishment complete ... sessionid=0x19fdb1d8aa700ea, negotiated timeout=120000`（另一轮 sessionid=0x19fdb1d8aa700e9）。业务解析失败：同一进程随即输出 `BaseSvr reference refresh unavailable: SERVER.BaseSvr is unavailable`（抛出点 `StcBaseDataClient.java:63`，捕获自 STC NetClient 传输层）。已排除的非原因：① 端口不可达——本机到 10.130.21.53 的 2181/20040/20041 TCP 均实测 OPEN；② 注册节点缺失——独立 ZK 只读探针复核 /MDTService/BaseSvr=10.130.21.53:20041、/MDTService/ValidationServer=10.130.21.53:20040，32 个节点中二者均 ONLINE Stat:1；③ RegType 取值——1 与 2 均 unavailable；④ NetType 取值——gw 与 dps 均 unavailable。故判定为「发现成功、业务连接未建立」，不混淆为网络不通。"
     },
     {
-      "name": "基础 classpath 可复现（新增脚本）",
+      "name": "STC 消费者配置 RegType 修正（本轮新增）",
       "status": "pass",
-      "evidence": "提交 1fb8c30 实测：`iteration1/scripts/build-foundations.ps1` → 「Foundation classpath written: iteration1/runtime/foundation-classpath.txt」。冻结 JAR 集被 .gitignore 排除而无法经 Git 传递，此脚本用 `mvn dependency:build-classpath` 从内网 Maven 重新解析，使新环境可自举。"
+      "evidence": "`iteration1/config/stc-consumers.example.ini` 中 LoginSvr/BaseSvr 原为 `RegType=1`、`Host=127.0.0.1:1` 占位。与运行中 QA 的 ATSConfig.ini（此前只读取回，存于自动化工作区）核对：其 LoginSvr/BaseSvr/TBookSvr 等消费者条目均为 `RegType=2` + 真实 Host。已将示例改为 RegType=2 并在注释中记录实测现象与依据。该修正必要但不充分——改为 2 后解析仍 unavailable，见上一项。"
+    },
+    {
+      "name": "本机 PostgreSQL（原型库）",
+      "status": "pass",
+      "evidence": "PostgreSQL 16.4 在 127.0.0.1:55432 监听并接受连接（进程自 19:33 起运行，runtime/postgres.log 显示 `database system is ready to accept connections`）；deployment-local `quotesvr.local.properties` / `notificationsvr.local.properties` 指向该库（凭据未入库）。此前已在 QA 库专用 schema ficc_demo 建表 14 张，未触碰 public。"
+    },
+    {
+      "name": "Maven 全模块构建与单元测试（对 testedCommit 339e423）",
+      "status": "pass",
+      "evidence": "`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS；Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、CrmPluginTest 1、FilterEngineTest 3）。另用 `scripts/build-server.ps1 -Module all` 以 JDK17 重新编译打包 common/quotesvr/notificationsvr 三个 jar，作为本次真实启动的运行产物。reactor 根 POM 在 `iteration1/`，仓库根无 POM。"
     },
     {
       "name": "GW 源码编译",
       "status": "pass",
-      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT，main class=GW）。缺失接口 com.gateway.connector.tcp.client.IMessageByte 已按用法恢复。mvn8(JDK8) clean install BUILD SUCCESS，产物 install 到本机 Maven 仓库；源码已导入本仓库（提交 fbc7d4c，110 文件）。"
+      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT）已导入本仓库并以 JDK8 编译 install 成功；gw 构件仅在本机 Maven 仓库，未 deploy 到 Nexus。"
     },
     {
-      "name": "数据库（QA PostgreSQL）",
+      "name": "LoginSvr 服务命名（线上核实）",
       "status": "pass",
-      "evidence": "JDBC 连通 10.130.21.51:11004/stc，服务器 PostgreSQL 10.23 / TBase_v5.21.10.2.2。public 共 222 张表；在专用 schema ficc_demo 建 14 张表，未修改 public 或既有对象。凭据未写入任何 git 跟踪文件。**已确认**：该库即 STC LoginSvr 自身使用的库（见 JMX 一项），故 ficc_demo 与 STC 业务表同库。注：本轮未重新连接该库（凭据仅由发起方在会话中提供、按安全约定未落盘），故本轮的口径核对改用源码而非库内统计。"
-    },
-    {
-      "name": "LoginSvr 服务发现（并在线上核实）",
-      "status": "pass",
-      "evidence": "/MDTService/ValidationServer = 10.130.21.53:20040, Stat:1。从目标机只读读回 /opt/sumscope/control/ATSConfig.ini，实测为 `SERVER.LoginSvr.ServiceName=ValidationServer`、`Host=10.130.21.53:20040`、`REGISTER.Svr1.Host=10.130.21.53:2181`——基于 stc-lite 推断的映射在线上得到验证。该文件同时给出服务端口区间 20040–20058。"
+      "evidence": "QA ZooKeeper 无 /MDTService/LoginSvr 节点；LoginSvr 以 ValidationServer 注册（10.130.21.53:20040），与 stc-lite 全部服务的 `SERVER.LoginSvr.ServiceName=ValidationServer` 一致，线上 ATSConfig.ini 亦如此。"
     },
     {
       "name": "QA 主机只读观测通道（替代 SSH）",
       "status": "pass",
-      "evidence": "executor agent 实测可用：`http://10.130.21.53:8899/health` = {\"ok\":true,\"service\":\"idbpro-executor-agent-py2\"}；主机 GS-JYZX-1768552506773 / Kylin V10 / 服务账号 executor；unit idbpro-executor-agent.service；/ops 仅 identity、system_snapshot、journal_tail、service_status 四个只读操作（无 shell）。另有无需凭据的 JMX：STC 各 JVM 以 jmxremote.port=600xx、authenticate=false、ssl=false 启动，本机可直连并读 user.dir/java.class.path/Druid。实测映射 15 个服务：60002 BaseSvr、60003 LoginSvr、60004 TBookSvr、60005 MDSvr、60006 EMSSvr、60007 INNERSvr、60008 RiskSvr、60009 CalSvr、60010 AdminSvr、60011 MMSvr、60012 QuantSvr、60013 OHLCSvr、60014 AnsSvr、60019 MDHistSvr、60022 QESvr（user.dir 均为 /data/stc/<Service>）。**另注**：10.130.21.51:8899 为 Connection refused，agent 实际在 .53；10.130.21.51 上无 JMX。",
-      "note": "由此进一步确认 LoginSvr 的 Druid 数据源为 10.130.21.51:11004/stc、Username=ficc_user、driver org.postgresql.Driver、druid 1.2.27、MaxActive=10。"
+      "evidence": "executor agent（HTTP 控制面 http://10.130.21.53:8899，仅 4 个只读操作、无 shell）+ STC 各 JVM 免鉴权 JMX（60002–60022，15 个服务已映射）。本轮未使用该通道（token 仅由发起方在会话中提供、按约定不落盘，自动运行时不可用），故未重复其结论。"
     },
     {
       "name": "验收项 3：一只债券的评级及估值字段映射",
-      "status": "pass",
-      "evidence": "对目标债 250001 只读实测：bond 表 rating_current=AAA、issuer_rating_current=AAA、csi_implied_rating=AA+、rating_date=20240619、maturity_date=20280224、bond_subtype=PPN、bond_key=F0000302023CORPPN02、evaluation_date=NULL。**china_bond_valuation 中该债 0 行**（按 bond_id='250001.IB' 与按 bond_key 两种关联均为 0），即估值不可得。用有中债覆盖的同批债券证明映射可用：269152→AAA 且 269152.SH 估值 20260726 净价 100.0136|100.0136、收益率 2.0035|2.8155、BPV 0.0246；282644/282353 的 rating_current 为 NULL 而 issuer_rating_current=AAA（PPN 常见）。映射结论：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation；valuation_yield ↔ security.valuationYield。另确认代码格式差异（bond.bond_id 为裸码 250001，china_bond_valuation.bond_id 为带后缀 269152.SH）与本项目 StcBaseMapper 的 Listed_Market 归一化一致，以及 '|' 分隔的双值（行权/到期）约定——该约定的口径归属与实现已在本轮按源码核实并修正（见本轮新增检查项）。详见 iteration1/docs/stc-bond-field-mapping.zh-CN.md。"
-    },
-    {
-      "name": "服务端日志对照（验收项 4）",
-      "status": "fail",
-      "evidence": "**仍未取得 STC 日志，但原因已定位为文件权限，而非通道能力**。证据：agent 以非特权用户 executor 运行，STC 应用/日志目录（/data/stc/*、/opt/sumscope/stc/*）对其不可读；且 agent 用 os.path.isfile() 判断，**把 EACCES 报成 'file does not exist'**——实证是 agent 称 /opt/sumscope/stc/LoginSvr/javalib/*.jar 不存在，而该 JAR 明确在运行中 LoginSvr 的 java.class.path 上，故「不存在」实为权限不足。另 journal_tail 对本例无效：executor 跑 journalctl 只能看到自己的 unit（You are currently not seeing messages from other users）。**不以「读不到日志」当作服务端未收到请求的证据**；服务端对照改由以下只读手段承担：JMX（各服务 JVM 状态与数据源）、/opt/sumscope/control/ATSConfig.ini（注册信息）、以及外部系统的 /mon/login/log。"
-    },
-    {
-      "name": "服务启动（QuoteSvr / GW）",
       "status": "not_run",
-      "evidence": "尚未执行启动：还需 server.lic 许可证放入部署目录 control/，以及（真实登录路径）STC 测试账号。本机 18680/18600 端口空闲。"
+      "evidence": "本轮未重新连接数据库（凭据仅由发起方在会话中提供、未落盘）。此前对 10.130.21.51:11004/stc 的只读实测仍然有效：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation；目标债 250001 为 PPN，评级 AAA 可得、估值在库内 0 行不可得，端到端估值验证建议改用有中债覆盖的债券。运行时链路尚未打通（BaseSvr 解析失败），故本项本轮为 not_run，未以库内查询冒充实盘端到端结果。"
     },
     {
       "name": "真实登录与端到端查询",
       "status": "not_run",
-      "evidence": "服务未启动，未取得 SID；不猜测账号密码。账号数据位于 STC 所用的同一库（10.130.21.51:11004/stc）中，具备只读取用条件，但需用户明确授权后才会读取。"
+      "evidence": "无 STC 测试账号（不猜测凭据），且基础资料适配器当前无法连上 BaseSvr；服务未对外提供已认证会话，未取得 SID。"
     },
     {
-      "name": "库内双值占比重新统计（本轮未做）",
+      "name": "服务端日志对照（验收项 4）",
       "status": "not_run",
-      "evidence": "本轮未重新连接 10.130.21.51:11004/stc（会话提供的凭据按安全约定不落盘）。上一轮实测值为：china_bond_valuation 共 104583 行，其中 valuation_net_price 与 valuation_yield 同时含 '|' 的双值行为 16971 行（16.2%），单值 87612 行；listed_market 取值恰为 {CIB:50991, SSE:34675, SZE:18917}。如需复验，按 iteration1/scripts/bond-field-mapping-probe.sql 以只读方式执行即可。"
+      "evidence": "本轮未取得 STC 服务端日志。原因仍是权限而非通道：agent 以非特权用户 executor 运行，/data/stc/* 对其 EACCES（agent 会误报为「文件不存在」）。不以「读不到日志」当作服务端未收到请求的证据；本轮也未产生需服务端对照的业务请求（请求在客户端解析阶段即失败）。"
+    },
+    {
+      "name": "NotificationSvr / GW 启动",
+      "status": "not_run",
+      "evidence": "本轮只启动 QuoteSvr 做有界验证。NotificationSvr 需要专用 STC 账号（identity.serviceUsername 为空），GW 需要 QuoteSvr 业务链路先可用；两者均不具备条件，按约束不启动。"
     }
   ],
   "blockers": [
     {
+      "issue": "STC 消费者（BaseSvr/LoginSvr）在 ATS 客户端侧始终解析为 unavailable，尽管 ZooKeeper 会话正常、注册节点存在且端口可达。已排除 RegType（1/2）与 NetType（gw/dps）两项配置。",
+      "need": "需要 STC/ATS 侧提供客户端可用性判定逻辑的输入，任选其一：(a) NetClientWrapper 可用性判定的源码或说明（当前仓库内 sc-app-stc 源码无该字符串，判断在 ats-foundation/ceda 组件内）；(b) 一份能与 QA 正常通信的、面向外部 Windows 客户端的最小可用 ATSConfig.ini + resource.xml + resourceCfg.ini 样例（本机 resourceCfg.ini 无 [CedaServerResouce] 段，QA 侧配置含 `ceda.server.userMonitor=false`，疑为差异点之一）。"
+    },
+    {
       "issue": "真实登录需要 STC 测试账号（用户名/密码或既有 QA 会话），任务约束禁止猜测凭据。",
-      "need": "由发起方/用户提供测试账号（建议经环境变量或本机 gitignored 配置交付，不写入 git）；或明确授权我在 10.130.21.51:11004/stc 中只读查找一个既有测试账号。"
+      "need": "由发起方提供测试账号（建议经环境变量或本机 gitignored 配置交付，不写入 git）；或明确授权我在 10.130.21.51:11004/stc 中只读查找一个既有测试账号。"
     },
     {
-      "issue": "ATS 服务启动需要 server.lic 许可证（部署包说明要求放入 control/），本机无该文件。",
-      "need": "提供有效 server.lic（演示环境同款即可），放置到本地运行目录；不会提交入 git。"
+      "issue": "STC 服务端日志对 agent 账号 executor 不可读（EACCES，非缺失）。",
+      "need": "由有权限者在目标机执行 `setfacl -R -m u:executor:rX /data/stc/LoginSvr/log`（推荐），或启用一个路径白名单的只读 tail 操作。"
     },
     {
-      "issue": "STC 服务端日志文件对 agent 账号 executor 不可读（EACCES；agent 会把它误报为「文件不存在」），故无法做日志级对照。",
-      "need": "由有权限者在目标机执行其一：(a) `setfacl -R -m u:executor:rX /data/stc/LoginSvr/log`（推荐，最小授权）；(b) 启用 /admin/update 并新增一个路径白名单的只读 tail 操作。完成后我即可用 agent 的 tail + filter 精确 grep。"
-    },
-    {
-      "issue": "sumscope.stcl:gw 目前仅存在于本机 Maven 仓库（install 未 deploy），其他环境无法解析。",
-      "need": "由有权限者将 gw 构件 deploy 到内网 Nexus，或在部署机重复 mvn8 install。"
+      "issue": "sumscope.stcl:gw 仅存在于本机 Maven 仓库（install 未 deploy）。",
+      "need": "由有权限者 deploy 到内网 Nexus，或在部署机重复 mvn8 install。"
     }
   ],
-  "nextAction": "本轮已闭环「用 grep/源码核实」的诉求：中债双值口径与 bondTypeFlag 语义已按 sc-app-stc 源码确定并落实修复，2 个回归测试通过，无需再改动映射层。后续闭环仍只差两项外部输入：(1) STC 测试账号；(2) server.lic。两者到位后启动 QuoteSvr+GW 完成真实登录与单只债券查询，服务端对照改用 JMX + ATSConfig.ini + 外部系统 /mon/login/log（不再依赖 SSH）。若需要日志级证据，请给 executor 开 /data/stc/LoginSvr/log 的只读 ACL。注意 250001 在本库无估值行，端到端估值验证建议改用有中债覆盖的债券（如 269152）。建议：若发起方希望「评级+估值同时可得」，请指定一只非 PPN/有中债覆盖的债券作为验收标的。"
+  "nextAction": "建议发起方优先解决第 1 项阻塞：提供一份 QA 侧可正常访问 BaseSvr/LoginSvr 的最小完整配置（ATSConfig.ini + resource.xml + resourceCfg.ini），或指出 ATS 客户端可用性判定依赖哪个组件/配置项（当前怀疑与 CedaServerResouce / ceda.server.userMonitor 等服务装配段有关，本机 resourceCfg.ini 缺少该段）。该项解决后，配合 STC 测试账号即可完成真实登录与单只债券端到端查询（建议标的改用有中债覆盖的债券，250001 为 PPN 无估值）。本轮已回传的真实成果：QuoteSvr 首次真实起服、server.lic 阻塞解除、注册中心连通性与业务解析失败已明确区分、RegType 配置缺陷修正并入库。"
 }
