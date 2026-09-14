@@ -1,0 +1,70 @@
+{
+  "protocolVersion": 1,
+  "taskId": "codex-20260914-002",
+  "from": "workbuddy",
+  "state": "blocked",
+  "testedCommit": null,
+  "summary": "未能启动本机服务：Maven 构建缺少冻结的 STC 兼容依赖集（123 个 JAR 未随 Git 传递），服务 JAR 无法产出，因此 QuoteSvr/NotificationSvr/GW 未启动，真实登录与债券查询未执行。已完成并可出具的成果是真实 STC QA ZooKeeper 服务发现和 BaseSvr 业务端口连通性验证：连上 10.130.21.53:2181，读到 32 个已注册服务节点；发现成功且业务端口可达，但 /MDTService 下不存在 LoginSvr 节点，真实登录链路缺一环。本机亦未安装 PostgreSQL（55432 未监听），无法承载 QuoteSvr。上述均为真实环境结果，不含模拟通过。",
+  "changedFiles": [],
+  "checks": [
+    {
+      "name": "ZooKeeper 服务发现（真实 STC QA）",
+      "status": "pass",
+      "evidence": "TCP 10.130.21.53:2181 可达；ZooKeeper 3.4.8 客户端连接成功 state=CONNECTED。/ 下仅 MDTService、zookeeper；/MDTService 共 32 个服务节点，其中 29 个有实例、3 个无实例（BatchSvr、CTPSvr、SimulateSvr）。注册数据格式为 'Host:<ip>,Port:<port>,Stat:1'。属发现成功，不等于业务连接成功。"
+    },
+    {
+      "name": "BaseSvr 业务端点可达性（Windows → STC）",
+      "status": "pass",
+      "evidence": "发现返回 /MDTService/BaseSvr/BaseSvr = Host:10.130.21.53,Port:20041,Stat:1；从本机 10.100.151.202 发起 TCP 连接成功，耗时 7ms。确认发现返回的业务地址（非 2181）在 Windows 可达。"
+    },
+    {
+      "name": "LoginSvr 服务发现",
+      "status": "fail",
+      "evidence": "/MDTService 的 32 个节点中不存在 LoginSvr，也无相近名称；STC lite 源码仓有 sc-app-stc-loginsvr 模块但该 QA 环境未注册。按现有配置 SERVER.LoginSvr.ServiceName=LoginSvr 无法完成发现，真实登录流程缺少服务端。"
+    },
+    {
+      "name": "本机 Maven 构建（含 STC 兼容依赖解析）",
+      "status": "fail",
+      "evidence": "JDK 17（Eclipse Adoptium 17.0.17.10）与 Maven 3.9.16 + settings_yanxin.xml 可用，可访问内网 Nexus 10.130.21.41:8081 与阿里云镜像。构建失败：'Could not resolve dependencies ... cczq.salestrading.compat:stc-foundation-runtime:pom:2026.09.14-5303c3cd5da4 was not found'。该坐标是 123 个冻结兼容 JAR 的聚合 POM，需由 bootstrap-maven-foundations.py --lib iteration1/runtime/foundation-build/lib 安装；该目录与整个 iteration1/runtime/ 在本机不存在（**/runtime/ 与 *.jar 均为 .gitignore，不随 Git 传递）。本地仓库 ~/.m2 与 F:/dev/maven-repo 均无 cczq.salestrading.compat 任何构件。"
+    },
+    {
+      "name": "本机 PostgreSQL / 本地注册中心就绪检查",
+      "status": "fail",
+      "evidence": "启动前巡检：55432（PostgreSQL）、12181（本机 ZooKeeper）、18680/18690/18600（QuoteSvr/NotificationSvr/GW）均未监听；标准目录未发现 PostgreSQL 安装；当前无 java.exe 进程。缺少 QuoteSvr 依赖数据库，且本机服务端口空闲、无端口冲突。"
+    },
+    {
+      "name": "本机服务启动（QuoteSvr / NotificationSvr / GW）",
+      "status": "not_run",
+      "evidence": "构建未产出可执行 JAR，且 PostgreSQL 缺失，未启动任何服务。本次未创建任何进程，因此无需清理，也未停止用户原有进程。"
+    },
+    {
+      "name": "真实登录与会话解析、单只债券基础资料与估值查询",
+      "status": "not_run",
+      "evidence": "因服务未启动且 LoginSvr 未注册，未执行登录与债券查询；未取得任何 SID，也未产生涉及客户资料或账号的报文。评级/估值字段映射情况本次无数据可报。"
+    },
+    {
+      "name": "STC 服务端日志对照（10.130.21.53）",
+      "status": "not_run",
+      "evidence": "本机到 10.130.21.53 的 22 端口不可达（TCP 连通性测试结果为 False），所处网段为 10.100.151.0/24；本机未确认具备桌面/终端窗口控制能力，且按要求不提取 SSH 凭据、不读私钥。不能读取服务端日志，且不以‘读不到日志’作为服务端未收到请求的证据。"
+    }
+  ],
+  "blockers": [
+    {
+      "issue": "冻结的 STC 兼容依赖集未随 Git 传递，导致本机无法构建任何服务 JAR。",
+      "need": "需要发起方提供 iteration1/runtime/foundation-build/lib 下 123 个 JAR（或已安装 cczq.salestrading.compat 构件的 Maven 仓库/私服地址），否则需同意将 iteration1 的依赖模型改为直接依赖内网 Nexus 上的 sumscope.stc:sc-app-stc:0.1.1-SNAPSHOT（本机 F:/dev/maven-repo 已存在该构件，并可在 E:/gongy/projects/gitlab/ficc/stc-lite 参考 sc-app-stc-parent-pom 与 mvn8.cmd 的编译方式）。这一改动超出本轮已授权的最小修复范围，需明确授权。"
+    },
+    {
+      "issue": "STC QA 的 /MDTService 下没有 LoginSvr 注册节点，现有配置的 SERVER.LoginSvr.ServiceName=LoginSvr 无法解析到真实登录服务。",
+      "need": "需要发起方或内网管理员确认该环境登录服务如何寻址：是否复用 AdminSvr/ValidationServer（分别在 10.130.21.53:20047、20040），或需先部署/启动 LoginSvr，或改用固定的业务 IP:端口（不得猜测端口）。"
+    },
+    {
+      "issue": "本机未安装 PostgreSQL，QuoteSvr 与 NotificationSvr 无可用数据库。",
+      "need": "需要确认本机是否可安装并初始化本地 PostgreSQL（仅本地实例，不使用共享 QA 数据库），或提供可连接的数据库实例及部署机本地配置方式。"
+    },
+    {
+      "issue": "本机无法读取 STC 服务端日志用于时间戳/请求对照。",
+      "need": "需要用户提供已在 10.130.21.53 上打开 SSH 会话中最少只读命令的执行结果，例如：查看 BaseSvr 部署目录与日志最近若干行、确认 LoginSvr 是否存在及其实路径（脱离不了 mdtconfigs 则不猜）；或开通本机到该机的 22 端口。"
+    }
+  ],
+  "nextAction": "请就上述四项中的第 1 项（依赖来源或改接内网 Nexus 的授权）与第 2 项（LoginSvr 实际寻址方式）给出决定或补充信息；拿到后可在同一工作分支继续构建与真实链路验证。若要复用登录能力，请确认是否允许先跳过真实登录、仅用固定地址验证 BaseSvr 查询。"
+}
