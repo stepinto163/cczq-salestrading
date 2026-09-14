@@ -3,9 +3,12 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "7fa6905",
-  "summary": "构建与依赖阻塞全部解除，并通过新增的只读观测通道拿到了验收项 3 要求的债券评级/估值字段映射（真实数据）。依赖改由内网 Maven 解析；GW 源码补齐 IMessageByte 后以 JDK8 编译成功；QA 库在专用 schema ficc_demo 建 14 张表（未触碰 public）。**观测能力质变**：用户提供的 executor agent（HTTP 控制面，位于 http://10.130.21.53:8899，注意不是 .51；仅 4 个只读操作、无 shell）配合 STC 各 JVM 上**无需凭据的 JMX**（60002–60022，15 个服务已逐一映射），可只读读取 user.dir、java.class.path、Druid 数据源与运行时状态。已确认 LoginSvr 的 Druid 指向 10.130.21.51:11004/stc 用户 ficc_user——与本原型同库；线上 ATSConfig.ini 亦证实 SERVER.LoginSvr.ServiceName=ValidationServer，与我们的修正一致。**字段映射实测**：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation。**关键发现：目标债 250001 为 PPN，债项评级 AAA 可得，但在 china_bond_valuation 中无任何估值行（evaluation_date=NULL，按 bond_id 与 bond_key 两种关联均为 0 行），故「同一只债的评级+估值」无法在本库同时取到。** 剩余阻塞：STC 服务端日志文件对 agent 账号不可读（EACCES，非缺失，最小解法为开只读 ACL）；真实登录仍需 STC 测试账号；ATS 启动需 server.lic；gw 构件未 deploy 到 Nexus。",
+  "testedCommit": "3a74844",
+  "summary": "本轮按发起方「用 grep 快速核实」的提示，对上一轮实测发现的「中债估值双值」问题做了源码级核实并落实修复（testedCommit 3a74844）。**核实结论（以 sc-app-stc 源码为准）**：估值口径与 bondTypeFlag 是两个互相独立的概念，原实现把二者混为一谈是错的。① 估值口径由「是否存在双值」决定：STC 客户端按 '|' 拆分，第 1 段=行权、第 2 段=到期、单值=到期（stc-client/STC.InnerBoard.Plugin/ViewModel/InnerHistoryRequireViewModel.cs:1377-1385 的 ChinaBondExercise/ChinaBondDue）；BaseSvr getCbv() 亦取第 1 段为主值（sc-app-stc-basesvr/…/UserCommonDataManager.java:103 与 CommonDataManager.java:1528）。② bondTypeFlag 描述的是「含权债是否已行权」：1=含权债未行权、2=含权债已行权、空=非含权债（sc-app-stc-basesvr/…/CommonDataManager.java:1420-1438 为权威实现，ETS 默认未行权）。注：TBondValuationView.java 字段注释写 「1-行权 2-到期」，与其自身类注释及实际赋值逻辑不符，属源码注释错误。**因此修正 StcBaseMapper**：valuation() 的 valuationBasis 改为按双值存在与否判定（双值→EXERCISE，单值→MATURITY），yield/cleanPrice 取行权主值，并新增 exerciseYield/dueYield/exerciseCleanPrice/dueCleanPrice 与 optionState；security() 的 valuationYield 改为取主值（原先会把 \"2.0035|2.8155\" 原样透出，消费方无法数值化），bondRating 增加 Rating_Current→Issuer_Rating_Current 回退并新增 bondRatingSource 标注口径来源。**验证**：对该提交实测 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Reactor 5/5 SUCCESS，Tests run: 11, Failures: 0, Errors: 0（其中 AdapterContractTest 由 5 个增至 7 个，含 2 个新增口径回归测试）。**仍未闭环的原因不变**：验收项要求真实登录与单只债券端到端查询，缺 STC 测试账号与 server.lic，故 state 仍为 blocked。上一轮已达成的成果保持有效：依赖改由内网 Maven 解析（123 个冻结 JAR 阻塞解除）、GW 源码补齐并以 JDK8 编译成功、QA 库专用 schema ficc_demo 建 14 张表、以及通过 executor agent（HTTP 控制面 http://10.130.21.53:8899，仅 4 个只读操作、无 shell）配合 STC 各 JVM 上无需凭据的 JMX（60002–60022，15 个服务已逐一映射）建立的只读观测能力。已确认 LoginSvr 的 Druid 指向 10.130.21.51:11004/stc 用户 ficc_user——与本原型同库；线上 ATSConfig.ini 亦证实 SERVER.LoginSvr.ServiceName=ValidationServer。**字段映射实测**：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation。**关键数据事实：目标债 250001 为 PPN，债项评级 AAA 可得，但在 china_bond_valuation 中无任何估值行**（evaluation_date=NULL，按 bond_id 与 bond_key 两种关联均为 0 行），故「同一只债的评级+估值」无法在本库同时取到；端到端估值验证建议改用有中债覆盖的债券（如 269152）。剩余阻塞：STC 服务端日志对 agent 账号不可读（EACCES，非缺失，最小解法为开只读 ACL）；真实登录仍需 STC 测试账号；ATS 启动需 server.lic；gw 构件未 deploy 到 Nexus。",
   "changedFiles": [
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
+    "iteration1/cczq-app-salestrading-common/src/test/java/ficc/common/client/AdapterContractTest.java",
+    "iteration1/docs/stc-bond-field-mapping.zh-CN.md",
     "iteration1/stc-foundation-runtime/pom.xml",
     "iteration1/pom.xml",
     "iteration1/cczq-app-salestrading-common/pom.xml",
@@ -15,16 +18,20 @@
     "iteration1/scripts/foundation-classpath.ps1",
     "iteration1/scripts/probe-ibor-api.ps1",
     "iteration1/scripts/bond-field-mapping-probe.sql",
-    "iteration1/docs/stc-bond-field-mapping.zh-CN.md",
     "iteration1/docs/qa-host-observability.zh-CN.md",
     "handoff/tasks/codex-20260914-002/executor-notes.md",
     "gw/"
   ],
   "checks": [
     {
-      "name": "Maven 全模块构建（含 gateway）",
+      "name": "中债「行权|到期」双值口径与 bondTypeFlag 语义（本轮新增）",
       "status": "pass",
-      "evidence": "提交 1fb8c30 实测：`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify -DskipTests` → BUILD SUCCESS，Reactor 5 模块全 SUCCESS（stc-foundation-runtime 0.165s / parent 0.064s / common 6.138s / quotesvr 7.487s / notificationsvr 6.958s）。-P with-gateway 下 gateway 扩展模块亦编译通过。STC 基础依赖约 125 个 JAR 全部来自内网 Nexus(10.130.21.41:8081)。注意：reactor 根 POM 位于 iteration1/，仓库根目录无 POM。"
+      "evidence": "源码级核实（sc-app-stc，非推断）：(a) 估值口径由双值是否存在决定——stc-client/STC.InnerBoard.Plugin/ViewModel/InnerHistoryRequireViewModel.cs:1377 用 chinaBondValuationFull.IndexOf('|') 判定，:1380 把第 1 段赋给 ChinaBondExercise（行权），:1381 把第 2 段赋给 ChinaBondDue（到期），:1385 单值分支只赋 ChinaBondDue（即单值=到期）；服务端 sc-app-stc-basesvr/…/UserCommonDataManager.java:103 与 sc-app-stc-parsersvr/…/CommonDataManager.java:262 的 getCbv() 取 split('|')[0] 作为主值，CommonDataManager.java:681 亦取 [0]。(b) bondTypeFlag 是另一概念——sc-app-stc-basesvr/…/CommonDataManager.java:1420-1438 实测赋值逻辑为：ifCumRights 且 option_type=ETS → '1'；含权债且 ifExercised(option_date) → '2'（已行权）；否则含权债未行权 → '1'；非含权债不赋值（空）。字段与类头注释明确为「1:含权债未行权 2:含权债已行权 空:非含权债」。故原实现用 bondTypeFlag 推断估值口径（1=EXERCISE/2=MATURITY）系概念混淆，已修正为按双值判定；bondTypeFlag 改由 optionState 承载。更正测试：AdapterContractTest.valuationSplitsChinaBondExerciseAndDueConventions 以真实观测值 269152.SH「100.0136|100.0136」「2.0035|2.8155」断言拆分结果，以 282644.SH 单值「1.793」「99.9622」断言 MATURITY 口径。**限制说明**：本项为源码级核对，未做运行时/库内复验；上一轮基于库内数据的统计（104583 行估值中 16971 行为双值，占 16.2%）本轮未重新连接数据库确认，对应核对项标 not_run。"
+    },
+    {
+      "name": "Maven 全模块构建与单元测试（对 testedCommit）",
+      "status": "pass",
+      "evidence": "对提交 3a74844 实测：`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Reactor 5 模块全 SUCCESS（stc-foundation-runtime 0.161s / parent 0.061s / common 8.778s / quotesvr 7.577s / notificationsvr 5.576s），总耗时约 28.5s。Common 模块 Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、CrmPluginTest 1、FilterEngineTest 3）；surefire 报告中 AdapterContractTest 由上一版 5 个测试增至 7 个，新增 2 个口径回归测试全部通过。早期实测（提交 1fb8c30）：`clean verify -DskipTests` 同样 BUILD SUCCESS。较早记录的另一条：`-DskipTests` 版本用于纯构建，本轮改为含测试的 verify 作为判据。注意：reactor 根 POM 位于 iteration1/，仓库根目录无 POM。"
     },
     {
       "name": "基础 classpath 可复现（新增脚本）",
@@ -39,12 +46,12 @@
     {
       "name": "数据库（QA PostgreSQL）",
       "status": "pass",
-      "evidence": "JDBC 连通 10.130.21.51:11004/stc，服务器 PostgreSQL 10.23 / TBase_v5.21.10.2.2。public 共 222 张表；在专用 schema ficc_demo 建 14 张表，未修改 public 或既有对象。凭据未写入任何 git 跟踪文件。**本轮新增确认**：该库即 STC LoginSvr 自身使用的库（见 JMX 一项），故 ficc_demo 与 STC 业务表同库。"
+      "evidence": "JDBC 连通 10.130.21.51:11004/stc，服务器 PostgreSQL 10.23 / TBase_v5.21.10.2.2。public 共 222 张表；在专用 schema ficc_demo 建 14 张表，未修改 public 或既有对象。凭据未写入任何 git 跟踪文件。**已确认**：该库即 STC LoginSvr 自身使用的库（见 JMX 一项），故 ficc_demo 与 STC 业务表同库。注：本轮未重新连接该库（凭据仅由发起方在会话中提供、按安全约定未落盘），故本轮的口径核对改用源码而非库内统计。"
     },
     {
       "name": "LoginSvr 服务发现（并在线上核实）",
       "status": "pass",
-      "evidence": "/MDTService/ValidationServer = 10.130.21.53:20040, Stat:1。本轮从目标机只读读回 /opt/sumscope/control/ATSConfig.ini，实测同样为 `SERVER.LoginSvr.ServiceName=ValidationServer`、`Host=10.130.21.53:20040`、`REGISTER.Svr1.Host=10.130.21.53:2181`——我们基于 stc-lite 推断的映射在线上得到验证。该文件同时给出服务端口区间 20040–20058。"
+      "evidence": "/MDTService/ValidationServer = 10.130.21.53:20040, Stat:1。从目标机只读读回 /opt/sumscope/control/ATSConfig.ini，实测为 `SERVER.LoginSvr.ServiceName=ValidationServer`、`Host=10.130.21.53:20040`、`REGISTER.Svr1.Host=10.130.21.53:2181`——基于 stc-lite 推断的映射在线上得到验证。该文件同时给出服务端口区间 20040–20058。"
     },
     {
       "name": "QA 主机只读观测通道（替代 SSH）",
@@ -55,7 +62,7 @@
     {
       "name": "验收项 3：一只债券的评级及估值字段映射",
       "status": "pass",
-      "evidence": "对目标债 250001 只读实测：bond 表 rating_current=AAA、issuer_rating_current=AAA、csi_implied_rating=AA+、rating_date=20240619、maturity_date=20280224、bond_subtype=PPN、bond_key=F0000302023CORPPN02、evaluation_date=NULL。**china_bond_valuation 中该债 0 行**（按 bond_id='250001.IB' 与按 bond_key 两种关联均为 0），即估值不可得。用有中债覆盖的同批债券证明映射可用：269152→AAA 且 269152.SH 估值 20260726 净价 100.0136|100.0136、收益率 2.0035|2.8155、BPV 0.0246；282644/282353 的 rating_current 为 NULL 而 issuer_rating_current=AAA（PPN 常见）。映射结论：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation；valuation_yield ↔ security.valuationYield。另确认代码格式差异（bond.bond_id 为裸码 250001，china_bond_valuation.bond_id 为带后缀 269152.SH）与本项目 StcBaseMapper 的 Listed_Market 归一化一致，以及 '|' 分隔的双值（行权/到期）约定。详见 iteration1/docs/stc-bond-field-mapping.zh-CN.md。"
+      "evidence": "对目标债 250001 只读实测：bond 表 rating_current=AAA、issuer_rating_current=AAA、csi_implied_rating=AA+、rating_date=20240619、maturity_date=20280224、bond_subtype=PPN、bond_key=F0000302023CORPPN02、evaluation_date=NULL。**china_bond_valuation 中该债 0 行**（按 bond_id='250001.IB' 与按 bond_key 两种关联均为 0），即估值不可得。用有中债覆盖的同批债券证明映射可用：269152→AAA 且 269152.SH 估值 20260726 净价 100.0136|100.0136、收益率 2.0035|2.8155、BPV 0.0246；282644/282353 的 rating_current 为 NULL 而 issuer_rating_current=AAA（PPN 常见）。映射结论：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation；valuation_yield ↔ security.valuationYield。另确认代码格式差异（bond.bond_id 为裸码 250001，china_bond_valuation.bond_id 为带后缀 269152.SH）与本项目 StcBaseMapper 的 Listed_Market 归一化一致，以及 '|' 分隔的双值（行权/到期）约定——该约定的口径归属与实现已在本轮按源码核实并修正（见本轮新增检查项）。详见 iteration1/docs/stc-bond-field-mapping.zh-CN.md。"
     },
     {
       "name": "服务端日志对照（验收项 4）",
@@ -71,6 +78,11 @@
       "name": "真实登录与端到端查询",
       "status": "not_run",
       "evidence": "服务未启动，未取得 SID；不猜测账号密码。账号数据位于 STC 所用的同一库（10.130.21.51:11004/stc）中，具备只读取用条件，但需用户明确授权后才会读取。"
+    },
+    {
+      "name": "库内双值占比重新统计（本轮未做）",
+      "status": "not_run",
+      "evidence": "本轮未重新连接 10.130.21.51:11004/stc（会话提供的凭据按安全约定不落盘）。上一轮实测值为：china_bond_valuation 共 104583 行，其中 valuation_net_price 与 valuation_yield 同时含 '|' 的双值行为 16971 行（16.2%），单值 87612 行；listed_market 取值恰为 {CIB:50991, SSE:34675, SZE:18917}。如需复验，按 iteration1/scripts/bond-field-mapping-probe.sql 以只读方式执行即可。"
     }
   ],
   "blockers": [
@@ -91,5 +103,5 @@
       "need": "由有权限者将 gw 构件 deploy 到内网 Nexus，或在部署机重复 mvn8 install。"
     }
   ],
-  "nextAction": "优先补两项即可闭环：(1) STC 测试账号；(2) server.lic。两者到位后启动 QuoteSvr+GW 完成真实登录与单只债券查询，服务端对照改用 JMX + ATSConfig.ini + 外部系统 /mon/login/log（不再依赖 SSH）。若需要日志级证据，请给 executor 开 /data/stc/LoginSvr/log 的只读 ACL。注意 250001 在本库无估值行，端到端估值验证建议改用有中债覆盖的债券（如 269152）。"
+  "nextAction": "本轮已闭环「用 grep/源码核实」的诉求：中债双值口径与 bondTypeFlag 语义已按 sc-app-stc 源码确定并落实修复，2 个回归测试通过，无需再改动映射层。后续闭环仍只差两项外部输入：(1) STC 测试账号；(2) server.lic。两者到位后启动 QuoteSvr+GW 完成真实登录与单只债券查询，服务端对照改用 JMX + ATSConfig.ini + 外部系统 /mon/login/log（不再依赖 SSH）。若需要日志级证据，请给 executor 开 /data/stc/LoginSvr/log 的只读 ACL。注意 250001 在本库无估值行，端到端估值验证建议改用有中债覆盖的债券（如 269152）。建议：若发起方希望「评级+估值同时可得」，请指定一只非 PPN/有中债覆盖的债券作为验收标的。"
 }
