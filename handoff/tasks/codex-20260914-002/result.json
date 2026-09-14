@@ -3,9 +3,14 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "339e423",
-  "summary": "本轮首次在本机真实启动了 QuoteSvr（ATS/STC 启动链路，非模拟）：服务以 server.lic 正常起服并打印「QuoteSvr READY (STC startup; registry configuration applied)」，进程内 ZooKeeper 客户端成功连上 QA 注册中心 10.130.21.53:2181（session 建立、negotiated timeout 120000）。**因此「server.lic 缺失」这一历史阻塞已解除**（许可证文件存在且被 ATS 接受）。同时用真实注册数据复核：/MDTService/BaseSvr=10.130.21.53:20041、/MDTService/ValidationServer=10.130.21.53:20040，且本机到 20040/20041/2181 的 TCP 均可达。**但消费者侧解析仍失败**：QuoteSvr 启动即报「BaseSvr reference refresh unavailable: SERVER.BaseSvr is unavailable」，即发现链路连通、业务服务解析不到。已按配置维度做过两轮对照实验（RegType 1→2、NetType gw→dps），两种组合均仍 unavailable，故该问题不在我们已掌握的配置项上，判断在 ATS 客户端组件的可用性强依赖（见 blockers）。本轮顺带修正了一处真实配置缺陷：iteration1/config/stc-consumers.example.ini 中消费者 RegType 原为 1，应为 2（与运行中的 QA ATSConfig.ini 一致），已提交（testedCommit 339e423，`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Tests run: 11, Failures: 0, Errors: 0）。本地 PostgreSQL 16.4 已在 127.0.0.1:55432 运行，本机原型库就绪。验收项 3（真实登录 + 单只债券端到端查询）仍未完成：无 STC 测试账号，且基础资料适配器当前取不到 BaseSvr。State 保持 blocked，未编造任何结果，未完成的检查项均标 not_run。",
+  "testedCommit": "af989fc",
+  "summary": "本轮把上个结果中的「ATS 消费者解析不可用」从现象推进到确定根因，并完成了两处必要兼容修复。**根因一（已解决）**：`sc.app.stc.net.NetClientResource` 只在 `NetType=ceda` 时创建 CEDA 客户端，其它任何取值（含原先的 gw、以及 QA 配置里的 dps）都走 GW 客户端，于是 `NetClientWrapper.isOnline(\"SERVER.BaseSvr\")` 恒为 false，表现为「BaseSvr reference refresh unavailable: SERVER.BaseSvr is unavailable」——与网络、注册中心、RegType 均无关。改为 `NetType=ceda` 后，日志出现 `CedaClient registerClient: SERVER.BaseSvr`、`new ClientConnection: /MDTService/BaseSvr/BaseSvr`，发现与连接建立路径打通。**根因二（已解决）**：JDK 17 下 CEDA 客户端直接崩在 JDK 8 内部类上——`sun.misc.BASE64Encoder`（ceda-api / com.adaptiveMQ2）与 `sun.misc.BASE64Decoder`（ats-app-ym-foundation / TripleDes），另缺 legacy Netty 3（`org.jboss.netty.channel.ChannelFactory`，CEDA 服务端 adaptiveMQ3 需要）。已入库修复：`iteration1/scripts/ceda-jdk17-shim/`（两个 shim 源码 + build-shim.ps1，用 JDK 8 javac 编译后以 `--patch-module jdk.unsupported=` 注入）+ 说明文档 `iteration1/docs/stc-ceda-jdk17.zh-CN.md`；加上 Netty 3.7.0 到运行时 classpath 后，**QuoteSvr 以 NetType=ceda 正常起服并开始发布 HEARTBEAT**（`publish: ficc.quote.events ... kind:HEARTBEAT`）。**剩余未决（新阻塞）**：CEDA 客户端向 10.130.21.53:20040/20041 发起握手后始终 `ConnectionException: no reply`（客户端标识 `CEDA-api-4.0.1-SNAPSHOT Build: 20210330`，约 5s 超时后强制关闭并重连）。已排除：端口可达（TCP OPEN）、注册节点存在、RegType、NetType、以及「客户端需先注册到注册中心」（以独立服务名 CCZQProtoQuoteSvr 注册后现象不变，且该临时节点已删除，注册中心恢复为 32 个节点）。TCP 裸连探测同样无任何服务端响应，判断需要服务端侧信息才能继续：是否允许 Windows 开发机（10.100.151.202）直连 QA 的 CEDA 端口、以及服务端为何不回包。**server.lic 阻塞已解除**（上轮确认，许可证被 ATS 接受）。本地 PostgreSQL 16.4 在 127.0.0.1:55432 运行。验收项 3（真实登录 + 单只债券端到端查询）仍未完成，故 state 保持 blocked；未完成的检查项均标 not_run，未以库内查询冒充实盘结果。",
   "changedFiles": [
+    "iteration1/scripts/ceda-jdk17-shim/sun/misc/BASE64Encoder.java",
+    "iteration1/scripts/ceda-jdk17-shim/sun/misc/BASE64Decoder.java",
+    "iteration1/scripts/ceda-jdk17-shim/build-shim.ps1",
+    "iteration1/scripts/ceda-jdk17-shim/.gitignore",
+    "iteration1/docs/stc-ceda-jdk17.zh-CN.md",
     "iteration1/config/stc-consumers.example.ini",
     "handoff/tasks/codex-20260914-002/result.json",
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
@@ -25,83 +30,102 @@
   ],
   "checks": [
     {
-      "name": "本机 QuoteSvr 真实启动（验收项 1，本轮新增）",
+      "name": "NetType=ceda 是访问 STC 服务的必要条件（本轮新增，根因）",
       "status": "pass",
-      "evidence": "以部署机本地配置副本（`iteration1/runtime/quotesvr`，未入库）启动：`ATS_ROOT=.../runtime/quotesvr`，`java -Xms48m -Xmx256m -XX:ActiveProcessorCount=2 -cp <server jar;common jar;foundation classpath> ficc.quote.Main ./control/QuoteSvr.ini`。日志 `runtime/quotesvr-run*.log` 显示 30+ 业务 handler 注册完成并以「QuoteSvr READY (STC startup; registry configuration applied)」结束；stderr 仅 log4j 无 appender 告警，无许可证错误 → server.lic 被 ATS 接受（历史阻塞解除）。进程为本次任务启动，验证结束后已按约束停止（java 进程数 0）。启动目录为 runtime 副本，含环境地址的 ATSConfig 未提交入库。"
+      "evidence": "源码依据：`sc.app.stc.net.NetClientResource.init()` 中 `if (\"ceda\".equals(netType)) { ceda = new CedaClientResource(); } else { gw = new GwClientResource(); }`；`NetClientWrapper.isOnline()` 只查已创建的那个 wrapper。实测：NetType=gw/dps 时 `SERVER.BaseSvr` 恒 unavailable；改为 ceda 后日志出现 `CedaClient registerClient: SERVER.LoginSvr / SERVER.BaseSvr`、`new ClientConnection: /MDTService/BaseSvr/BaseSvr`、`new ClientConnection: /MDTService/ValidationServer/ValidationServer`，并真正向 10.130.21.53:20040/20041 发起连接。"
     },
     {
-      "name": "注册中心连接（发现成功）与业务服务解析（失败）的区分（验收项 2，本轮新增）",
+      "name": "JDK 17 下 CEDA 客户端的两个二进制兼容缺口（本轮新增，已修复）",
+      "status": "pass",
+      "evidence": "实测报错：`Exception in thread \"Thread-48\" java.lang.NoClassDefFoundError: sun/misc/BASE64Encoder`（com.adaptiveMQ2 静态初始化）与 `Exception in thread \"main\" java.lang.NoClassDefFoundError: org/jboss/netty/channel/ChannelFactory`（com.adaptiveMQ3 服务端启动）。修复：① 用 JDK 8 javac 编译两个同名 shim，运行时 `--patch-module jdk.unsupported=<classes>` 注入（已入库 `iteration1/scripts/ceda-jdk17-shim/`，脚本实测可生成 classes）；② 运行时 classpath 追加 Netty 3.7.0（`io/netty/netty/3.7.0.Final/netty-3.7.0.Final.jar`，提供 org.jboss.netty；注意 3.10.5 目录在本机只有 pom 没有 jar）。修复后 BASE64Encoder 报错消失，QuoteSvr 起服并发布 HEARTBEAT。"
+    },
+    {
+      "name": "QuoteSvr 以 CEDA 模式真实起服（本轮新增）",
+      "status": "pass",
+      "evidence": "日志（`runtime/quotesvr-run8.log` / `run9.log`，未入库）：`QuoteSvr READY (STC startup; registry configuration applied)`；随后 `NetRtOutputStream - publish: ficc.quote.events,{\"Code\":\"0000\",\"Msg\":\"成功\",\"kind\":\"HEARTBEAT\",...}` 持续发布。进程为本任务启动，验证结束后已停止（java 进程数 0）。"
+    },
+    {
+      "name": "STC CEDA 握手：TCP 可连、服务端不回包（本轮新增，未决）",
       "status": "fail",
-      "evidence": "发现链路成功：QuoteSvr 进程内日志实测 `Initiating client connection, connectString=10.130.21.53:2181` → `Socket connection established` → `Session establishment complete ... sessionid=0x19fdb1d8aa700ea, negotiated timeout=120000`（另一轮 sessionid=0x19fdb1d8aa700e9）。业务解析失败：同一进程随即输出 `BaseSvr reference refresh unavailable: SERVER.BaseSvr is unavailable`（抛出点 `StcBaseDataClient.java:63`，捕获自 STC NetClient 传输层）。已排除的非原因：① 端口不可达——本机到 10.130.21.53 的 2181/20040/20041 TCP 均实测 OPEN；② 注册节点缺失——独立 ZK 只读探针复核 /MDTService/BaseSvr=10.130.21.53:20041、/MDTService/ValidationServer=10.130.21.53:20040，32 个节点中二者均 ONLINE Stat:1；③ RegType 取值——1 与 2 均 unavailable；④ NetType 取值——gw 与 dps 均 unavailable。故判定为「发现成功、业务连接未建立」，不混淆为网络不通。"
+      "evidence": "日志实测：`CedaClient connecting to 10.130.21.53:20041, IClientConnection=2` → 约 5s 后 `CONNECTION: force closing` → `CONNECTION_CLOSED /MDTService/BaseSvr/BaseSvr` → `WARN: 110 LOW - ConnectionException: no reply`（com.adaptiveMQ2.client.ConnectionException at MessageProcessor.java:380），每 15s 重试一次；20040（ValidationServer）同样。客户端自报 `CEDA-api-4.0.1-SNAPSHOT Build: 20210330`。裸 TCP 探测（本机连 20040/20041 后等待 4s）同样收不到任何字节，说明服务端不主动发 banner 且未回应我们的握手。已排除：端口可达、注册节点存在（BaseSvr=20041、ValidationServer=20040 均 ONLINE）、RegType、NetType、客户端未注册（以独立名 CCZQProtoQuoteSvr 注册后现象不变）。"
     },
     {
-      "name": "STC 消费者配置 RegType 修正（本轮新增）",
+      "name": "共享注册中心未留残留（本轮新增）",
       "status": "pass",
-      "evidence": "`iteration1/config/stc-consumers.example.ini` 中 LoginSvr/BaseSvr 原为 `RegType=1`、`Host=127.0.0.1:1` 占位。与运行中 QA 的 ATSConfig.ini（此前只读取回，存于自动化工作区）核对：其 LoginSvr/BaseSvr/TBookSvr 等消费者条目均为 `RegType=2` + 真实 Host。已将示例改为 RegType=2 并在注释中记录实测现象与依据。该修正必要但不充分——改为 2 后解析仍 unavailable，见上一项。"
+      "evidence": "为验证「客户端需先注册」假设，曾以唯一名 CCZQProtoQuoteSvr 注册（未占用任何既有服务名/节点）。结论为否后已停止进程并删除自建节点：独立只读探针复测 `/MDTService` 由 33 个回落到 **32 个**，与操作前一致，无 CCZQ 节点残留。运行期配置已改回 `RegisterEnable=0`、`ServiceName=QuoteSvr`。"
+    },
+    {
+      "name": "本机 QuoteSvr 启动（GW 模式，上一轮）与 server.lic",
+      "status": "pass",
+      "evidence": "上一轮以 NetType=gw 起服同样 READY，无许可证错误 → server.lic 被 ATS 接受，历史阻塞解除。该模式下消费者无法访问 STC（见 NetType 一项），故本轮改为 ceda 模式继续验证。"
+    },
+    {
+      "name": "STC 消费者配置 RegType 修正",
+      "status": "pass",
+      "evidence": "`iteration1/config/stc-consumers.example.ini` 中 LoginSvr/BaseSvr 原为 RegType=1，与运行中 QA 的 ATSConfig.ini（RegType=2 + 真实 Host）不一致，已改为 2 并在注释记录依据。注：RegType 不是本轮根因，但示例与线上不一致会误导后续部署。"
     },
     {
       "name": "本机 PostgreSQL（原型库）",
       "status": "pass",
-      "evidence": "PostgreSQL 16.4 在 127.0.0.1:55432 监听并接受连接（进程自 19:33 起运行，runtime/postgres.log 显示 `database system is ready to accept connections`）；deployment-local `quotesvr.local.properties` / `notificationsvr.local.properties` 指向该库（凭据未入库）。此前已在 QA 库专用 schema ficc_demo 建表 14 张，未触碰 public。"
+      "evidence": "PostgreSQL 16.4 在 127.0.0.1:55432 监听（runtime/postgres.log 显示 database system is ready to accept connections）；deployment-local 的 quotesvr/notificationsvr local.properties 指向该库，凭据未入库。"
     },
     {
-      "name": "Maven 全模块构建与单元测试（对 testedCommit 339e423）",
+      "name": "Maven 全模块构建与单元测试（对 testedCommit af989fc）",
       "status": "pass",
-      "evidence": "`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS；Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、CrmPluginTest 1、FilterEngineTest 3）。另用 `scripts/build-server.ps1 -Module all` 以 JDK17 重新编译打包 common/quotesvr/notificationsvr 三个 jar，作为本次真实启动的运行产物。reactor 根 POM 在 `iteration1/`，仓库根无 POM。"
+      "evidence": "`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS；Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、CrmPluginTest 1、FilterEngineTest 3）。另用 `scripts/build-server.ps1 -Module all` 重新打包三个 jar 作为运行产物；`scripts/ceda-jdk17-shim/build-shim.ps1` 实测可生成 shim classes。"
     },
     {
       "name": "GW 源码编译",
       "status": "pass",
-      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT）已导入本仓库并以 JDK8 编译 install 成功；gw 构件仅在本机 Maven 仓库，未 deploy 到 Nexus。"
+      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT）已导入并以 JDK8 编译 install 成功；构件仅在本机 Maven 仓库，未 deploy 到 Nexus。"
     },
     {
       "name": "LoginSvr 服务命名（线上核实）",
       "status": "pass",
-      "evidence": "QA ZooKeeper 无 /MDTService/LoginSvr 节点；LoginSvr 以 ValidationServer 注册（10.130.21.53:20040），与 stc-lite 全部服务的 `SERVER.LoginSvr.ServiceName=ValidationServer` 一致，线上 ATSConfig.ini 亦如此。"
-    },
-    {
-      "name": "QA 主机只读观测通道（替代 SSH）",
-      "status": "pass",
-      "evidence": "executor agent（HTTP 控制面 http://10.130.21.53:8899，仅 4 个只读操作、无 shell）+ STC 各 JVM 免鉴权 JMX（60002–60022，15 个服务已映射）。本轮未使用该通道（token 仅由发起方在会话中提供、按约定不落盘，自动运行时不可用），故未重复其结论。"
+      "evidence": "QA ZooKeeper 无 /MDTService/LoginSvr 节点；LoginSvr 以 ValidationServer 注册（10.130.21.53:20040），与 stc-lite 全部服务的 SERVER.LoginSvr.ServiceName=ValidationServer 一致。"
     },
     {
       "name": "验收项 3：一只债券的评级及估值字段映射",
       "status": "not_run",
-      "evidence": "本轮未重新连接数据库（凭据仅由发起方在会话中提供、未落盘）。此前对 10.130.21.51:11004/stc 的只读实测仍然有效：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation；目标债 250001 为 PPN，评级 AAA 可得、估值在库内 0 行不可得，端到端估值验证建议改用有中债覆盖的债券。运行时链路尚未打通（BaseSvr 解析失败），故本项本轮为 not_run，未以库内查询冒充实盘端到端结果。"
+      "evidence": "本轮未连接数据库（凭据未落盘）。此前对 10.130.21.51:11004/stc 的只读实测仍有效：bond.rating_current ↔ security.bondRating ↔ BondOrderDTO.bondRating；china_bond_valuation.valuation_net_price ↔ valuation.cleanPrice ↔ BondOrderDTO.chinaBondNetValuation；目标债 250001 为 PPN，评级 AAA 可得、估值在库内 0 行不可得，端到端估值验证建议改用有中债覆盖的债券。运行时链路（BaseSvr）尚未打通，故标 not_run。"
     },
     {
       "name": "真实登录与端到端查询",
       "status": "not_run",
-      "evidence": "无 STC 测试账号（不猜测凭据），且基础资料适配器当前无法连上 BaseSvr；服务未对外提供已认证会话，未取得 SID。"
+      "evidence": "无 STC 测试账号（不猜测凭据），且 CEDA 握手尚无服务端响应；未取得 SID。"
     },
     {
       "name": "服务端日志对照（验收项 4）",
       "status": "not_run",
-      "evidence": "本轮未取得 STC 服务端日志。原因仍是权限而非通道：agent 以非特权用户 executor 运行，/data/stc/* 对其 EACCES（agent 会误报为「文件不存在」）。不以「读不到日志」当作服务端未收到请求的证据；本轮也未产生需服务端对照的业务请求（请求在客户端解析阶段即失败）。"
+      "evidence": "未取得 STC 服务端日志：agent 以非特权用户 executor 运行，/data/stc/* 对其 EACCES（agent 会误报为「文件不存在」）。不以「读不到日志」当作服务端未收到请求的证据；本轮服务端侧确实未回包，但需要其日志才能判定原因。"
     },
     {
       "name": "NotificationSvr / GW 启动",
       "status": "not_run",
-      "evidence": "本轮只启动 QuoteSvr 做有界验证。NotificationSvr 需要专用 STC 账号（identity.serviceUsername 为空），GW 需要 QuoteSvr 业务链路先可用；两者均不具备条件，按约束不启动。"
+      "evidence": "本轮只启动 QuoteSvr 做有界验证。NotificationSvr 需要专用 STC 账号；GW 需要在 QuoteSvr 传输模式（ceda vs gw）这一设计问题定论后再启动，避免改变对外客户端链路。"
     }
   ],
   "blockers": [
     {
-      "issue": "STC 消费者（BaseSvr/LoginSvr）在 ATS 客户端侧始终解析为 unavailable，尽管 ZooKeeper 会话正常、注册节点存在且端口可达。已排除 RegType（1/2）与 NetType（gw/dps）两项配置。",
-      "need": "需要 STC/ATS 侧提供客户端可用性判定逻辑的输入，任选其一：(a) NetClientWrapper 可用性判定的源码或说明（当前仓库内 sc-app-stc 源码无该字符串，判断在 ats-foundation/ceda 组件内）；(b) 一份能与 QA 正常通信的、面向外部 Windows 客户端的最小可用 ATSConfig.ini + resource.xml + resourceCfg.ini 样例（本机 resourceCfg.ini 无 [CedaServerResouce] 段，QA 侧配置含 `ceda.server.userMonitor=false`，疑为差异点之一）。"
+      "issue": "CEDA 客户端向 QA 的 LoginSvr(20040)/BaseSvr(20041) 发起握手后始终 no reply（TCP 可连、服务端不回包）。已排除端口、注册节点、RegType、NetType、客户端注册状态。",
+      "need": "需要服务端侧信息，按优先级：(a) 确认 QA 的 CEDA 端口是否允许 Windows 开发机（本机 10.100.151.202）直连，或仅限同主机/白名单地址；(b) 提供 LoginSvr/BaseSvr 的连接日志（需给 executor 开 `setfacl -R -m u:executor:rX /data/stc/LoginSvr/log` 等只读 ACL），或由有权限者直接查看握手为何被忽略；(c) 告知 QA 侧 CEDA 版本，与客户端 `CEDA-api-4.0.1-SNAPSHOT Build: 20210330` 比对是否存在协议版本差异。"
+    },
+    {
+      "issue": "传输模式存在设计冲突：NetType=ceda 才能访问 STC 服务，但 NetType 同时决定服务端的监听实现（CedaServerResource vs GwServerResource），原型原有的 GW/客户端链路在 ceda 模式下是否仍可用尚未验证。",
+      "need": "请发起方确认期望架构：① 统一用 ceda（需回归 GW 与 C# 客户端链路）；② 服务端保持 gw、由适配层单独持有 CEDA 客户端（需要 STC 侧说明如何在同一进程内同时装配两种客户端，或提供相应示例）。"
     },
     {
       "issue": "真实登录需要 STC 测试账号（用户名/密码或既有 QA 会话），任务约束禁止猜测凭据。",
       "need": "由发起方提供测试账号（建议经环境变量或本机 gitignored 配置交付，不写入 git）；或明确授权我在 10.130.21.51:11004/stc 中只读查找一个既有测试账号。"
     },
     {
-      "issue": "STC 服务端日志对 agent 账号 executor 不可读（EACCES，非缺失）。",
-      "need": "由有权限者在目标机执行 `setfacl -R -m u:executor:rX /data/stc/LoginSvr/log`（推荐），或启用一个路径白名单的只读 tail 操作。"
+      "issue": "sumscope.stcl:gw 仅存在于本机 Maven 仓库（install 未 deploy）；Netty 3（io.netty:netty:3.7.0.Final）目前只在运行时 classpath 手工追加，未纳入构建。",
+      "need": "由有权限者将 gw deploy 到内网 Nexus；并确认 Netty 3 是否可加入内网依赖（若 Nexus 无此构件，则维持文档化的手工 classpath 方式）。"
     },
     {
-      "issue": "sumscope.stcl:gw 仅存在于本机 Maven 仓库（install 未 deploy）。",
-      "need": "由有权限者 deploy 到内网 Nexus，或在部署机重复 mvn8 install。"
+      "issue": "登录与基础资料链路打通前，端到端估值验证的标的建议调整。",
+      "need": "若仍以 250001 为验收标的，请知晓其为 PPN（评级 AAA 可得、中债估值不可得）；建议指定一只非 PPN、有中债覆盖的债券（如 269152）用于端到端估值校验。"
     }
   ],
-  "nextAction": "建议发起方优先解决第 1 项阻塞：提供一份 QA 侧可正常访问 BaseSvr/LoginSvr 的最小完整配置（ATSConfig.ini + resource.xml + resourceCfg.ini），或指出 ATS 客户端可用性判定依赖哪个组件/配置项（当前怀疑与 CedaServerResouce / ceda.server.userMonitor 等服务装配段有关，本机 resourceCfg.ini 缺少该段）。该项解决后，配合 STC 测试账号即可完成真实登录与单只债券端到端查询（建议标的改用有中债覆盖的债券，250001 为 PPN 无估值）。本轮已回传的真实成果：QuoteSvr 首次真实起服、server.lic 阻塞解除、注册中心连通性与业务解析失败已明确区分、RegType 配置缺陷修正并入库。"
+  "nextAction": "本轮已把「连不上 STC」定位到可操作层面：NetType 必须为 ceda，且 JDK 17 下需要 sun.misc shim + Netty 3（均已入库修复，构建通过）。下一步取决于发起方两条输入：(1) 服务端为何不回 CEDA 握手（是否允许开发机直连 QA CEDA 端口 + LoginSvr/BaseSvr 日志）；(2) 传输模式架构定论（统一 ceda 并回归 GW 客户端，还是服务端保持 gw、适配层单独挂 CEDA 客户端）。两者明确后，再配合 STC 测试账号即可完成真实登录与单只债券端到端查询。本轮无未清理的临时资源：java 进程已全部停止，共享注册中心已恢复为 32 个节点（自建临时节点已删除），本机 PostgreSQL 为既有环境未做改动。"
 }
