@@ -110,6 +110,12 @@ public final class StcBaseDataClient implements BaseDataClient {
         }
     }
 
+    /** STC BaseSvr replies carry the rows under "Datas"; tolerate the lowercase spelling too. */
+    private static JSONArray rows(JSONObject reply) {
+        JSONArray rows = reply.getJSONArray("Datas");
+        return rows != null ? rows : reply.getJSONArray("datas");
+    }
+
     private static void success(JSONObject reply) {
         if (!"0000".equals(reply.getString("Code"))) {
             throw unavailable();
@@ -118,7 +124,7 @@ public final class StcBaseDataClient implements BaseDataClient {
 
     private static JSONObject first(JSONObject reply, boolean required) {
         success(reply);
-        JSONArray rows = reply.getJSONArray("datas");
+        JSONArray rows = rows(reply);
         if (rows == null) {
             throw unavailable();
         }

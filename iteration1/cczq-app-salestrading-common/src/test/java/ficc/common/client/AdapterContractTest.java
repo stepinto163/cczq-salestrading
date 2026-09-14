@@ -214,7 +214,7 @@ final class AdapterContractTest {
                             "Issuer_Code", "ISS-1", "Rating_Current", rating, "Issuer_Rating_Current", "AAA", "Option_Type", "NON")
                     : JsonUtils.object("Id", "VAL-1", "valuation_date", "20260914", "valuation_yield", "2.4500",
                             "remaining_year", "2.5", "bondTypeFlag", "2");
-            return JsonUtils.object("Code", "0000", "datas", JsonUtils.array(data));
+            return JsonUtils.object("Code", "0000", "Datas", JsonUtils.array(data));
         }
         @Override
         public boolean online() {
