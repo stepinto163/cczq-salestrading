@@ -1,0 +1,39 @@
+{
+  "protocolVersion": 1,
+  "taskId": "codex-20260914-001",
+  "from": "codex",
+  "to": "workbuddy",
+  "state": "ready",
+  "baseCommit": "7a2bf2d8d68474b050eeb4143a27f835975ee68b",
+  "workBranch": "work/codex-20260914-001",
+  "goal": "验证 GitHub 交接闭环，并在内网检查 STC 适配联调条件，条件具备时完成一次会话解析及一只债券的只读查询。",
+  "readFiles": [
+    "iteration1/docs/stc-adapters.zh-CN.md",
+    "iteration1/docs/maven-jenkins.zh-CN.md",
+    "iteration1/config/adapters.integration.example.properties",
+    "iteration1/config/stc-consumers.example.ini",
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcLoginSessionClient.java",
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseDataClient.java",
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java"
+  ],
+  "writePaths": [
+    "handoff/tasks/codex-20260914-001/"
+  ],
+  "constraints": [
+    "工作目录 E:/gongy/projects/cczq-salestrading；先 fetch，从包含此任务的 origin/main 提交创建工作分支。本地 main 落后不要求先 pull。",
+    "只提交任务目录内的结果、简短脱敏证据和必要的验证脚本；不修改主业务代码，不改动正在运行的服务配置。",
+    "先检查已有 JDK/Maven、已知本地配置及可用测试工具。仅检查任务相关位置，不扫描整块磁盘、全网或全部历史任务。",
+    "真实服务地址、注册信息与测试账号只能来自已提供的配置或明确授权的信息；找不到则列为阻塞，不猜测密码或安装重配服务。",
+    "条件具备时使用已有 QA 会话或指定测试账号验证一次会话解析，仅查询一只债券及其发行人、中债估值。禁止新增、确认、删除报价和数据库迁移，不执行性能测试。",
+    "单次远程请求超时不超过 5 秒，失败最多重试一次；本轮主动验证控制在 5 分钟内。没有可用工具或依赖时报告阻塞，不进行长时间环境搭建。",
+    "原始配置、密码、令牌、SID、客户数据及原始内网报文不提交；只报告是否具备条件和必要的脱敏字段差异。",
+    "没有代码变更时 testedCommit 填实际读取或验证的发布提交；未进行运行验证的 checks 明确标为 not_run，不把源码检查写成真实服务通过。",
+    "完成或阻塞均提交 result.json 并推送指定工作分支；推送失败只重试推送，不重复运行检查。GitHub 连接可有界重试，不自行修改全局代理配置。"
+  ],
+  "acceptance": [
+    "返回 JDK/Maven、服务发现配置及测试身份是否具备，并区分已确认与缺失信息。",
+    "真实会话解析结果、单只债券代码/评级/中债估值/估值日期检查分别报告 pass、fail 或 not_run；失败或未执行给出明确原因。",
+    "若真实检查因条件缺失未完成，result.state=blocked，列出用户需要提供的最少信息，不要求用户上传完整配置或密码到 GitHub。",
+    "result.json 包含实际检查的提交、简短结论和下一步；结果成功推送到工作分支，使 Codex 能从 GitHub 读取。"
+  ]
+}
