@@ -3,10 +3,10 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "7578a66ae6c979ed063cd60406d38730a759aa2d",
+  "testedCommit": "4ab1c4370ef262305c82c579536f5e2056ccc789",
   "baseCommit": "d7f58e99233c5b5440e755cad8ab446a2b9b8def",
   "workBranch": "work/codex-20260914-002",
-  "summary": "本轮用**信用债**补上了上一轮遗留的评级疑问，结论与上轮推断相反但更准确：真实 BaseSvr 应答里**债项评级字段 Rating_Current 确实存在**（并非只有 _NPY 写法），此前「只见到 Issuer_Rating_Current_NPY、没有 Rating_Current」是**样本偏差**——前几轮查的全是利率债（国债/国开债），而利率债本身不带评级字段。本轮从 STC QA 库只读筛出信用债后重查，实测四只债：1382043.IB（13粤交通MTN1，中票）债项 AAA / 主体 AAA；133179.SZ（22凤新01，PPN）债项 **AA+ / 主体 AA**；197522.SH（21苏高F2，PPN）债项 **AAA / 主体 AA**；250006.IB（25附息国债06，利率债）评级字段全空。后两只债项与主体评级**不同**，证明两个字段不能互相替代，也证明 b1a499c 的「债项优先 + bondRatingSource 标注口径」设计是必要且正确的。为把结论落到代码而不是留在日志里，把真实报文喂给**发布版 StcBaseMapper** 跑了一遍（非 mock）：133179.SZ → bondRating=AA+ / bondRatingSource=ISSUE / issuerRating=AA；250006.IB → 三者均 null；1382043.IB → 估值 valuationYield=1.5562、valuationDate=2026-07-24、remainingYears=1.5205。据此修正了 StcBaseMapper 中一条会给后人误导的注释（原注释称「应答只带 _NPY 后缀」，与信用债实测不符），提交 7578a66；mvn clean verify BUILD SUCCESS、Tests 13/13。对 7578a66 重新打包并真实起服复验：READY、20040/20041 双 CONNECTION_LOGIN_SUCCESS、4 只债全部往返成功，仅启动瞬间 1 次连接竞态告警。仍 blocked 的原因不变：无 STC 测试账号，做不了真实登录；SSH/日志通道不可用，做不了服务端日志对照。",
+  "summary": "本轮（02:45-03:05）把上一轮记录为「旧版 GW 二进制缺失 → gateway 模块无法构建」的缺口**实际关闭**：确认旧版 GW 源码即仓库根目录 `gw/`（sumscope.stcl:gw:0.1.1-SNAPSHOT，入口类为默认包 `GW`），该构件已 install 到本机 Maven 仓库 F:/dev/maven-repo2，且已被 `runtime/foundation-classpath.txt` 收录；于是在 `iteration1` 上执行 `mvn -P with-gateway -DskipTests package` → **Reactor 6/6 BUILD SUCCESS**，`iteration1/gateway` 4 个类全部编译通过，产出 `target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar`（9274 B）。这是该模块自移入 with-gateway profile 以来**首次构建成功**。同时把「GW 起服」这一步拆成三项可核对的前置条件写进文档 `docs/stc-dps-integration.zh-CN.md` 第 5 节（提交 4ab1c43）：① `runtime/foundation-build/lib/gw-local.jar` 不存在，但 foundation-classpath.ps1 会回退到 Maven classpath；② 本地 ZooKeeper 127.0.0.1:12181 **未安装**（runtime/tools 下只有一个未下载完的 apache-zookeeper-3.8.6-bin.tar.gz.part）；③ gateway/control/server.lic 由脚本从 quotesvr 复制。并指出一个拓扑问题：`gateway/control/ATSConfig.ini` 的 REGISTER.Local 指向本机 ZK、把 QuoteSvr/NotificationSvr/LoginSvr 都注册到 127.0.0.1:1，描述的是「GW 作本机前置网关、其余服务同机」的形态，与当前这条「本机 QuoteSvr 直连 STC QA 10.130.21.53:2181」的验证链路**不是同一拓扑**，因此本轮没有贸然起服。对提交 4ab1c43 独立复跑 `mvn clean verify`：BUILD SUCCESS，Reactor 5/5，Tests 13/13。仍 blocked，原因不变：无 STC 测试账号（真实登录做不了）、服务端日志通道不可用。",
   "changedFiles": [
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseDataClient.java",
@@ -47,7 +47,7 @@
     {
       "name": "Maven 构建与单元测试",
       "result": "pass",
-      "evidence": "对提交 7578a66 执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify`：BUILD SUCCESS，Reactor 5/5，26.6s；Tests run: 13, Failures: 0, Errors: 0, Skipped: 0。"
+      "evidence": "对提交 4ab1c43 执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify`：BUILD SUCCESS，Reactor 5/5；Tests run: 13, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 9 + CrmPluginTest 1 + FilterEngineTest 3）。"
     },
     {
       "name": "真实 STC 登录（LoginSvr / ValidationServer）",
@@ -62,7 +62,7 @@
     {
       "name": "NotificationSvr / GW 启动验证",
       "result": "not_run",
-      "evidence": "本轮按约束先只验证 QuoteSvr；NotificationSvr 需专用 STC 账号，GW 待 QuoteSvr 链路完成后再起。"
+      "evidence": "NotificationSvr 需专用 STC 账号，仍缺。GW 本轮先做了构建层验证（见下一条 check），**未起服**，原因是三项前置条件未满足且拓扑待定：① 本地 ZooKeeper 127.0.0.1:12181 未安装（runtime/tools 下只有 apache-zookeeper-3.8.6-bin.tar.gz.part，需先跑 setup-zookeeper.ps1）；② runtime/foundation-build/lib/gw-local.jar 不存在（已确认可由 Maven classpath 中的 gw-0.1.1-SNAPSHOT.jar 替代）；③ gateway/control/ATSConfig.ini 的 REGISTER.Local 把 QuoteSvr/NotificationSvr/LoginSvr 都注册到本机 127.0.0.1:1，属「GW 前置 + 同机部署」拓扑，与当前 QuoteSvr 直连 STC QA 的链路不同，需发起方先明确 GW 在本任务中的角色。"
     },
     {
       "name": "QA 服务端实现为 GW/DPS（JMX 线程栈独立佐证）",
@@ -85,6 +85,11 @@
       "evidence": "把本次运行解码出的真实应答直接喂给 target 中发布版 StcBaseMapper.security()（MapProbe，未改业务代码）：133179.SZ → bondRating=AA+、bondRatingSource=ISSUE、issuerRating=AA、hasExerciseOption=true(optionType=PUT)；1382043.IB → bondRating=AAA、valuationYield=1.5562、valuationDate=2026-07-24、remainingYears=1.5205；250006.IB → 评级三字段均 null、valuationYield=1.0850。证明 b1a499c 的修复对真实数据生效。"
     },
     {
+      "name": "gateway 模块首次构建成功（本轮新增，关闭旧阻塞）",
+      "result": "pass",
+      "evidence": "旧版 GW 源码即仓库根 `gw/`（sumscope.stcl:gw:0.1.1-SNAPSHOT，默认包入口类 `GW`，Java 8 字节码），已 install 到 F:/dev/maven-repo2 且被 runtime/foundation-classpath.txt 收录。执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml -P with-gateway -DskipTests package` → Reactor 6/6，`Building cczq-app-salestrading-gw 0.1.0-SNAPSHOT [6/6]`，BUILD SUCCESS；产物 target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar，9274 B，MANIFEST Main-Class=GW，Class-Path 含 lib/gw-0.1.1-SNAPSHOT.jar。此前该模块因缺 com.gateway.connector.tcp.TcpConnector 等类一直无法编译，此为其首次通过。"
+    },
+    {
       "name": "提交 7578a66 的运行期复验（重打 jar 后再起服）",
       "result": "pass",
       "evidence": "build-server.ps1 于 01:39 重新打包（jar 时间戳晚于提交 7578a66）后启动：QuoteSvr READY ×1、CONNECTION_LOGIN_SUCCESS ×2、4 只债（250006.IB / 1382043.IB / 133179.SZ / 197522.SH）querySecurity 全部往返成功；异常仅 1 条启动竞态 `SERVER.BaseSvr is unavailable`。验证后已停进程，java=0。"
@@ -92,7 +97,7 @@
   ],
   "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；未使用固定地址兜底，未修改共享注册中心（RegisterEnable=0，本机不注册 provider）。",
   "realVsSimulated": "真实：QuoteSvr 进程、ZooKeeper 发现、到 10.130.21.53:20040/20041 的连接与登录握手、querySecurity/queryChianSecurity/p_issuer_info 业务往返、对 STC QA 库的只读查询、本地 PostgreSQL 16.4。模拟：仅单元测试中的 FakeBase 桩。评级映射除单测外，另用真实报文直接驱动发布版 mapper 验证，非 mock。",
-  "cleanup": "本轮启动的 java 进程已全部停止（进程数 0，仅停止本轮 01:33/01:39 启动的那一个）；未注册任何共享 ZK 节点；未改动远端 STC、共享注册中心与 QA 数据库（对库仅执行 SELECT）；部署期配置改动只落在被 .gitignore 忽略的 iteration1/runtime/ 本地副本，未入库。",
+  "cleanup": "本轮**未启动任何常驻服务**，只跑了两次一次性 Maven 构建（clean verify、-P with-gateway package），构建结束进程即退出，无 java 常驻；未注册任何共享 ZK 节点；未改动远端 STC、共享注册中心与 QA 数据库；部署期配置只在被 .gitignore 忽略的 iteration1/runtime/ 本地副本中，未入库。",
   "blockers": [
     {
       "blocker": "缺少 STC 测试账号凭据",
@@ -108,8 +113,13 @@
       "blocker": "评级业务口径待发起方确认（技术问题已解决）",
       "detail": "技术上已确认：债项 Rating_Current 与主体 Issuer_Rating_Current 均存在且常不相等，代码当前取债项优先并回退主体，用 bondRatingSource 标注 ISSUE/ISSUER。需业务确认报价单展示的是债项评级还是主体评级；若要求主体评级，改一行取值顺序即可。",
       "needed": "确认 BondOrderDTO.bondRating 的业务口径（债项优先 / 主体优先）"
+    },
+    {
+      "blocker": "GW 起服前置条件不足 + 拓扑角色待定",
+      "detail": "构建层已通（见 checks），但起服仍缺：本地 ZooKeeper 127.0.0.1:12181 未安装；且 gateway/control/ATSConfig.ini 描述的是「GW 作本机前置网关、QuoteSvr/NotificationSvr/LoginSvr 同机注册」的拓扑，与当前 QuoteSvr 直连 STC QA 的验证链路不同。未明确角色就起服只会得到与验收项无关的本地空跑。",
+      "needed": "明确 GW 在本任务中扮演的角色（本机前置网关 / 直连 STC 的客户端入口），以及是否允许在本机安装并运行本地 ZooKeeper 3.8.6"
     }
   ],
-  "nextAction": "评级相关的技术阻塞已清除（真实数据 + 发布版 mapper 双重验证，见 checks）。剩余唯一硬阻塞是 STC 测试账号：拿到账号后在同一进程内做一次真实登录 + 带会话的债券查询即可收口为 completed。另请确认评级业务口径（债项优先 or 主体优先），并按需提供 STC QA 日志只读通道。复验用券建议保留 133179.SZ（债项 AA+ / 主体 AA，能同时验证两个口径）。",
-  "notes": "本轮（01:25-01:45）范围：仅补证 + 修正一条误导性代码注释，未改动业务逻辑。\n补记：本轮发现并纠正了上一轮的一条结论——「真实应答只有 _NPY 评级字段」不成立，真实原因是前几轮样本全是利率债；已用三只信用债证伪，并把结论写回代码注释（7578a66）。\n复现方法：先从 STC QA 库只读筛 `bond where rating_current is not null and bond_type='COR'` 取券码，再写入被忽略的 iteration1/runtime/adapters.local.properties 的 base.securityIds，重打 jar 后起服即可复现本轮结果。"
+  "nextAction": "构建层的历史缺口已全部关闭（STC 依赖走内网 Nexus、GW 源码有源可循、gateway 模块可编译）。剩余唯一硬阻塞仍是 STC 测试账号：拿到账号后在同一进程内做一次真实登录 + 带会话的债券查询即可收口为 completed。另请确认三件事：① 评级业务口径（债项优先 or 主体优先）；② STC QA 日志只读通道；③ GW 在本任务中的角色（决定要不要在本机装本地 ZooKeeper 3.8.6 并起 GW）。复验用券建议保留 133179.SZ（债项 AA+ / 主体 AA，能同时验证两个口径）。",
+  "notes": "本轮（02:45-03:05）范围：只做构建层验证与文档沉淀，未改动业务逻辑，未启动任何常驻服务。\n补记：本轮关闭了 9/14 记录的「旧版 GW 二进制缺失」缺口——二进制其实有源可循（仓库根 gw/），且早已 install 到本机仓库，只是一直没人用 -P with-gateway 复核过；gateway 模块由此首次编译通过。\n环境要点：Maven 本地仓库在 F:/dev/maven-repo2（由 settings_yanxin.xml 的 localRepository 指定），不是默认的 ~/.m2；本仓库把 maven.build.directory 改为 ${project.basedir}/target-maven，找构建产物不要去 target/。\n复现方法：`& \"E:\\Program Files\\apache-maven-3.9.16\\bin\\mvn.cmd\" -s \"E:\\Program Files\\apache-maven-3.9.16\\conf\\settings_yanxin.xml\" -f E:\\gongy\\projects\\cczq-salestrading\\iteration1\\pom.xml -P with-gateway -DskipTests package`。"
 }
