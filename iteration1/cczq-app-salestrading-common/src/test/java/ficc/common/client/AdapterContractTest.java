@@ -151,6 +151,33 @@ final class AdapterContractTest {
         assertEquals("AA+", fallback.getString("issuerRating"));
     }
 
+    @Test
+    void securityReadsRatingFromRealBaseSvrFieldNames() {
+        Properties configuration = new Properties();
+        configuration.setProperty("base.market.250210.IB", "RATE");
+        StcBaseMapper mapper = new StcBaseMapper(configuration);
+        // 真实 BaseSvr 应答的评级字段带 _NPY 后缀：只认不带后缀的写法会导致评级恒为 null。
+        JSONObject bond = JsonUtils.object("Bond_ID", "250210.IB", "Listed_Market", "CIB", "Option_Type", "NON",
+                "Issuer_Rating_Current_NPY", "AAA", "Rating_Augment", "NON");
+        JSONObject mapped = mapper.security("250210.IB", bond, JsonUtils.object(), null, "v1");
+        assertEquals("AAA", mapped.getString("bondRating"));
+        assertEquals("ISSUER", mapped.getString("bondRatingSource"));
+        assertEquals("AAA", mapped.getString("issuerRating"));
+    }
+
+    @Test
+    void securityLeavesRatingNullWhenBondHasNoRating() {
+        Properties configuration = new Properties();
+        configuration.setProperty("base.market.250006.IB", "RATE");
+        StcBaseMapper mapper = new StcBaseMapper(configuration);
+        // 国债无评级：真实应答只有 Rating_Augment=NON，评级三字段应为空而不是抛错。
+        JSONObject bond = JsonUtils.object("Bond_ID", "250006.IB", "Listed_Market", "CIB", "Option_Type", "NON",
+                "Rating_Augment", "NON");
+        JSONObject mapped = mapper.security("250006.IB", bond, JsonUtils.object(), null, "v1");
+        assertNull(mapped.getString("bondRating"));
+        assertNull(mapped.getString("bondRatingSource"));
+    }
+
     static final class FakeNetwork extends NetClientWrapper {
         final OnlineStatus online = new OnlineStatus();
         final List<IMessage<String>> listeners = new ArrayList<>();

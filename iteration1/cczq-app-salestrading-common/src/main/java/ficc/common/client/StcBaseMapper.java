@@ -41,8 +41,10 @@ public final class StcBaseMapper {
         String issuerType = configuration.getProperty("base.issuerType." + text(issuer, "issuer_type"));
         // 债项评级优先；非公开（PPN）/私募债的 Rating_Current 常为 NULL，此时回退到发行人评级，
         // 并用 bondRatingSource 显式标注口径来源，避免消费方把主体评级误当成债项评级。
-        String issueRating = text(bond, "Rating_Current");
-        String issuerRating = text(bond, "Issuer_Rating_Current");
+        // 真实 BaseSvr 应答的评级字段带 _NPY 后缀（实测 250210.IB 为
+        // Issuer_Rating_Current_NPY=AAA），两种写法都要认，否则评级恒为 null。
+        String issueRating = firstText(bond, "Rating_Current", "Rating_Current_NPY");
+        String issuerRating = firstText(bond, "Issuer_Rating_Current", "Issuer_Rating_Current_NPY");
         JSONObject result = JsonUtils.object(
                 "securityId", securityId, "securityName", text(bond, "Short_Name"), "market", market,
                 "issuerId", text(bond, "Issuer_Code"), "issuerType", issuerType,
@@ -128,6 +130,17 @@ public final class StcBaseMapper {
             if (name.equalsIgnoreCase(key)) {
                 String value = object.getString(key);
                 return value == null || value.isBlank() ? null : value;
+            }
+        }
+        return null;
+    }
+
+    /** 依次尝试多个字段名，返回第一个非空值：兼容 STC 应答中带/不带 _NPY 后缀的评级字段。 */
+    private static String firstText(JSONObject object, String... names) {
+        for (String name : names) {
+            String value = text(object, name);
+            if (value != null) {
+                return value;
             }
         }
         return null;
