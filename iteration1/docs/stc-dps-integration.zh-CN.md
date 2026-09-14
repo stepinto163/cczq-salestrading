@@ -107,7 +107,7 @@ install 之后上面的 `-P with-gateway` 构建即可通过，产物为
 | 前置条件 | 当前状态 |
 |---|---|
 | `runtime/foundation-build/lib/gw-local.jar` | 不存在；`scripts/foundation-classpath.ps1` 会回退到 `runtime/foundation-classpath.txt`（其中已含 `gw-0.1.1-SNAPSHOT.jar`） |
-| 本地 ZooKeeper `127.0.0.1:12181` | 未安装（`runtime/tools` 下只有未下载完的 `apache-zookeeper-3.8.6-bin.tar.gz.part`），需先跑 `scripts/setup-zookeeper.ps1` |
+| 本地 ZooKeeper `127.0.0.1:12181` | **已解决**：见第 6.1 节，`scripts/setup-zookeeper.ps1` 已修复下载源并可正常安装 |
 | `gateway/control/server.lic` | 脚本会从 `cczq-app-salestrading-quotesvr/control/server.lic` 复制 |
 
 另外 `gateway/control/ATSConfig.ini` 里的 `REGISTER.Local` 指向本机 ZooKeeper，
@@ -115,3 +115,60 @@ install 之后上面的 `-P with-gateway` 构建即可通过，产物为
 也就是说该配置描述的是「GW 作为本机前置网关、其余服务同机部署」的形态，
 与当前这条「本机 QuoteSvr 直连 STC QA（10.130.21.53:2181）」的验证链路不是同一拓扑，
 起服前需要先明确 GW 在本任务中扮演的角色。
+
+## 6. 本机 GW 起服实测与「自注册 vs 消费 STC」冲突（2026-09-15）
+
+### 6.1 本地 ZooKeeper 已可安装
+
+`scripts/setup-zookeeper.ps1` 原来只从 `downloads.apache.org` 下载，而该站只保留当前版本，
+3.8.6 已移到归档站，脚本因此必然 404。现已改为**依次探测** `archive.apache.org` →
+`downloads.apache.org`，取第一个可用的镜像，校验 SHA-512 后解压到
+`runtime/tools/apache-zookeeper-3.8.6-bin`。之后 `scripts/start-zookeeper.ps1`
+可正常拉起 `127.0.0.1:12181`（`ruok` 返回 `imok`）。
+
+> 排障提示：若 `Start-Process` 报「已添加项。字典中的关键字:"Path"所添加的关键字:"PATH"」，
+> 说明当前进程环境里同时存在 `Path` 与 `PATH`（例如从 Git Bash 启动会话时会带入），
+> 此时 PowerShell 枚举 `Env:` 即失败。在会话开头执行一次
+> `Remove-Item Env:\PATH -ErrorAction SilentlyContinue` 即可恢复。
+
+### 6.2 GW 二进制可起服，并与 QuoteSvr 建立真实 DPS 会话
+
+在 QuoteSvr 已连上 STC QA 的前提下执行 `scripts/start-gateway.ps1`：
+
+- `127.0.0.1:18600` 进入 LISTENING；
+- 日志出现 `* LoginSvr onConnected,subscribe:[SYS.ATS.LOGIN]` 与
+  `* QuoteSvr onConnected,subscribe:[ficc.price.report.**, ficc.quote.report.**]`；
+- `netstat` 显示 GW → `10.100.151.202:18680` 的 ESTABLISHED 连接，
+  QuoteSvr 侧持续出现 `cmd=2` 心跳双向收发。
+
+即 **GW ↔ QuoteSvr 这一段是真实跑通的**；目前只差最后一环：能连 `18600` 的 Windows
+客户端（`iteration1/client` 目标框架为 `net472`，本机尚未构建）。
+
+### 6.3 同一进程内「自注册」与「消费 STC」互斥（重要）
+
+要让 GW 从本地注册中心发现 QuoteSvr，需要 QuoteSvr 作为 provider 注册。实测三种配置变体，
+**只要打开 `SERVER.QuoteSvr.RegisterEnable=1`，消费侧就立刻失效**：
+
+| 变体 | `REGISTER.ServerList` | `SERVER.QuoteSvr` | 结果 |
+|---|---|---|---|
+| 基线（可用） | `REGISTER.Svr1` | `RegType=2 / RegisterEnable=0` | `CONNECTION_LOGIN_SUCCESS` ×2（20040、20041） |
+| A | `REGISTER.Svr1,REGISTER.Local` | `RegType=1 / RegisterEnable=1` | BaseSvr 解析为 null |
+| B | `REGISTER.Local` | `RegType=1 / RegisterEnable=1` | BaseSvr 解析为 null |
+| C | `REGISTER.Local,REGISTER.Svr1` | `RegType=1 / RegisterEnable=1` | BaseSvr 解析为 null |
+
+三种变体下 QuoteSvr 都能启动、都能往本地 ZK 写入
+`/MDTService/QuoteSvr/QuoteSvr = Host:<本机IP>,Port:18680,Stat:1`，
+但 `SERVER.BaseSvr` / `SERVER.ValidationServer` 的 `ZkCluster` 拿不到节点，
+刷新时报 `BaseSvr reference refresh unavailable: SERVER.BaseSvr is unavailable`；
+改回基线后 2 条 `CONNECTION_LOGIN_SUCCESS` 立即恢复 —— 因果明确，不是 STC 侧波动
+（同期用只读 ZK 探针直连 `10.130.21.53:2181`，`BaseSvr` 与 `ValidationServer` 均 ONLINE）。
+
+结论：**当前 foundation 客户端无法让一个进程同时「向本地注册中心自注册」和
+「从 QA 注册中心发现 STC 服务」**。要同时满足两者只有两条路：
+
+1. 由外部（例如一个独立的本地注册脚本）往本地 ZK 写入 QuoteSvr 节点，
+   QuoteSvr 自身保持 `RegisterEnable=0`；
+2. 或让 GW 走固定地址（`Host` 直接写 `10.100.151.202:18680`）而不依赖注册中心 ——
+   任务约束允许在本机配置副本里关闭注册发现做固定地址诊断。
+
+这也是此前「GW 拓扑角色待定」的技术根因，需要发起方在两种方案中选一个。

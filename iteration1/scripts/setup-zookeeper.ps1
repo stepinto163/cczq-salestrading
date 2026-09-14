@@ -5,7 +5,29 @@ $toolsDirectory = Join-Path $taskRoot 'runtime/tools'
 $distribution = "apache-zookeeper-$version-bin"
 $archive = Join-Path $toolsDirectory "$distribution.tar.gz"
 $checksumFile = "$archive.sha512"
-$baseUrl = "https://downloads.apache.org/zookeeper/zookeeper-$version"
+# downloads.apache.org only carries the current release; older ones live in the archive.
+$baseUrls = @(
+    "https://archive.apache.org/dist/zookeeper/zookeeper-$version",
+    "https://downloads.apache.org/zookeeper/zookeeper-$version"
+)
+$baseUrl = $null
+foreach ($candidate in $baseUrls) {
+    $probeUrl = "$candidate/$distribution.tar.gz.sha512"
+    try {
+        $request = [Net.HttpWebRequest]::Create($probeUrl)
+        $request.Method = 'HEAD'
+        $request.Timeout = 15000
+        $response = $request.GetResponse()
+        $response.Close()
+        $baseUrl = $candidate
+        break
+    } catch {
+        Write-Output "ZooKeeper mirror unavailable: $probeUrl"
+    }
+}
+if (!$baseUrl) {
+    throw 'No reachable ZooKeeper download mirror.'
+}
 
 New-Item -ItemType Directory -Force -Path $toolsDirectory | Out-Null
 foreach ($download in @(@("$baseUrl/$distribution.tar.gz", $archive), @("$baseUrl/$distribution.tar.gz.sha512", $checksumFile))) {
