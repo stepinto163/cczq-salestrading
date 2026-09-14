@@ -1,6 +1,7 @@
 package ficc.notification;
 
 import ficc.common.*;
+import ficc.common.client.AccessPolicy;
 
 import com.alibaba.fastjson2.*;
 import java.util.*;
@@ -10,7 +11,9 @@ import java.math.BigDecimal;
 /** Notification domain. Upstream quote facts and price books are separate inputs. */
 final class NotificationService {
     static final List<String> SWITCHES=List.of("watchlistEnabled","filterGroupEnabled","counterQuoteEnabled","myBestEnabled");
-    final JdbcStore store;final ReferenceData refs=new ReferenceData();
+    final JdbcStore store;
+    final ReferenceData refs;
+    final AccessPolicy access;
     final Map<String,JSONObject> quotes=new LinkedHashMap<>(),marketSettings=new LinkedHashMap<>(),books=new LinkedHashMap<>();
     final Map<String,JSONObject> notifications=new LinkedHashMap<>(),preferences=new LinkedHashMap<>(),groups=new LinkedHashMap<>();
     final Map<String,NotifyStream> streams=new LinkedHashMap<>();final Map<String,Page> pages=new LinkedHashMap<>();
@@ -20,6 +23,12 @@ final class NotificationService {
     static class NotifyView {String id;JSONObject request;int limit;List<String> ids=new ArrayList<>();Map<String,JSONObject> loaded=new LinkedHashMap<>();}
     record Page(String user,String sid,String topic,String field,List<JSONObject> rows,int offset,int limit,long expires,JSONObject extra){}
     NotificationService(JdbcStore store) throws Exception {
+        this(store, new ReferenceData(), new AccessPolicy(new Properties()));
+    }
+
+    NotificationService(JdbcStore store, ReferenceData refs, AccessPolicy access) throws Exception {
+        this.refs = refs;
+        this.access = access;
         this.store = store;
         store.exec("CREATE TABLE IF NOT EXISTS notifications"
                 + " (id text PRIMARY KEY, user_id text NOT NULL, active boolean NOT NULL, payload jsonb NOT NULL)");
@@ -78,11 +87,26 @@ final class NotificationService {
             if(first.get(side).compareTo(px)==0)ids.add(entry.getString("MDEntryID").substring("FICC:".length()));
         }return ids;
     }
+    Set<String> interestedUsers() {
+        Set<String> users = new LinkedHashSet<>(preferences.keySet());
+        for (JSONObject quote : quotes.values()) {
+            users.add(quote.getString("ownerUserId"));
+        }
+        for (JSONObject group : marketSettings.values()) {
+            users.add(group.getString("userId"));
+        }
+        for (JSONObject notification : notifications.values()) {
+            users.add(notification.getString("userId"));
+        }
+        users.remove(null);
+        return users;
+    }
+
     synchronized void recompute()throws Exception{
         if(!ready)return;
         Map<String,List<JSONObject>> byBond=new TreeMap<>();for(JSONObject q:quotes.values())if("ACTIVE".equals(q.getString("status")))byBond.computeIfAbsent(q.getString("securityId"),k->new ArrayList<>()).add(q);
         Map<String,JSONObject> desired=new LinkedHashMap<>();
-        for(String user:List.of("U-001","U-002","U-ADMIN")){
+        for (String user : interestedUsers()) {
             JSONObject pref=preference(user);
             for(var bond:byBond.entrySet()){
                 String sec=bond.getKey();List<JSONObject> active=bond.getValue();JSONArray reasons=new JSONArray();Set<String> links=new TreeSet<>();
@@ -305,5 +329,5 @@ final class NotificationService {
                 "seenSequence", Long.toString(lastSequence), "hasMore", nextSequence < lastSequence);
     }
 
-    void internal(String user){if(!user.startsWith("S-"))throw ApiException.forField("1003","FORBIDDEN","Internal service required",null);}
+    void internal(String user){if(!access.internal(user))throw ApiException.forField("1003","FORBIDDEN","Internal service required",null);}
 }

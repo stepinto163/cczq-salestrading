@@ -1,6 +1,9 @@
 package ficc.quote;
 
 import ficc.common.*;
+import ficc.common.client.*;
+import ats.bbox.framework.Server;
+import sc.app.stc.net.NetClientResource;
 
 import ats.bbox.framework.LifecycleException;
 import ats.bbox.framework.resource.ResourceAdapter;
@@ -13,39 +16,82 @@ import java.util.function.BiConsumer;
 public final class QuoteResource extends ResourceAdapter {
     private PgStore store;
     private QuoteService service;
-    private final Map<String,String> sessions=new HashMap<>();
-    @Override public void init()throws LifecycleException{
-        try{
-            Properties properties=new Properties();
-            try(var r=Files.newBufferedReader(Path.of(getConfig().getString("quote.properties")))){properties.load(r);}
-            store=new PgStore(properties);service=new QuoteService(store,new ReferenceData());
+    private Properties configuration;
+    private LoginSessionClient identity;
+    private BiConsumer<String, JSONObject> publisher = (topic, value) -> {};
+
+    @Override
+    public void init() throws LifecycleException {
+        try {
+            configuration = new Properties();
+            try (var reader = Files.newBufferedReader(Path.of(getConfig().getString("quote.properties")))) {
+                configuration.load(reader);
+            }
+            String adapterFile = getConfig().getString("adapter.properties", "");
+            if (!adapterFile.isBlank()) {
+                try (var reader = Files.newBufferedReader(Path.of(adapterFile))) {
+                    configuration.load(reader);
+                }
+            }
+            store = new PgStore(configuration);
             super.init();
-        }catch(Exception error){throw new LifecycleException(error);}
-    }
-    public void publishThrough(BiConsumer<String,JSONObject> publisher){service.publish=publisher;}
-    public void heartbeat(){synchronized(service){service.views.heartbeat();}}
-    public synchronized Map<String,Object> login(String content){
-        JSONObject request=JsonUtils.parseObject(content);String method=request.getString("method");
-        JSONObject parameters=request.getJSONObject("parameter");
-        if("userInfo".equals(method)){
-            String sid=parameters==null?null:parameters.getString("sid");
-            return sessions.containsKey(sid)?loginResult(sid,sessions.get(sid)):JsonUtils.object("Code","1003","Msg","Unknown simulator session");
+        } catch (Exception error) {
+            throw new LifecycleException(error);
         }
-        String name=parameters==null?request.getString("username"):parameters.getString("userName");
-        String password=parameters==null?request.getString("password"):parameters.getString("password");
-        String uid=name==null?null:service.refs.user(name);
-        if(uid==null||!"demo".equals(password))return JsonUtils.object("Code","1003","Msg","Invalid simulator login");
-        String sid=IdGenerator.newId("SIM-");sessions.put(sid,uid);return loginResult(sid,uid);
     }
-    private JSONObject loginResult(String sid,String uid){return JsonUtils.object("Code","0001","Msg","Fixed LoginSvr simulator","sid",sid,"userId",uid,"userid",uid,"companyId","FICC-DEMO");}
+
+    @Override
+    public void start() throws LifecycleException {
+        super.start();
+        try {
+            NetClientResource resource = (NetClientResource) Server.getServer().getResource("NetClientResource");
+            var network = resource.getNetClientWrapper();
+            identity = AdapterFactory.identity(configuration, network, true);
+            ReferenceData references = AdapterFactory.references(configuration, network);
+            service = new QuoteService(store, references, new AccessPolicy(configuration));
+            service.publish = publisher;
+            identity.onInvalidated(sessionId -> {
+                synchronized (service) {
+                    if (sessionId == null) {
+                        service.views.streams.clear();
+                        service.cursors.clear();
+                    } else {
+                        service.views.disconnected(sessionId);
+                        service.cursors.values().removeIf(cursor -> sessionId.equals(cursor.session()));
+                    }
+                }
+            });
+        } catch (Exception error) {
+            throw new LifecycleException(error);
+        }
+    }
+
+    public void publishThrough(BiConsumer<String, JSONObject> publisher) {
+        this.publisher = publisher;
+        if (service != null) {
+            service.publish = publisher;
+        }
+    }
+
+    public void heartbeat() {
+        if (service != null) {
+            synchronized (service) {
+                service.views.heartbeat();
+            }
+        }
+    }
+
+    public Map<String, Object> login(String content) {
+        if (!(identity instanceof LocalLoginSimulator simulator)) {
+            return JsonUtils.object("Code", "1003", "Msg", "Local login simulator is disabled; use STC LoginSvr");
+        }
+        return simulator.login(JsonUtils.parseObject(content));
+    }
+
     public Map<String, Object> dispatch(String topic, String sid, String content) {
         QuotePerformanceTrace trace = QuotePerformanceTrace.begin(topic);
         String requestId = null;
         try {
-            String user;
-            synchronized (this) {
-                user = sessions.get(sid);
-            }
             JSONObject request;
             try {
                 request = JsonUtils.parseObject(content);
@@ -54,6 +100,10 @@ public final class QuoteResource extends ResourceAdapter {
                         ApiException.forField("1001", "VALIDATION_FAILED", "Invalid JSON", null));
             }
             requestId = request.getString("requestId");
+            if (identity == null || service == null) {
+                throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
+            }
+            String user = identity.resolveUser(sid);
             if (trace != null) {
                 trace.lockRequested = System.nanoTime();
             }
@@ -74,24 +124,56 @@ public final class QuoteResource extends ResourceAdapter {
                     }
                 }
             }
+        } catch (ApiException error) {
+            return ApiResponse.failure(requestId, error);
+        } catch (Exception error) {
+            return ApiResponse.failure(requestId, ApiException.forField("1009", "NOT_READY", "Identity provider is unavailable", null));
         } finally {
             if (trace != null) {
                 trace.finish(topic, requestId);
             }
         }
     }
-    public Map<String,Object> snapshot(String topic,String sid){
-        String user; synchronized(this){user=sessions.get(sid);}
-        if(user==null)return JsonUtils.object("Code","1005","Msg","Login required");
-        synchronized(service){try{
-            service.views.authorize(sid,user,topic);
-            Map<String,Object> result=new LinkedHashMap<>();
-            service.views.image(topic,sid).forEach((key,value)->result.put(key,JsonUtils.toJson(value)));
-            return result;
-        }catch(ApiException error){return JsonUtils.object("Code","1005","Msg",error.getMessage());}}
+    public Map<String, Object> snapshot(String topic, String sessionId) {
+        try {
+            if (identity == null || service == null) {
+                throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
+            }
+            String userId = identity.resolveUser(sessionId);
+            if (userId == null) {
+                return JsonUtils.object("Code", "1005", "Msg", "Login required");
+            }
+            synchronized (service) {
+                service.views.authorize(sessionId, userId, topic);
+                Map<String, Object> result = new LinkedHashMap<>();
+                service.views.image(topic, sessionId).forEach((key, value) -> result.put(key, JsonUtils.toJson(value)));
+                return result;
+            }
+        } catch (ApiException error) {
+            return ApiResponse.failure(null, error);
+        } catch (Exception error) {
+            return JsonUtils.object("Code", "1009", "Msg", "Identity provider is unavailable");
+        }
     }
-    @Override public void stop()throws LifecycleException{
-        if(store!=null)try{store.close();store=null;}catch(Exception error){throw new LifecycleException(error);}
-        super.stop();
+
+    @Override
+    public void stop() throws LifecycleException {
+        try {
+            if (service != null) {
+                service.refs.close();
+            }
+        } catch (Exception error) {
+            throw new LifecycleException(error);
+        } finally {
+            if (store != null) {
+                try {
+                    store.close();
+                    store = null;
+                } catch (Exception error) {
+                    throw new LifecycleException(error);
+                }
+            }
+            super.stop();
+        }
     }
 }

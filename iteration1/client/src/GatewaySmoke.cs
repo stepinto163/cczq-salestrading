@@ -12,11 +12,11 @@ namespace Ficc.Prototype {
         static void Track(DpsClient client){client.Trace+=line=>{if(line.StartsWith("REQ "))topics.Add(line.Split(' ')[1]);};}
         static void Check(bool ok,string label){if(!ok)throw new Exception(label);checks++;Console.WriteLine("PASS "+label);}
         static JObject Event(BlockingCollection<JObject> queue,string kind){var end=DateTime.UtcNow.AddSeconds(4);while(DateTime.UtcNow<end){if(queue.TryTake(out var item,100)&&(string)item["kind"]==kind)return item;}throw new TimeoutException("Missing "+kind+" push");}
-        public static int Run(string resultFile){
+        public static int Run(string resultFile, int gatewayPort = 18600){
             try{using(var client=new DpsClient()){
                 Track(client);
                 var quoteEvents=new BlockingCollection<JObject>(64);var prices=new BlockingCollection<JObject>(64);
-                client.Connect("demo");Check(true,"C# DPS DLL connects through GW");
+                client.Connect("demo", gatewayPort);Check(true,"C# DPS DLL connects through GW");
                 var stream=client.Data("ficc.quote.stream.open",new JObject());string qt=(string)stream["pushTopic"];
                 client.Message+=(t,m)=>{if(t==qt)quoteEvents.TryAdd(m);else if(t.StartsWith("ficc.price.report."))prices.TryAdd(m);};
                 client.Subscribe(qt,false);
@@ -57,7 +57,7 @@ namespace Ficc.Prototype {
                     Check((bool)client.Data("ficc."+kind+".delete",new JObject{[key]=group[key].DeepClone(),["expectedRevision"]=group["revision"].DeepClone()})["deleted"],kind+" deleted");
                 }
                 using(var intake=new DpsClient()){
-                    Track(intake);intake.Connect("intake");
+                    Track(intake);intake.Connect("intake", gatewayPort);
                     var item=(JObject)input.DeepClone();item.Remove("clientQuoteId");item["externalQuoteId"]="QT-"+Guid.NewGuid().ToString("N");item["externalRevision"]="1";item["action"]="NEW";item["institutionName"]="QT输入机构";item["contactName"]="QT输入联系人";
                     var req=new JObject{["sourceType"]="QT",["externalMessageId"]="M-"+Guid.NewGuid().ToString("N"),["sourceUserId"]="QT-U-88",["sourceTime"]=DateTimeOffset.Now.ToString("o"),["text"]="250001 买入 2.5000 1000万",["quotes"]=new JArray(item)};
                     var applied=intake.Data("ficc.quote.intake.apply",req);var qr=applied["results"][0];
@@ -69,13 +69,13 @@ namespace Ficc.Prototype {
                     Check((string)client.Data("ficc.quote.delete",new JObject{["quotes"]=new JArray(new JObject{["quoteId"]=qr["quoteId"].DeepClone(),["expectedRevision"]=qr["revision"].DeepClone()})})["results"][0]["Code"]=="0000","mapped owner can delete pending QT quote");
                 }
                 using(var search=new DpsClient()){
-                    Track(search);search.Connect("search");var state=search.Data("ficc.quote.state.query",new JObject{["limit"]=100});
+                    Track(search);search.Connect("search", gatewayPort);var state=search.Data("ficc.quote.state.query",new JObject{["limit"]=100});
                     Check(state["records"]["quotes"] is JArray,"internal state query");
                     Check(search.Data("ficc.quote.event.query",new JObject{["epoch"]=state["epoch"].DeepClone(),["afterSequence"]="0",["limit"]=100})["events"] is JArray,"internal event replay");
                 }
                 Check((bool)client.Data("ficc.quote.view.close",new JObject{["viewId"]=qv})["closed"],"close quote view");
                 Check((bool)client.Data("ficc.price.view.close",new JObject{["viewId"]=pv})["closed"],"close price view");
-                using(var other=new DpsClient()){other.Connect("demo2");bool denied=false;try{other.Subscribe(qt,false);}catch{denied=true;}Check(denied,"GW rejects another user's private topic");}
+                using(var other=new DpsClient()){other.Connect("demo2", gatewayPort);bool denied=false;try{other.Subscribe(qt,false);}catch{denied=true;}Check(denied,"GW rejects another user's private topic");}
                 Check(topics.Count==32,"all 32 QuoteSvr request topics exercised");
                 File.WriteAllText(resultFile,new JObject{["result"]="PASS",["checks"]=checks,["quotesCreated"]=3,["requestTopics"]=new JArray(topics),["messageLogDirectory"]=client.LogDirectory,["path"]="C# DPS -> GW -> STC QuoteSvr -> PostgreSQL"}.ToString());
                 Console.WriteLine("PASS "+checks+" checks; three quotes; no performance load.");return 0;

@@ -4,6 +4,8 @@
 
 日常操作请参阅 [本机启动、测试与停止指南](docs/local-startup.zh-CN.md)，包含可直接复制的 PowerShell 命令。
 
+连接内网 LoginSvr、BaseSvr，以及独立开发 CRM 适配 JAR，参阅 [可切换依赖适配指南](docs/stc-adapters.zh-CN.md)。默认仍使用模拟数据。
+
 前端筛选延迟测试见 [独立性能测试说明及首轮结果](docs/filter-performance.zh-CN.md)。支持手动选择 500 至 50,000 条服务端报价，默认只运行 500 条，使用外部看门狗和虚拟网格。
 
 Java 模块现已提供 [Maven 父 POM](pom.xml) 和 [Jenkinsfile](Jenkinsfile)，构建、基础依赖准备及部署包说明见 [Maven 与 Jenkins 构建](docs/maven-jenkins.zh-CN.md)。Maven 使用独立的 `target-maven` 输出目录。

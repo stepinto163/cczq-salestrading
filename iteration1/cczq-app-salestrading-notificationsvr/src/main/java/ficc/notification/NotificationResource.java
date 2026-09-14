@@ -11,7 +11,9 @@ import ficc.common.JdbcStore;
 import ficc.common.JsonUtils;
 import ficc.common.client.LoginSessionClient;
 import ficc.common.client.QuoteSvrClient;
-import ficc.common.client.SimulatorLoginSvrClient;
+import ficc.common.client.AdapterFactory;
+import ficc.common.client.AccessPolicy;
+import ficc.common.ReferenceData;
 import sc.app.stc.net.NetClientResource;
 import sc.app.stc.net.NetClientWrapper;
 
@@ -35,6 +37,8 @@ public final class NotificationResource extends ResourceAdapter {
 
     private final BlockingQueue<SourceEvent> incoming = new ArrayBlockingQueue<>(MAX_PENDING_EVENTS);
     private final AtomicLong sourceGeneration = new AtomicLong();
+    private Properties configuration;
+    private BiConsumer<String, JSONObject> publisher = (topic, value) -> {};
     private JdbcStore store;
     private NotificationService service;
     private QuoteSvrClient source;
@@ -51,12 +55,17 @@ public final class NotificationResource extends ResourceAdapter {
     @Override
     public void init() throws LifecycleException {
         try {
-            Properties properties = new Properties();
+            configuration = new Properties();
             try (var reader = Files.newBufferedReader(Path.of(getConfig().getString("quote.properties")))) {
-                properties.load(reader);
+                configuration.load(reader);
             }
-            store = new JdbcStore(properties, "notification_");
-            service = new NotificationService(store);
+            String adapterFile = getConfig().getString("adapter.properties", "");
+            if (!adapterFile.isBlank()) {
+                try (var reader = Files.newBufferedReader(Path.of(adapterFile))) {
+                    configuration.load(reader);
+                }
+            }
+            store = new JdbcStore(configuration, "notification_");
             super.init();
         } catch (Exception error) {
             throw new LifecycleException(error);
@@ -64,7 +73,10 @@ public final class NotificationResource extends ResourceAdapter {
     }
 
     public void publishThrough(BiConsumer<String, JSONObject> publisher) {
-        service.publish = publisher;
+        this.publisher = publisher;
+        if (service != null) {
+            service.publish = publisher;
+        }
     }
 
     @Override
@@ -72,6 +84,20 @@ public final class NotificationResource extends ResourceAdapter {
         super.start();
         NetClientResource resource = (NetClientResource) Server.getServer().getResource("NetClientResource");
         NetClientWrapper network = resource.getNetClientWrapper();
+        try {
+            ReferenceData references = AdapterFactory.references(configuration, network);
+            service = new NotificationService(store, references, new AccessPolicy(configuration));
+            service.publish = publisher;
+            identity = AdapterFactory.identity(configuration, network, false);
+            identity.onInvalidated(sessionId -> {
+                synchronized (service) {
+                    service.streams.values().removeIf(stream -> sessionId == null || sessionId.equals(stream.sid));
+                    service.pages.values().removeIf(page -> sessionId == null || sessionId.equals(page.sid()));
+                }
+            });
+        } catch (Exception error) {
+            throw new LifecycleException(error);
+        }
         long timeoutMillis = getConfig().getInt("source.requestTimeoutMillis", 3000);
         source = new QuoteSvrClient(network, timeoutMillis);
         source.initialize(new ICedaConnectionListener() {
@@ -85,13 +111,6 @@ public final class NotificationResource extends ResourceAdapter {
                 invalidateSource();
             }
         });
-        if (!"simulator".equals(getConfig().getString("identity.mode"))) {
-            throw new LifecycleException("Only the explicit local identity simulator is configured");
-        }
-        identity = new SimulatorLoginSvrClient(network,
-                getConfig().getString("identity.serverKey"),
-                getConfig().getString("identity.username"),
-                getConfig().getString("identity.password"), timeoutMillis);
         source.subscribeQuoteEvents(message -> enqueue(true, message));
         source.subscribePrices(message -> enqueue(false, message));
         worker = Executors.newSingleThreadScheduledExecutor(task -> {
@@ -215,6 +234,13 @@ public final class NotificationResource extends ResourceAdapter {
                 worker.awaitTermination(4, TimeUnit.SECONDS);
             } catch (InterruptedException error) {
                 Thread.currentThread().interrupt();
+            }
+        }
+        if (service != null) {
+            try {
+                service.refs.close();
+            } catch (Exception error) {
+                throw new LifecycleException(error);
             }
         }
         if (store != null) {

@@ -24,16 +24,16 @@ final class ViewService {
     }
     String topic(Stream s){return "ficc."+s.domain+".report."+s.route;}
     void authorize(String session,String user,String topic){
-        if(topic.equals("ficc.quote.events")||topic.equals("ficc.price.snapshots")){if(!user.startsWith("S-"))throw ApiException.forField("1003","FORBIDDEN","Internal channel",null);return;}
-        if(topic.startsWith("ficc.price.book.")){if(!user.startsWith("S-"))throw ApiException.forField("1003","FORBIDDEN","Raw STC channel is internal",null);return;}
+        if(topic.equals("ficc.quote.events")||topic.equals("ficc.price.snapshots")){if(!svc.access.internal(user))throw ApiException.forField("1003","FORBIDDEN","Internal channel",null);return;}
+        if(topic.startsWith("ficc.price.book.")){if(!svc.access.internal(user))throw ApiException.forField("1003","FORBIDDEN","Raw STC channel is internal",null);return;}
         for(Stream s:streams.values())if(topic(s).equals(topic)&&s.session.equals(session)&&s.user.equals(user)){s.subscribed=true;return;}
         throw ApiException.forField("1003","FORBIDDEN","Private topic not owned by connection",null);
     }
     void unsubscribe(String sid,String topic){for(Stream s:streams.values())if(s.session.equals(sid)&&topic(s).equals(topic))s.subscribed=false;}
     Map<String,Object> image(String topic,String sid){
         if(topic.startsWith("ficc.price.report.")){Stream s=find(sid,"price");return Map.of(topic,snapshot(s));}
-        if(topic.equals("ficc.price.snapshots"))return Map.of(topic,feed(true,new ArrayList<>(svc.refs.securities.keySet())));
-        if(topic.startsWith("ficc.price.book.")){Map<String,Object> m=new LinkedHashMap<>();String id=topic.substring("ficc.price.book.".length());for(String sec:svc.refs.securities.keySet())if(id.equals("**")||id.equals(sec))m.put("ficc.price.book."+sec,book("S-SEARCH",sec,JsonUtils.object(),"FULL",0).get("marketData"));return m;}
+        if(topic.equals("ficc.price.snapshots"))return Map.of(topic,feed(true,new ArrayList<>(svc.refs.securities().keySet())));
+        if(topic.startsWith("ficc.price.book.")){Map<String,Object> m=new LinkedHashMap<>();String id=topic.substring("ficc.price.book.".length());for(String sec:svc.refs.securities().keySet())if(id.equals("**")||id.equals(sec))m.put("ficc.price.book."+sec,book(null,sec,JsonUtils.object(),"FULL",0).get("marketData"));return m;}
         return Map.of(); // Quote ordinary subscription never manufactures an initial collection.
     }
     Object openView(QuoteService.Call c,String domain){
@@ -61,18 +61,18 @@ final class ViewService {
         for(String side:List.of("1","2")){
             Comparator<JSONObject> cmp=Comparator.comparing(q->new BigDecimal(q.getString("price")));if(side.equals("2"))cmp=cmp.reversed();cmp=cmp.thenComparing(Comparator.<JSONObject,String>comparing(q->q.getString("updateTime")).reversed()).thenComparing(q->q.getString("quoteId"));
             List<JSONObject> sorted=qs.stream().filter(q->side.equals(q.getString("side"))).sorted(cmp).toList();BigDecimal last=null;int level=0,ordinal=0,max=mode.equals("FULL")?Integer.MAX_VALUE:mode.equals("BEST")?1:depth;
-            for(JSONObject q:sorted){BigDecimal value=new BigDecimal(q.getString("price"));if(last==null||last.compareTo(value)!=0){level++;last=value;}if(level>max)break;String entryId="FICC:"+q.getString("quoteId");OffsetDateTime time=OffsetDateTime.parse(q.getString("updateTime"));JSONObject e=JsonUtils.object("MDEntryID",entryId,"MDEntryType",side.equals("1")?"0":"1","MDEntryPx",q.getString("price"),"MDEntrySize",q.getString("quantity"),"PriceType","3","ExerciseFlag",q.getString("yieldType").equals("2")?"0":"1","SettlType",q.getString("settlType"),"UserID",q.getString("ownerUserId"),"MDPriceLevel",Integer.toString(++ordinal),"MDEntryDate",time.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")),"MDEntryTime",time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS")));e.put(q.getString("yieldType").equals("2")?"YieldToExecution":"Yield",q.getString("price"));if(QuoteService.owns(user,q)){e.put("InstitutionID",q.get("institutionId"));e.put("TraderID",q.get("contactId"));}entries.add(e);quoteRefs.put(entryId,JsonUtils.object("quoteId",q.getString("quoteId"),"quoteRevision",q.getString("revision")));}
+            for(JSONObject q:sorted){BigDecimal value=new BigDecimal(q.getString("price"));if(last==null||last.compareTo(value)!=0){level++;last=value;}if(level>max)break;String entryId="FICC:"+q.getString("quoteId");OffsetDateTime time=OffsetDateTime.parse(q.getString("updateTime"));JSONObject e=JsonUtils.object("MDEntryID",entryId,"MDEntryType",side.equals("1")?"0":"1","MDEntryPx",q.getString("price"),"MDEntrySize",q.getString("quantity"),"PriceType","3","ExerciseFlag",q.getString("yieldType").equals("2")?"0":"1","SettlType",q.getString("settlType"),"UserID",q.getString("ownerUserId"),"MDPriceLevel",Integer.toString(++ordinal),"MDEntryDate",time.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")),"MDEntryTime",time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss.SSS")));e.put(q.getString("yieldType").equals("2")?"YieldToExecution":"Yield",q.getString("price"));if(user == null || svc.owns(user,q)){e.put("InstitutionID",q.get("institutionId"));e.put("TraderID",q.get("contactId"));}entries.add(e);quoteRefs.put(entryId,JsonUtils.object("quoteId",q.getString("quoteId"),"quoteRevision",q.getString("revision")));}
         }
         return JsonUtils.object("securityId",security,"bookRevision",Long.toString(bookRevisions.getOrDefault(security,0L)),"marketData",JsonUtils.object("SecurityID",security,"Symbol",svc.refs.require(security).getString("securityName"),"MarketIndicator","4","VenueTypeGW","FICC","Venues","FICC","NoMDEntries",entries),"quoteRefs",quoteRefs);
     }
-    JSONObject feed(boolean initial,List<String> ids){return JsonUtils.object("Code","0000","Msg","成功","kind",initial?"SNAPSHOT":"UPDATE","streamId",marketStream,"sequence",Long.toString(marketSequence),"quotePosition",JsonUtils.object("epoch",svc.store.epoch,"sequence",Long.toString(svc.lastSequence)),"prices",ids.stream().map(id->book("S-SEARCH",id,JsonUtils.object(),"FULL",0)).toList());}
+    JSONObject feed(boolean initial,List<String> ids){return JsonUtils.object("Code","0000","Msg","成功","kind",initial?"SNAPSHOT":"UPDATE","streamId",marketStream,"sequence",Long.toString(marketSequence),"quotePosition",JsonUtils.object("epoch",svc.store.epoch,"sequence",Long.toString(svc.lastSequence)),"prices",ids.stream().map(id->book(null,id,JsonUtils.object(),"FULL",0)).toList());}
     void changed(JSONObject q,JSONObject event,String previousSecurity){
         Set<String> securities=new LinkedHashSet<>();if(q.getString("securityId")!=null)securities.add(q.getString("securityId"));
         // Include the previous security when an active quote changes bond.
         if(previousSecurity!=null)securities.add(previousSecurity);
         for(String id:securities)bookRevisions.merge(id,1L,Long::sum);marketSequence++;
         for(Stream s:streams.values())if(s.subscribed){try{publishChanges(s,q,event,null);}catch(ApiException ex){svc.publish.accept(topic(s),JsonUtils.object("Code",ex.code,"Msg",ex.getMessage(),"kind","RESET_REQUIRED","streamId",s.id,"sequence",Long.toString(++s.sequence)));}}
-        try{svc.publish.accept("ficc.price.snapshots",feed(false,new ArrayList<>(securities)));for(String id:securities)svc.publish.accept("ficc.price.book."+id,book("S-SEARCH",id,JsonUtils.object(),"FULL",0).getJSONObject("marketData"));}catch(ApiException e){svc.publish.accept("ficc.price.snapshots",JsonUtils.object("Code","1009","Msg",e.getMessage(),"kind","RESET_REQUIRED","streamId",marketStream,"sequence",Long.toString(marketSequence)));}
+        try{svc.publish.accept("ficc.price.snapshots",feed(false,new ArrayList<>(securities)));for(String id:securities)svc.publish.accept("ficc.price.book."+id,book(null,id,JsonUtils.object(),"FULL",0).getJSONObject("marketData"));}catch(ApiException e){svc.publish.accept("ficc.price.snapshots",JsonUtils.object("Code","1009","Msg",e.getMessage(),"kind","RESET_REQUIRED","streamId",marketStream,"sequence",Long.toString(marketSequence)));}
     }
     void publishChanges(Stream s,JSONObject changed,JSONObject event,JSONObject setting){
         JSONArray deltas=new JSONArray(),bookUpdates=new JSONArray(),reports=new JSONArray();Map<String,JSONObject> quoteUpdates=new LinkedHashMap<>();
@@ -83,7 +83,7 @@ final class ViewService {
             boolean dataChanged=false;for(String id:v.ids)if(!JsonUtils.toJson(v.loaded.get(id)).equals(JsonUtils.toJson(oldRows.get(id)))){dataChanged=true;if(v instanceof QuoteView)quoteUpdates.put(id,v.loaded.get(id));else{JSONObject b=JsonUtils.deepCopy(v.loaded.get(id));b.put("viewId",v.id);bookUpdates.add(b);}}
             if(dataChanged||!remove.isEmpty()||!place.isEmpty()||changed!=null||setting!=null)deltas.add(JsonUtils.object("viewId",v.id,"totalCount",total(s,v),"removeIds",remove,"place",place));
         }
-        if(s.domain.equals("quote")&&changed!=null&&QuoteService.owns(s.user,changed)){
+        if(s.domain.equals("quote")&&changed!=null&&svc.owns(s.user,changed)){
             quoteUpdates.put(changed.getString("quoteId"),svc.visible(changed,s.user));reports.add(JsonUtils.object("eventId",event.getString("eventId"),"requestId",event.getString("requestId"),"clientQuoteId",changed.get("clientQuoteId"),"quoteId",changed.getString("quoteId"),"revision",changed.getString("revision"),"action",event.getString("action"),"operatorUserId",event.getString("operatorUserId"),"operationTime",event.getString("operationTime")));
         }
         if(deltas.isEmpty()&&reports.isEmpty()&&setting==null)return;

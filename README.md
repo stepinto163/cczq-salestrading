@@ -14,7 +14,7 @@
 | [iteration1/api-debugger](iteration1/api-debugger) | DPS 请求与订阅调试工具 |
 | [iteration1/sql](iteration1/sql) | PostgreSQL 初始化及旧 schema 迁移脚本 |
 
-QuoteSvr 与 NotificationSvr 共用 PostgreSQL 的 `ficc_demo` schema。登录、基础数据和 CRM 当前仍使用模拟实现；请以当前实现说明判断演示范围。
+QuoteSvr 与 NotificationSvr 共用 PostgreSQL 的 `ficc_demo` schema。默认使用模拟数据；登录、基础数据可切换至真实 STC 服务，CRM 支持空实现及外部适配 JAR。配置与联调边界见 [STC / CRM 适配指南](iteration1/docs/stc-adapters.zh-CN.md)。
 
 ## 构建与运行
 

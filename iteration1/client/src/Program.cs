@@ -14,7 +14,7 @@ namespace Ficc.Prototype {
             }
             if(args.Length>0&&args[0]=="--autotest-multi-user")return MultiUserQuoteScenario.Run(args[1]);
             if(args.Length>0&&args[0]=="--autotest-notifications")return NotificationSmoke.Run(args[1]);
-            if(args.Length>0&&(args[0]=="--smoke"||args[0]=="--autotest"))return GatewaySmoke.Run(args.Length>1?args[1]:Path.Combine(MessageLog.DirectoryPath,"autotest.json"));
+            if(args.Length>0&&(args[0]=="--smoke"||args[0]=="--autotest"))return GatewaySmoke.Run(args.Length>1?args[1]:Path.Combine(MessageLog.DirectoryPath,"autotest.json"), args.Length>2?int.Parse(args[2]):18600);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             if (args.Length == 2 && args[0] == "--filter-performance") {

@@ -166,10 +166,12 @@ def main():
     parser.add_argument("--quotes", type=int, choices=[500, 2000, 10000, 50000], default=500)
     parser.add_argument("--repeats", type=int, choices=range(1, 11), default=6)
     parser.add_argument("--client", type=Path, default=ROOT / "client/bin/FilterPerformance/Ficc.QuotePrototype.exe")
+    parser.add_argument("--functional-smoke", action="store_true",
+                        help="Reuse isolation for the three-quote C# functional test; no performance fixture")
     arguments = parser.parse_args()
     if os.name != "nt":
         raise SystemExit("This WinForms benchmark requires Windows")
-    parent = ROOT / "runtime/filter-performance"
+    parent = ROOT / ("runtime/adapter-smoke" if arguments.functional_smoke else "runtime/filter-performance")
     parent.mkdir(parents=True, exist_ok=True)
     lock = (parent / "runner.lock").open("a+b")
     lock.seek(0)
@@ -190,6 +192,9 @@ def main():
     schema_created = False
     summary = {"result": "RUNNING", "quoteCount": arguments.quotes, "schema": schema,
                "runDirectory": str(directory), "watchdogPid": os.getpid()}
+    if arguments.functional_smoke:
+        summary["quoteCount"] = 0
+        summary["test"] = "three-quote-functional-smoke"
     base = properties(ROOT / "runtime/quotesvr.local.properties")
     database = urlparse(base["db.url"].removeprefix("jdbc:"))
     if database.hostname not in ("127.0.0.1", "localhost"):
@@ -216,8 +221,9 @@ def main():
         initialization = (ROOT / "sql/001-create-demo-tables.sql").read_text(encoding="utf-8")
         initialization = initialization.replace("ficc_demo", schema)
         sql("tables", initialization)
-        fixture = (ROOT / "scripts/filter-performance-fixture.sql").read_text(encoding="utf-8")
-        sql("fixture", fixture.replace("PERFORMANCE_SCHEMA", schema).replace("QUOTE_COUNT", str(arguments.quotes)))
+        if not arguments.functional_smoke:
+            fixture = (ROOT / "scripts/filter-performance-fixture.sql").read_text(encoding="utf-8")
+            sql("fixture", fixture.replace("PERFORMANCE_SCHEMA", schema).replace("QUOTE_COUNT", str(arguments.quotes)))
         quote_directory = directory / "quotesvr"
         gateway_directory = directory / "gateway"
         shutil.copytree(ROOT / "cczq-app-salestrading-quotesvr/control", quote_directory / "control")
@@ -267,12 +273,12 @@ def main():
             raise RuntimeError("Java 17 is required")
         quote_process = watchdog.start("quotesvr", [
             java, "-Xms32m", "-Xmx256m", "-XX:ActiveProcessorCount=2", "-Dfile.encoding=UTF-8",
-            "-Dficc.performance.trace=true",
+            "-Dficc.performance.trace=" + str(not arguments.functional_smoke).lower(),
             "-cp", str(quote_jar) + ";" + str(common_jar) + ";" + foundation, "ficc.quote.Main"],
             quote_directory, dict(os.environ, ATS_ROOT=str(quote_directory)))
         gateway_process = watchdog.start("gateway", [
             java, "-Xms32m", "-Xmx160m", "-XX:ActiveProcessorCount=2", "-Dfile.encoding=UTF-8",
-            "-Dficc.performance.trace=true",
+            "-Dficc.performance.trace=" + str(not arguments.functional_smoke).lower(),
             "-cp", str(gateway_jar) + ";" + str(ROOT / "runtime/foundation-build/lib/gw-local.jar")
             + ";" + foundation, "GW"], gateway_directory, dict(os.environ, ATS_ROOT=str(gateway_directory)))
         start = time.monotonic()
@@ -295,14 +301,22 @@ def main():
         }
         config_file = directory / "benchmark.json"
         config_file.write_text(json.dumps(configuration, ensure_ascii=False, indent=2), encoding="utf-8")
-        print("Running one stage:", arguments.quotes, "quotes;", directory, flush=True)
-        ui = watchdog.start("client", [str(arguments.client.resolve()), "--filter-performance", str(config_file)],
-                            arguments.client.resolve().parent, visible=True)
-        watchdog.wait(ui, 50, directory / "ui.heartbeat")
-        report = json.loads((directory / "latency.json").read_text(encoding="utf-8-sig"))
-        summary["result"] = report["result"]
-        summary["targetMet"] = report.get("targetMet", False)
-        summary["scenarios"] = report["scenarios"]
+        print("Running:", "three-quote functional smoke" if arguments.functional_smoke else str(arguments.quotes) + " quotes", directory, flush=True)
+        client_arguments = (["--smoke", str(directory / "functional.json"), "18700"] if arguments.functional_smoke
+                            else ["--filter-performance", str(config_file)])
+        ui = watchdog.start("client", [str(arguments.client.resolve())] + client_arguments,
+                            arguments.client.resolve().parent, visible=not arguments.functional_smoke)
+        watchdog.wait(ui, 50, None if arguments.functional_smoke else directory / "ui.heartbeat")
+        if arguments.functional_smoke:
+            report = json.loads((directory / "functional.json").read_text(encoding="utf-8-sig"))
+            summary["result"] = "COMPLETED" if report["result"] == "PASS" else "STOPPED"
+            summary["checks"] = report.get("checks", 0)
+            summary["quoteCount"] = report.get("quotesCreated", 0)
+        else:
+            report = json.loads((directory / "latency.json").read_text(encoding="utf-8-sig"))
+            summary["result"] = report["result"]
+            summary["targetMet"] = report.get("targetMet", False)
+            summary["scenarios"] = report["scenarios"]
     except Exception as error:
         summary["result"] = "STOPPED"
         summary["error"] = str(error)
@@ -316,10 +330,11 @@ def main():
                 summary["schemaRemoved"] = False
         summary["minimumAvailableMemoryMB"] = watchdog.minimum_available_mb
         watchdog.close()
-        summary["reportFile"] = str(directory / "report.zh-CN.md")
+        summary["reportFile"] = str(directory / ("functional.json" if arguments.functional_smoke else "report.zh-CN.md"))
         (directory / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         lock.close()
-        generate_report(directory)
+        if not arguments.functional_smoke:
+            generate_report(directory)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     if summary["result"] != "COMPLETED":
         raise SystemExit(1)
