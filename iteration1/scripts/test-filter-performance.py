@@ -4,6 +4,7 @@ import ctypes
 from ctypes import wintypes
 from datetime import datetime
 import json
+import hashlib
 import msvcrt
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ import subprocess
 import time
 from urllib.parse import urlparse
 import uuid
+from filter_performance_report import generate_report
 
 ROOT = Path(__file__).resolve().parents[1]
 MB = 1024 * 1024
@@ -120,6 +122,19 @@ def properties(path):
 
 def write_properties(path, values):
     path.write_text("".join(key + "=" + value + "\n" for key, value in values.items()), encoding="utf-8")
+
+
+def build_metadata(paths):
+    result = {"files": {str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else path.name:
+                        hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}}
+    try:
+        result["gitCommit"] = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, timeout=3).strip()
+        result["workingTreeModified"] = bool(subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=ROOT, text=True, timeout=3).strip())
+    except (subprocess.SubprocessError, OSError):
+        result["gitCommit"] = "unavailable"
+    return result
 
 
 def cases(count):
@@ -233,6 +248,10 @@ def main():
         content = spring.read_text(encoding="utf-8").replace('value="18600"', 'value="18700"')
         content = content.replace("LoginSvr,QuoteSvr,NotificationSvr", "LoginSvr,QuoteSvr")
         content = content.replace('<entry key="NotificationSvr" value="ficc.notification.report.**"/>', "")
+        content = content.replace('class="com.gateway.invoke.ceda.CedaProxy"',
+                                  'class="ficc.gateway.MeasuredCedaProxy"')
+        content = content.replace('class="com.gateway.connector.tcp.TcpConnector"',
+                                  'class="ficc.gateway.MeasuredTcpConnector"')
         spring.write_text(content, encoding="utf-8")
         foundation = subprocess.check_output([
             "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
@@ -242,15 +261,18 @@ def main():
         gateway_jar = ROOT / "gateway/target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar"
         if not all(path.is_file() for path in (quote_jar, common_jar, gateway_jar)):
             raise RuntimeError("Run the Maven build first")
+        summary["build"] = build_metadata([quote_jar, common_jar, gateway_jar, arguments.client.resolve()])
         java = shutil.which("java")
         if not java:
             raise RuntimeError("Java 17 is required")
         quote_process = watchdog.start("quotesvr", [
             java, "-Xms32m", "-Xmx256m", "-XX:ActiveProcessorCount=2", "-Dfile.encoding=UTF-8",
+            "-Dficc.performance.trace=true",
             "-cp", str(quote_jar) + ";" + str(common_jar) + ";" + foundation, "ficc.quote.Main"],
             quote_directory, dict(os.environ, ATS_ROOT=str(quote_directory)))
         gateway_process = watchdog.start("gateway", [
             java, "-Xms32m", "-Xmx160m", "-XX:ActiveProcessorCount=2", "-Dfile.encoding=UTF-8",
+            "-Dficc.performance.trace=true",
             "-cp", str(gateway_jar) + ";" + str(ROOT / "runtime/foundation-build/lib/gw-local.jar")
             + ";" + foundation, "GW"], gateway_directory, dict(os.environ, ATS_ROOT=str(gateway_directory)))
         start = time.monotonic()
@@ -294,8 +316,10 @@ def main():
                 summary["schemaRemoved"] = False
         summary["minimumAvailableMemoryMB"] = watchdog.minimum_available_mb
         watchdog.close()
+        summary["reportFile"] = str(directory / "report.zh-CN.md")
         (directory / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         lock.close()
+        generate_report(directory)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     if summary["result"] != "COMPLETED":
         raise SystemExit(1)

@@ -154,7 +154,14 @@ final class QuoteService {
         }
     }
     void committed(JSONObject event){lastSequence=event.getLongValue("sequence");publish.accept("ficc.quote.events",JsonUtils.object("Code","0000","Msg","成功","kind","EVENTS","epoch",store.epoch,"fromSequence",Long.toString(lastSequence),"toSequence",Long.toString(lastSequence),"events",JsonUtils.array(event)));}
-    List<JSONObject> selectQuotes(String user,JSONObject req){return search.queryQuotes(user,req);}
+    List<JSONObject> selectQuotes(String user, JSONObject request) {
+        long started = QuotePerformanceTrace.searchStart();
+        try {
+            return search.queryQuotes(user, request);
+        } finally {
+            QuotePerformanceTrace.searchFinished(started);
+        }
+    }
     boolean matches(String user,JSONObject q,JSONObject f){return matcher.matches(user,q,f);}
     JSONArray referenceFor(List<JSONObject> qs){JSONArray a=new JSONArray();Set<String> seen=new HashSet<>();for(JSONObject q:qs)if(q.getString("securityId")!=null&&seen.add(q.getString("securityId")))a.add(refs.require(q.getString("securityId")));return a;}
     int limit(JSONObject r,int max){int n=r.getIntValue("limit",200);if(n<1||n>max)throw ApiException.forField("1008","RESOURCE_LIMIT","limit out of range","limit");return n;}

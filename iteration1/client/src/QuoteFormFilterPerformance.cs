@@ -64,6 +64,9 @@ namespace Ficc.Prototype {
             heartbeat.Tick += (sender, args) => File.WriteAllText(heartbeatFile, DateTime.UtcNow.ToString("o"));
             heartbeat.Start();
             File.WriteAllText(heartbeatFile, DateTime.UtcNow.ToString("o"));
+            JArray requestMeasurements = null;
+            Action<JObject> measureRequest = measurement => requestMeasurements?.Add(measurement);
+            client.RequestMeasured += measureRequest;
             try {
                 await Task.Run(() => client.Connect("demo", gatewayPort));
                 connected = true;
@@ -82,6 +85,7 @@ namespace Ficc.Prototype {
                         performanceFilter = (JObject)scenario["filter"].DeepClone();
                         var watch = Stopwatch.StartNew();
                         var phases = new Dictionary<string, double>();
+                        requestMeasurements = new JArray();
                         filterPhase = phase => phases[phase] = watch.Elapsed.TotalMilliseconds;
                         await OpenView();
                         await WaitForGridPaint();
@@ -93,6 +97,7 @@ namespace Ficc.Prototype {
                         }
                         var sample = new JObject {
                             ["scenario"] = name,
+                            ["requests"] = requestMeasurements,
                             ["warmup"] = iteration == 0,
                             ["closeMs"] = phases["close.end"] - phases["close.start"],
                             ["openRequestMs"] = phases["open.worker.end"] - phases["open.worker.start"],
@@ -133,6 +138,7 @@ namespace Ficc.Prototype {
                 report["error"] = error.Message;
                 throw;
             } finally {
+                client.RequestMeasured -= measureRequest;
                 filterPhase = null;
                 performanceFilter = null;
                 heartbeat.Stop();

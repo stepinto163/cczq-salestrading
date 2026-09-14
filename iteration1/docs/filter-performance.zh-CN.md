@@ -40,6 +40,18 @@ python iteration1/scripts/test-filter-performance.py --quotes 500
 - `latency.json`：每次原始计时，包括预热。
 - `benchmark.json`：固定条件、预期匹配数和报价顺序。
 - `quotesvr.log`、`gateway.log`、`client.err`：独立进程诊断日志。
+- `report.zh-CN.md`：本轮中文报告，包含场景、节点分段耗时、真实请求时序图和限制。
+- `requests.csv`、`trace-report.json`：按 `requestId` 关联的逐请求数据，保留预热标记、close/open 区别和缺失状态。
+
+所有轮次汇总入口为 [运行索引](../runtime/filter-performance/index.zh-CN.md)。驱动在结束或受控中止后自动生成报告和更新索引，包含无样本的中止记录。
+
+只生成或重建已有运行的报告，不启动任何测试：
+
+```powershell
+python iteration1/scripts/filter_performance_report.py iteration1/runtime/filter-performance/<运行编号>
+```
+
+旧版本只有客户端计时，报告会明确显示节点耗时“未采集”，不会补造数据或为了补齐报告重新加压。
 
 默认仅测 500。支持手动指定 `2000`、`10000`、`50000`，脚本不会自动升级档位；每次先检查前一档的耗时、内存和 UI 响应情况。如果小规模已经暴露明显延迟，先定位问题。
 
@@ -137,3 +149,29 @@ Start-Process .\iteration1\client\bin\FilterPerformance\Ficc.QuotePrototype.exe
 ```
 
 已打开的旧客户端不会自动替换为新版本；后台服务本次无需重启。后续瓶颈包括关闭旧视图和打开新视图两次请求，以及后台重复搜索；本次未修改服务协议或后台查询语义。
+
+## 每节点计时与报告（2026-09-14）
+
+计时基于现有 `requestId`，不增加协议字段，也不改变 GW 的异步转发机制。测试驱动只在独立 GW 的 Spring 配置里替换为带计时的子类，并给测试 JVM 设置 `-Dficc.performance.trace=true`。普通启动默认关闭这些计时。Java 输出 `FICC_PERF` 结构化日志，仅含请求标识、主题、耗时和回复字节数。
+
+| 节点/区间 | 采样边界 |
+|---|---|
+| C# SDK 往返 | 调用 DPS `requestSync` 到 JSON 回复返回；包含 SDK 编解码 |
+| GW（包含下游） | 进入 `processAppRequestReply` 到异步回复准备发送给客户端；包含 STC 下游调用和 GW 回调队列 |
+| QuoteSvr | `QuoteResource.dispatch` 入口到返回；分出业务锁等待、业务处理时间 |
+| 内存搜索 | 本请求内所有 `selectQuotes` 调用累计耗时及调用次数，是 QuoteSvr 时间的子集 |
+| C# 本地处理 | 发送准备、回复完整日志记录、UI 调度、缓存更新、网格绘制 |
+
+每个进程使用自己的单调时钟计算耗时，再按请求标识关联。因此不依赖跨机器的绝对时钟同步。当前不具备单向网络耗时测量；报告给出的“客户端 ↔ GW”和“GW ↔ QuoteSvr”是同一请求的内外区间相减得到的双向余量，其中包含传输、编码、队列和框架开销。嵌套时间不能重复相加，不同请求的 P95 也不能相加。
+
+验证轮次 `20260914_141517_25454484`：500 条、5 个场景，每个场景预热 1 次并测量 3 次。30 个测量请求的 C#、GW、QuoteSvr 计时全部关联成功；匹配数与排序校验全部通过，临时 schema 已清理。该轮全部报价总 P95 为 111.04ms，其他场景为 45.20–83.33ms，仍未执行 50,000 条档位。
+
+其中一次真实打开视图请求的 SDK 往返为 61.66ms、GW 区间为 52.66ms、QuoteSvr 为 37.93ms，内部两次搜索合计 27.85ms。它说明下一步可以评估重复搜索成本，但不能把三段嵌套耗时相加。
+
+报告单测不启动服务或压力测试：
+
+```powershell
+python iteration1/scripts/test_filter_performance_report.py
+```
+
+后续 Jenkins 显式性能任务可归档 `report.zh-CN.md`、`summary.json`、`latency.json`、`requests.csv` 和 `trace-report.json`。按这些文件名归档即可；运行目录中的 `database.local.properties` 是本地连接配置，不属于报告产物。构建指纹包含 Git 提交、工作区是否修改及本次 EXE/JAR 的 SHA-256。

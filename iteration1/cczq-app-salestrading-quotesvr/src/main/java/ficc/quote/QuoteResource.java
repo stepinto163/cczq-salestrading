@@ -38,17 +38,46 @@ public final class QuoteResource extends ResourceAdapter {
         String sid=IdGenerator.newId("SIM-");sessions.put(sid,uid);return loginResult(sid,uid);
     }
     private JSONObject loginResult(String sid,String uid){return JsonUtils.object("Code","0001","Msg","Fixed LoginSvr simulator","sid",sid,"userId",uid,"userid",uid,"companyId","FICC-DEMO");}
-    public Map<String,Object> dispatch(String topic,String sid,String content){
-        String user; synchronized(this){user=sessions.get(sid);}
-        JSONObject request;
-        try{request=JsonUtils.parseObject(content);}catch(Exception ex){return ApiResponse.failure(null,ApiException.forField("1001","VALIDATION_FAILED","Invalid JSON",null));}
-        synchronized(service){
-            JSONObject result=service.handle(user,sid,topic,request);
-            if(topic.endsWith(".stream.open")&&"0000".equals(result.getString("Code"))){
-                // GW owns the physical client subscription. QuoteSvr owns the logical view.
-                service.views.authorize(sid,user,result.getJSONObject("Data").getString("pushTopic"));
+    public Map<String, Object> dispatch(String topic, String sid, String content) {
+        QuotePerformanceTrace trace = QuotePerformanceTrace.begin(topic);
+        String requestId = null;
+        try {
+            String user;
+            synchronized (this) {
+                user = sessions.get(sid);
             }
-            return result;
+            JSONObject request;
+            try {
+                request = JsonUtils.parseObject(content);
+            } catch (Exception error) {
+                return ApiResponse.failure(null,
+                        ApiException.forField("1001", "VALIDATION_FAILED", "Invalid JSON", null));
+            }
+            requestId = request.getString("requestId");
+            if (trace != null) {
+                trace.lockRequested = System.nanoTime();
+            }
+            synchronized (service) {
+                if (trace != null) {
+                    trace.lockAcquired = System.nanoTime();
+                }
+                try {
+                    JSONObject result = service.handle(user, sid, topic, request);
+                    if (topic.endsWith(".stream.open") && "0000".equals(result.getString("Code"))) {
+                        // GW owns the physical subscription; QuoteSvr owns the logical view.
+                        service.views.authorize(sid, user, result.getJSONObject("Data").getString("pushTopic"));
+                    }
+                    return result;
+                } finally {
+                    if (trace != null) {
+                        trace.businessFinished = System.nanoTime();
+                    }
+                }
+            }
+        } finally {
+            if (trace != null) {
+                trace.finish(topic, requestId);
+            }
         }
     }
     public Map<String,Object> snapshot(String topic,String sid){

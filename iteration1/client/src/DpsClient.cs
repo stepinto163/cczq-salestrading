@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using com.gateway.connector;
@@ -13,6 +14,7 @@ namespace Ficc.Prototype {
         public string LogDirectory=>MessageLog.DirectoryPath;
         public event Action<string,JObject> Message;
         public event Action<string> Trace;
+        internal event Action<JObject> RequestMeasured;
         public DpsClient(){api.IsGzip=false;api.ReconnectFlag=false;api.Eventlistener=this;}
         public void Connect(string user,int port=18600,string host="127.0.0.1",string password="demo"){
             account=user;
@@ -25,14 +27,43 @@ namespace Ficc.Prototype {
         }
         public static string ServerFor(string topic)=>topic.StartsWith("ficc.notification.")?"NotificationSvr":"QuoteSvr";
         public JObject Request(string topic,JObject request)=>RequestTo(ServerFor(topic),topic,request);
-        public JObject RequestTo(string serverName,string topic,JObject request){
-            if(request["requestId"]==null)request["requestId"]="C-"+Guid.NewGuid().ToString("N");
-            Record("SEND","REQUEST",topic,request,serverName);
-            Trace?.Invoke("REQ "+topic+" "+request.ToString(Formatting.None));
-            JObject result;try{result=api.requestSync<JObject>(serverName,topic,request.ToString(Formatting.None),5000);}catch(Exception e){Error(topic,e);throw;}
-            if(result==null){var error=new TimeoutException(topic+" timed out");Error(topic,error);throw error;}
-            Record("RECEIVE","REPLY",topic,result,serverName);
-            Trace?.Invoke("REP "+topic+" "+result.ToString(Formatting.None));return result;
+        public JObject RequestTo(string serverName, string topic, JObject request) {
+            if (request["requestId"] == null) {
+                request["requestId"] = "C-" + Guid.NewGuid().ToString("N");
+            }
+            Action<JObject> measurement = RequestMeasured;
+            Stopwatch stopwatch = measurement == null ? null : Stopwatch.StartNew();
+            Record("SEND", "REQUEST", topic, request, serverName);
+            Trace?.Invoke("REQ " + topic + " " + request.ToString(Formatting.None));
+            double sdkStart = stopwatch?.Elapsed.TotalMilliseconds ?? 0;
+            JObject result;
+            try {
+                result = api.requestSync<JObject>(serverName, topic, request.ToString(Formatting.None), 5000);
+            } catch (Exception error) {
+                Error(topic, error);
+                throw;
+            }
+            double sdkEnd = stopwatch?.Elapsed.TotalMilliseconds ?? 0;
+            if (result == null) {
+                var error = new TimeoutException(topic + " timed out");
+                Error(topic, error);
+                throw error;
+            }
+            Record("RECEIVE", "REPLY", topic, result, serverName);
+            Trace?.Invoke("REP " + topic + " " + result.ToString(Formatting.None));
+            if (measurement != null) {
+                double completed = stopwatch.Elapsed.TotalMilliseconds;
+                measurement(new JObject {
+                    ["requestId"] = (string)request["requestId"],
+                    ["topic"] = topic,
+                    ["code"] = (string)result["Code"],
+                    ["clientRequestMs"] = completed,
+                    ["sendPreparationMs"] = sdkStart,
+                    ["sdkRoundTripMs"] = sdkEnd - sdkStart,
+                    ["replyLoggingMs"] = completed - sdkEnd
+                });
+            }
+            return result;
         }
         public JObject Data(string topic,JObject r){var result=Request(topic,r);if((string)result["Code"]!="0000")throw new Exception((string)result["Code"]+": "+(string)result["Msg"]);return (JObject)result["Data"];}
         public void Subscribe(string topic,bool image,string serverName=null){
