@@ -17,6 +17,22 @@ namespace Ficc.Prototype {
             if(args.Length>0&&(args[0]=="--smoke"||args[0]=="--autotest"))return GatewaySmoke.Run(args.Length>1?args[1]:Path.Combine(MessageLog.DirectoryPath,"autotest.json"));
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            if (args.Length == 2 && args[0] == "--filter-performance") {
+                int benchmarkExitCode = 0;
+                var benchmarkForm = new QuoteForm();
+                benchmarkForm.Shown += async (sender, eventArgs) => {
+                    try {
+                        await benchmarkForm.RunFilterPerformance(args[1]);
+                    } catch (Exception error) {
+                        Console.Error.WriteLine(error.Message);
+                        benchmarkExitCode = 1;
+                    } finally {
+                        benchmarkForm.Close();
+                    }
+                };
+                Application.Run(benchmarkForm);
+                return benchmarkExitCode;
+            }
             var form=new QuoteForm();int exitCode=0;
             if(args.Length>0&&(args[0]=="--autotest-panel"||args[0]=="--autotest-multi-user-panel"))form.Shown+=async(s,e)=>{
                 try{if(args[0]=="--autotest-multi-user-panel")await form.RunMultiUserScenario();else await form.RunAutoTests();File.WriteAllText(args[1],form.LastAutoTestResult.ToString());if((string)form.LastAutoTestResult["result"]!="PASS")exitCode=1;}

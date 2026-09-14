@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Ficc.Prototype {
-    // Bounded, virtual grid. This is a functional prototype, not a performance benchmark.
+    // Bounded virtual grid; performance mode measures the same view path.
     public sealed partial class QuoteForm : Form {
         readonly DpsClient client=new DpsClient();
         readonly List<JObject> rows=new List<JObject>();
@@ -33,6 +33,7 @@ namespace Ficc.Prototype {
         readonly SplitContainer workspace=new SplitContainer{Dock=DockStyle.Fill,Orientation=Orientation.Horizontal,Panel2Collapsed=true};
         readonly Button diagnosticToggle=new Button{Text="操作结果 / 开发工具",AutoSize=true};
         string viewId,streamId,topic;long sequence;bool connected,busy,opening,automatedUi;
+        int lastFilterTotalCount;
         readonly string[] fields={"quoteId","securityId","side","price","quantity","settlType","status","revision","updateTime"};
         public QuoteForm(){
             Text="FICC 报价生命周期原型 · GW / DPS";Width=1180;Height=760;MinimumSize=new Size(900,600);
@@ -61,7 +62,9 @@ namespace Ficc.Prototype {
             var quoteBoard=new TabPage("报价管理");quoteBoard.Controls.Add(quoteLayout);boards.TabPages.Add(quoteBoard);InitializePriceBoard();InitializeNotificationBoard();
             var details=new TabPage("操作结果 / 历史 / 行情");details.Controls.Add(detail);var messages=new TabPage("DPS 消息（最近 200 条；完整记录见文件）");messages.Controls.Add(log);messages.Controls.Add(new TextBox{Dock=DockStyle.Top,ReadOnly=true,Text=client.LogDirectory});tabs.TabPages.AddRange(new[]{details,messages});InitializeAutoTestTab();
             var toolsBar=Bar();toolsBar.Dock=DockStyle.Top;toolsBar.Height=40;
-            AddButton(toolsBar,"自动测试",RunAutoTests);AddButton(toolsBar,"多用户场景",RunMultiUserScenario);AddButton(toolsBar,"API 调试器",OpenApiDebugger);testTab.Controls.Add(toolsBar);
+            AddButton(toolsBar,"自动测试",RunAutoTests);AddButton(toolsBar,"多用户场景",RunMultiUserScenario);AddButton(toolsBar,"API 调试器",OpenApiDebugger);
+            AddButton(toolsBar, "筛选性能测试(500条)", OpenFilterPerformanceTest);
+            testTab.Controls.Add(toolsBar);
             detail.TextChanged+=(s,e)=>{SetDiagnosticsVisible(true);tabs.SelectedTab=details;};
             client.Trace+=s=>Ui(()=>Log(s));client.Message+=(t,m)=>Ui(()=>Receive(t,m));
             FormClosed+=(s,e)=>client.Dispose();
@@ -76,19 +79,92 @@ namespace Ficc.Prototype {
         static FlowLayoutPanel Bar()=>new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,Padding=new Padding(4),AutoScroll=true};
         void Ui(Action action){if(IsDisposed||!IsHandleCreated)return;if(InvokeRequired)BeginInvoke(action);else action();}
         void AddButton(Control parent,string text,Func<Task> action){var b=new Button{Text=text,AutoSize=true};actions.Add(b);b.Click+=async(s,e)=>{if(busy)return;busy=true;foreach(var x in actions)x.Enabled=false;try{await action();}catch(Exception ex){detail.Text=ex.Message;Log("ERROR "+ex.Message);}finally{busy=false;foreach(var x in actions)x.Enabled=true;}};parent.Controls.Add(b);}
-        void Log(string s){var lines=log.Lines;if(lines.Length>=200)log.Lines=lines.Skip(lines.Length-199).ToArray();log.AppendText(DateTime.Now.ToString("HH:mm:ss.fff")+" "+s.Replace(Environment.NewLine," ")+Environment.NewLine);}
+        void Log(string message) {
+            const int maximumLineLength = 1200;
+            string line = message.Replace(Environment.NewLine, " ");
+            if (line.Length > maximumLineLength) {
+                line = line.Substring(0, maximumLineLength) + " …（完整消息见 JSONL 文件）";
+            }
+            string[] lines = log.Lines;
+            if (lines.Length >= 200) {
+                log.Lines = lines.Skip(lines.Length - 199).ToArray();
+            }
+            log.AppendText(DateTime.Now.ToString("HH:mm:ss.fff") + " " + line + Environment.NewLine);
+        }
         async Task Connect(){if(connected)throw new Exception("切换账户请关闭并重新打开原型。");string name=user.Text;await Task.Run(()=>client.Connect(name));connected=true;user.Enabled=false;var data=await Request("ficc.quote.stream.open",new JObject());streamId=(string)data["streamId"];topic=(string)data["pushTopic"];sequence=(long?)data["sequence"]??0;await Task.Run(()=>client.Subscribe(topic,false));await OpenView();await OpenPriceView();await ConnectNotifications();var institutions=await Request("ficc.base.query",new JObject{["kind"]="INSTITUTION"});var contacts=await Request("ficc.base.query",new JObject{["kind"]="CONTACT"});counterpartyEditor.SetReferenceData(((JArray)institutions["records"]).OfType<JObject>(),((JArray)contacts["records"]).OfType<JObject>());counterpartyEditor.LoadFields(Selected());}
-        async Task<JObject> Request(string t,JObject r){if(!connected)throw new Exception("请先连接 GW。");return await Task.Run(()=>client.Data(t,r));}
-        JObject Filter(){var f=new JObject();if(rating.SelectedIndex>0)f["conditions"]=new JArray(new JObject{["field"]="bondRating",["operator"]="EQ",["value"]=rating.Text});return f;}
-        async Task OpenView(){
-            if(!connected)throw new Exception("请先连接 GW。");
-            if(viewId!=null)await Request("ficc.quote.view.close",new JObject{["viewId"]=viewId});
-            viewId="V-"+Guid.NewGuid().ToString("N");var statuses=statusFilter.SelectedIndex==0?new JArray("PENDING_CONFIRM","ACTIVE","REFERRED","DELETED"):new JArray(new[]{"","PENDING_CONFIRM","ACTIVE","REFERRED","DELETED"}[statusFilter.SelectedIndex]);
-            opening=true;pending.Clear();try{
-                var r=await Request("ficc.quote.view.open",new JObject{["viewId"]=viewId,["ownerScope"]="MINE",["status"]=statuses,["limit"]=200,["filter"]=Filter()});
-                cache.Clear();ids.Clear();foreach(JObject q in (JArray)r["quotes"])cache[(string)q["quoteId"]]=q;
-                foreach(var id in (JArray)r["view"]["ids"])ids.Add((string)id);sequence=(long)r["sequence"];Render();
-            }finally{opening=false;var list=pending.ToArray();pending.Clear();foreach(var p in list)Receive(p.Item1,p.Item2);}
+        async Task<JObject> Request(string requestTopic, JObject request) {
+            if (!connected) {
+                throw new Exception("请先连接 GW。");
+            }
+            return await Task.Run(() => {
+                string phase = requestTopic == "ficc.quote.view.open" ? "open" : "close";
+                Action<string> measurement = filterPhase;
+                measurement?.Invoke(phase + ".worker.start");
+                JObject reply = client.Data(requestTopic, request);
+                measurement?.Invoke(phase + ".worker.end");
+                return reply;
+            });
+        }
+        JObject Filter() {
+            if (performanceFilter != null) {
+                return (JObject)performanceFilter.DeepClone();
+            }
+            var filter = new JObject();
+            if (rating.SelectedIndex > 0) {
+                filter["conditions"] = new JArray(new JObject {
+                    ["field"] = "bondRating",
+                    ["operator"] = "EQ",
+                    ["value"] = rating.Text
+                });
+            }
+            return filter;
+        }
+
+        async Task OpenView() {
+            if (!connected) {
+                throw new Exception("请先连接 GW。");
+            }
+            filterPhase?.Invoke("close.start");
+            if (viewId != null) {
+                await Request("ficc.quote.view.close", new JObject { ["viewId"] = viewId });
+            }
+            filterPhase?.Invoke("close.end");
+            viewId = "V-" + Guid.NewGuid().ToString("N");
+            var statuses = statusFilter.SelectedIndex == 0
+                ? new JArray("PENDING_CONFIRM", "ACTIVE", "REFERRED", "DELETED")
+                : new JArray(new[] { "", "PENDING_CONFIRM", "ACTIVE", "REFERRED", "DELETED" }[statusFilter.SelectedIndex]);
+            opening = true;
+            pending.Clear();
+            try {
+                filterPhase?.Invoke("open.start");
+                JObject reply = await Request("ficc.quote.view.open", new JObject {
+                    ["viewId"] = viewId,
+                    ["ownerScope"] = "MINE",
+                    ["status"] = statuses,
+                    ["limit"] = 200,
+                    ["filter"] = Filter()
+                });
+                filterPhase?.Invoke("open.end");
+                cache.Clear();
+                ids.Clear();
+                foreach (JObject quote in (JArray)reply["quotes"]) {
+                    cache[(string)quote["quoteId"]] = quote;
+                }
+                foreach (JToken id in (JArray)reply["view"]["ids"]) {
+                    ids.Add((string)id);
+                }
+                lastFilterTotalCount = (int)reply["view"]["totalCount"];
+                sequence = (long)reply["sequence"];
+                Render();
+                filterPhase?.Invoke("apply.end");
+            } finally {
+                opening = false;
+                var messages = pending.ToArray();
+                pending.Clear();
+                foreach (var message in messages) {
+                    Receive(message.Item1, message.Item2);
+                }
+            }
         }
         void Receive(string t,JObject m){
             if(t==notificationTopic){ReceiveNotification(m);return;}

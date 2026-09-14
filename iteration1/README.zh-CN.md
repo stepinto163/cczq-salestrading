@@ -4,6 +4,8 @@
 
 日常操作请参阅 [本机启动、测试与停止指南](docs/local-startup.zh-CN.md)，包含可直接复制的 PowerShell 命令。
 
+前端筛选延迟测试见 [独立性能测试说明及首轮结果](docs/filter-performance.zh-CN.md)。支持手动选择 500 至 50,000 条服务端报价，默认只运行 500 条，使用外部看门狗和虚拟网格。
+
 Java 模块现已提供 [Maven 父 POM](pom.xml) 和 [Jenkinsfile](Jenkinsfile)，构建、基础依赖准备及部署包说明见 [Maven 与 Jenkins 构建](docs/maven-jenkins.zh-CN.md)。Maven 使用独立的 `target-maven` 输出目录。
 
 迁移至 QA 空库时，使用 [建表 SQL](sql/001-create-demo-tables.sql)；执行方法及数据库配置见 [QA 环境数据库初始化](docs/qa-database.zh-CN.md)。
