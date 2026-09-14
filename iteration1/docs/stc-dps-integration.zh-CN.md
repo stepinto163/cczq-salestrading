@@ -195,3 +195,79 @@ install 之后上面的 `-P with-gateway` 构建即可通过，产物为
 | 本机固定地址副本（`Host=10.100.151.202:18680`、`RegType=0`、`RegisterEnable=0`） | GW 能起服、18600 监听，但仍不路由 |
 
 即 `RegType=0` **不是**该 foundation 的固定地址开关，GW 前置仍需按 6.3 的两种方案由发起方定夺。
+
+## 7. 根因补全：ZkCluster.zk 是进程级静态单例（2026-09-15）
+
+6.3 记录的「自注册与消费 STC 互斥」此前只有现象，没有源码级解释。读 stc-lite 源码后已定位：
+
+- `sc-app-common/.../com/app/common/cluster/ZkCluster.java:29` —— `public static ZookeeperClient zk = null;`
+- `createZkClient()`（同文件 47-74 行）是 `synchronized`，且**只在 `zk == null` 时才创建**。
+
+因此**一个 JVM 进程内只能存在一套 ZooKeeper 连接**：谁先调用，后面所有服务（无论消费还是注册）
+都复用同一个 `zk`。QuoteSvr 先消费 STC QA（10.130.21.53:2181）拿到 `zk`，
+随后它向本地 ZK（127.0.0.1:12181）自注册时 `zk` 已非空，节点被写到**错误的** ensemble，
+`SERVER.BaseSvr` / `SERVER.ValidationServer` 自然解析为 null。这与 RegType、NetType、端口都无关。
+
+顺带纠正：`RegType` 不是「注册中心 / 固定地址」开关，而是**集群模式**——
+`ServerInfo.TYPE = { "ALL", "ALL", "STANDBY" }`（0/1=ALL，2=STANDBY），
+只影响创建 EPHEMERAL 还是 EPHEMERAL_SEQUENTIAL、以及监听 children 还是监听单节点 data。
+
+### 7.1 解法：外部脚本写本地 ZK（已实测可行）
+
+因为 `zk` 是**进程级**静态量，把 GW 与 QuoteSvr 放在**两个进程**即可各用一套 ZK；
+此时只要有人把 QuoteSvr 的真实地址写进本地 ZK，GW 就能发现它，
+而 QuoteSvr 可以继续 `RegisterEnable=0` 消费 STC QA。节点格式与 foundation 写的一致：
+
+```text
+/MDTService/QuoteSvr/<任意子节点名>  =  Host:10.100.151.202,Port:18680,Stat:1
+```
+
+实测（本地 ZK 127.0.0.1:12181 已起）：
+
+- 用 ZK 自带 jar 建上述持久节点（子节点名 `QuoteSvrSeed`）；
+- QuoteSvr 以基线配置（`REGISTER.ServerList=REGISTER.Svr1`、RegType=2、RegisterEnable=0）起服，
+  `QuoteSvr READY`，监听 10.100.151.202:18680，仍照常消费 STC QA；
+- GW 以 `RegType=0 / RegisterEnable=0` 的配置副本起服，日志出现
+  `* QuoteSvr onConnected,subscribe:[ficc.price.report.**, ficc.quote.report.**]`
+  —— 说明 **GW 通过外部写入的节点发现了 QuoteSvr，且 QuoteSvr 未牺牲 STC 消费能力**。
+
+6.3 的「互斥」因此有了明确解法：**外部注册 + 双进程**，不需要发起方二选一。
+
+### 7.2 GW 路由表必须来自 node_server_*.xml（此前缺失）
+
+GW 起服后若日志出现：
+
+```text
+initNodeClientWrapper nodeId:* servers:null
+```
+
+说明 `CedaApi` 的后端路由表是空的，**所有请求会被静默丢弃**（客户端 `requestSync` 返回 null，GW 侧无任何日志）。
+原因是 `CedaProxy` 的 `nodeFilePath` 属性没有注入——上游 `spring-ceda-client.xml` 里这一行是被注释掉的：
+
+```xml
+<!-- <property name="nodeFilePath" value="./config/nodes/"/>-->
+```
+
+修复：`iteration1/gateway/config/spring-config.xml` 的 `proxy` bean 增加
+`<property name="nodeFilePath" value="./config/nodes/"/>`，
+并提供 `config/nodes/node_server_local.xml`（`NodeId` 用 `*`，
+`Servers` 列出 `LoginSvr` / `QuoteSvr` 及其 `RequestTopics`）。
+加完后日志变为 `initNodeClientWrapper nodeId:* servers:{...}`，路由表已装载。
+
+> 注意：路由表装载**不等于**端到端打通。本次实测该配置下 GW 仍不回包，
+> 客户端 `requestSync` 依旧返回 null 且 GW 侧无任何请求日志，
+> `cedaClientWrapperMap` 中 `onlineStatus` 仍为 `{}`。下一步需开 `com.gateway` 的 DEBUG 日志确认
+> 请求是在 security check 还是 onlineStatus 判定处被丢弃。
+
+### 7.3 登录返回值取决于 ATS_ROOT 能否读到 adapters.local.properties
+
+直连 QuoteSvr `10.100.151.202:18680` 的 `SYS.ATS.LOGIN`：
+
+| ATS_ROOT | 应答 |
+|---|---|
+| 能读到 `adapters.local.properties`（`identity.mode=stc`） | `Code=1003` `Local login simulator is disabled; use STC LoginSvr` |
+| 读不到（例如 ATS_ROOT 指向 `runtime/quotesvr`，该文件在 `runtime/` 下） | `Code=0001` `Fixed LoginSvr simulator`，`sid=SIM-...` |
+
+后者日志里会出现 `GwServerResource: handler=LoginSimulatorHandler,topic=SYS.ATS.LOGIN`。
+**`Code=0001` 是本地模拟器身份，不是真实 STC 登录**，不能作为验收项 3 的证据；
+真实登录仍需 STC 测试账号。

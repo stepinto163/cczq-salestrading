@@ -34,6 +34,10 @@
     <property name="RequestService" value="LoginSvr,QuoteSvr,NotificationSvr"/>
     <property name="Subscribes"><map><entry key="LoginSvr" value="SYS.ATS.LOGIN"/><entry key="QuoteSvr" value="ficc.quote.report.**|ficc.price.report.**"/><entry key="NotificationSvr" value="ficc.notification.report.**"/></map></property>
     <property name="securityChecks"><list><ref bean="security"/></list></property>
+    <!-- Required for request routing: CedaApi.loadNodeCfgs() reads node_server_*.xml from
+         this directory and builds the topic -> backend server table. Without it the GW
+         logs "initNodeClientWrapper nodeId:* servers:null" and silently drops every request. -->
+    <property name="nodeFilePath" value="./config/nodes/"/>
   </bean>
   <bean id="serverConfig" class="com.gateway.connector.tcp.config.ServerTransportConfig">
     <property name="tcpConnector" ref="tcpConnector"/>
