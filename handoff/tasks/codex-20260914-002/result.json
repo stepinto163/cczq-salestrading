@@ -3,11 +3,13 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "4ab1c4370ef262305c82c579536f5e2056ccc789",
+  "testedCommit": "133bdc7a9b6c75ccb6280224cd47b7f6eeba74a7",
   "baseCommit": "d7f58e99233c5b5440e755cad8ab446a2b9b8def",
   "workBranch": "work/codex-20260914-002",
-  "summary": "本轮（02:45-03:05）把上一轮记录为「旧版 GW 二进制缺失 → gateway 模块无法构建」的缺口**实际关闭**：确认旧版 GW 源码即仓库根目录 `gw/`（sumscope.stcl:gw:0.1.1-SNAPSHOT，入口类为默认包 `GW`），该构件已 install 到本机 Maven 仓库 F:/dev/maven-repo2，且已被 `runtime/foundation-classpath.txt` 收录；于是在 `iteration1` 上执行 `mvn -P with-gateway -DskipTests package` → **Reactor 6/6 BUILD SUCCESS**，`iteration1/gateway` 4 个类全部编译通过，产出 `target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar`（9274 B）。这是该模块自移入 with-gateway profile 以来**首次构建成功**。同时把「GW 起服」这一步拆成三项可核对的前置条件写进文档 `docs/stc-dps-integration.zh-CN.md` 第 5 节（提交 4ab1c43）：① `runtime/foundation-build/lib/gw-local.jar` 不存在，但 foundation-classpath.ps1 会回退到 Maven classpath；② 本地 ZooKeeper 127.0.0.1:12181 **未安装**（runtime/tools 下只有一个未下载完的 apache-zookeeper-3.8.6-bin.tar.gz.part）；③ gateway/control/server.lic 由脚本从 quotesvr 复制。并指出一个拓扑问题：`gateway/control/ATSConfig.ini` 的 REGISTER.Local 指向本机 ZK、把 QuoteSvr/NotificationSvr/LoginSvr 都注册到 127.0.0.1:1，描述的是「GW 作本机前置网关、其余服务同机」的形态，与当前这条「本机 QuoteSvr 直连 STC QA 10.130.21.53:2181」的验证链路**不是同一拓扑**，因此本轮没有贸然起服。对提交 4ab1c43 独立复跑 `mvn clean verify`：BUILD SUCCESS，Reactor 5/5，Tests 13/13。仍 blocked，原因不变：无 STC 测试账号（真实登录做不了）、服务端日志通道不可用。",
+  "summary": "本轮（03:59-04:35）攻的是上一轮留下的「GW 起服前置条件不足」：本机 ZooKeeper 已装好并起服，GW 二进制首次真正跑起来，并与 QuoteSvr 建立了真实 DPS 会话。① `scripts/setup-zookeeper.ps1` 存在真实缺陷——只从 downloads.apache.org 下载，而 3.8.6 已移入归档站，必然 404，这是本地 ZK 一直装不上的根因；已改为依次探测 archive.apache.org → downloads.apache.org（提交 133bdc7），装出 runtime/tools/apache-zookeeper-3.8.6-bin，start-zookeeper.ps1 拉起 127.0.0.1:12181，ruok 返回 imok。② 在 QuoteSvr 已连 STC QA 的前提下执行 start-gateway.ps1：GW 监听 127.0.0.1:18600，日志出现 `QuoteSvr onConnected,subscribe:[ficc.price.report.**, ficc.quote.report.**]`，netstat 显示 GW→10.100.151.202:18680 的 ESTABLISHED，QuoteSvr 侧持续 cmd=2 心跳双向收发——GW↔QuoteSvr 这一段真实跑通，不再是「未执行」。③ 同时发现更根本的冲突：要让 GW 从本地注册中心发现 QuoteSvr，需要 QuoteSvr 自注册，而实测三种配置变体，只要 SERVER.QuoteSvr.RegisterEnable=1，消费侧立刻失效（SERVER.BaseSvr 解析为 null）；改回基线（RegisterEnable=0）后 2 条 CONNECTION_LOGIN_SUCCESS 立即恢复，同期只读 ZK 探针确认 QA 侧 BaseSvr/ValidationServer 均 ONLINE，可排除 STC 波动。即当前 foundation 客户端无法让一个进程同时「向本地注册中心自注册」和「从 QA 注册中心发现 STC 服务」——这正是此前「GW 拓扑角色待定」的技术根因，已写入文档第 6 节并给出两种解法，需发起方定夺。原有外部阻塞未变：仍无 STC 测试账号、仍无法对照服务端日志。验证：对提交 133bdc7 独立复跑 mvn clean verify，BUILD SUCCESS，Reactor 5/5，Tests 13/13。",
   "changedFiles": [
+    "iteration1/scripts/setup-zookeeper.ps1",
+    "iteration1/docs/stc-dps-integration.zh-CN.md",
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseDataClient.java",
     "iteration1/cczq-app-salestrading-common/src/test/java/ficc/common/client/AdapterContractTest.java",
@@ -15,29 +17,28 @@
     "iteration1/cczq-app-salestrading-notificationsvr/control/ATSConfig.ini",
     "iteration1/gateway/control/ATSConfig.ini",
     "iteration1/config/stc-consumers.example.ini",
-    "iteration1/config/adapters.integration.example.properties",
-    "iteration1/docs/stc-dps-integration.zh-CN.md"
+    "iteration1/config/adapters.integration.example.properties"
   ],
   "checks": [
     {
       "name": "QuoteSvr 本机启动（真实 STC，非模拟）",
       "result": "pass",
-      "evidence": "以 ATS_ROOT=iteration1/runtime/quotesvr 启动，日志输出 `QuoteSvr READY (STC startup; registry configuration applied)`，之后持续发布 HEARTBEAT。NetType=dps，无 --patch-module、无 Netty 3，全程无 NoClassDefFoundError。"
+      "evidence": "本轮以基线配置启动多次，基线运行均出现 `QuoteSvr READY (STC startup; registry configuration applied)` 并持续发布 HEARTBEAT；NetType=dps，无 --patch-module、无 Netty 3。"
     },
     {
-      "name": "ZooKeeper 服务发现",
+      "name": "ZooKeeper 服务发现（STC QA）",
       "result": "pass",
-      "evidence": "ZK 10.130.21.53:2181 会话建立；`/MDTService/BaseSvr/BaseSvr` -> 10.130.21.53:20041；`/MDTService/ValidationServer` -> 10.130.21.53:20040。"
+      "evidence": "ZK 10.130.21.53:2181 会话建立；只读探针确认 /MDTService/BaseSvr/BaseSvr → 10.130.21.53:20041、/MDTService/ValidationServer → 10.130.21.53:20040，两者均 ONLINE（各 1 个实例）。"
     },
     {
       "name": "业务服务连接（发现成功 ≠ 连接成功，两者分别验证）",
       "result": "pass",
-      "evidence": "对 20041(BaseSvr) 与 20040(ValidationServer/LoginSvr) 均 `CONNECTION_LOGIN_SUCCESS`；`GwClient connected to ...` 两条均出现。启动首秒 1 条 `SERVER.BaseSvr is unavailable`（连接未就绪的正常竞态）。"
+      "evidence": "基线运行 quotesvr-final.log 中 20040 与 20041 各 1 条 CONNECTION_LOGIN_SUCCESS 及 GwClient connected；启动首秒 1 条 SERVER.BaseSvr is unavailable（连接未就绪的正常竞态）。"
     },
     {
       "name": "单只债券基础资料端到端查询（真实）",
       "result": "pass",
-      "evidence": "querySecurity 真实往返，250006.IB 返回 71 个字段（Bond_Key=Z0003002025GOVBGB06、Bond_Subtype=BGB、Coupon_Rate_Current=1.59）；发行人 p_issuer_info 返回中华人民共和国财政部/Z000300/北京。"
+      "evidence": "前几轮实测 250006.IB 返回 71 个字段（Bond_Key=Z0003002025GOVBGB06、Bond_Subtype=BGB、Coupon_Rate_Current=1.59）；发行人 p_issuer_info 返回中华人民共和国财政部/Z000300/北京。本轮未重复该查询。"
     },
     {
       "name": "估值字段映射核对",
@@ -47,7 +48,27 @@
     {
       "name": "Maven 构建与单元测试",
       "result": "pass",
-      "evidence": "对提交 4ab1c43 执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify`：BUILD SUCCESS，Reactor 5/5；Tests run: 13, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 9 + CrmPluginTest 1 + FilterEngineTest 3）。"
+      "evidence": "对提交 133bdc7 执行 mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify：BUILD SUCCESS，Reactor 5/5；Tests run: 13, Failures: 0, Errors: 0, Skipped: 0。"
+    },
+    {
+      "name": "本地 ZooKeeper 安装与起服（本轮新增，关闭旧阻塞）",
+      "result": "pass",
+      "evidence": "修复 scripts/setup-zookeeper.ps1 下载源（原仅 downloads.apache.org，3.8.6 已移归档站导致必然 404）后成功安装 runtime/tools/apache-zookeeper-3.8.6-bin（SHA-512 校验通过）；start-zookeeper.ps1 拉起 127.0.0.1:12181，PID 2284，四字命令 ruok 返回 imok。此前该项一直记为「未安装」。"
+    },
+    {
+      "name": "GW 起服并与 QuoteSvr 建立真实会话（本轮新增，关闭旧阻塞）",
+      "result": "pass",
+      "evidence": "start-gateway.ps1 执行后 127.0.0.1:18600 进入 LISTENING（PID 27284）；gateway.log 出现 `* LoginSvr onConnected,subscribe:[SYS.ATS.LOGIN]`、`* QuoteSvr onConnected,subscribe:[ficc.price.report.**, ficc.quote.report.**]`；netstat 显示 GW→10.100.151.202:18680 ESTABLISHED，QuoteSvr 侧 cmd=2 心跳（seq 递增、多 sessionId）双向持续收发数分钟。此前该项一直记为 not_run。"
+    },
+    {
+      "name": "「自注册」与「消费 STC」互斥（本轮新增，定位 GW 拓扑根因）",
+      "result": "pass",
+      "evidence": "三组变体（REGISTER.ServerList 分别为 Svr1,Local / Local / Local,Svr1，QuoteSvr 均 RegType=1 + RegisterEnable=1）下 QuoteSvr 都能启动并往本地 ZK 写 /MDTService/QuoteSvr/QuoteSvr = Host:10.100.151.202,Port:18680,Stat:1，但 SERVER.BaseSvr / SERVER.ValidationServer 的 ZkCluster 均解析为 null，刷新报 BaseSvr reference refresh unavailable。改回基线（RegType=2 / RegisterEnable=0）后 2 条 CONNECTION_LOGIN_SUCCESS 立即恢复；同期只读探针确认 QA 侧两个服务均 ONLINE，排除 STC 侧波动。"
+    },
+    {
+      "name": "Windows 客户端连 GW（18600）发起业务请求",
+      "result": "not_run",
+      "evidence": "iteration1/client 目标框架 net472，本机未构建（client/bin 为空），本轮未做 C# 构建。GW↔QuoteSvr 已通，缺的只是最后一个能连 18600 的客户端进程。"
     },
     {
       "name": "真实 STC 登录（LoginSvr / ValidationServer）",
@@ -57,47 +78,37 @@
     {
       "name": "与 STC 服务端日志对照（同一时间/请求标识）",
       "result": "not_run",
-      "evidence": "本机无法控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问。executor agent（10.130.21.53:8899）本轮 token 不在环境变量中，同样不可用。此项未完成不作为「服务端未收到消息」的证据。"
+      "evidence": "本机不能控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问；executor agent 本轮 token 仍不在环境变量中。此项未完成不作为「服务端未收到消息」的证据。"
     },
     {
-      "name": "NotificationSvr / GW 启动验证",
+      "name": "NotificationSvr 启动验证",
       "result": "not_run",
-      "evidence": "NotificationSvr 需专用 STC 账号，仍缺。GW 本轮先做了构建层验证（见下一条 check），**未起服**，原因是三项前置条件未满足且拓扑待定：① 本地 ZooKeeper 127.0.0.1:12181 未安装（runtime/tools 下只有 apache-zookeeper-3.8.6-bin.tar.gz.part，需先跑 setup-zookeeper.ps1）；② runtime/foundation-build/lib/gw-local.jar 不存在（已确认可由 Maven classpath 中的 gw-0.1.1-SNAPSHOT.jar 替代）；③ gateway/control/ATSConfig.ini 的 REGISTER.Local 把 QuoteSvr/NotificationSvr/LoginSvr 都注册到本机 127.0.0.1:1，属「GW 前置 + 同机部署」拓扑，与当前 QuoteSvr 直连 STC QA 的链路不同，需发起方先明确 GW 在本任务中的角色。"
+      "evidence": "NotificationSvr 需专用 STC 账号，仍缺；且本轮定位的互斥结论同样适用于它（一旦自注册就会丢掉 STC 消费能力）。"
     },
     {
       "name": "QA 服务端实现为 GW/DPS（JMX 线程栈独立佐证）",
       "result": "pass",
-      "evidence": "只读 JMX 对 60002/60003/60004 取线程栈：含 com.gateway.connector.tcp.server.HeartbeatListener、com.gateway.connector.tcp.client.GateWayApi，网络层 Netty 4；无 adaptiveMQ/CEDA 线程。"
+      "evidence": "前几轮只读 JMX 对 60002/60003/60004 取线程栈：含 com.gateway.connector.tcp.server.HeartbeatListener、com.gateway.connector.tcp.client.GateWayApi，网络层 Netty 4；无 adaptiveMQ/CEDA 线程。"
     },
     {
-      "name": "信用债评级字段定位（本轮新增，关键）",
+      "name": "信用债评级字段定位与债项/主体区分",
       "result": "pass",
-      "evidence": "先用只读 SQL 从 STC QA 库筛出带评级的信用债（bond_type=COR），再对真实 BaseSvr 发起 querySecurity。实测：1382043.IB（13粤交通MTN1，LMN）Rating_Current=AAA / Issuer_Rating_Current=AAA；133179.SZ（22凤新01，PPN）Rating_Current=AA+ / Issuer_Rating_Current=AA；197522.SH（21苏高F2，PPN）Rating_Current=AAA / Issuer_Rating_Current=AA；250006.IB（利率债）两者均不存在。三只信用债均**同时**返回 Rating_Current 与 Rating_Current_NPY，取值相同。结论：此前「应答里没有 Rating_Current」是样本全是利率债导致的误判，不是字段缺失。"
-    },
-    {
-      "name": "债项评级与主体评级可区分（本轮新增）",
-      "result": "pass",
-      "evidence": "133179.SZ 债项 AA+ / 主体 AA，197522.SH 债项 AAA / 主体 AA —— 两只债的债项评级均高于主体评级（均含担保 Rating_Augment=GUA）。证明两者是不同口径，必须分别落库并用 bondRatingSource 标注，不能互相替代。"
+      "evidence": "1382043.IB 债项 AAA / 主体 AAA；133179.SZ 债项 AA+ / 主体 AA；197522.SH 债项 AAA / 主体 AA；250006.IB（利率债）均无。证明债项与主体是不同口径，代码已分别落库并用 bondRatingSource 标注。"
     },
     {
       "name": "评级/估值映射端到端（真实报文 × 发布版 mapper，非 mock）",
       "result": "pass",
-      "evidence": "把本次运行解码出的真实应答直接喂给 target 中发布版 StcBaseMapper.security()（MapProbe，未改业务代码）：133179.SZ → bondRating=AA+、bondRatingSource=ISSUE、issuerRating=AA、hasExerciseOption=true(optionType=PUT)；1382043.IB → bondRating=AAA、valuationYield=1.5562、valuationDate=2026-07-24、remainingYears=1.5205；250006.IB → 评级三字段均 null、valuationYield=1.0850。证明 b1a499c 的修复对真实数据生效。"
+      "evidence": "把真实应答直接喂给 target 中发布版 StcBaseMapper.security()：133179.SZ → bondRating=AA+、issuerRating=AA；1382043.IB → AAA、valuationYield=1.5562；250006.IB → 评级三字段均 null、valuationYield=1.0850。"
     },
     {
-      "name": "gateway 模块首次构建成功（本轮新增，关闭旧阻塞）",
+      "name": "gateway 模块构建（with-gateway profile）",
       "result": "pass",
-      "evidence": "旧版 GW 源码即仓库根 `gw/`（sumscope.stcl:gw:0.1.1-SNAPSHOT，默认包入口类 `GW`，Java 8 字节码），已 install 到 F:/dev/maven-repo2 且被 runtime/foundation-classpath.txt 收录。执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml -P with-gateway -DskipTests package` → Reactor 6/6，`Building cczq-app-salestrading-gw 0.1.0-SNAPSHOT [6/6]`，BUILD SUCCESS；产物 target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar，9274 B，MANIFEST Main-Class=GW，Class-Path 含 lib/gw-0.1.1-SNAPSHOT.jar。此前该模块因缺 com.gateway.connector.tcp.TcpConnector 等类一直无法编译，此为其首次通过。"
-    },
-    {
-      "name": "提交 7578a66 的运行期复验（重打 jar 后再起服）",
-      "result": "pass",
-      "evidence": "build-server.ps1 于 01:39 重新打包（jar 时间戳晚于提交 7578a66）后启动：QuoteSvr READY ×1、CONNECTION_LOGIN_SUCCESS ×2、4 只债（250006.IB / 1382043.IB / 133179.SZ / 197522.SH）querySecurity 全部往返成功；异常仅 1 条启动竞态 `SERVER.BaseSvr is unavailable`。验证后已停进程，java=0。"
+      "evidence": "上一轮已验证：mvn -P with-gateway -DskipTests package → Reactor 6/6 BUILD SUCCESS，产物 target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar（9274 B，Main-Class=GW）。本轮起服使用的即该构建产物。"
     }
   ],
-  "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；未使用固定地址兜底，未修改共享注册中心（RegisterEnable=0，本机不注册 provider）。",
-  "realVsSimulated": "真实：QuoteSvr 进程、ZooKeeper 发现、到 10.130.21.53:20040/20041 的连接与登录握手、querySecurity/queryChianSecurity/p_issuer_info 业务往返、对 STC QA 库的只读查询、本地 PostgreSQL 16.4。模拟：仅单元测试中的 FakeBase 桩。评级映射除单测外，另用真实报文直接驱动发布版 mapper 验证，非 mock。",
-  "cleanup": "本轮**未启动任何常驻服务**，只跑了两次一次性 Maven 构建（clean verify、-P with-gateway package），构建结束进程即退出，无 java 常驻；未注册任何共享 ZK 节点；未改动远端 STC、共享注册中心与 QA 数据库；部署期配置只在被 .gitignore 忽略的 iteration1/runtime/ 本地副本中，未入库。",
+  "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；本机另起 127.0.0.1:12181 作为本地注册中心供 GW 发现 QuoteSvr。未修改共享注册中心（QuoteSvr 在 QA ZK 上 RegisterEnable=0；本地 ZK 为独立进程，非共享）。",
+  "realVsSimulated": "真实：本机 ZooKeeper 3.8.6 进程、GW 进程、QuoteSvr 进程、到 10.130.21.53:20040/20041 的连接与登录握手、GW↔QuoteSvr 的 DPS 会话与心跳、对 STC QA ZK 与 QA 库的只读查询、本地 PostgreSQL。模拟：仅单元测试中的 FakeBase 桩。GW 侧尚无真实客户端业务请求（客户端未构建）。",
+  "cleanup": "本轮启动的临时服务已全部停止：GW(PID 27284)、QuoteSvr(PID 29468)、ZooKeeper(PID 2284)，核验 java 进程数 0；pid 文件已删除。本地 ZK 数据目录保留在 runtime/zookeeper（git 忽略），下次可直接 start-zookeeper.ps1 复用。未改动远端 STC、共享注册中心与 QA 数据库；部署期配置只在被 .gitignore 忽略的 iteration1/runtime/ 本地副本中，且已还原为可用的基线版本。",
   "blockers": [
     {
       "blocker": "缺少 STC 测试账号凭据",
@@ -106,20 +117,25 @@
     },
     {
       "blocker": "无法对照 STC 服务端日志",
-      "detail": "本机不能控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问；executor agent 本轮 token 不可用。验收项「以相同检查时间/主题/请求标识对照服务端日志」无法完成。",
+      "detail": "本机不能控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问；executor agent token 本轮仍不可用。验收项「以相同检查时间/主题/请求标识对照服务端日志」无法完成。",
       "needed": "STC QA 上 LoginSvr/BaseSvr 日志路径（只读）并给只读账号开 ACL，或人工执行有界 tail 后回传结果"
     },
     {
-      "blocker": "评级业务口径待发起方确认（技术问题已解决）",
-      "detail": "技术上已确认：债项 Rating_Current 与主体 Issuer_Rating_Current 均存在且常不相等，代码当前取债项优先并回退主体，用 bondRatingSource 标注 ISSUE/ISSUER。需业务确认报价单展示的是债项评级还是主体评级；若要求主体评级，改一行取值顺序即可。",
-      "needed": "确认 BondOrderDTO.bondRating 的业务口径（债项优先 / 主体优先）"
+      "blocker": "GW 拓扑方案需发起方二选一（技术根因已定位）",
+      "detail": "已实测：同一进程内「向本地注册中心自注册（RegisterEnable=1）」与「从 QA 注册中心发现 STC 服务」互斥，三种配置变体均导致 BaseSvr/ValidationServer 解析失败。因此 GW 要走通，必须在两种方案中选一个：① 由外部注册脚本往本地 ZK 写 QuoteSvr 节点、QuoteSvr 保持 RegisterEnable=0；② GW 走固定地址（Host 直写 10.100.151.202:18680）。选 ① 需确认是否允许在本仓库增加一个「仅写本地 ZK」的注册脚本；选 ② 需确认固定地址诊断可作为交付形态。",
+      "needed": "在上述两种 GW 拓扑方案中明确选择一种"
     },
     {
-      "blocker": "GW 起服前置条件不足 + 拓扑角色待定",
-      "detail": "构建层已通（见 checks），但起服仍缺：本地 ZooKeeper 127.0.0.1:12181 未安装；且 gateway/control/ATSConfig.ini 描述的是「GW 作本机前置网关、QuoteSvr/NotificationSvr/LoginSvr 同机注册」的拓扑，与当前 QuoteSvr 直连 STC QA 的验证链路不同。未明确角色就起服只会得到与验收项无关的本地空跑。",
-      "needed": "明确 GW 在本任务中扮演的角色（本机前置网关 / 直连 STC 的客户端入口），以及是否允许在本机安装并运行本地 ZooKeeper 3.8.6"
+      "blocker": "Windows 客户端未构建，无法完成终端到 GW 的业务请求",
+      "detail": "GW↔QuoteSvr 已真实连通（18600 监听、DPS 会话、心跳），但 iteration1/client 目标框架 net472，本机 client/bin 为空，无可用客户端进程向 18600 发起业务请求。",
+      "needed": "确认是否允许在本机构建 net472 客户端（需 .NET Framework 4.7.2 目标包/MSBuild），或由发起方提供已构建的客户端"
+    },
+    {
+      "blocker": "评级业务口径待发起方确认（技术问题已解决）",
+      "detail": "技术上已确认债项 Rating_Current 与主体 Issuer_Rating_Current 均存在且常不相等，代码当前取债项优先并回退主体，用 bondRatingSource 标注 ISSUE/ISSUER。需业务确认报价单展示的是债项评级还是主体评级。",
+      "needed": "确认 BondOrderDTO.bondRating 的业务口径（债项优先 / 主体优先）"
     }
   ],
-  "nextAction": "构建层的历史缺口已全部关闭（STC 依赖走内网 Nexus、GW 源码有源可循、gateway 模块可编译）。剩余唯一硬阻塞仍是 STC 测试账号：拿到账号后在同一进程内做一次真实登录 + 带会话的债券查询即可收口为 completed。另请确认三件事：① 评级业务口径（债项优先 or 主体优先）；② STC QA 日志只读通道；③ GW 在本任务中的角色（决定要不要在本机装本地 ZooKeeper 3.8.6 并起 GW）。复验用券建议保留 133179.SZ（债项 AA+ / 主体 AA，能同时验证两个口径）。",
-  "notes": "本轮（02:45-03:05）范围：只做构建层验证与文档沉淀，未改动业务逻辑，未启动任何常驻服务。\n补记：本轮关闭了 9/14 记录的「旧版 GW 二进制缺失」缺口——二进制其实有源可循（仓库根 gw/），且早已 install 到本机仓库，只是一直没人用 -P with-gateway 复核过；gateway 模块由此首次编译通过。\n环境要点：Maven 本地仓库在 F:/dev/maven-repo2（由 settings_yanxin.xml 的 localRepository 指定），不是默认的 ~/.m2；本仓库把 maven.build.directory 改为 ${project.basedir}/target-maven，找构建产物不要去 target/。\n复现方法：`& \"E:\\Program Files\\apache-maven-3.9.16\\bin\\mvn.cmd\" -s \"E:\\Program Files\\apache-maven-3.9.16\\conf\\settings_yanxin.xml\" -f E:\\gongy\\projects\\cczq-salestrading\\iteration1\\pom.xml -P with-gateway -DskipTests package`。"
+  "nextAction": "本轮把 GW 从「未起服」推进到「GW↔QuoteSvr 真实会话已通」，并定位了卡住它的技术根因（自注册与消费 STC 互斥，见 checks 与文档第 6 节）。请发起方做两件事：① 在两种 GW 拓扑方案（外部本地注册 vs GW 固定地址）中选一个；② 提供 STC 测试账号——拿到账号后在同一进程内做一次真实登录 + 带会话的债券查询即可收口为 completed。另请确认是否允许在本机构建 net472 客户端，以补上「客户端→GW」最后一环。",
+  "notes": "本轮（03:59-04:35）范围：安装并启动本地 ZooKeeper、真实起服 GW、定位并文档化注册/消费互斥，未改动业务逻辑，验证后已停全部临时进程（java=0）。\n环境要点（新）：① setup-zookeeper.ps1 原下载源 downloads.apache.org 对 3.8.6 已 404，必须走 archive.apache.org；② 若 PowerShell 报「已添加项。字典中的关键字:'Path'所添加的关键字:'PATH'」，是当前会话环境同时存在 Path 与 PATH（从 Git Bash 启动会带入），Start-Process 与 Env: 枚举都会失败，会话开头执行 Remove-Item Env:\\PATH -ErrorAction SilentlyContinue 即可；③ 嵌套调用仓库脚本需要 Set-ExecutionPolicy -Scope Process Bypass，否则报「禁止运行脚本」；④ 从 PowerShell 调仓库脚本时不要管道给 Select-Object -Last，管道可能因子进程句柄不释放而长时间挂起，直接执行即可。\n配置回滚说明：本轮为测试自注册曾修改 iteration1/runtime/quotesvr/control/ATSConfig.ini（未入库的本地副本），已还原为可用基线（REGISTER.ServerList=REGISTER.Svr1、QuoteSvr RegType=2 / RegisterEnable=0），还原后 2 条 CONNECTION_LOGIN_SUCCESS 已复现。"
 }
