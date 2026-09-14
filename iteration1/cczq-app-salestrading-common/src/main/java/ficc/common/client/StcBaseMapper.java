@@ -41,8 +41,10 @@ public final class StcBaseMapper {
         String issuerType = configuration.getProperty("base.issuerType." + text(issuer, "issuer_type"));
         // 债项评级优先；非公开（PPN）/私募债的 Rating_Current 常为 NULL，此时回退到发行人评级，
         // 并用 bondRatingSource 显式标注口径来源，避免消费方把主体评级误当成债项评级。
-        // 真实 BaseSvr 应答的评级字段带 _NPY 后缀（实测 250210.IB 为
-        // Issuer_Rating_Current_NPY=AAA），两种写法都要认，否则评级恒为 null。
+        // 真实 BaseSvr 应答的字段名实测：信用债会同时返回 Rating_Current 与 Rating_Current_NPY
+        // （实测 133179.SZ 债项 AA+、197522.SH 债项 AAA，两者取值相同），两种写法都要认；
+        // 利率债（国债/国开债）不带任何评级字段，此时评级为 null 是正常业务结果，不是字段缺失。
+        // 债项评级与主体评级可能不同（133179.SZ 债项 AA+ / 主体 AA），故不能互相替代。
         String issueRating = firstText(bond, "Rating_Current", "Rating_Current_NPY");
         String issuerRating = firstText(bond, "Issuer_Rating_Current", "Issuer_Rating_Current_NPY");
         JSONObject result = JsonUtils.object(
