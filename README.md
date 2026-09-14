@@ -11,6 +11,7 @@
 | [iteration1/cczq-app-salestrading-notificationsvr](iteration1/cczq-app-salestrading-notificationsvr) | 报价提醒、用户偏好与已读状态 |
 | [iteration1/gateway](iteration1/gateway) | STC GW 配置与接入扩展 |
 | [iteration1/client](iteration1/client) | C# WinForms 原型与有界功能自动测试 |
+| [iteration1/web-client](iteration1/web-client/README.zh-CN.md) | Web 联调原型首轮：GW 登录、报价生命周期、行情与提醒 |
 | [iteration1/api-debugger](iteration1/api-debugger) | DPS 请求与订阅调试工具 |
 | [iteration1/sql](iteration1/sql) | PostgreSQL 初始化及旧 schema 迁移脚本 |
 
