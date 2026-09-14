@@ -67,6 +67,21 @@
       "name": "NotificationSvr / GW 启动验证",
       "result": "not_run",
       "evidence": "本轮按约束先只验证 QuoteSvr；NotificationSvr 需要专用 STC 账号，GW 待 QuoteSvr 链路完成后再起。"
+    },
+    {
+      "name": "QA 服务端实现为 GW/DPS（JMX 线程栈独立佐证，本轮新增）",
+      "result": "pass",
+      "evidence": "只读 JMX（java.lang:type=Threading dumpAllThreads + Runtime 属性）对 60003/LoginSvr、60002/BaseSvr、60004/TBookSvr 取线程栈：均含 com.gateway.connector.tcp.server.HeartbeatListener、com.gateway.connector.tcp.client.GateWayApi，网络层为 io.netty.channel.nio.NioEventLoop（Netty 4，与 gw 模块 netty-all 4.1.59 一致）；线程名 TcpServer Boss-thread-0 / Worker-thread-N；三台服务均无任何 adaptiveMQ/CEDA 线程。这是「服务端不讲 CEDA」的直接证据，独立于上一轮的「握手 no reply」推断。"
+    },
+    {
+      "name": "评级字段已定位：Issuer_Rating_Current_NPY（本轮新增）",
+      "result": "pass",
+      "evidence": "解码本机 GW 客户端与真实 BaseSvr 的往返报文（23:53-23:54 运行日志中的 Proto body 字节）：250210.IB（国开行）的 querySecurity 应答含 \"Issuer_Rating_Current_NPY\":\"AAA\"；同一批次的国债 250006.IB / 240011.IB 无评级字段、只有 \"Rating_Augment\":\"NON\"。结论：评级字段真实存在但带 _NPY 后缀，且国债类本身不填评级——此前「应答里没有 Issuer_Rating_Current」是因为查的标的（国债）无评级，不是字段缺失。"
+    },
+    {
+      "name": "估值字段（真实应答，本轮复核）",
+      "result": "pass",
+      "evidence": "queryChianSecurity 真实应答（240011，2026-07-24 估值日）：valuation_net_price=105.1608、valuation_yield=1.5675、valuation_date=20260724、credibility=推荐、remaining_year=7.8356；bond 主数据应答的 info 段另含 chinaBondValuation / chinaBondValuation2 / chinaValuationDate。"
     }
   ],
   "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；未使用固定地址兜底，也未修改共享注册中心（本轮未注册本机 provider，RegisterEnable=0）。",
@@ -79,9 +94,9 @@
       "needed": "STC QA 测试账号（用户名 + 口令注入方式）"
     },
     {
-      "blocker": "评级字段来源未确认",
-      "detail": "BaseSvr 的 querySecurity 应答里没有 Rating_Current / Issuer_Rating_Current，只有 Rating_Augment=NON；现有映射会输出空评级。需要确认评级应取自哪个接口或字段（例如另一张表 / queryChianSecurity 之外的接口）。",
-      "needed": "STC 评级字段的权威来源（接口名 + 字段名）"
+      "blocker": "评级字段取值口径待发起方确认（字段名已定位）",
+      "detail": "字段名已定位为 Issuer_Rating_Current_NPY（250210.IB 实测 AAA），但需确认：① 是否还有 Rating_Current / Rating_Current_NPY 等债项级字段及其取值条件；② 国债类无评级时应回退到发行主体评级还是留空；③ 双评级（*2 后缀）如何取。",
+      "needed": "STC 评级字段命名规则与回退口径（或确认 Issuer_Rating_Current_NPY 即为权威来源）"
     },
     {
       "blocker": "无法对照 STC 服务端日志",
@@ -89,11 +104,6 @@
       "needed": "STC QA 上 LoginSvr/BaseSvr 的日志路径（只读）或由人工执行的有界 tail 结果"
     }
   ],
-  "nextAction": "拿到 STC 测试账号后，在同一 QuoteSvr 进程内完成真实登录（LoginSvr/ValidationServer:20040）并做一只债券的带会话查询；同时请发起方确认评级字段来源。两项都补齐后可将 state 置为 completed。",
-  "notes": [
-    "上一轮结论「NetType 必须是 ceda」是错误的，已在本轮修正并在文档 iteration1/docs/stc-dps-integration.zh-CN.md 中记录判别方法。",
-    "排查 dps 模式必须打开 log4j 的 com.gw / com.app DEBUG：默认 rootLogger=WARN，GW 客户端的 INFO 日志不可见，容易误判成「客户端没启动」。",
-    "250001.IB 是 PPN，QA BaseSvr 里没有数据，不适合作为连通性探针；示例配置已改为 250006.IB。",
-    "dps 模式下不需要 scripts/ceda-jdk17-shim 与 Netty 3；该 shim 仅在将来切回 NetType=ceda 时才用得上，已保留但不再作为启动必需项。"
-  ]
+  "nextAction": "字段层面已无缺口：评级=Issuer_Rating_Current_NPY（250210.IB 实测 AAA，国债类为空属正常）、估值=queryChianSecurity 的 valuation_net_price/valuation_yield/valuation_date。本轮只补证据、未改代码，testedCommit 仍为 d439604。下一步唯一阻塞是 STC 测试账号：拿到账号后在同一 QuoteSvr 进程（NetType=dps）内完成真实登录，并做一只带会话的债券查询即可收口；同时请发起方确认上述评级字段口径与是否可用服务端日志对照。",
+  "notes": "本轮（00:38-00:45）为只读补证：与另一并行会话的 d439604/6af2b62 结论一致并互相印证；新增 JMX 线程栈证明 QA 服务端为 GW/DPS（非 CEDA），并从真实报文解码出评级字段 Issuer_Rating_Current_NPY。未重复执行起服/查询等动作，未改动业务代码。"
 }
