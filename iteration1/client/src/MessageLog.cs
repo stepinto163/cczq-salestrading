@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -18,14 +18,31 @@ namespace Ficc.Prototype {
             while(current!=null){if(File.Exists(Path.Combine(current.FullName,"QuotePrototype.csproj"))||File.Exists(Path.Combine(current.FullName,"DpsApiDebugger.csproj")))return Path.Combine(current.Parent.FullName,"runtime","client-logs",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+Process.GetCurrentProcess().Id);current=current.Parent;}
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"FiccQuotePrototype","logs",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+Process.GetCurrentProcess().Id);
         }
-        static JToken Redact(JToken token){
-            var result=token?.DeepClone();
-            if(result is JObject obj)foreach(var property in obj.Properties().ToArray()){
-                if(new[]{"password","passwd","authorization","accessToken","refreshToken"}.Any(k=>string.Equals(k,property.Name,StringComparison.OrdinalIgnoreCase)))property.Value="[REDACTED]";
-                else property.Value=Redact(property.Value)??JValue.CreateNull();
+        static readonly HashSet<string> sensitiveFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "password", "passwd", "authorization", "accessToken", "refreshToken"
+        };
+
+        static JToken Redact(JToken token) {
+            JToken copy = token?.DeepClone();
+            RedactCopy(copy);
+            return copy;
+        }
+
+        static void RedactCopy(JToken token) {
+            // The log owns this copy. Visit each node once without copying its subtree again.
+            if (token is JObject value) {
+                foreach (JProperty property in value.Properties()) {
+                    if (sensitiveFields.Contains(property.Name)) {
+                        property.Value = "[REDACTED]";
+                    } else {
+                        RedactCopy(property.Value);
+                    }
+                }
+            } else if (token is JArray array) {
+                foreach (JToken element in array) {
+                    RedactCopy(element);
+                }
             }
-            else if(result is JArray array)for(int i=0;i<array.Count;i++)array[i]=Redact(array[i]);
-            return result;
         }
         public static void Write(string clientId,string user,string direction,string kind,string topic,JToken body,string serverName=null){
             lock(sync){

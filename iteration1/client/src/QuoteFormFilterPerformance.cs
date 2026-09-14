@@ -100,6 +100,7 @@ namespace Ficc.Prototype {
                                 - (phases["open.worker.end"] - phases["open.worker.start"]),
                             ["applyMs"] = phases["apply.end"] - phases["open.end"],
                             ["paintAndDispatchMs"] = total - phases["apply.end"],
+                            ["gridPaintMs"] = grid.LastPaintMilliseconds,
                             ["totalMs"] = total,
                             ["matchedQuotes"] = lastFilterTotalCount,
                             ["loadedRows"] = rows.Count

@@ -15,7 +15,7 @@ namespace Ficc.Prototype {
         readonly Dictionary<string,JObject> cache=new Dictionary<string,JObject>();
         readonly List<string> ids=new List<string>();
         readonly List<Tuple<string,JObject>> pending=new List<Tuple<string,JObject>>();
-        readonly DataGridView grid=new DataGridView();
+        readonly QuoteGrid grid = new QuoteGrid();
         readonly ComboBox user=Choice("demo","demo2","admin");
         readonly ComboBox security=Choice("250001.IB","250002.IB","102500001.IB","102500002.IB");
         readonly ComboBox side=Choice("1","2"), settlement=Choice("1","2");
