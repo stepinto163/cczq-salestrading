@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	               http://www.springframework.org/schema/beans/spring-beans-4.3.xsd">
+
+    <!-- base info start. -->
+    <bean id="tcpServer" class="com.gateway.connector.tcp.server.TServer" init-method="init"
+          destroy-method="shutdown">
+        <property name="port" value="{{tcpport}}"/>
+        <property name="serverConfig" ref="serverConfig"/>
+        <property name="host" value=""/>
+    </bean>
+
+    <bean id="webSocketServer" class="com.gateway.connector.tcp.server.WebSocketServer" init-method="init"
+          destroy-method="shutdown">
+        <property name="port" value="2001"/>
+        <property name="serverConfig" ref="webSocketServerConfig"/>
+    </bean>
+    
+     <bean id="httpServer" class="com.gateway.connector.tcp.server.HttpServer" init-method="init"
+          destroy-method="shutdown">
+        <property name="port" value="2002"/>
+        <property name="serverConfig" ref="serverConfig"/>
+    </bean>
+
+    <bean id="tcpSessionManager" class="com.gateway.connector.tcp.TcpSessionManager">
+        <property name="maxInactiveInterval" value="500"/>
+        <property name="maxQueueSize" value="1000"/>
+        <property name="topicManager" ref="topicManager"/>
+        <property name="sessionListeners">
+            <list>
+            	<ref bean="proxy" />
+                <ref bean="logSessionListener"/>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="logSessionListener" class="com.gateway.connector.api.listener.LogSessionListener"/>
+
+    <bean id="tcpSender" class="com.gateway.remoting.TcpSender">
+        <property name="tcpConnector" ref="tcpConnector"/>
+    </bean>
+
+    <bean id="serverConfig" class="com.gateway.connector.tcp.config.ServerTransportConfig">
+        <property name="tcpConnector" ref="tcpConnector"/>
+        <property name="proxy" ref="proxy"/>
+        <property name="notify" ref="notify"/>
+        <property name="writeBufferLowWaterMark" value="8388608"/>
+        <property name="writeBufferHighWaterMark" value="33554432"/>
+        <property name="gzip" value="true"/>
+        <property name="login" value="true"/>
+    </bean>
+    <bean id="webSocketServerConfig" class="com.gateway.connector.tcp.config.ServerTransportConfig">
+        <property name="tcpConnector" ref="tcpConnector"/>
+        <property name="proxy" ref="proxy"/>
+        <property name="notify" ref="notify"/>
+        <property name="writeBufferLowWaterMark" value="8388608"/>
+        <property name="writeBufferHighWaterMark" value="33554432"/>
+        <property name="gzip" value="true"/>
+        <property name="login" value="false"/>
+    </bean>
+    <bean id="tcpConnector" class="com.gateway.connector.tcp.TcpConnector" init-method="init" destroy-method="destroy">
+       <property name="tcpSessionManager" ref="tcpSessionManager"/>
+   </bean>
+
+   <bean id="topicManager" class="com.gateway.connector.tcp.server.TopicManager"/>
+
+    <bean id="marketDataBurstConfig" class="com.gateway.marketdata.MarketDataBurstConfig">
+        <property name="topicPrefixes" value="stc.md.,stc.cust.md."/>
+        <property name="ingressMaxPendingKeys" value="20000"/>
+        <property name="egressMaxPendingKeys" value="20000"/>
+        <property name="notifyCacheWorkerCount" value="8"/>
+        <property name="notifyCacheMaxSize" value="10000"/>
+        <property name="rawNotifyEnabled" value="true"/>
+        <property name="dropWhenNotWritable" value="true"/>
+        <property name="outboundSoftLimit" value="5000"/>
+    </bean>
+
+    <bean id="notify" class="com.gateway.notify.NotifyProxy">
+        <property name="tcpConnector" ref="tcpConnector"/>
+        <property name="topicManager" ref="topicManager"/>
+        <property name="marketDataBurstConfig" ref="marketDataBurstConfig"/>
+    </bean>
+
+    <!-- base info end. -->
+
+</beans>
+

@@ -1,0 +1,113 @@
+library 'sslib@0.0.3' //引用此工程，格式为<工程名>@<branchName>。此工程会配置在Jenkins中，sslib为Jenkins中配置的工程名，master为branch或tag名。
+
+def preCommands = "rm -rf stc/GW"
+def postCommands = "source .bash_profile && cd scripts && ./stop GW && ./start GW"
+
+def jobInfo = [
+    nodeName: "std-docker-slave", //指定在哪个Jenkins节点上执行
+    projName: "stc",
+    name: "gw",
+    appName: "GW",
+    buildInfo: [ //编译信息
+      
+
+        pom: "pom.xml", //指定工程pom文件位置和名称
+        options: "-DskipTests" // 指定mvn指令的额外参数
+    ],
+ packageInfo: [ //打包信息
+        name: "GW", //用以打包的目录名
+        packageName: "gw" //服务打包后的包名，包会以tar.gz结尾。名称中不需包含扩展名。
+    ],
+    deployInfo: [ //部署信
+        DEV:[ //'master'及其它分支会被部署到DEV环境，允许包含多个部署信息
+            [
+                hostName: "DEV_172.16.138.77_linux", //在Jenkins中配置的主机名
+                packageFile: "*-DEV.APP*.tar.gz", //需要部署的包名，可以包含通配符
+                targetFolder: "stc", //部署到指定的目录
+                preCommands: preCommands, //部署前需执行的指令
+                postCommands: postCommands //部署后需执行的指令
+            ],
+			[
+                hostName: "DEV_172.16.138.170_linux", //在Jenkins中配置的主机名
+                packageFile: "*-DEV.GS.APP*.tar.gz", //需要部署的包名，可以包含通配符
+                targetFolder: "stc", //部署到指定的目录
+                preCommands: preCommands, //部署前需执行的指令
+                postCommands: postCommands //部署后需执行的指令
+            ]
+        ],
+         QA:[ //'rel_'开头的分支会被部署到QA环境，允许包含多个部署信息
+             [
+                hostName: "QA_172.16.137.84_linux", //在Jenkins中配置的主机名
+                packageFile: "*-QA.APP*.tar.gz", //需要部署的包名，可以包含通配符
+                targetFolder: "stc", //部署到指定的目录
+                preCommands: preCommands, //部署前需执行的指令
+                postCommands: postCommands //部署后需执行的指令
+              ],
+            [
+                hostName: "POC_172.16.138.37_linux", //在Jenkins中配置的主机名
+                packageFile: "*-POC.APP*.tar.gz", //需要部署的包名，可以包含通配符
+                targetFolder: "stc", //部署到指定的目录
+                preCommands: preCommands, //部署前需执行的指令
+                postCommands: postCommands //部署后需执行的指令
+            ],
+			[
+				hostName: "QA_172.16.139.198_linux", //在Jenkins中配置的主机名
+				packageFile: "*-QA.GS.APP*.tar.gz", //需要部署的包名，可以包含通配符
+				targetFolder: "stc", //部署到指定的目录
+				preCommands: preCommands, //部署前需执行的指令
+				postCommands: postCommands //部署后需执行的指令
+			],
+			[
+				hostName: "STCL_UAT_172.16.130.147_linux", //在Jenkins中配置的主机名
+				packageFile: "*-AutoTestQA.APP*.tar.gz", //需要部署的包名，可以包含通配符
+				targetFolder: "stc", //部署到指定的目录
+				preCommands: preCommands, //部署前需执行的指令
+				postCommands: postCommands //部署后需执行的指令
+			],
+			[
+            	hostName: "STC_QA_172.16.137.253_linux", //在Jenkins中配置的主机名
+             	packageFile: "*-AutoTestQA.APP*.tar.gz", //需要部署的包名，可以包含通配符
+              	targetFolder: "stc", //部署到指定的目录
+              	preCommands: preCommands, //部署前需执行的指令
+              	postCommands: postCommands //部署后需执行的指令
+            ],
+			[
+                hostName: "STC_QA_172.16.138.251_linux", //在Jenkins中配置的主机名
+                packageFile: "*-QA.BATCH.APP*.tar.gz", //需要部署的包名，可以包含通配符
+                targetFolder: "stc", //部署到指定的目录
+                preCommands: preCommands, //部署前需执行的指令
+                postCommands: postCommands //部署后需执行的指令
+            ],
+            [
+                hostName: "172.16.129.68", //在Jenkins中配置的主机名
+                packageFile: "*-QA.PG.APP*.tar.gz", //需要部署的包名，可以包含通配符
+                targetFolder: "stc", //部署到指定的目录
+                preCommands: preCommands, //部署前需执行的指令
+                postCommands: postCommands //部署后需执行的指令
+            ]
+         ]
+    ],
+     releaseInfo: [ 
+	 serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+      packages: [
+		[ //发布信息
+        fileName: "*-PRD*.tar.gz", //需要发布的文件名，可以使用通配符
+        serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+        repoName: "generic-release", //仓库名称
+        projectName: "stcl", //项目名称
+        packageName: "gw", //服务名称
+        props: "proj=stcl" //包标签，用来在Artifactory中标记包
+    ],
+    [ //发布信息
+			fileName: "*-UAT*.tar.gz", //需要发布的文件名，可以使用通配符
+			serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+			repoName: "generic-release", //仓库名称
+			projectName: "stcl", //项目名称
+			packageName: "gw", //服务名称
+			props: "proj=stcl" //包标签，用来在Artifactory中标记包
+		]
+      ]
+    ]
+]
+
+building.buildJavaService(jobInfo) //根据给定的信息执行Pipeline

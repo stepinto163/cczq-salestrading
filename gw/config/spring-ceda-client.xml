@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+
+    <bean id="proxy" class="com.gateway.invoke.ceda.CedaApiProxy"
+          init-method="init">
+            <property name="mcpGatewayAdapter" ref="mcpGatewayAdapter"/>
+        <property name="topicManager" ref="topicManager"/>
+        <property name="notifyProxy" ref="notify"/>
+        <property name="tcpConnector" ref="tcpConnector"/>
+        <property name="tcpSessionManager" ref="tcpSessionManager"/>
+        <property name="marketDataBurstConfig" ref="marketDataBurstConfig"/>
+        <property name="RequestService" value="MDSvr"/>
+        <property name="Subscribes">
+            <map>
+                <entry key="BaseSvr" value="stc.base.clear|stc.base.mq.account.*"/>
+            </map>
+        </property>
+        <property name="securityChecks">
+            <list>
+                <ref bean="apiKeySecurityCheck"/>               
+            </list>
+        </property>
+       <!-- <property name="nodeFilePath" value="./config/nodes/"/>-->
+<!--        <property name="proxyNodes" value="{{proxyNodes}}"/>-->
+        <property name="userListFilePath" value="./config/userList.csv"/>
+    </bean>
+    <bean id="limitSecurityCheck"
+          class="com.gateway.invoke.security.LimitSecurityCheck"
+          init-method="init">
+        <property name="tcpSessionManager" ref="tcpSessionManager"/>
+        <property name="limitQps" value="100"/>
+    </bean>
+     <bean id="mcpGatewayAdapter"
+            class="com.gateway.mcp.McpGatewayAdapter">
+        <property name="configPath" value="./config/mcpTools.tsv"/>
+        <property name="period" value="1"/>
+    </bean>
+    <bean id="whiteListSecurityCheck"
+        class="com.gateway.invoke.security.WhiteListSecurityCheck"
+        init-method="init">
+        <property name="whiteListPath" value="./config/whiteList.csv" />
+    </bean>
+        <bean id="apiKeySecurityCheck"
+        class="com.gateway.invoke.security.APIKeySecurityCheck"
+        init-method="init">
+        <property name="apiKeyListPath" value="./config/apiKeyList.csv" />
+    </bean>
+    <!--	<bean id="blackListSecurityCheck"-->
+    <!--		  class="com.gateway.invoke.security.BlackListSecurityCheck"-->
+    <!--		  init-method="init">-->
+    <!--		<property name="blackListPath" value="./config/blackList.csv" />-->
+    <!--		<property name="tcpSessionManager" ref="tcpSessionManager" />-->
+    <!--	</bean>-->
+
+</beans>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/task
+                           http://www.springframework.org/schema/task/spring-task.xsd">
+
+    <!-- 启用注解驱动的任务调度 -->
+    <task:annotation-driven/>
+
+    <!-- 定义一个定时任务 -->
+    <task:scheduled-tasks>
+        <!--每天中午12:00和晚上9:00 定时执行-->
+<!--        <task:scheduled ref="gWNodesReloadTask" method="reloadNodes" cron="0 0 12,21 * * *"/>-->
+        <task:scheduled ref="gWNodesReloadTask" method="reloadNodes" cron="0 0/2 * * * *"/>
+        <task:scheduled ref="gwUserListReloadTask" method="reloadUserList" cron="0 0/2 * * * *"/>
+    </task:scheduled-tasks>
+
+    <!-- 定义任务的 Bean -->
+    <bean id="gWNodesReloadTask" class="com.gateway.schedule.GWNodesReloadTask">
+        <property name="cedaProxy" ref="proxy"/>
+    </bean>
+
+    <bean id="gwUserListReloadTask" class="com.gateway.schedule.GWUserListReloadTask">
+        <property name="cedaProxy" ref="proxy"/>
+    </bean>
+</beans>

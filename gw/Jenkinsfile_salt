@@ -1,0 +1,56 @@
+library 'sslib@0.0.3'
+
+def jobInfo =   [
+  nodeName: "std-agent",
+  projName: "stc", //项目名称
+  name: "gw", //工程名称
+  appName: "GW",
+  buildInfo: [
+      //pom: "pom.xml",
+      options: "-DskipTests"
+    ],
+    packageInfo: [ //打包信息
+        name: "gw", //用以打包的目录名
+        baseDir: "/opt/sumscope/",
+        target: "/opt/sumscope/stc/",
+        user: "product", //可选，部署用户
+        group: "product", //可选，部署组
+        appName: "GW"
+    ],
+  deployInfo: [ //部署信息
+    DEV: [
+      saltMasterServer: "salt-master-dev",
+      targets: [
+        [
+            targetServer: "172.16.129.107", // 部署到机器上(minion-id)
+            env: "DEV.BDB.APP"
+        ],
+      ]
+    ],
+    QA: [
+      saltMasterServer: "salt-master-qa",
+      targets: [
+        [
+            targetServer: "fe-qa-svr2", // 部署到机器上(172.16.97.132 minion-id)
+            env: "QA.APP"
+        ],
+		[
+            targetServer: "172.16.138.206", // 部署到机器上(172.16.138.206 minion_id)
+            env: "QA.APP"
+        ],
+	  ]
+	],
+  ],
+  releaseInfo: [
+    serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+    packages: [
+      [
+        fileName: "*.spm", //需要发布的文件名，可以使用通配符
+        repoName: "generic-release", //仓库名称
+        props: "proj=stc;svc=gw" //包标签，用来在Artifactory中标记包;svc=sc-app-stc-parsersvr
+      ]
+    ]
+  ]
+]
+
+building.buildJavaServiceWithSalt(jobInfo)
