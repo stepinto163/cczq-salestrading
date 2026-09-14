@@ -9,18 +9,32 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>stc-foundation-runtime</module>
         <module>cczq-app-salestrading-common</module>
         <module>cczq-app-salestrading-quotesvr</module>
         <module>cczq-app-salestrading-notificationsvr</module>
-        <module>gateway</module>
     </modules>
+
+    <!--
+      The gateway module compiles against the prebuilt GW binary classes
+      (com.gateway.connector.tcp.TcpConnector, com.gateway.invoke.*, com.gateway.message.*),
+      which are not published to the internal Maven repository. Build it only where the
+      GW artifact is available: mvn ... -P with-gateway
+    -->
+    <profiles>
+        <profile>
+            <id>with-gateway</id>
+            <modules>
+                <module>gateway</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.outputTimestamp>2026-09-14T00:00:00Z</project.build.outputTimestamp>
-        <foundation.version>2026.09.14-5303c3cd5da4</foundation.version>
         <!-- Separate output protects JARs used by the running PowerShell demo. -->
         <maven.build.directory>${project.basedir}/target-maven</maven.build.directory>
     </properties>
@@ -32,10 +46,11 @@
                 <artifactId>cczq-app-salestrading-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- In-reactor aggregate of the STC foundation, resolved from the internal Maven repository. -->
             <dependency>
-                <groupId>cczq.salestrading.compat</groupId>
+                <groupId>cczq.salestrading</groupId>
                 <artifactId>stc-foundation-runtime</artifactId>
-                <version>${foundation.version}</version>
+                <version>${project.version}</version>
                 <type>pom</type>
             </dependency>
             <dependency>

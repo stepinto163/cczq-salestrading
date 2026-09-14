@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  STC foundation runtime resolved from the internal Maven repository.
+
+  Replaces the frozen 123-JAR compat set (cczq.salestrading.compat:stc-foundation-runtime:
+  2026.09.14-5303c3cd5da4) per initiator decision on 2026-09-14: dependencies now come from
+  the internal Nexus (maven-public) instead of a gitignored local JAR directory.
+
+  sumscope.stc:sc-app-stc transitively provides the STC/BBox foundation used by the
+  prototype (ats-app-ym-foundation, ats-bbox-framework, ats-foundation-utilities,
+  ats-message, ceda-api, ceda-zookeeper, slf4j/log4j, netty, spring, quartz, IMIX, ...),
+  mirroring how sc-app-stc-* services consume the foundation via sc-app-stc-parent-pom.
+
+  Known gap vs the frozen set: the prebuilt GW classes com.gateway.connector.tcp.TcpConnector,
+  com.gateway.invoke.* and com.gateway.message.* are not published to the internal Nexus
+  (only com.gateway.connector.proto/tcp-client from gateway-api). The gateway module needs
+  a published GW artifact to build.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>cczq.salestrading</groupId>
+    <artifactId>stc-foundation-runtime</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <description>Internal-Maven STC foundation aggregate for the salestrading prototype.</description>
+
+    <dependencies>
+        <!-- STC foundation + services framework (transitively: ats.*, ceda, IMIX, spring, netty, quartz, ...) -->
+        <dependency>
+            <groupId>sumscope.stc</groupId>
+            <artifactId>sc-app-stc</artifactId>
+            <version>0.1.1-SNAPSHOT</version>
+        </dependency>
+        <!-- GW proto / TCP client classes (subset of the old gw-local.jar) -->
+        <dependency>
+            <groupId>sumscope.stc</groupId>
+            <artifactId>gateway-api</artifactId>
+            <version>0.1.1-SNAPSHOT</version>
+        </dependency>
+        <!-- Used directly by prototype business code; not covered by sc-app-stc transitives -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.78</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>2.0.52</version>
+        </dependency>
+    </dependencies>
+</project>
