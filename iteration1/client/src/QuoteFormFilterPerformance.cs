@@ -13,6 +13,14 @@ namespace Ficc.Prototype {
         Action<string> filterPhase;
 
         Task OpenFilterPerformanceTest() {
+            return StartGridPerformanceTest(false);
+        }
+
+        Task OpenScrollingPerformanceTest() {
+            return StartGridPerformanceTest(true);
+        }
+
+        Task StartGridPerformanceTest(bool scrolling) {
             var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
             while (directory != null && !File.Exists(Path.Combine(directory.FullName, "QuotePrototype.csproj"))) {
                 directory = directory.Parent;
@@ -22,12 +30,12 @@ namespace Ficc.Prototype {
             }
             string script = Path.Combine(directory.Parent.FullName, "scripts", "test-filter-performance.py");
             Process.Start(new ProcessStartInfo("python",
-                "\"" + script + "\" --quotes 500 --client \"" + Application.ExecutablePath + "\"") {
+                "\"" + script + "\" --quotes 500 " + (scrolling ? "--scrolling " : "") + "--client \"" + Application.ExecutablePath + "\"") {
                 WorkingDirectory = directory.Parent.FullName,
                 UseShellExecute = false,
                 CreateNoWindow = true
             });
-            state.Text = "已启动独立筛选性能测试：500 条报价；结果在新窗口及 runtime/filter-performance 下。";
+            state.Text = "已启动独立" + (scrolling ? "滚动" : "筛选") + "性能测试：500 条报价；结果在新窗口及 runtime/filter-performance 下。";
             return Task.CompletedTask;
         }
 

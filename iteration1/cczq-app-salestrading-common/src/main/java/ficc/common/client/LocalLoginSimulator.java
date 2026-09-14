@@ -1,9 +1,9 @@
 package ficc.common.client;
 
 import com.alibaba.fastjson2.JSONObject;
-import ficc.common.IdGenerator;
 import ficc.common.JsonUtils;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class LocalLoginSimulator implements LoginSessionClient {
@@ -26,7 +26,8 @@ public final class LocalLoginSimulator implements LoginSessionClient {
         if (userId == null || !"demo".equals(password)) {
             return JsonUtils.object("Code", "1003", "Msg", "Invalid simulator login");
         }
-        String sessionId = IdGenerator.newId("SIM-");
+        // A session token is a credential, not a time-ordered business identifier.
+        String sessionId = "SIM-" + UUID.randomUUID();
         sessions.put(sessionId, userId);
         return result(sessionId, userId);
     }

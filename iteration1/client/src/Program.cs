@@ -33,6 +33,23 @@ namespace Ficc.Prototype {
                 Application.Run(benchmarkForm);
                 return benchmarkExitCode;
             }
+            if (args.Length == 2 && (args[0] == "--scroll-performance" || args[0] == "--autotest-scroll")) {
+                int result = 0;
+                var scrollingForm = new QuoteForm();
+                scrollingForm.Shown += async (sender, eventArgs) => {
+                    try {
+                        if (args[0] == "--autotest-scroll") await scrollingForm.RunScrollingSmoke(args[1]);
+                        else await scrollingForm.RunScrollingPerformance(args[1]);
+                    } catch (Exception error) {
+                        Console.Error.WriteLine(error);
+                        result = 1;
+                    } finally {
+                        scrollingForm.Close();
+                    }
+                };
+                Application.Run(scrollingForm);
+                return result;
+            }
             var form=new QuoteForm();int exitCode=0;
             if(args.Length>0&&(args[0]=="--autotest-panel"||args[0]=="--autotest-multi-user-panel"))form.Shown+=async(s,e)=>{
                 try{if(args[0]=="--autotest-multi-user-panel")await form.RunMultiUserScenario();else await form.RunAutoTests();File.WriteAllText(args[1],form.LastAutoTestResult.ToString());if((string)form.LastAutoTestResult["result"]!="PASS")exitCode=1;}

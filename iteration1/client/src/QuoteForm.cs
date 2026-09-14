@@ -57,6 +57,7 @@ namespace Ficc.Prototype {
             for(int i=0;i<fields.Length;i++)grid.Columns.Add(new DataGridViewTextBoxColumn{Name=fields[i],HeaderText=labels[i],Width=i==0?165:i==8?200:100,SortMode=DataGridViewColumnSortMode.NotSortable});
             grid.CellValueNeeded+=(s,e)=>{if(e.RowIndex<rows.Count)e.Value=(string)rows[e.RowIndex][fields[e.ColumnIndex]];};
             grid.CurrentCellChanged+=(s,e)=>{var q=Selected();if(q!=null){security.Text=(string)q["securityId"];side.Text=(string)q["side"];price.Text=(string)q["price"];quantity.Text=(string)q["quantity"];settlement.Text=(string)q["settlType"];counterpartyEditor.LoadFields(q);}};
+            InitializeQuoteScrolling(filterBar);
             grid.Columns["quoteId"].DisplayIndex=8;grid.Columns["revision"].DisplayIndex=7;
             quoteLayout.Controls.Add(grid,0,4);
             var quoteBoard=new TabPage("报价管理");quoteBoard.Controls.Add(quoteLayout);boards.TabPages.Add(quoteBoard);InitializePriceBoard();InitializeNotificationBoard();
@@ -64,6 +65,7 @@ namespace Ficc.Prototype {
             var toolsBar=Bar();toolsBar.Dock=DockStyle.Top;toolsBar.Height=40;
             AddButton(toolsBar,"自动测试",RunAutoTests);AddButton(toolsBar,"多用户场景",RunMultiUserScenario);AddButton(toolsBar,"API 调试器",OpenApiDebugger);
             AddButton(toolsBar, "筛选性能测试(500条)", OpenFilterPerformanceTest);
+            AddButton(toolsBar, "滚动性能测试(500条)", OpenScrollingPerformanceTest);
             testTab.Controls.Add(toolsBar);
             detail.TextChanged+=(s,e)=>{SetDiagnosticsVisible(true);tabs.SelectedTab=details;};
             client.Trace+=s=>Ui(()=>Log(s));client.Message+=(t,m)=>Ui(()=>Receive(t,m));
@@ -120,64 +122,17 @@ namespace Ficc.Prototype {
             return filter;
         }
 
-        async Task OpenView() {
-            if (!connected) {
-                throw new Exception("请先连接 GW。");
+        void Receive(string messageTopic, JObject message) {
+            if (messageTopic == notificationTopic) {
+                ReceiveNotification(message);
+                return;
             }
-            filterPhase?.Invoke("close.start");
-            if (viewId != null) {
-                await Request("ficc.quote.view.close", new JObject { ["viewId"] = viewId });
+            if (messageTopic == priceTopic) {
+                ReceivePrice(message);
+                return;
             }
-            filterPhase?.Invoke("close.end");
-            viewId = "V-" + Guid.NewGuid().ToString("N");
-            var statuses = statusFilter.SelectedIndex == 0
-                ? new JArray("PENDING_CONFIRM", "ACTIVE", "REFERRED", "DELETED")
-                : new JArray(new[] { "", "PENDING_CONFIRM", "ACTIVE", "REFERRED", "DELETED" }[statusFilter.SelectedIndex]);
-            opening = true;
-            pending.Clear();
-            try {
-                filterPhase?.Invoke("open.start");
-                JObject reply = await Request("ficc.quote.view.open", new JObject {
-                    ["viewId"] = viewId,
-                    ["ownerScope"] = "MINE",
-                    ["status"] = statuses,
-                    ["limit"] = 200,
-                    ["filter"] = Filter()
-                });
-                filterPhase?.Invoke("open.end");
-                cache.Clear();
-                ids.Clear();
-                foreach (JObject quote in (JArray)reply["quotes"]) {
-                    cache[(string)quote["quoteId"]] = quote;
-                }
-                foreach (JToken id in (JArray)reply["view"]["ids"]) {
-                    ids.Add((string)id);
-                }
-                lastFilterTotalCount = (int)reply["view"]["totalCount"];
-                sequence = (long)reply["sequence"];
-                Render();
-                filterPhase?.Invoke("apply.end");
-            } finally {
-                opening = false;
-                var messages = pending.ToArray();
-                pending.Clear();
-                foreach (var message in messages) {
-                    Receive(message.Item1, message.Item2);
-                }
-            }
+            if (messageTopic == topic) ReceiveQuote(message);
         }
-        void Receive(string t,JObject m){
-            if(t==notificationTopic){ReceiveNotification(m);return;}
-            if(t==priceTopic){ReceivePrice(m);return;}
-            if(t!=topic)return;if(opening){if(pending.Count<500)pending.Add(Tuple.Create(t,m));else state.Text="等待回复期间消息过多，请重新筛选";return;}
-            if((string)m["streamId"]!=streamId)return;
-            long n=(long?)m["sequence"]??sequence;if(n<=sequence)return;
-            if(n!=sequence+1||(string)m["kind"]=="RESET_REQUIRED"){state.Text="消息需要重新同步，请点击筛选";return;}sequence=n;
-            foreach(JObject q in (JArray)m["quotes"]??new JArray())cache[(string)q["quoteId"]]=q;
-            foreach(JObject v in (JArray)m["views"]??new JArray())if((string)v["viewId"]==viewId){foreach(var id in (JArray)v["removeIds"]??new JArray())ids.Remove((string)id);foreach(JObject p in (JArray)v["place"]??new JArray()){string id=(string)p["id"];ids.Remove(id);ids.Insert(Math.Min((int)p["index"],ids.Count),id);}}
-            foreach(string key in cache.Keys.Where(k=>!ids.Contains(k)).ToArray())cache.Remove(key);Render();
-        }
-        void Render(){string selected=(string)Selected()?["quoteId"];rows.Clear();foreach(var id in ids)if(cache.TryGetValue(id,out var q))rows.Add(q);grid.RowCount=rows.Count;grid.Invalidate();int at=rows.FindIndex(q=>(string)q["quoteId"]==selected);if(at>=0)grid.CurrentCell=grid[0,at];state.Text="已连接 GW · "+rows.Count+" 条已加载 · 序号 "+sequence;}
         JObject Selected()=>grid.CurrentCell!=null&&grid.CurrentCell.RowIndex<rows.Count?rows[grid.CurrentCell.RowIndex]:null;
         JObject Input(){var input=new JObject{["securityId"]=security.Text,["side"]=side.Text,["quoteType"]="1",["yieldType"]=security.Text=="102500002.IB"?"2":"1",["price"]=price.Text,["quantity"]=quantity.Text,["settlType"]=settlement.Text,["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd")};foreach(var field in counterpartyEditor.Fields().Properties())input[field.Name]=field.Value.DeepClone();return input;}
         async Task Create(int count){var qs=new JArray();for(int i=0;i<count;i++){var q=Input();q["clientQuoteId"]="UI-"+Guid.NewGuid().ToString("N");qs.Add(q);}detail.Text=(await Request("ficc.quote.create",new JObject{["quotes"]=qs})).ToString();}

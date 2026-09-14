@@ -165,10 +165,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quotes", type=int, choices=[500, 2000, 10000, 50000], default=500)
     parser.add_argument("--repeats", type=int, choices=range(1, 11), default=6)
+    parser.add_argument("--scrolling", action="store_true", help="Exercise incremental loading and grid scrolling, at most 10,000 quotes")
     parser.add_argument("--client", type=Path, default=ROOT / "client/bin/FilterPerformance/Ficc.QuotePrototype.exe")
     parser.add_argument("--functional-smoke", action="store_true",
                         help="Reuse isolation for the three-quote C# functional test; no performance fixture")
     arguments = parser.parse_args()
+    if arguments.scrolling and (arguments.quotes > 10000 or arguments.functional_smoke):
+        raise SystemExit("Scrolling supports at most 10,000 quotes and cannot be combined with functional-smoke")
     if os.name != "nt":
         raise SystemExit("This WinForms benchmark requires Windows")
     parent = ROOT / ("runtime/adapter-smoke" if arguments.functional_smoke else "runtime/filter-performance")
@@ -192,6 +195,8 @@ def main():
     schema_created = False
     summary = {"result": "RUNNING", "quoteCount": arguments.quotes, "schema": schema,
                "runDirectory": str(directory), "watchdogPid": os.getpid()}
+    if arguments.scrolling:
+        summary["test"] = "scrolling"
     if arguments.functional_smoke:
         summary["quoteCount"] = 0
         summary["test"] = "three-quote-functional-smoke"
@@ -211,7 +216,7 @@ def main():
         watchdog.wait(process, 15)
 
     try:
-        for port in (18700, 18780):
+        for port in (18700, 18701, 18780):
             with socket.socket() as probe:
                 probe.bind(("127.0.0.1", port))
         if not arguments.client.resolve().is_file():
@@ -252,6 +257,7 @@ def main():
         write_properties(resource, values)
         spring = gateway_directory / "config/spring-config.xml"
         content = spring.read_text(encoding="utf-8").replace('value="18600"', 'value="18700"')
+        content = content.replace('value="18601"', 'value="18701"')
         content = content.replace("LoginSvr,QuoteSvr,NotificationSvr", "LoginSvr,QuoteSvr")
         content = content.replace('<entry key="NotificationSvr" value="ficc.notification.report.**"/>', "")
         content = content.replace('class="com.gateway.invoke.ceda.CedaProxy"',
@@ -303,7 +309,7 @@ def main():
         config_file.write_text(json.dumps(configuration, ensure_ascii=False, indent=2), encoding="utf-8")
         print("Running:", "three-quote functional smoke" if arguments.functional_smoke else str(arguments.quotes) + " quotes", directory, flush=True)
         client_arguments = (["--smoke", str(directory / "functional.json"), "18700"] if arguments.functional_smoke
-                            else ["--filter-performance", str(config_file)])
+                            else ["--scroll-performance" if arguments.scrolling else "--filter-performance", str(config_file)])
         ui = watchdog.start("client", [str(arguments.client.resolve())] + client_arguments,
                             arguments.client.resolve().parent, visible=not arguments.functional_smoke)
         watchdog.wait(ui, 50, None if arguments.functional_smoke else directory / "ui.heartbeat")
@@ -315,7 +321,11 @@ def main():
         else:
             report = json.loads((directory / "latency.json").read_text(encoding="utf-8-sig"))
             summary["result"] = report["result"]
-            summary["targetMet"] = report.get("targetMet", False)
+            if arguments.scrolling:
+                summary["scrollP95Ms"] = report.get("scrollP95Ms")
+                summary["loadedRows"] = report.get("loadedRows")
+            else:
+                summary["targetMet"] = report.get("targetMet", False)
             summary["scenarios"] = report["scenarios"]
     except Exception as error:
         summary["result"] = "STOPPED"
@@ -333,7 +343,10 @@ def main():
         summary["reportFile"] = str(directory / ("functional.json" if arguments.functional_smoke else "report.zh-CN.md"))
         (directory / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         lock.close()
-        if not arguments.functional_smoke:
+        if arguments.scrolling:
+            from scrolling_performance_report import generate_report as generate_scrolling_report
+            generate_scrolling_report(directory)
+        elif not arguments.functional_smoke:
             generate_report(directory)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     if summary["result"] != "COMPLETED":

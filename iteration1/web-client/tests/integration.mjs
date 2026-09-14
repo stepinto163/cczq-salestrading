@@ -54,6 +54,8 @@ try {
         const result = await client.quotes.create({ securityId, side: '1', quoteType: '1', yieldType: '1', price: '0.0001', quantity: '1', settlType: '1',
             tradeDate: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date()) });
         report.createdQuoteIds.push({ quoteId: result.quoteId, user: client === first ? 'demo' : 'demo2' });
+        check('server quote ID uses STC Snowflake format as a string',
+            typeof result.quoteId === 'string' && /^Q-[0-9]+$/.test(result.quoteId));
         await waitFor('new pending quote arrives by push', () => client.quotes.records.get(result.quoteId)?.status === 'PENDING_CONFIRM');
         check('pending quote is absent from market book', !containsPrice(first, result.quoteId) && !containsPrice(second, result.quoteId));
         await client.quotes.action('confirm', client.quotes.records.get(result.quoteId));

@@ -36,6 +36,10 @@ dotnet build iteration1/api-debugger/DpsApiDebugger.csproj
 
 日常启动、功能测试和配置见 [原型说明](iteration1/README.zh-CN.md)、[启动指南](iteration1/docs/local-startup.zh-CN.md) 和 [QA 数据库指南](iteration1/docs/qa-database.zh-CN.md)。
 
+报价管理支持滚动自动加载，使用方法与有界测试结果见 [报价滚动加载与测试](iteration1/docs/quote-scrolling.zh-CN.md)。
+
+服务端 ID 复用 STC 生成器，规则与兼容性见 [ID 生成说明](iteration1/docs/id-generation.zh-CN.md)。
+
 ## 文档
 
 当前设计入口：
