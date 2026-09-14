@@ -39,15 +39,22 @@ public final class StcBaseMapper {
             throw new IllegalArgumentException("Unmapped STC Option_Type: " + option);
         }
         String issuerType = configuration.getProperty("base.issuerType." + text(issuer, "issuer_type"));
+        // 债项评级优先；非公开（PPN）/私募债的 Rating_Current 常为 NULL，此时回退到发行人评级，
+        // 并用 bondRatingSource 显式标注口径来源，避免消费方把主体评级误当成债项评级。
+        String issueRating = text(bond, "Rating_Current");
+        String issuerRating = text(bond, "Issuer_Rating_Current");
         JSONObject result = JsonUtils.object(
                 "securityId", securityId, "securityName", text(bond, "Short_Name"), "market", market,
                 "issuerId", text(bond, "Issuer_Code"), "issuerType", issuerType,
-                "bondRating", text(bond, "Rating_Current"), "issuerRating", text(bond, "Issuer_Rating_Current"),
+                "bondRating", issueRating != null ? issueRating : issuerRating,
+                "bondRatingSource", issueRating != null ? "ISSUE" : issuerRating != null ? "ISSUER" : null,
+                "issuerRating", issuerRating,
                 "region", text(issuer, "province"), "remainingYears", text(valuation, "remaining_year"),
                 "hasExerciseOption", option != null && exercise.contains(option),
                 "optionType", option, "maturityDate", date(text(bond, "Maturity_Date")),
                 "referenceVersion", version, "dataVendor", "SUMSCOPE",
-                "valuationYield", text(valuation, "valuation_yield"),
+                // 中债估值收益率可能是 "行权|到期" 双值，取主值（[0]，与 BaseSvr getCbv() 一致）。
+                "valuationYield", primary(text(valuation, "valuation_yield")),
                 "valuationDate", date(text(valuation, "valuation_date")));
         return result;
     }
@@ -62,14 +69,55 @@ public final class StcBaseMapper {
         if (raw == null || raw.isEmpty()) {
             return null;
         }
+        // 中债对含权债同时发布「行权」与「到期」两个口径，落库为 "行权|到期"（如 "100.0136|100.0136"、
+        // "2.0035|2.8155"）；非含权债只有一个值。STC 客户端按 '|' 拆分，第 1 段即行权、
+        // 第 2 段即到期，单值则属于到期口径（见 stc-client InnerHistoryRequireViewModel
+        // ChinaBondExercise/ChinaBondDue）；BaseSvr 的 getCbv() 也取第 1 段作为主值。
+        // 因此估值口径由「是否存在双值」判定，而不是由 bondTypeFlag 判定——后者描述的是
+        // 「含权债是否已行权」，是另一件事（STC CommonDataManager.initChinaBondsinfo）。
+        String yield = text(raw, "valuation_yield");
+        String cleanPrice = text(raw, "valuation_net_price");
+        String dueYield = secondary(yield);
+        String dueCleanPrice = secondary(cleanPrice);
+        boolean dual = dueYield != null || dueCleanPrice != null;
         return JsonUtils.object("valuationId", text(raw, "Id"), "securityId", securityId,
                 "valuationSource", "CHINABOND", "dataVendor", "SUMSCOPE",
                 "valuationDate", date(text(raw, "valuation_date")),
-                "valuationBasis", switch (String.valueOf(text(raw, "bondTypeFlag"))) {
-                    case "1" -> "EXERCISE";
-                    case "2" -> "MATURITY";
+                "valuationBasis", dual ? "EXERCISE" : "MATURITY",
+                "yield", primary(yield), "cleanPrice", primary(cleanPrice),
+                "exerciseYield", dueYield == null ? null : primary(yield),
+                "dueYield", dueYield == null ? primary(yield) : dueYield,
+                "exerciseCleanPrice", dueCleanPrice == null ? null : primary(cleanPrice),
+                "dueCleanPrice", dueCleanPrice == null ? primary(cleanPrice) : dueCleanPrice,
+                // bondTypeFlag: 1=含权债未行权 2=含权债已行权 空=非含权债。
+                "optionState", switch (String.valueOf(text(raw, "bondTypeFlag"))) {
+                    case "1" -> "NOT_EXERCISED";
+                    case "2" -> "EXERCISED";
                     default -> null;
-                }, "yield", text(raw, "valuation_yield"), "cleanPrice", text(raw, "valuation_net_price"));
+                });
+    }
+
+    /** 取中债 "行权|到期" 双值的第 1 段（行权口径）；单值时原样返回。 */
+    private static String primary(String value) {
+        if (value == null) {
+            return null;
+        }
+        int separator = value.indexOf('|');
+        String head = (separator < 0 ? value : value.substring(0, separator)).trim();
+        return head.isEmpty() ? null : head;
+    }
+
+    /** 取中债 "行权|到期" 双值的第 2 段（到期口径）；单值时返回 null，用于判定是否双值。 */
+    private static String secondary(String value) {
+        if (value == null) {
+            return null;
+        }
+        int separator = value.indexOf('|');
+        if (separator < 0) {
+            return null;
+        }
+        String tail = value.substring(separator + 1).trim();
+        return tail.isEmpty() ? null : tail;
     }
 
     public static String text(JSONObject object, String name) {

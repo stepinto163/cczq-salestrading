@@ -80,22 +80,69 @@ china_bond_valuation.bond_id | valuation_date | valuation_net_price | valuation_
 
 两个必须注意的格式约定：
 
-1. **双值用 `|` 分隔**（如 `100.0136|100.0136`、`2.0035|2.8155`），对应「行权 / 到期」两个口径。
-   本项目 `StcBaseMapper.valuation()` 已用 `bondTypeFlag`（`1=EXERCISE`、`2=MATURITY`）区分，
-   但**当前实现按单值解析，遇到 `|` 需要显式拆分**。
+1. **双值用 `|` 分隔**（如 `100.0136|100.0136`、`2.0035|2.8155`），第 1 段是**行权**口径、
+   第 2 段是**到期**口径；**单值属于到期口径**。已按此修正 `StcBaseMapper`（原先按单值解析，
+   且错误地用 `bondTypeFlag` 判定口径），依据见第 3 节。
 2. **日期为 `YYYYMMDD` 字符串**（`20260726`），需归一化为 ISO 日期。
 
-## 3. 与目标 IBOR 接口的差异（需要显式转换的地方）
+## 3. `|` 双值与 `bondTypeFlag` 的口径依据（源码核对）
 
-1. **`bondRating` 可能取自债项评级，但对 PPN/私募债常为 NULL**（见 282644/282353），
-   此时应回退到 `issuer_rating_current` 或 `csi_implied_rating`。目标接口只有单一 `bondRating`，
-   **口径需要确认**（债项 / 发行人 / 隐含）。
+此前把 `bondTypeFlag` 当成估值口径（`1=EXERCISE`、`2=MATURITY`）是**错的**，已纠正。
+`sc-app-stc` 源码给出两个**互相独立**的概念：
+
+**(a) 估值口径由「是否存在双值」决定**，不是由 `bondTypeFlag` 决定：
+
+| 位置 | 代码 | 含义 |
+|---|---|---|
+| `stc-client/STC.InnerBoard.Plugin/…/InnerHistoryRequireViewModel.cs:1377` | `int speIndex = er.chinaBondValuationFull.IndexOf('\|')` | 有 `\|` 即拆成两个口径 |
+| 同上 `:1380` | `ChinaBondExercise = …Substring(0, speIndex)` | **第 1 段 = 行权** |
+| 同上 `:1381` | `ChinaBondDue = …Substring(speIndex + 1)` | **第 2 段 = 到期** |
+| 同上 `:1385` | `else { ChinaBondDue = …ConvertToDecimal(); }` | **单值 = 到期** |
+| `sc-app-stc-basesvr/…/CommonDataManager.java:1528` | `splitToArray(valuation_yield, "\|")[0]` | 服务端主值取第 1 段 |
+| `sc-app-stc-basesvr/…/UserCommonDataManager.java:103` | `getCbv()` 取 `[0]` | 主值 = 行权口径 |
+| `stc-client/STC.Mmshe.Plugin/…/MmsheListBoxViewModel.cs:140` | `//中债估值类型1-行权；2-到期（或者空）` | 客户端字段的独立枚举 |
+
+**(b) `bondTypeFlag` 描述的是「含权债是否已行权」**，与 (a) 是两回事
+（`sc-app-stc-basesvr/…/CommonDataManager.java:1420-1438` 为权威实现）：
+
+```
+bondTypeFlag 1:含权债，未行权   2:含权债，已行权   空:非含权债
+是否行权：option_date 是否大于今天，为空或小于今天则视为已行权
+ETS 期权类型默认未行权（=1）
+```
+
+> 注：`TBondValuationView.java` 里字段上的注释写作 `//1-行权 2-到期`，
+> 与该类自身头部的类注释及 `CommonDataManager` 的实际赋值逻辑**不一致**，属源码注释错误。
+> 以实际代码为准。
+
+因此修正后 `StcBaseMapper` 的行为是：
+
+- `valuationBasis`：出现双值 → `EXERCISE`，单值 → `MATURITY`（与 STC 客户端一致）；
+- `yield` / `cleanPrice`：取第 1 段（行权主值，与 BaseSvr `getCbv()` 一致）；
+- 新增 `exerciseYield` / `dueYield` / `exerciseCleanPrice` / `dueCleanPrice`，两个口径都不丢失；
+- 新增 `optionState`：`NOT_EXERCISED` / `EXERCISED` / `null`，正确承载 `bondTypeFlag`。
+
+**该项为源码级核对结论；与之配套的「双值行数占比」等库内统计，因本轮未重新连库，
+在 result.json 中标为 `not_run`。**（此前一轮实测：104 583 行估值中 16 971 行为双值，占 16.2%。）
+
+## 4. 与目标 IBOR 接口的差异（需要显式转换的地方）
+
+1. **`bondRating` 可能取自债项评级，但对 PPN/私募债常为 NULL**（见 282644/282353）。
+   已实现回退：`Rating_Current` → `Issuer_Rating_Current`，并新增 `bondRatingSource`
+   （`ISSUE` / `ISSUER` / `null`）显式标注口径来源，消费方可据此判断。
+   **未**回退到 `csi_implied_rating`：它是「隐含评级」，与债项评级不是同一口径
+   （实测目标债 250001 上二者分别为 `AAA` 与 `AA+`），是否使用仍需业务确认。
 2. **估值口径不一致**：目标 `chinaBondNetValuation` 是**净价**；本项目 `security` 模型只暴露
    `valuationYield`（收益率），净价仅在 `valuation.cleanPrice` 上。两者不是同一个量，必须显式映射。
 3. 命名差异：`securityId` ↔ `bondCode`、`securityName` ↔ `bondName`、
    `remainingYears`(文本) ↔ `remainingTerm`(字符串)。
 
-## 4. 复现方式
+## 5. 复现方式
 
 只读查询脚本见 [bond-field-mapping-probe.sql](../scripts/bond-field-mapping-probe.sql)。
 连接参数通过本机 gitignored 配置或环境变量传入，**不要把库地址、账号或口令提交入库**。
+
+口径回归测试见
+`iteration1/cczq-app-salestrading-common/src/test/java/ficc/common/client/AdapterContractTest.java`
+中的 `valuationSplitsChinaBondExerciseAndDueConventions` 与
+`securityFallsBackToIssuerRatingForPrivatePlacements`（`mvn -f iteration1/pom.xml verify` 运行）。

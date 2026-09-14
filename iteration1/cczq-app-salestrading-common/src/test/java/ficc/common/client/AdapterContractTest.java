@@ -102,6 +102,55 @@ final class AdapterContractTest {
         assertTrue(mapper.security("250001.IB", bond, null, null, "v1").getBooleanValue("hasExerciseOption"));
     }
 
+    @Test
+    void valuationSplitsChinaBondExerciseAndDueConventions() {
+        StcBaseMapper mapper = new StcBaseMapper(new Properties());
+        // 含权债：中债同时给出「行权|到期」，第 1 段为行权口径；单值债属于到期口径。
+        JSONObject dual = mapper.valuation("269152.SH", JsonUtils.object(
+                "Id", "VAL-D", "valuation_date", "20260726",
+                "valuation_yield", "2.0035|2.8155", "valuation_net_price", "100.0136|100.0136",
+                "bondTypeFlag", "1"));
+        assertEquals("EXERCISE", dual.getString("valuationBasis"));
+        assertEquals("2.0035", dual.getString("yield"));
+        assertEquals("100.0136", dual.getString("cleanPrice"));
+        assertEquals("2.0035", dual.getString("exerciseYield"));
+        assertEquals("2.8155", dual.getString("dueYield"));
+        assertEquals("100.0136", dual.getString("exerciseCleanPrice"));
+        assertEquals("100.0136", dual.getString("dueCleanPrice"));
+        assertEquals("NOT_EXERCISED", dual.getString("optionState"));
+        assertEquals("2026-07-26", dual.getString("valuationDate"));
+
+        JSONObject single = mapper.valuation("282644.SH", JsonUtils.object(
+                "Id", "VAL-S", "valuation_date", "20260726",
+                "valuation_yield", "1.793", "valuation_net_price", "99.9622", "bondTypeFlag", "2"));
+        assertEquals("MATURITY", single.getString("valuationBasis"));
+        assertNull(single.getString("exerciseYield"));
+        assertEquals("1.793", single.getString("dueYield"));
+        assertNull(single.getString("exerciseCleanPrice"));
+        assertEquals("99.9622", single.getString("dueCleanPrice"));
+        assertEquals("EXERCISED", single.getString("optionState"));
+    }
+
+    @Test
+    void securityFallsBackToIssuerRatingForPrivatePlacements() {
+        Properties configuration = new Properties();
+        configuration.setProperty("base.market.282644.IB", "CREDIT");
+        configuration.setProperty("base.issuerType.COR", "CORPORATE");
+        StcBaseMapper mapper = new StcBaseMapper(configuration);
+        JSONObject bond = JsonUtils.object("Bond_ID", "282644", "Listed_Market", "CIB", "Option_Type", "NON",
+                "Rating_Current", "AAA", "Issuer_Rating_Current", "AA+");
+        JSONObject issuer = JsonUtils.object("issuer_type", "COR");
+        JSONObject rated = mapper.security("282644.IB", bond, issuer, null, "v1");
+        assertEquals("AAA", rated.getString("bondRating"));
+        assertEquals("ISSUE", rated.getString("bondRatingSource"));
+        // PPN 的 Rating_Current 实测为 NULL，此时回退发行人评级并标注口径来源。
+        bond.remove("Rating_Current");
+        JSONObject fallback = mapper.security("282644.IB", bond, issuer, null, "v1");
+        assertEquals("AA+", fallback.getString("bondRating"));
+        assertEquals("ISSUER", fallback.getString("bondRatingSource"));
+        assertEquals("AA+", fallback.getString("issuerRating"));
+    }
+
     static final class FakeNetwork extends NetClientWrapper {
         final OnlineStatus online = new OnlineStatus();
         final List<IMessage<String>> listeners = new ArrayList<>();
