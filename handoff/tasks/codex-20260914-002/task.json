@@ -1,0 +1,58 @@
+{
+  "protocolVersion": 1,
+  "taskId": "codex-20260914-002",
+  "from": "codex",
+  "to": "workbuddy",
+  "state": "ready",
+  "baseCommit": "d7f58e99233c5b5440e755cad8ab446a2b9b8def",
+  "workBranch": "work/codex-20260914-002",
+  "goal": "在 Windows 内网开发机启动销售交易原型服务，连接真实 STC LoginSvr/BaseSvr，通过现有 SSH 窗口只读检查 STC QA 日志，完成小规模端到端联调。",
+  "readFiles": [
+    "handoff/tasks/codex-20260914-002/context.md",
+    "iteration1/docs/stc-adapters.zh-CN.md",
+    "iteration1/docs/maven-jenkins.zh-CN.md",
+    "iteration1/docs/local-startup.zh-CN.md",
+    "iteration1/docs/zookeeper-discovery.zh-CN.md",
+    "iteration1/build/distribution/README.zh-CN.md",
+    "iteration1/config/stc-consumers.example.ini",
+    "iteration1/config/adapters.integration.example.properties",
+    "iteration1/cczq-app-salestrading-quotesvr/control/ATSConfig.ini",
+    "iteration1/cczq-app-salestrading-notificationsvr/control/ATSConfig.ini",
+    "iteration1/gateway/control/ATSConfig.ini"
+  ],
+  "writePaths": [
+    "handoff/tasks/codex-20260914-002/",
+    "iteration1/cczq-app-salestrading-common/",
+    "iteration1/cczq-app-salestrading-quotesvr/",
+    "iteration1/cczq-app-salestrading-notificationsvr/",
+    "iteration1/gateway/",
+    "iteration1/config/",
+    "iteration1/docs/",
+    "iteration1/scripts/"
+  ],
+  "constraints": [
+    "本任务替代 codex-20260914-001。用户明确授权在 Windows 启动本项目服务、连接 STC，并通过已打开 SSH 窗口查看日志；未授权修改或重启远端 STC 服务。",
+    "Windows 仓库 E:/gongy/projects/cczq-salestrading。启动前检查已有进程、端口、JDK、Maven、兼容依赖、许可证和本地 PostgreSQL。缺失项明确报告；不卸载、重装数据库或操作共享 QA 数据库。",
+    "可使用内网 Maven 构建现有项目，并对已定位的兼容或适配问题作必要修复；继续复用 STC/BBox/DPS 的 Resource/Handler/Stream/Client 机制，不新建通信框架。",
+    "用户已在 Windows 打开连接 STC QA 10.130.21.53 的 SSH 窗口，并明确提供 ZooKeeper 10.130.21.53:2181，已从 WorkBuddy PC 测试可达。LoginSvr/BaseSvr 的实际业务 endpoint 仍需通过注册信息核对。",
+    "若具备桌面控制能力，可使用该已有 SSH 会话只读定位相关部署配置和日志。不提取终端中凭据，不读取私钥，不修改远端文件、停止服务或执行任意清理。若无法控制窗口，明确报告需要用户执行的最少只读命令。",
+    "先读取明确的服务部署位置/进程定位信息，再查对应配置和日志；禁止全磁盘或全网扫描。日志使用有界 tail 或针对具体时间段的检索，不持续 tail -f。",
+    "从现有配置确认 ZooKeeper 与服务地址。优先用 STC 服务发现；同时核对发现返回的服务 endpoint 可从 Windows 到达。连上 ZooKeeper 不等于连上业务服务。",
+    "若发现机制受阻，可在本机配置副本中用已确认的业务 IP/端口关闭对应消费者的注册发现，进行固定地址诊断。不得猜测端口，不修改共享 ZooKeeper 注册记录或远端网络策略。",
+    "本机 provider 不得占用共享 STC 已有的服务名或注册节点。先核对注册范围；必要时使用独立的本机 QA 服务名并同步本机消费者配置，或仅让本机 provider 使用固定地址。缺少隔离条件时报告阻塞。",
+    "使用部署机本地配置文件保存真实网络、数据库和身份配置，不提交密码、SID、原始配置或敏感报文。主业务源码中不得硬编码环境地址。",
+    "顺序启动本机 QuoteSvr、按条件启动 NotificationSvr 和 GW。使用已有 STC 测试账号或 QA 会话；身份不可用时不要猜测密码。没有 NotificationSvr 专用账号时先验证 QuoteSvr/GW 并明确提醒链路未完成。",
+    "进程须有界运行：Java 每进程先用 Xmx192m、ActiveProcessorCount=2，构建单次执行且限制 JVM 内存；后台进程隐藏窗口。只跟踪和停止本任务启动的进程，绝不按进程名批量终止。",
+    "仅一次会话解析及一只债券的基础资料/查询验证，不创建或修改报价，不做性能测试。远程请求超时不超过 5 秒，最多重试一次；失败先结合客户端和服务端日志定位，禁止无限重试。",
+    "主动功能验证控制在 10 分钟内；构建单独记录，超过 10 分钟未完成则停止本次构建并报告。完成或受阻后关闭本任务启动的临时服务并记录；不影响用户原有进程。",
+    "先保存代码提交，再针对该提交验证，结果写 result.json，包含脱敏错误、发生时间、连接模式、真实/模拟区别与 testedCommit。没有执行的项目写 not_run。",
+    "完成或阻塞均提交结果并推送指定 workBranch，不合并 main；网络推送重试不能触发重复启动或重复验证。"
+  ],
+  "acceptance": [
+    "记录本机各服务启动成功/失败/未执行及原因，并明确使用真实 STC 还是模拟依赖。",
+    "记录 ZooKeeper 发现或固定地址模式的实际连接结果；如发现返回不可达地址，明确区分发现成功与业务连接失败。",
+    "通过 Windows 客户端/GW 验证真实登录与报价服务查询，或准确列出阻塞步骤；报告一只债券的评级及估值字段映射情况。",
+    "尽可能以相同检查时间、主题或请求标识对照 STC 日志。找不到日志或无法使用 SSH 窗口必须如实说明，不将其当作服务端未收到消息的证据。",
+    "测试结果及必要修复推送工作分支；未完成真实链路时标 blocked，给出最少待补信息。清理本次临时进程，不改动远端 STC。"
+  ]
+}
