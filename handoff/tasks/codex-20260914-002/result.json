@@ -3,8 +3,8 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "1d25e990b32e059c6fddda25749a43b61a8db800",
-  "summary": "应用发起方决定后，Maven 构建已从内网 Maven 仓库解析 STC 基础依赖（替代 123 个冻结 JAR），common/quotesvr/notificationsvr 三模块 clean verify 全部通过（testedCommit=1d25e99）；并核实 LoginSvr 实际以 ValidationServer 名称注册在 QA ZooKeeper（10.130.21.53:20040，Windows 可达），消费者配置模板已修正。剩余阻塞：本机无 PostgreSQL、无旧版 GW 二进制（客户端入口无法启动）、无法读取服务端日志，因此真实登录与债券查询仍未执行。",
+  "testedCommit": "44e9f2cdacae9bcb91355094426222380f5e4be1",
+  "summary": "全部构建阻塞已解除：STC 基础依赖改由内网 Maven 解析（sc-app-stc:0.1.1-SNAPSHOT 传递引入约 125 个基础 JAR），GW 源码（gitlab/ficc/stc-lite/gw，main class GW）补齐一个缺失接口 IMessageByte 后用 JDK8 编译成功并安装为 sumscope.stcl:gw:0.1.1-SNAPSHOT，gateway 扩展模块随之可编译（-P with-gateway 全模块 BUILD SUCCESS）。数据库采用发起方提供的 QA PostgreSQL(10.130.21.51:11004/stc, TBase)，已用 JDBC 连通并在专用 schema ficc_demo 建 14 张表（未触碰 public 与既有对象；凭据仅存本机 gitignored 配置，不入库）。LoginSvr=ValidationServer 的发现映射已核实并修正配置模板。剩余阻塞：真实登录需要 STC 测试账号（凭据不可猜测，需提供）；服务启动还需 server.lic 许可证与本地 service 运行配置；服务端日志对照仍需 SSH 只读命令或 22 端口。",
   "changedFiles": [
     "iteration1/stc-foundation-runtime/pom.xml",
     "iteration1/pom.xml",
@@ -14,49 +14,53 @@
   ],
   "checks": [
     {
-      "name": "Maven 构建解析内网 STC 依赖",
+      "name": "Maven 全模块构建（含 gateway）",
       "status": "pass",
-      "evidence": "新增 in-reactor 聚合 POM stc-foundation-runtime（sumscope.stc:sc-app-stc:0.1.1-SNAPSHOT + gateway-api:0.1.1-SNAPSHOT + fastjson/fastjson2），传递引入 ats-app-ym-foundation/ats-bbox-framework/ats-foundation-utilities/ats-message/ceda-api/ceda-zookeeper 及 IMIX、spring、netty 等约 125 个 JAR，全部来自内网 Nexus(10.130.21.41:8081)。clean verify BUILD SUCCESS（stc-foundation-runtime/common/quotesvr/notificationsvr），耗时约 21s。"
+      "evidence": "默认 reactor（foundation/common/quotesvr/notificationsvr）clean verify BUILD SUCCESS；-P with-gateway 下 gateway 扩展模块编译通过（提交 44e9f2c4）。STC 基础依赖约 125 个 JAR 全部来自内网 Nexus(10.130.21.41:8081)。"
+    },
+    {
+      "name": "GW 源码编译",
+      "status": "pass",
+      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT，77 个源文件，main class=GW）。缺失接口 com.gateway.connector.tcp.client.IMessageByte（CedaApi 直接引用但 lite 重构时丢失）已按用法恢复：boolean onMessage(String,byte[])。mvn8(JDK8) clean install BUILD SUCCESS，产物已 install 到本机 Maven 仓库。注意：该接口修复位于 gw 仓库工作区，尚未提交（gw 仓库归属发起方）。"
+    },
+    {
+      "name": "数据库（QA PostgreSQL）",
+      "status": "pass",
+      "evidence": "使用发起方提供的连接（10.130.21.51:11004/stc，账号见本机 gitignored 配置）JDBC 连通，服务器为 PostgreSQL 10.23 (TBase v5.21)。在专用 schema ficc_demo 执行 sql/001-create-demo-tables.sql，建 14 张表；未修改 public 或其他既有 schema。凭据未写入任何 git 跟踪文件。"
     },
     {
       "name": "LoginSvr 服务发现（修正后）",
       "status": "pass",
-      "evidence": "QA 主机 ./show 确认 LoginSvr 进程运行（pid=2384112，starttime=2026-09-14 14:10:38）；ZooKeeper /MDTService 无 LoginSvr 节点，但 /MDTService/ValidationServer = Host:10.130.21.53,Port:20040,Stat:1；stc-lite 全部服务的配置均为 SERVER.LoginSvr.ServiceName=ValidationServer，即 LoginSvr 以 ValidationServer 名称注册。TCP 20040 从本机连通（5ms）。stc-consumers.example.ini 已改为 ServiceName=ValidationServer 并附说明。"
+      "evidence": "/MDTService/ValidationServer = Host:10.130.21.53,Port:20040,Stat:1（LoginSvr 进程 pid=2384112 运行中，QA ./show 确认）；stc-lite 全家族配置均为 SERVER.LoginSvr.ServiceName=ValidationServer；TCP 20040/20041/20047 均从 Windows 可达。stc-consumers.example.ini 已修正并附说明。"
     },
     {
-      "name": "gateway 模块构建",
+      "name": "服务启动（QuoteSvr / GW）",
       "status": "not_run",
-      "evidence": "gateway 的 4 个扩展类继承自旧版 GW 二进制（com.gateway.connector.tcp.TcpConnector、com.gateway.invoke.*、com.gateway.message.*），这些类未发布到内网 Nexus（gateway-api 只含 proto 与 tcp client 类）。已将 gateway 移入 with-gateway profile，默认 reactor 不构建；待 GW 构件发布或提供旧 GW 二进制后再验证。"
+      "evidence": "尚未执行启动：还需 server.lic 许可证放入部署目录 control/，以及（真实登录路径）STC 测试账号。本机 18680/18600 端口空闲。"
     },
     {
-      "name": "本机 PostgreSQL / 本地服务启动条件",
-      "status": "fail",
-      "evidence": "本机仍无 PostgreSQL（55432 未监听、标准目录无安装）、无本地 ZooKeeper 与旧版 GW 二进制。QuoteSvr/NotificationSvr/GW 未启动；本机服务端口 18680/18690/18600 空闲，无冲突。"
-    },
-    {
-      "name": "真实登录与会话解析、单只债券基础资料与估值查询",
+      "name": "真实登录、单只债券查询与服务端日志对照",
       "status": "not_run",
-      "evidence": "服务未启动，未执行登录与查询；未取得任何 SID 或客户数据。BaseSvr 查询的服务端（10.130.21.53:20041）与登录服务端（ValidationServer:20040）均已确认从 Windows 可达，具备执行条件，只差本机运行时。"
-    },
-    {
-      "name": "STC 服务端日志对照（10.130.21.53）",
-      "status": "not_run",
-      "evidence": "本机到该机 22 端口不可达，未确认桌面控制能力；不提取 SSH 凭据。继续不以“读不到日志”当作服务端未收到请求的证据。"
+      "evidence": "服务未启动，未取得 SID 或行情/估值数据；不猜测账号密码。日志对照仍受 SSH 22 端口不可达限制，不以“读不到日志”当作服务端未收到请求的证据。"
     }
   ],
   "blockers": [
     {
-      "issue": "本机没有 PostgreSQL 实例，QuoteSvr/NotificationSvr 无法落库。",
-      "need": "授权在本机安装并初始化本地 PostgreSQL（仅本地实例，不触碰共享 QA 库），或提供可用的数据库连接方式。"
+      "issue": "真实登录需要 STC 测试账号（用户名/密码或既有 QA 会话），任务约束禁止猜测凭据。",
+      "need": "由发起方/用户提供测试账号（建议经环境变量或本机 gitignored 配置交付，不写入 git）。"
     },
     {
-      "issue": "没有旧版 GW 二进制：本机 runtime/ 不存在（未随 Git 传递），Nexus 也未发布 com.gateway.connector.tcp.TcpConnector / com.gateway.invoke.* / com.gateway.message.* 所在的 gw-local 构件，gateway 模块与本地客户端入口均无法就绪。",
-      "need": "提供旧版 GW 二进制或将其发布到内网 Nexus（如 cczq.salestrading:gw-local），并说明可否直接复用既有演示 GW 免扩展 JAR 运行。"
+      "issue": "ATS 服务启动需要 server.lic 许可证（部署包说明要求放入 control/），本机无该文件。",
+      "need": "提供有效 server.lic（演示环境同款即可），放置到本地运行目录；不会提交入 git。"
     },
     {
-      "issue": "无法读取 10.130.21.53 服务端日志做请求对照。",
-      "need": "由用户在既有 SSH 会话执行最少只读命令（BaseSvr/LoginSvr 日志有界 tail、配置位置确认），或开通本机到该机 22 端口。"
+      "issue": "服务端日志对照仍无法执行（10.130.21.53:22 从本机不可达）。",
+      "need": "用户在既有 SSH 会话执行最少只读命令（LoginSvr/BaseSvr 日志有界 tail），或开通 22 端口。"
+    },
+    {
+      "issue": "sumscope.stcl:gw 目前仅存在于本机 Maven 仓库（install 未 deploy），其他环境无法解析。",
+      "need": "由有权限者将 gw 构件 deploy 到内网 Nexus，或在部署机重复 mvn8 install。"
     }
   ],
-  "nextAction": "构建与发现两项阻塞已解除；请优先提供本机 PostgreSQL 与旧版 GW 二进制（或确认发布 gw-local 到 Nexus），随后可在同一工作分支继续完成真实登录与单只债券查询验证。"
+  "nextAction": "提供 STC 测试账号与 server.lic 后即可启动 QuoteSvr+GW 完成真实登录与单只债券（250001.IB）查询验证；gw 构件建议尽快 deploy 到 Nexus 以便环境可复现。"
 }
