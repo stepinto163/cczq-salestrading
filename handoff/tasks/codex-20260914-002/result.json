@@ -3,25 +3,35 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "44e9f2cdacae9bcb91355094426222380f5e4be1",
-  "summary": "全部构建阻塞已解除：STC 基础依赖改由内网 Maven 解析（sc-app-stc:0.1.1-SNAPSHOT 传递引入约 125 个基础 JAR），GW 源码（gitlab/ficc/stc-lite/gw，main class GW）补齐一个缺失接口 IMessageByte 后用 JDK8 编译成功并安装为 sumscope.stcl:gw:0.1.1-SNAPSHOT，gateway 扩展模块随之可编译（-P with-gateway 全模块 BUILD SUCCESS）。数据库采用发起方提供的 QA PostgreSQL(10.130.21.51:11004/stc, TBase)，已用 JDBC 连通并在专用 schema ficc_demo 建 14 张表（未触碰 public 与既有对象；凭据仅存本机 gitignored 配置，不入库）。LoginSvr=ValidationServer 的发现映射已核实并修正配置模板。剩余阻塞：真实登录需要 STC 测试账号（凭据不可猜测，需提供）；服务启动还需 server.lic 许可证与本地 service 运行配置；服务端日志对照仍需 SSH 只读命令或 22 端口。",
+  "testedCommit": "1fb8c30",
+  "summary": "全部构建阻塞已解除：STC 基础依赖改由内网 Maven 解析（sc-app-stc:0.1.1-SNAPSHOT 传递引入约 125 个基础 JAR），GW 源码补齐缺失接口 IMessageByte 后以 JDK8 编译成功并安装为 sumscope.stcl:gw:0.1.1-SNAPSHOT，gateway 扩展模块随之可编译。本轮提交 1fb8c30 已实测：默认 reactor（stc-foundation-runtime/parent/common/quotesvr/notificationsvr）clean verify BUILD SUCCESS；脚本 build-foundations.ps1 可从内网 Maven 重新生成基础 classpath（新增脚本，解决冻结 JAR 集不入库导致新环境无法启动的问题）。数据库采用发起方提供的 QA PostgreSQL(10.130.21.51:11004/stc, TBase)，已在专用 schema ficc_demo 建 14 张表（未触碰 public）。LoginSvr=ValidationServer 映射已核实。**SSH 通道结论（本轮重点）**：经实测，该环境无法提供可自动化的 SSH 只读通道——堡垒机公钥认证成功但拒绝远程命令执行，且管理员策略禁止 TCP 转发（administratively prohibited: port forwarding is disabled）；JumpServerClient 的 JMS token 为会话级、不可重放；两台目标主机的 22 端口均被过滤。按用户指示，SSH/窗口控制路线已**停止**，不再作为执行手段。**替代通道已落地并实测**：从本机可直接访问已部署的销售交易系统 HTTP 接口面（后端 10.100.5.39:8180，gateway 自述 appName=ficc-ibor-service），`/ibor-api/v3/api-docs` 公开返回 329 个路径的 OpenAPI 契约，新增只读探针 probe-ibor-api.ps1 五项检查 5/5 通过。剩余阻塞：真实登录需 STC 测试账号；服务启动需 server.lic；gw 构件未 deploy 到 Nexus。",
   "changedFiles": [
     "iteration1/stc-foundation-runtime/pom.xml",
     "iteration1/pom.xml",
     "iteration1/cczq-app-salestrading-common/pom.xml",
     "iteration1/gateway/pom.xml",
-    "iteration1/config/stc-consumers.example.ini"
+    "iteration1/config/stc-consumers.example.ini",
+    "iteration1/scripts/build-foundations.ps1",
+    "iteration1/scripts/foundation-classpath.ps1",
+    "iteration1/scripts/probe-ibor-api.ps1",
+    "handoff/tasks/codex-20260914-002/executor-notes.md",
+    "gw/"
   ],
   "checks": [
     {
       "name": "Maven 全模块构建（含 gateway）",
       "status": "pass",
-      "evidence": "默认 reactor（foundation/common/quotesvr/notificationsvr）clean verify BUILD SUCCESS；-P with-gateway 下 gateway 扩展模块编译通过（提交 44e9f2c4）。STC 基础依赖约 125 个 JAR 全部来自内网 Nexus(10.130.21.41:8081)。"
+      "evidence": "提交 1fb8c30 实测：`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify -DskipTests` → BUILD SUCCESS，Reactor 5 模块全 SUCCESS（stc-foundation-runtime 0.165s / parent 0.064s / common 6.138s / quotesvr 7.487s / notificationsvr 6.958s）。此前 -P with-gateway 下 gateway 扩展模块亦编译通过（提交 44e9f2c4）。STC 基础依赖约 125 个 JAR 全部来自内网 Nexus(10.130.21.41:8081)。注意：reactor 根 POM 位于 iteration1/，仓库根目录无 POM。"
+    },
+    {
+      "name": "基础 classpath 可复现（新增脚本）",
+      "status": "pass",
+      "evidence": "提交 1fb8c30 实测：`iteration1/scripts/build-foundations.ps1` → 「Foundation classpath written: iteration1/runtime/foundation-classpath.txt」。该脚本用 `mvn dependency:build-classpath -pl stc-foundation-runtime` 从内网 Maven 解析并落盘；foundation-classpath.ps1 在冻结 JAR 集缺失时回退读取该文件。冻结 JAR 集 (`**/runtime/`、`*.jar` 被 .gitignore) 无法经 Git 传递，此脚本使新环境可自举。"
     },
     {
       "name": "GW 源码编译",
       "status": "pass",
-      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT，77 个源文件，main class=GW）。缺失接口 com.gateway.connector.tcp.client.IMessageByte（CedaApi 直接引用但 lite 重构时丢失）已按用法恢复：boolean onMessage(String,byte[])。mvn8(JDK8) clean install BUILD SUCCESS，产物已 install 到本机 Maven 仓库。注意：该接口修复位于 gw 仓库工作区，尚未提交（gw 仓库归属发起方）。"
+      "evidence": "gitlab/ficc/stc-lite/gw（sumscope.stcl:gw:0.1.1-SNAPSHOT，main class=GW）。缺失接口 com.gateway.connector.tcp.client.IMessageByte（CedaApi 直接引用但 lite 重构时丢失）已按用法恢复：boolean onMessage(String,byte[])。mvn8(JDK8) clean install BUILD SUCCESS，产物已 install 到本机 Maven 仓库。GW 源码已导入本仓库（提交 fbc7d4c，110 文件）。"
     },
     {
       "name": "数据库（QA PostgreSQL）",
@@ -31,7 +41,18 @@
     {
       "name": "LoginSvr 服务发现（修正后）",
       "status": "pass",
-      "evidence": "/MDTService/ValidationServer = Host:10.130.21.53,Port:20040,Stat:1（LoginSvr 进程 pid=2384112 运行中，QA ./show 确认）；stc-lite 全家族配置均为 SERVER.LoginSvr.ServiceName=ValidationServer；TCP 20040/20041/20047 均从 Windows 可达。stc-consumers.example.ini 已修正并附说明。"
+      "evidence": "/MDTService/ValidationServer = Host:10.130.21.53,Port:20040,Stat:1（LoginSvr 进程 pid=2384112 运行中）；stc-lite 全家族配置均为 SERVER.LoginSvr.ServiceName=ValidationServer；TCP 20040/20041 从 Windows 可达。stc-consumers.example.ini 已修正并附说明。"
+    },
+    {
+      "name": "SSH / 堡垒机只读通道（验收项 4 的前置条件）",
+      "status": "fail",
+      "evidence": "实测四条路线均不可用：(1) JumpServerClient 内置 PuTTY 虽可用但凭据为会话级 JMS token(`JMS-a34a1548-…`)+一次性口令，重放返回 Permission denied (password,publickey)；(2) OpenSSH 用 jumpserver.pem 以 gongyi 公钥认证**成功**，但带命令或 -tt 时服务端立即 `Connection to jumpserver.cgws.com closed.`，即拒绝远程命令执行；(3) 同通道 TCP 转发被策略禁止：本地监听器可建（127.0.0.1:10022 LISTENING）但远端 `channel 1: open failed: administratively prohibited: port forwarding is disabled`；(4) 直连 10.130.21.53:22 与 10.130.21.51:22 均被过滤（同主机 2181/20040/20041 与 11004/80 可达，仅 22 不可达）。结论：该环境不提供可自动化的 SSH 只读通道。按用户指示已停止该路线，不再尝试。"
+    },
+    {
+      "name": "IBOR 部署系统 HTTP 可观测性（替代通道）",
+      "status": "pass",
+      "evidence": "从本机直连已部署系统，无需隧道：`/ibor-api/v3/api-docs` 公开返回 OpenAPI 3.1，paths=329，server=http://10.100.5.39:8180；`/auth/init` 返回 code=200（RSA 公钥，253 字符）；`/auth/code` 返回 code=200、captchaEnabled=true 且带 uuid 与 base64 PNG；`POST /auth/login` 空体返回业务码 500「认证权限类型不能为空」（证明端点存在且在鉴权）；`GET /mon/login/log` 返回业务码 401（端点存在，需 token）。响应头自述 appName=ficc-ibor-service、reqSrc=ficc-ibor-gateway、srvId=10100539，并带 trace_id。新增只读探针 iteration1/scripts/probe-ibor-api.ps1 实测 5/5 通过（地址由 -BaseUrl 参数传入，未硬编码）。",
+      "note": "该通道可在纯 HTTP 下完成原先想通过服务端日志做的「服务端是否收到请求」对照：/mon/login/log 即登录审计日志，取得可登录账号即可读。"
     },
     {
       "name": "服务启动（QuoteSvr / GW）",
@@ -41,7 +62,7 @@
     {
       "name": "真实登录、单只债券查询与服务端日志对照",
       "status": "not_run",
-      "evidence": "服务未启动，未取得 SID 或行情/估值数据；不猜测账号密码。日志对照仍受 SSH 22 端口不可达限制，不以“读不到日志”当作服务端未收到请求的证据。"
+      "evidence": "服务未启动，未取得 SID 或行情/估值数据；不猜测账号密码。SSH 路线已废止；服务端对照改由 HTTP 完成（探针已就绪，待账号）。不以「读不到日志」当作服务端未收到请求的证据。"
     }
   ],
   "blockers": [
@@ -54,13 +75,13 @@
       "need": "提供有效 server.lic（演示环境同款即可），放置到本地运行目录；不会提交入 git。"
     },
     {
-      "issue": "服务端日志对照仍无法执行（10.130.21.53:22 从本机不可达）。",
-      "need": "用户在既有 SSH 会话执行最少只读命令（LoginSvr/BaseSvr 日志有界 tail），或开通 22 端口。"
+      "issue": "服务端日志对照无法用 SSH 实现：此环境的堡垒机只提供人机交互终端（公钥认证通过但拒绝远程命令执行），并禁止 TCP 转发；目标主机 22 端口被过滤。（已确认这是环境策略，不是配置问题，也不再尝试。）",
+      "need": "已改由 HTTP 通道替代，无需用户执行 SSH 命令：/mon/login/log 即登录审计日志。仅需提供一个可用于登录的账号即可完成端到端对照。若仍需原始服务端文本日志，请由人工导出。"
     },
     {
       "issue": "sumscope.stcl:gw 目前仅存在于本机 Maven 仓库（install 未 deploy），其他环境无法解析。",
       "need": "由有权限者将 gw 构件 deploy 到内网 Nexus，或在部署机重复 mvn8 install。"
     }
   ],
-  "nextAction": "提供 STC 测试账号与 server.lic 后即可启动 QuoteSvr+GW 完成真实登录与单只债券（250001.IB）查询验证；gw 构件建议尽快 deploy 到 Nexus 以便环境可复现。"
+  "nextAction": "等待发起方提供 STC 测试账号与 server.lic。两者到位后即可启动 QuoteSvr+GW 完成真实登录与单只债券（250001.IB）查询验证；服务端对照改用 HTTP（probe-ibor-api.ps1 + /mon/login/log）完成，不再依赖 SSH。gw 构件建议尽快 deploy 到 Nexus 以便环境可复现。用户已指示停止 SSH 控制方案，后续按其新指令执行。"
 }
