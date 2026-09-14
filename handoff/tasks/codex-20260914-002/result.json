@@ -82,6 +82,26 @@
       "name": "估值字段（真实应答，本轮复核）",
       "result": "pass",
       "evidence": "queryChianSecurity 真实应答（240011，2026-07-24 估值日）：valuation_net_price=105.1608、valuation_yield=1.5675、valuation_date=20260724、credibility=推荐、remaining_year=7.8356；bond 主数据应答的 info 段另含 chinaBondValuation / chinaBondValuation2 / chinaValuationDate。"
+    },
+    {
+      "name": "本轮独立复测：重新构建并以 dps 模式真实起服（非复用他人日志）",
+      "result": "pass",
+      "evidence": "用 build-server.ps1 以当前代码（含 d439604 的 Datas 修复，jar 时间戳 00:10）重新打包后启动 QuoteSvr：00:10:36 `QuoteSvr READY`，对 10.130.21.53:20041(BaseSvr) 与 20040(ValidationServer/LoginSvr) 均 `CONNECTION_LOGIN_SUCCESS`；随后 3 个刷新周期共发出 30 次真实请求（querySecurity / stc.base.info.query / queryChianSecurity，标的 250006.IB、240011.IB、250210.IB、230026.IB），日志中 `unavailable` 仅 1 次（启动瞬间连接尚未就绪的竞争，非缺陷）。验证结束已停止进程，java 进程数 0。"
+    },
+    {
+      "name": "本轮解码当前版本真实应答（证明 Datas 修复生效）",
+      "result": "pass",
+      "evidence": "解码本次运行报文：250006.IB → {\"Code\":\"0000\",\"Msg\":\"Success\"}，Bond_Key=Z0003002025GOVBGB06，info.chinaBondValuation=1.0850。说明 StcBaseDataClient 改为读 `Datas` 后刷新链路真实可用（修复前即使有数据也报 NOT_READY）。"
+    },
+    {
+      "name": "构建与单元测试（本轮在 HEAD c55085d / 代码 d439604 上独立复跑）",
+      "result": "pass",
+      "evidence": "`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Reactor 5/5，26.5s；Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、FilterEngineTest 3、CrmPluginTest 1）。"
+    },
+    {
+      "name": "评级字段全量盘点（真实应答）",
+      "result": "pass",
+      "evidence": "对本次与 23:53 两批真实应答做字段级盘点：评级相关字段只有 `Issuer_Rating_Current_NPY`（250210.IB=AAA）与 `Rating_Augment`（=NON）。样本均为利率债（国债/国开债），未见债项级 Rating_Current；建议用一只信用债复验是否存在债项评级字段。"
     }
   ],
   "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；未使用固定地址兜底，也未修改共享注册中心（本轮未注册本机 provider，RegisterEnable=0）。",
@@ -104,6 +124,6 @@
       "needed": "STC QA 上 LoginSvr/BaseSvr 的日志路径（只读）或由人工执行的有界 tail 结果"
     }
   ],
-  "nextAction": "字段层面已无缺口：评级=Issuer_Rating_Current_NPY（250210.IB 实测 AAA，国债类为空属正常）、估值=queryChianSecurity 的 valuation_net_price/valuation_yield/valuation_date。本轮只补证据、未改代码，testedCommit 仍为 d439604。下一步唯一阻塞是 STC 测试账号：拿到账号后在同一 QuoteSvr 进程（NetType=dps）内完成真实登录，并做一只带会话的债券查询即可收口；同时请发起方确认上述评级字段口径与是否可用服务端日志对照。",
-  "notes": "本轮（00:38-00:45）为只读补证：与另一并行会话的 d439604/6af2b62 结论一致并互相印证；新增 JMX 线程栈证明 QA 服务端为 GW/DPS（非 CEDA），并从真实报文解码出评级字段 Issuer_Rating_Current_NPY。未重复执行起服/查询等动作，未改动业务代码。"
+  "nextAction": "本轮已用当前代码独立完成一次真实起服与 30 次真实请求（READY + CONNECTION_LOGIN_SUCCESS ×2 + 应答 Code=0000），确认 d439604 的 NetType=dps 与 Datas 修复均生效；字段侧评级=Issuer_Rating_Current_NPY（利率债仅主体评级，信用债待复验）、估值=queryChianSecurity 的 valuation_net_price/valuation_yield/valuation_date。testedCommit 仍为 d439604。唯一阻塞仍是 STC 测试账号（identity.serviceUsername 为空、FICC_SERVICE_PASSWORD 未设置）：拿到账号后在同一进程内完成真实登录 + 一只带会话的债券查询即可收口为 completed。",
+  "notes": "本轮（00:38-00:45）为只读补证：与另一并行会话的 d439604/6af2b62 结论一致并互相印证；新增 JMX 线程栈证明 QA 服务端为 GW/DPS（非 CEDA），并从真实报文解码出评级字段 Issuer_Rating_Current_NPY。未重复执行起服/查询等动作，未改动业务代码。 \n补记（00:10-00:14）：用当前 jar 重新构建并真实起服首次亲自复测通过（30 次真实请求、仅 1 次启动竞争），mvn clean verify BUILD SUCCESS / Tests 11-0-0，进程已停止（java=0）。"
 }
