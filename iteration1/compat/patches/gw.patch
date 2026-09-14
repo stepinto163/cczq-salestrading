@@ -1,0 +1,35 @@
+--- a/src/main/java/com/gateway/invoke/ceda/CedaApi.java
++++ b/src/main/java/com/gateway/invoke/ceda/CedaApi.java
+@@ -28,7 +28,7 @@
+ import com.gateway.connector.Session;
+ import com.gateway.connector.proto.Proto;
+ import com.gateway.connector.tcp.TcpConnector;
+-import com.gateway.connector.tcp.body.NotifyBody;
++
+ import com.gateway.connector.tcp.client.IMessageByte;
+ import com.gateway.connector.utils.ProtoUtils;
+ import com.gateway.constant.Constants;
+@@ -582,8 +582,8 @@
+                     }
+                     String sid = null;
+                     if ("SYS.ATS.LOGIN".equals(topic)) {
+-                        NotifyBody notifyBody = ProtoUtils.getNotify(rawBody);
+-                        String content = notifyBody != null ? notifyBody.content : null;
++                        java.util.Map<String,String> notifyBody = ProtoUtils.getNotify(rawBody);
++                        String content = notifyBody != null ? notifyBody.get("content") : null;
+                         if (StringUtil.isBlank(content)) {
+                             return;
+                         }
+--- a/src/main/java/com/gateway/notify/NotifyProxy.java
++++ b/src/main/java/com/gateway/notify/NotifyProxy.java
+@@ -82,8 +82,8 @@
+             if (!contentLoaded && rawBody != null) {
+                 contentLoaded = true;
+                 try {
+-                    com.gateway.connector.tcp.body.NotifyBody notifyBody = ProtoUtils.getNotify(rawBody);
+-                    content = notifyBody != null ? notifyBody.content : null;
++                    java.util.Map<String,String> notifyBody = ProtoUtils.getNotify(rawBody);
++                    content = notifyBody != null ? notifyBody.get("content") : null;
+                 } catch (Exception e) {
+                     content = null;
+                 }

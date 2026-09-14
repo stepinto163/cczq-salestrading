@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+  <bean id="topicManager" class="com.gateway.connector.tcp.server.TopicManager"/>
+  <bean id="tcpSessionManager" class="com.gateway.connector.tcp.TcpSessionManager">
+    <property name="maxInactiveInterval" value="60"/>
+    <property name="maxQueueSize" value="1000"/>
+    <property name="topicManager" ref="topicManager"/>
+    <property name="sessionListeners"><list><ref bean="proxy"/></list></property>
+  </bean>
+  <bean id="tcpConnector" class="com.gateway.connector.tcp.TcpConnector" init-method="init" destroy-method="destroy">
+    <property name="tcpSessionManager" ref="tcpSessionManager"/>
+  </bean>
+  <bean id="burst" class="com.gateway.marketdata.MarketDataBurstConfig">
+    <property name="topicPrefixes" value="stc.md.ct."/>
+    <property name="ingressMaxPendingKeys" value="100"/>
+    <property name="egressMaxPendingKeys" value="100"/>
+    <property name="notifyCacheWorkerCount" value="1"/>
+    <property name="notifyCacheMaxSize" value="100"/>
+    <property name="rawNotifyEnabled" value="false"/>
+    <property name="dropWhenNotWritable" value="false"/>
+  </bean>
+  <bean id="notify" class="com.gateway.notify.NotifyProxy">
+    <property name="tcpConnector" ref="tcpConnector"/>
+    <property name="topicManager" ref="topicManager"/>
+    <property name="marketDataBurstConfig" ref="burst"/>
+  </bean>
+  <bean id="security" class="ficc.gateway.FiccSecurityCheck"/>
+  <bean id="proxy" class="com.gateway.invoke.ceda.CedaProxy" init-method="init">
+    <property name="topicManager" ref="topicManager"/>
+    <property name="tcpConnector" ref="tcpConnector"/>
+    <property name="notifyProxy" ref="notify"/>
+    <property name="marketDataBurstConfig" ref="burst"/>
+    <property name="RequestService" value="LoginSvr,QuoteSvr,NotificationSvr"/>
+    <property name="Subscribes"><map><entry key="LoginSvr" value="SYS.ATS.LOGIN"/><entry key="QuoteSvr" value="ficc.quote.report.**|ficc.price.report.**"/><entry key="NotificationSvr" value="ficc.notification.report.**"/></map></property>
+    <property name="securityChecks"><list><ref bean="security"/></list></property>
+  </bean>
+  <bean id="serverConfig" class="com.gateway.connector.tcp.config.ServerTransportConfig">
+    <property name="tcpConnector" ref="tcpConnector"/>
+    <property name="proxy" ref="proxy"/>
+    <property name="notify" ref="notify"/>
+    <property name="gzip" value="false"/>
+    <property name="login" value="true"/>
+    <property name="writeBufferLowWaterMark" value="32768"/>
+    <property name="writeBufferHighWaterMark" value="131072"/>
+  </bean>
+  <bean id="tcpServer" class="com.gateway.connector.tcp.server.TServer" init-method="init" destroy-method="shutdown">
+    <property name="host" value="127.0.0.1"/>
+    <property name="port" value="18600"/>
+    <property name="serverConfig" ref="serverConfig"/>
+  </bean>
+</beans>

@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 15, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+    environment {
+        MAVEN_OPTS = '-Xmx384m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8'
+    }
+    stages {
+        stage('Build and unit test') {
+            steps {
+                dir('iteration1') {
+                    script {
+                        if (isUnix()) {
+                            sh 'mvn -B -ntp clean verify'
+                        } else {
+                            bat 'mvn -B -ntp clean verify'
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            junit testResults: 'iteration1/**/target-maven/surefire-reports/TEST-*.xml',
+                  allowEmptyResults: true
+        }
+        success {
+            archiveArtifacts artifacts: 'iteration1/**/target-maven/*.jar,iteration1/**/target-maven/*-dist.zip',
+                             fingerprint: true
+        }
+    }
+}
