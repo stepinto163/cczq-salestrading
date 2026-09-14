@@ -3,11 +3,12 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "b1a499c944ca742d03e43e5cb7c49d1297395ee6",
+  "testedCommit": "7578a66ae6c979ed063cd60406d38730a759aa2d",
   "baseCommit": "d7f58e99233c5b5440e755cad8ab446a2b9b8def",
   "workBranch": "work/codex-20260914-002",
-  "summary": "本轮修正了上一轮的错误结论：**NetType 应为 dps，不是 ceda**。上一轮根据 `NetClientResource` 只有 `ceda` 与其它两个分支，推断必须 `ceda`；实际上 `dps` 正是要走的非 ceda（GW/DPS）分支，而 QA 的 STC 服务端讲的就是 DPS/GW 协议——ceda 握手 no reply 是协议不匹配，不是网络问题。改为 `NetType=dps` 后链路完全打通：GW 客户端从 ZooKeeper 解析出 BaseSvr(20041)/ValidationServer(20040)，`CONNECTION_LOGIN_SUCCESS`，且 `querySecurity` / `queryChianSecurity` 真实往返成功。**第二个真实缺陷**：`StcBaseDataClient` 从应答里读小写 `datas`，而 BaseSvr 实际返回大写 `Datas`，导致每次刷新都报「STC base data is unavailable or refreshing」——即使数据已经回来。修掉后 QuoteSvr 持续无错刷新。**实盘数据（真实 STC，非模拟）**：250006.IB 返回 60+ 字段（Bond_Key=Z0003002025GOVBGB06、Bond_Subtype=BGB、Coupon_Rate_Current=1.59、Full_Name=2025年记账式附息(六期)国债）；发行人 p_issuer_info 返回「中华人民共和国财政部 / institution_code=Z000300 / 北京」；估值 `queryChianSecurity` 返回 valuation_date=20260724、valuation_yield=1.0850、valuation_net_price=100.3176、remaining_year=0.6411、credibility=推荐。**字段映射核对结果**：估值侧字段（valuation_yield / valuation_net_price / remaining_year / valuation_date / Id）与 `StcBaseMapper` 完全对得上；**评级侧对不上**——真实应答里没有 `Rating_Current` / `Issuer_Rating_Current`，只有 `Rating_Augment`（值 NON），因此 bondRating/issuerRating 目前只会是 null。dps 模式下**不再需要**上一轮的 sun.misc shim 与 Netty 3（无 patch-module、无 Netty3 启动，全程无 NoClassDefFound）。仍未完成：真实登录（无 STC 测试账号凭据）与 STC 服务端日志对照（SSH 窗口不可用），故 state 保持 blocked。",
+  "summary": "本轮用**信用债**补上了上一轮遗留的评级疑问，结论与上轮推断相反但更准确：真实 BaseSvr 应答里**债项评级字段 Rating_Current 确实存在**（并非只有 _NPY 写法），此前「只见到 Issuer_Rating_Current_NPY、没有 Rating_Current」是**样本偏差**——前几轮查的全是利率债（国债/国开债），而利率债本身不带评级字段。本轮从 STC QA 库只读筛出信用债后重查，实测四只债：1382043.IB（13粤交通MTN1，中票）债项 AAA / 主体 AAA；133179.SZ（22凤新01，PPN）债项 **AA+ / 主体 AA**；197522.SH（21苏高F2，PPN）债项 **AAA / 主体 AA**；250006.IB（25附息国债06，利率债）评级字段全空。后两只债项与主体评级**不同**，证明两个字段不能互相替代，也证明 b1a499c 的「债项优先 + bondRatingSource 标注口径」设计是必要且正确的。为把结论落到代码而不是留在日志里，把真实报文喂给**发布版 StcBaseMapper** 跑了一遍（非 mock）：133179.SZ → bondRating=AA+ / bondRatingSource=ISSUE / issuerRating=AA；250006.IB → 三者均 null；1382043.IB → 估值 valuationYield=1.5562、valuationDate=2026-07-24、remainingYears=1.5205。据此修正了 StcBaseMapper 中一条会给后人误导的注释（原注释称「应答只带 _NPY 后缀」，与信用债实测不符），提交 7578a66；mvn clean verify BUILD SUCCESS、Tests 13/13。对 7578a66 重新打包并真实起服复验：READY、20040/20041 双 CONNECTION_LOGIN_SUCCESS、4 只债全部往返成功，仅启动瞬间 1 次连接竞态告警。仍 blocked 的原因不变：无 STC 测试账号，做不了真实登录；SSH/日志通道不可用，做不了服务端日志对照。",
   "changedFiles": [
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
     "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseDataClient.java",
     "iteration1/cczq-app-salestrading-common/src/test/java/ficc/common/client/AdapterContractTest.java",
     "iteration1/cczq-app-salestrading-quotesvr/control/ATSConfig.ini",
@@ -15,8 +16,7 @@
     "iteration1/gateway/control/ATSConfig.ini",
     "iteration1/config/stc-consumers.example.ini",
     "iteration1/config/adapters.integration.example.properties",
-    "iteration1/docs/stc-dps-integration.zh-CN.md",
-    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java"
+    "iteration1/docs/stc-dps-integration.zh-CN.md"
   ],
   "checks": [
     {
@@ -27,114 +27,89 @@
     {
       "name": "ZooKeeper 服务发现",
       "result": "pass",
-      "evidence": "ZK 10.130.21.53:2181 会话建立（sessionid=0x19fdb1d8aa700f4）；`/MDTService/BaseSvr/BaseSvr` -> Host:10.130.21.53,Port:20041,Stat:1；`/MDTService/ValidationServer` -> Port:20040,Stat:1。"
+      "evidence": "ZK 10.130.21.53:2181 会话建立；`/MDTService/BaseSvr/BaseSvr` -> 10.130.21.53:20041；`/MDTService/ValidationServer` -> 10.130.21.53:20040。"
     },
     {
       "name": "业务服务连接（发现成功 ≠ 连接成功，两者分别验证）",
       "result": "pass",
-      "evidence": "`GwClient connecting to Host:10.130.21.53,Port:20041` -> `Host:10.130.21.53,Port:20041:CONNECTION_LOGIN_SUCCESS`，20040 同样成功；`GwClient connected to ...` 两条均出现。启动首秒有一条 `SERVER.BaseSvr is unavailable`（连接尚未建立的正常竞态），60s 后刷新周期不再报错。"
+      "evidence": "对 20041(BaseSvr) 与 20040(ValidationServer/LoginSvr) 均 `CONNECTION_LOGIN_SUCCESS`；`GwClient connected to ...` 两条均出现。启动首秒 1 条 `SERVER.BaseSvr is unavailable`（连接未就绪的正常竞态）。"
     },
     {
       "name": "单只债券基础资料端到端查询（真实）",
       "result": "pass",
-      "evidence": "`requestSync->SERVER.BaseSvr[querySecurity] content:{\"SecurityID\":\"250006.IB\"}` -> 2395 字节应答 `{\"Msg\":\"Success\",\"Datas\":[ ... ],\"Code\":\"0000\"}`，含 Bond_ID=250006.IB、Bond_Key=Z0003002025GOVBGB06、Bond_Subtype=BGB、Coupon_Rate_Current=1.59、Full_Name=2025年记账式附息(六期)国债 等 60+ 字段；发行人 p_issuer_info=中华人民共和国财政部/Z000300/北京。"
+      "evidence": "querySecurity 真实往返，250006.IB 返回 71 个字段（Bond_Key=Z0003002025GOVBGB06、Bond_Subtype=BGB、Coupon_Rate_Current=1.59）；发行人 p_issuer_info 返回中华人民共和国财政部/Z000300/北京。"
     },
     {
       "name": "估值字段映射核对",
       "result": "pass",
-      "evidence": "`queryChianSecurity` 应答字段为 valuation_yield / valuation_net_price / valuation_yield2 / valuation_net_price2 / remaining_year / valuation_date / Id / bondTypeFlag / credibility / Val_Modified_Duration；与 StcBaseMapper 读取的字段名一致。实例：250006，valuation_date=20260724，valuation_yield=1.0850，valuation_net_price=100.3176，remaining_year=0.6411，credibility=推荐。"
-    },
-    {
-      "name": "评级字段映射核对",
-      "result": "fail",
-      "evidence": "真实 `querySecurity` 应答中不存在 `Rating_Current` / `Issuer_Rating_Current`，只有 `Rating_Augment`（值 NON）。StcBaseMapper 按 Rating_Current / Issuer_Rating_Current 取值，因此 bondRating、issuerRating 恒为 null；契约测试的 mock 也沿用了同样的错误字段名。需要发起方确认评级应取自哪个接口/字段。"
+      "evidence": "queryChianSecurity 应答字段 valuation_yield / valuation_net_price / remaining_year / valuation_date / credibility 与 StcBaseMapper 一致；250006 → 1.0850 / 100.3176 / 0.6411 / 20260724。"
     },
     {
       "name": "Maven 构建与单元测试",
       "result": "pass",
-      "evidence": "对提交 d439604 执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify`：BUILD SUCCESS，Tests run: 11, Failures: 0, Errors: 0。"
+      "evidence": "对提交 7578a66 执行 `mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify`：BUILD SUCCESS，Reactor 5/5，26.6s；Tests run: 13, Failures: 0, Errors: 0, Skipped: 0。"
     },
     {
       "name": "真实 STC 登录（LoginSvr / ValidationServer）",
       "result": "not_run",
-      "evidence": "没有 STC 测试账号的用户名/口令（identity.serviceUsername 与 FICC_SERVICE_PASSWORD 均为空），按任务约束不猜测口令。LoginSvr 的传输层连接已建立（20040 CONNECTION_LOGIN_SUCCESS），仅缺业务登录凭据。"
+      "evidence": "仍无 STC 测试账号（identity.serviceUsername 为空、FICC_SERVICE_PASSWORD 未设置），按任务约束不猜测口令。传输层已连通（20040 CONNECTION_LOGIN_SUCCESS），仅缺业务登录凭据。"
     },
     {
       "name": "与 STC 服务端日志对照（同一时间/请求标识）",
       "result": "not_run",
-      "evidence": "本机无法控制已打开的 SSH 窗口，也未获得 STC QA 主机的只读日志路径权限。此项未完成不作为「服务端未收到消息」的证据。"
+      "evidence": "本机无法控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问。executor agent（10.130.21.53:8899）本轮 token 不在环境变量中，同样不可用。此项未完成不作为「服务端未收到消息」的证据。"
     },
     {
       "name": "NotificationSvr / GW 启动验证",
       "result": "not_run",
-      "evidence": "本轮按约束先只验证 QuoteSvr；NotificationSvr 需要专用 STC 账号，GW 待 QuoteSvr 链路完成后再起。"
+      "evidence": "本轮按约束先只验证 QuoteSvr；NotificationSvr 需专用 STC 账号，GW 待 QuoteSvr 链路完成后再起。"
     },
     {
-      "name": "QA 服务端实现为 GW/DPS（JMX 线程栈独立佐证，本轮新增）",
+      "name": "QA 服务端实现为 GW/DPS（JMX 线程栈独立佐证）",
       "result": "pass",
-      "evidence": "只读 JMX（java.lang:type=Threading dumpAllThreads + Runtime 属性）对 60003/LoginSvr、60002/BaseSvr、60004/TBookSvr 取线程栈：均含 com.gateway.connector.tcp.server.HeartbeatListener、com.gateway.connector.tcp.client.GateWayApi，网络层为 io.netty.channel.nio.NioEventLoop（Netty 4，与 gw 模块 netty-all 4.1.59 一致）；线程名 TcpServer Boss-thread-0 / Worker-thread-N；三台服务均无任何 adaptiveMQ/CEDA 线程。这是「服务端不讲 CEDA」的直接证据，独立于上一轮的「握手 no reply」推断。"
+      "evidence": "只读 JMX 对 60002/60003/60004 取线程栈：含 com.gateway.connector.tcp.server.HeartbeatListener、com.gateway.connector.tcp.client.GateWayApi，网络层 Netty 4；无 adaptiveMQ/CEDA 线程。"
     },
     {
-      "name": "评级字段已定位：Issuer_Rating_Current_NPY（本轮新增）",
+      "name": "信用债评级字段定位（本轮新增，关键）",
       "result": "pass",
-      "evidence": "解码本机 GW 客户端与真实 BaseSvr 的往返报文（23:53-23:54 运行日志中的 Proto body 字节）：250210.IB（国开行）的 querySecurity 应答含 \"Issuer_Rating_Current_NPY\":\"AAA\"；同一批次的国债 250006.IB / 240011.IB 无评级字段、只有 \"Rating_Augment\":\"NON\"。结论：评级字段真实存在但带 _NPY 后缀，且国债类本身不填评级——此前「应答里没有 Issuer_Rating_Current」是因为查的标的（国债）无评级，不是字段缺失。"
+      "evidence": "先用只读 SQL 从 STC QA 库筛出带评级的信用债（bond_type=COR），再对真实 BaseSvr 发起 querySecurity。实测：1382043.IB（13粤交通MTN1，LMN）Rating_Current=AAA / Issuer_Rating_Current=AAA；133179.SZ（22凤新01，PPN）Rating_Current=AA+ / Issuer_Rating_Current=AA；197522.SH（21苏高F2，PPN）Rating_Current=AAA / Issuer_Rating_Current=AA；250006.IB（利率债）两者均不存在。三只信用债均**同时**返回 Rating_Current 与 Rating_Current_NPY，取值相同。结论：此前「应答里没有 Rating_Current」是样本全是利率债导致的误判，不是字段缺失。"
     },
     {
-      "name": "估值字段（真实应答，本轮复核）",
+      "name": "债项评级与主体评级可区分（本轮新增）",
       "result": "pass",
-      "evidence": "queryChianSecurity 真实应答（240011，2026-07-24 估值日）：valuation_net_price=105.1608、valuation_yield=1.5675、valuation_date=20260724、credibility=推荐、remaining_year=7.8356；bond 主数据应答的 info 段另含 chinaBondValuation / chinaBondValuation2 / chinaValuationDate。"
+      "evidence": "133179.SZ 债项 AA+ / 主体 AA，197522.SH 债项 AAA / 主体 AA —— 两只债的债项评级均高于主体评级（均含担保 Rating_Augment=GUA）。证明两者是不同口径，必须分别落库并用 bondRatingSource 标注，不能互相替代。"
     },
     {
-      "name": "本轮独立复测：重新构建并以 dps 模式真实起服（非复用他人日志）",
+      "name": "评级/估值映射端到端（真实报文 × 发布版 mapper，非 mock）",
       "result": "pass",
-      "evidence": "用 build-server.ps1 以当前代码（含 d439604 的 Datas 修复，jar 时间戳 00:10）重新打包后启动 QuoteSvr：00:10:36 `QuoteSvr READY`，对 10.130.21.53:20041(BaseSvr) 与 20040(ValidationServer/LoginSvr) 均 `CONNECTION_LOGIN_SUCCESS`；随后 3 个刷新周期共发出 30 次真实请求（querySecurity / stc.base.info.query / queryChianSecurity，标的 250006.IB、240011.IB、250210.IB、230026.IB），日志中 `unavailable` 仅 1 次（启动瞬间连接尚未就绪的竞争，非缺陷）。验证结束已停止进程，java 进程数 0。"
+      "evidence": "把本次运行解码出的真实应答直接喂给 target 中发布版 StcBaseMapper.security()（MapProbe，未改业务代码）：133179.SZ → bondRating=AA+、bondRatingSource=ISSUE、issuerRating=AA、hasExerciseOption=true(optionType=PUT)；1382043.IB → bondRating=AAA、valuationYield=1.5562、valuationDate=2026-07-24、remainingYears=1.5205；250006.IB → 评级三字段均 null、valuationYield=1.0850。证明 b1a499c 的修复对真实数据生效。"
     },
     {
-      "name": "本轮解码当前版本真实应答（证明 Datas 修复生效）",
+      "name": "提交 7578a66 的运行期复验（重打 jar 后再起服）",
       "result": "pass",
-      "evidence": "解码本次运行报文：250006.IB → {\"Code\":\"0000\",\"Msg\":\"Success\"}，Bond_Key=Z0003002025GOVBGB06，info.chinaBondValuation=1.0850。说明 StcBaseDataClient 改为读 `Datas` 后刷新链路真实可用（修复前即使有数据也报 NOT_READY）。"
-    },
-    {
-      "name": "构建与单元测试（本轮在 HEAD c55085d / 代码 d439604 上独立复跑）",
-      "result": "pass",
-      "evidence": "`mvn -s settings_yanxin.xml -f iteration1/pom.xml clean verify` → BUILD SUCCESS，Reactor 5/5，26.5s；Tests run: 11, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 7、FilterEngineTest 3、CrmPluginTest 1）。"
-    },
-    {
-      "name": "评级字段全量盘点（真实应答）",
-      "result": "pass",
-      "evidence": "对本次与 23:53 两批真实应答做字段级盘点：评级相关字段只有 `Issuer_Rating_Current_NPY`（250210.IB=AAA）与 `Rating_Augment`（=NON）。样本均为利率债（国债/国开债），未见债项级 Rating_Current；建议用一只信用债复验是否存在债项评级字段。"
-    },
-    {
-      "name": "评级映射缺陷修复（真实字段名带 _NPY 后缀）",
-      "result": "pass",
-      "evidence": "`StcBaseMapper` 原先只读 `Rating_Current` / `Issuer_Rating_Current`，而真实应答是 `Issuer_Rating_Current_NPY`（250210.IB=AAA）→ 评级恒为 null。改为按序兼容两种写法（新增 firstText 助手）；无评级的债（如国债）三个评级字段保持 null 且不抛错。新增 2 个契约测试：用真实字段名断言 bondRating=AAA / bondRatingSource=ISSUER，以及国债无评级时断言为 null。提交 b1a499c。`mvn clean verify`（提交后复跑）BUILD SUCCESS，Tests run: 13, Failures: 0, Errors: 0, Skipped: 0（AdapterContractTest 9、FilterEngineTest 3、CrmPluginTest 1）。"
-    },
-    {
-      "name": "修复后的运行期回归验证（真实 STC）",
-      "result": "pass",
-      "evidence": "用 build-server.ps1 以 b1a499c 重打 jar（00:18）后再次起服：QuoteSvr READY 1 次、20040/20041 各 `CONNECTION_LOGIN_SUCCESS`、一个刷新周期 10 次真实请求（querySecurity / p_issuer_info / queryChianSecurity × 4 只债）；除启动瞬间连接未就绪的那 1 次 `unavailable` 外无任何异常，与修复前行为一致，无回归。验证结束已停止进程，java 进程数 0。"
+      "evidence": "build-server.ps1 于 01:39 重新打包（jar 时间戳晚于提交 7578a66）后启动：QuoteSvr READY ×1、CONNECTION_LOGIN_SUCCESS ×2、4 只债（250006.IB / 1382043.IB / 133179.SZ / 197522.SH）querySecurity 全部往返成功；异常仅 1 条启动竞态 `SERVER.BaseSvr is unavailable`。验证后已停进程，java=0。"
     }
   ],
-  "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；未使用固定地址兜底，也未修改共享注册中心（本轮未注册本机 provider，RegisterEnable=0）。",
-  "realVsSimulated": "真实：QuoteSvr 进程、ZooKeeper 发现、到 10.130.21.53:20040/20041 的 TCP 连接与登录握手、querySecurity/queryChianSecurity/p_issuer_info 业务往返、本地 PostgreSQL 16.4(127.0.0.1:55432)。模拟：仅单元测试中的 FakeBase 桩。",
-  "cleanup": "本轮启动的 java 进程已全部停止（进程数 0）；未注册任何共享 ZK 节点（/MDTService 仍为 32 个）；未改动远端 STC 与共享注册中心；本机 PostgreSQL 未做变更。",
+  "connectionMode": "ZooKeeper 服务发现（REGISTER.Svr1=10.130.21.53:2181，RegType=2）+ NetType=dps 的 GW/DPS 客户端；未使用固定地址兜底，未修改共享注册中心（RegisterEnable=0，本机不注册 provider）。",
+  "realVsSimulated": "真实：QuoteSvr 进程、ZooKeeper 发现、到 10.130.21.53:20040/20041 的连接与登录握手、querySecurity/queryChianSecurity/p_issuer_info 业务往返、对 STC QA 库的只读查询、本地 PostgreSQL 16.4。模拟：仅单元测试中的 FakeBase 桩。评级映射除单测外，另用真实报文直接驱动发布版 mapper 验证，非 mock。",
+  "cleanup": "本轮启动的 java 进程已全部停止（进程数 0，仅停止本轮 01:33/01:39 启动的那一个）；未注册任何共享 ZK 节点；未改动远端 STC、共享注册中心与 QA 数据库（对库仅执行 SELECT）；部署期配置改动只落在被 .gitignore 忽略的 iteration1/runtime/ 本地副本，未入库。",
   "blockers": [
     {
       "blocker": "缺少 STC 测试账号凭据",
-      "detail": "identity.serviceUsername 为空、环境变量 FICC_SERVICE_PASSWORD 未设置，无法做真实登录与带会话的报价查询。需要提供一组可用的 QA 账号（或授权使用已有 QA 会话），并说明其权限范围。",
-      "needed": "STC QA 测试账号（用户名 + 口令注入方式）"
+      "detail": "identity.serviceUsername 为空、环境变量 FICC_SERVICE_PASSWORD 未设置，无法做真实登录与带会话的报价查询。传输层（20040）已连通，只差业务登录凭据。这是当前唯一卡住「真实登录」验收项的阻塞。",
+      "needed": "STC QA 测试账号（用户名 + 口令注入方式）及其权限范围"
     },
     {
       "blocker": "无法对照 STC 服务端日志",
-      "detail": "本机不能控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问。验收要求「以相同检查时间/主题/请求标识对照服务端日志」这一项无法完成。",
-      "needed": "STC QA 上 LoginSvr/BaseSvr 的日志路径（只读）或由人工执行的有界 tail 结果"
+      "detail": "本机不能控制已打开的 SSH 窗口，也没有 STC QA 主机日志的只读访问；executor agent 本轮 token 不可用。验收项「以相同检查时间/主题/请求标识对照服务端日志」无法完成。",
+      "needed": "STC QA 上 LoginSvr/BaseSvr 日志路径（只读）并给只读账号开 ACL，或人工执行有界 tail 后回传结果"
     },
     {
-      "blocker": "评级口径需发起方确认（代码已按实测字段实现）",
-      "detail": "代码已按实测实现：债项 Rating_Current(_NPY) 优先，回退主体 Issuer_Rating_Current(_NPY)，并用 bondRatingSource 标注 ISSUE/ISSUER；样本全是利率债，未观察到债项评级字段，信用债是否有 Rating_Current 待复验。",
-      "needed": "用一只信用债确认债项评级字段名，或确认以主体评级为准"
+      "blocker": "评级业务口径待发起方确认（技术问题已解决）",
+      "detail": "技术上已确认：债项 Rating_Current 与主体 Issuer_Rating_Current 均存在且常不相等，代码当前取债项优先并回退主体，用 bondRatingSource 标注 ISSUE/ISSUER。需业务确认报价单展示的是债项评级还是主体评级；若要求主体评级，改一行取值顺序即可。",
+      "needed": "确认 BondOrderDTO.bondRating 的业务口径（债项优先 / 主体优先）"
     }
   ],
-  "nextAction": "本轮修掉了「评级恒为 null」这个真实缺陷（testedCommit b1a499c，构建 13/13、运行期无回归）。至此 dps 链路 + 基础资料/估值/评级映射均已用真实 STC 验证，唯一剩余阻塞是 STC 测试账号（identity.serviceUsername 为空、FICC_SERVICE_PASSWORD 未设置）。拿到账号后在同一进程内做一次真实登录 + 带会话的债券查询，即可收口为 completed；若方便，请同时提供一只信用债代码用于复验债项评级字段。",
-  "notes": "本轮（00:38-00:45）为只读补证：与另一并行会话的 d439604/6af2b62 结论一致并互相印证；新增 JMX 线程栈证明 QA 服务端为 GW/DPS（非 CEDA），并从真实报文解码出评级字段 Issuer_Rating_Current_NPY。未重复执行起服/查询等动作，未改动业务代码。 \n补记（00:10-00:14）：用当前 jar 重新构建并真实起服首次亲自复测通过（30 次真实请求、仅 1 次启动竞争），mvn clean verify BUILD SUCCESS / Tests 11-0-0，进程已停止（java=0）。 \n补记（00:18-00:22）：修复评级映射（_NPY 字段）+2 契约测试，提交 b1a499c；mvn clean verify BUILD SUCCESS / Tests 13-0-0（提交后复跑）；重打 jar 后运行期回归验证通过，进程已停止（java=0）。"
+  "nextAction": "评级相关的技术阻塞已清除（真实数据 + 发布版 mapper 双重验证，见 checks）。剩余唯一硬阻塞是 STC 测试账号：拿到账号后在同一进程内做一次真实登录 + 带会话的债券查询即可收口为 completed。另请确认评级业务口径（债项优先 or 主体优先），并按需提供 STC QA 日志只读通道。复验用券建议保留 133179.SZ（债项 AA+ / 主体 AA，能同时验证两个口径）。",
+  "notes": "本轮（01:25-01:45）范围：仅补证 + 修正一条误导性代码注释，未改动业务逻辑。\n补记：本轮发现并纠正了上一轮的一条结论——「真实应答只有 _NPY 评级字段」不成立，真实原因是前几轮样本全是利率债；已用三只信用债证伪，并把结论写回代码注释（7578a66）。\n复现方法：先从 STC QA 库只读筛 `bond where rating_current is not null and bond_type='COR'` 取券码，再写入被忽略的 iteration1/runtime/adapters.local.properties 的 base.securityIds，重打 jar 后起服即可复现本轮结果。"
 }
