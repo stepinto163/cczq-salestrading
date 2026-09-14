@@ -3,10 +3,10 @@
   "taskId": "codex-20260914-002",
   "from": "workbuddy",
   "state": "blocked",
-  "testedCommit": "133bdc7a9b6c75ccb6280224cd47b7f6eeba74a7",
+  "testedCommit": "7ef009c689ae13d4016cc328c99520f6cc34687e",
   "baseCommit": "d7f58e99233c5b5440e755cad8ab446a2b9b8def",
   "workBranch": "work/codex-20260914-002",
-  "summary": "本轮（03:59-04:35）攻的是上一轮留下的「GW 起服前置条件不足」：本机 ZooKeeper 已装好并起服，GW 二进制首次真正跑起来，并与 QuoteSvr 建立了真实 DPS 会话。① `scripts/setup-zookeeper.ps1` 存在真实缺陷——只从 downloads.apache.org 下载，而 3.8.6 已移入归档站，必然 404，这是本地 ZK 一直装不上的根因；已改为依次探测 archive.apache.org → downloads.apache.org（提交 133bdc7），装出 runtime/tools/apache-zookeeper-3.8.6-bin，start-zookeeper.ps1 拉起 127.0.0.1:12181，ruok 返回 imok。② 在 QuoteSvr 已连 STC QA 的前提下执行 start-gateway.ps1：GW 监听 127.0.0.1:18600，日志出现 `QuoteSvr onConnected,subscribe:[ficc.price.report.**, ficc.quote.report.**]`，netstat 显示 GW→10.100.151.202:18680 的 ESTABLISHED，QuoteSvr 侧持续 cmd=2 心跳双向收发——GW↔QuoteSvr 这一段真实跑通，不再是「未执行」。③ 同时发现更根本的冲突：要让 GW 从本地注册中心发现 QuoteSvr，需要 QuoteSvr 自注册，而实测三种配置变体，只要 SERVER.QuoteSvr.RegisterEnable=1，消费侧立刻失效（SERVER.BaseSvr 解析为 null）；改回基线（RegisterEnable=0）后 2 条 CONNECTION_LOGIN_SUCCESS 立即恢复，同期只读 ZK 探针确认 QA 侧 BaseSvr/ValidationServer 均 ONLINE，可排除 STC 波动。即当前 foundation 客户端无法让一个进程同时「向本地注册中心自注册」和「从 QA 注册中心发现 STC 服务」——这正是此前「GW 拓扑角色待定」的技术根因，已写入文档第 6 节并给出两种解法，需发起方定夺。原有外部阻塞未变：仍无 STC 测试账号、仍无法对照服务端日志。验证：对提交 133bdc7 独立复跑 mvn clean verify，BUILD SUCCESS，Reactor 5/5，Tests 13/13。",
+  "summary": "本轮（03:59-04:35）攻的是上一轮留下的「GW 起服前置条件不足」：本机 ZooKeeper 已装好并起服，GW 二进制首次真正跑起来，并与 QuoteSvr 建立了真实 DPS 会话。① `scripts/setup-zookeeper.ps1` 存在真实缺陷——只从 downloads.apache.org 下载，而 3.8.6 已移入归档站，必然 404，这是本地 ZK 一直装不上的根因；已改为依次探测 archive.apache.org → downloads.apache.org（提交 133bdc7），装出 runtime/tools/apache-zookeeper-3.8.6-bin，start-zookeeper.ps1 拉起 127.0.0.1:12181，ruok 返回 imok。② 在 QuoteSvr 已连 STC QA 的前提下执行 start-gateway.ps1：GW 监听 127.0.0.1:18600，日志出现 `QuoteSvr onConnected,subscribe:[ficc.price.report.**, ficc.quote.report.**]`，netstat 显示 GW→10.100.151.202:18680 的 ESTABLISHED，QuoteSvr 侧持续 cmd=2 心跳双向收发——GW↔QuoteSvr 这一段真实跑通，不再是「未执行」。③ 同时发现更根本的冲突：要让 GW 从本地注册中心发现 QuoteSvr，需要 QuoteSvr 自注册，而实测三种配置变体，只要 SERVER.QuoteSvr.RegisterEnable=1，消费侧立刻失效（SERVER.BaseSvr 解析为 null）；改回基线（RegisterEnable=0）后 2 条 CONNECTION_LOGIN_SUCCESS 立即恢复，同期只读 ZK 探针确认 QA 侧 BaseSvr/ValidationServer 均 ONLINE，可排除 STC 波动。即当前 foundation 客户端无法让一个进程同时「向本地注册中心自注册」和「从 QA 注册中心发现 STC 服务」——这正是此前「GW 拓扑角色待定」的技术根因，已写入文档第 6 节并给出两种解法，需发起方定夺。原有外部阻塞未变：仍无 STC 测试账号、仍无法对照服务端日志。验证：对提交 133bdc7 独立复跑 mvn clean verify，BUILD SUCCESS，Reactor 5/5，Tests 13/13。\n\n续（04:40-04:50）又打通了客户端侧：用仓库自带 DPS 客户端 GateWayApi 做**只读**探针（只发 ficc.base.get，不创建/修改任何报价）直连 QuoteSvr 实际监听地址 10.100.151.202:18680，收到真实业务应答 Code=1003「Local login simulator is disabled; use STC LoginSvr」——证明客户端→服务端的 DPS 请求/应答链路是通的，登录被拒的**唯一**原因是没有 STC 账号（identity.mode=stc 下本地登录模拟器被显式关闭），不再是「链路未知」。同一探针走 GW 前置 18600 则无应答：默认配置下 GW 报 `SERVER.LoginSvr is online:false`（本地 ZK 无 provider 实例），改用固定地址副本（RegType=0）后 GW 可起服但仍不路由，说明 RegType=0 并非该 foundation 的固定地址开关，GW 这条路仍需发起方在两种拓扑方案中选一种（或给出正确的固定地址配置键）。",
   "changedFiles": [
     "iteration1/scripts/setup-zookeeper.ps1",
     "iteration1/docs/stc-dps-integration.zh-CN.md",
@@ -66,9 +66,19 @@
       "evidence": "三组变体（REGISTER.ServerList 分别为 Svr1,Local / Local / Local,Svr1，QuoteSvr 均 RegType=1 + RegisterEnable=1）下 QuoteSvr 都能启动并往本地 ZK 写 /MDTService/QuoteSvr/QuoteSvr = Host:10.100.151.202,Port:18680,Stat:1，但 SERVER.BaseSvr / SERVER.ValidationServer 的 ZkCluster 均解析为 null，刷新报 BaseSvr reference refresh unavailable。改回基线（RegType=2 / RegisterEnable=0）后 2 条 CONNECTION_LOGIN_SUCCESS 立即恢复；同期只读探针确认 QA 侧两个服务均 ONLINE，排除 STC 侧波动。"
     },
     {
-      "name": "Windows 客户端连 GW（18600）发起业务请求",
+      "name": "真实 DPS 客户端 → QuoteSvr 请求/应答（本轮新增，打通最后一环的客户端侧）",
+      "result": "pass",
+      "evidence": "用仓库自带的 DPS 客户端 `compat/tests/StcTransportSmoke.java` 所用的 `GateWayApi` 写一个只读探针（只发 ficc.base.get，不创建/修改任何报价），连到 QuoteSvr 实际监听地址 10.100.151.202:18680：TCP 建连成功，`SYS.ATS.LOGIN` 收到**真实业务应答** `{\"Code\":\"1003\",\"Msg\":\"Local login simulator is disabled; use STC LoginSvr\"}`。即客户端→服务端的 DPS 请求/应答链路本身是通的，登录被拒的唯一原因是没有 STC 账号（identity.mode=stc 时本地登录模拟器被显式关闭），不是协议或适配器问题。"
+    },
+    {
+      "name": "客户端经 GW 前置（127.0.0.1:18600）路由到 QuoteSvr",
+      "result": "fail",
+      "evidence": "同一探针连 18600：HTTP/TCP 可建连但请求无应答（返回 null）。两种配置都试过：① GW 用仓库默认配置指向本地 ZK —— 日志 `SERVER.LoginSvr is online:false`，本地 ZK 里没有任何 provider 实例（QuoteSvr 为不污染共享注册中心保持 RegisterEnable=0）；② 用本机配置副本改固定地址（`SERVER.QuoteSvr.Host=10.100.151.202:18680`、`RegType=0`、`RegisterEnable=0`）—— GW 能起服、18600 监听，但仍不路由。即 RegType=0 也不是本 foundation 的固定地址开关，GW 前置这条路仍需发起方在文档中列出的两种拓扑方案里选一个。"
+    },
+    {
+      "name": "Windows C# 客户端（net472）",
       "result": "not_run",
-      "evidence": "iteration1/client 目标框架 net472，本机未构建（client/bin 为空），本轮未做 C# 构建。GW↔QuoteSvr 已通，缺的只是最后一个能连 18600 的客户端进程。"
+      "evidence": "iteration1/client 目标框架 net472，本机未构建（client/bin 为空），本轮未做 C# 构建；已用等价的 Java DPS 客户端代替完成客户端侧验证。"
     },
     {
       "name": "真实 STC 登录（LoginSvr / ValidationServer）",
@@ -112,7 +122,7 @@
   "blockers": [
     {
       "blocker": "缺少 STC 测试账号凭据",
-      "detail": "identity.serviceUsername 为空、环境变量 FICC_SERVICE_PASSWORD 未设置，无法做真实登录与带会话的报价查询。传输层（20040）已连通，只差业务登录凭据。这是当前唯一卡住「真实登录」验收项的阻塞。",
+      "detail": "identity.serviceUsername 为空、环境变量 FICC_SERVICE_PASSWORD 未设置。本轮已用真实 DPS 客户端直接证实影响：连到 QuoteSvr 后 `SYS.ATS.LOGIN` 返回业务码 1003「Local login simulator is disabled; use STC LoginSvr」——即 identity.mode=stc 下本地登录模拟器被显式关闭，必须给真实 STC 账号才能登录。链路（传输层 20040、DPS 请求/应答）均已连通，只差业务登录凭据。这是当前唯一卡住「真实登录」验收项的阻塞。",
       "needed": "STC QA 测试账号（用户名 + 口令注入方式）及其权限范围"
     },
     {
@@ -122,8 +132,8 @@
     },
     {
       "blocker": "GW 拓扑方案需发起方二选一（技术根因已定位）",
-      "detail": "已实测：同一进程内「向本地注册中心自注册（RegisterEnable=1）」与「从 QA 注册中心发现 STC 服务」互斥，三种配置变体均导致 BaseSvr/ValidationServer 解析失败。因此 GW 要走通，必须在两种方案中选一个：① 由外部注册脚本往本地 ZK 写 QuoteSvr 节点、QuoteSvr 保持 RegisterEnable=0；② GW 走固定地址（Host 直写 10.100.151.202:18680）。选 ① 需确认是否允许在本仓库增加一个「仅写本地 ZK」的注册脚本；选 ② 需确认固定地址诊断可作为交付形态。",
-      "needed": "在上述两种 GW 拓扑方案中明确选择一种"
+      "detail": "已实测：同一进程内「向本地注册中心自注册（RegisterEnable=1）」与「从 QA 注册中心发现 STC 服务」互斥，三种配置变体均导致 BaseSvr/ValidationServer 解析失败。本轮进一步实测 GW 前置：默认（走本地 ZK）时 `SERVER.LoginSvr is online:false`（无 provider 实例）；改成本机固定地址副本（`Host=10.100.151.202:18680`、`RegType=0`、`RegisterEnable=0`）后 GW 可起服、18600 监听，但仍不路由 → RegType=0 并非该 foundation 的固定地址开关。因此仍需发起方选一种：① 由外部脚本往本地 ZK 写 QuoteSvr 节点，QuoteSvr 保持 RegisterEnable=0；② 或由熟悉该 GW 的同事给出正确的固定地址/直连配置键（并确认固定地址诊断可作为交付形态）。",
+      "needed": "在上述两种 GW 拓扑方案中明确选择一种；若选 ②，请提供正确的固定地址配置键"
     },
     {
       "blocker": "Windows 客户端未构建，无法完成终端到 GW 的业务请求",
