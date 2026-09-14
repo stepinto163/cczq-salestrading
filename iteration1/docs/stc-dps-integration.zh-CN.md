@@ -172,3 +172,26 @@ install 之后上面的 `-P with-gateway` 构建即可通过，产物为
    任务约束允许在本机配置副本里关闭注册发现做固定地址诊断。
 
 这也是此前「GW 拓扑角色待定」的技术根因，需要发起方在两种方案中选一个。
+
+### 6.4 客户端侧：DPS 请求/应答已通，只差 STC 账号
+
+用仓库自带的 DPS 客户端 `com.gateway.connector.tcp.client.GateWayApi`
+（即 `compat/tests/StcTransportSmoke.java` 所用的那个）写一个**只读**探针，
+连到 QuoteSvr 实际监听地址 `10.100.151.202:18680`（注意：QuoteSvr 绑定的是本机网卡地址，
+**不是 127.0.0.1**，连 127.0.0.1:18680 会静默无应答），只发 `ficc.base.get`，不创建或修改任何报价：
+
+- TCP 建连成功；
+- `SYS.ATS.LOGIN` 收到真实业务应答：`{"Code":"1003","Msg":"Local login simulator is disabled; use STC LoginSvr"}`。
+
+即 **客户端 → 服务端的 DPS 请求/应答链路本身是通的**；登录被拒的唯一原因是
+`identity.mode=stc` 时本地登录模拟器被显式关闭，必须提供真实 STC 账号。
+这把此前「真实登录做不了」的模糊阻塞，收敛成了一个明确的、只依赖外部凭据的点。
+
+同一探针走 GW 前置 `127.0.0.1:18600` 则无应答：
+
+| GW 配置 | 现象 |
+|---|---|
+| 默认（本地 ZK 发现） | `SERVER.LoginSvr is online:false` —— 本地 ZK 里没有 provider 实例 |
+| 本机固定地址副本（`Host=10.100.151.202:18680`、`RegType=0`、`RegisterEnable=0`） | GW 能起服、18600 监听，但仍不路由 |
+
+即 `RegType=0` **不是**该 foundation 的固定地址开关，GW 前置仍需按 6.3 的两种方案由发起方定夺。
