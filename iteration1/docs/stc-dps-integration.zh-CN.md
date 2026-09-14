@@ -78,3 +78,40 @@ STC BaseSvr 返回的数据行在 **`Datas`**（首字母大写）：
 | ats-app-ym-foundation（TripleDes） | `sun.misc.BASE64Decoder` |
 
 运行时还需 legacy Netty 3：`F:\dev\maven-repo2\io\netty\netty\3.7.0.Final\netty-3.7.0.Final.jar`。
+
+## 5. gateway 模块（GW）的构建与启动前置条件
+
+`iteration1/gateway` 的 4 个类（`FiccSecurityCheck`、`MeasuredCedaProxy`、
+`MeasuredTcpConnector`、`PerformanceTrace`）继承自旧版 GW 二进制里的
+`com.gateway.connector.tcp.TcpConnector` / `com.gateway.invoke.*` / `com.gateway.message.*`，
+Nexus 上的 `gateway-api` 并不包含这些类，因此该模块默认不在 reactor 里，必须显式开 profile：
+
+```powershell
+& "E:\Program Files\apache-maven-3.9.16\bin\mvn.cmd" `
+  -s "E:\Program Files\apache-maven-3.9.16\conf\settings_yanxin.xml" `
+  -f E:\gongy\projects\cczq-salestrading\iteration1\pom.xml `
+  -P with-gateway -DskipTests clean package
+```
+
+旧版 GW 二进制现在有源码可循：仓库根目录 `gw/`（来自 `stc-lite` 的 `gw` 工程），
+`groupId=sumscope.stcl`、`artifactId=gw`、`version=0.1.1-SNAPSHOT`，入口类为默认包的 `GW`。
+它依赖 Spring Boot 2.6.6 / Netty 4，**必须用 JDK 8 编译**，再 install 到本地仓库
+（`F:\dev\maven-repo2`，由 `settings_yanxin.xml` 的 `localRepository` 指定）。
+install 之后上面的 `-P with-gateway` 构建即可通过，产物为
+`iteration1/gateway/target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar`
+（注意：本仓库把 `maven.build.directory` 改成了 `${project.basedir}/target-maven`，
+不是默认的 `target/`）。
+
+`scripts/start-gateway.ps1` 还有三个运行时前置条件，未满足前不要尝试起服：
+
+| 前置条件 | 当前状态 |
+|---|---|
+| `runtime/foundation-build/lib/gw-local.jar` | 不存在；`scripts/foundation-classpath.ps1` 会回退到 `runtime/foundation-classpath.txt`（其中已含 `gw-0.1.1-SNAPSHOT.jar`） |
+| 本地 ZooKeeper `127.0.0.1:12181` | 未安装（`runtime/tools` 下只有未下载完的 `apache-zookeeper-3.8.6-bin.tar.gz.part`），需先跑 `scripts/setup-zookeeper.ps1` |
+| `gateway/control/server.lic` | 脚本会从 `cczq-app-salestrading-quotesvr/control/server.lic` 复制 |
+
+另外 `gateway/control/ATSConfig.ini` 里的 `REGISTER.Local` 指向本机 ZooKeeper，
+且把 `QuoteSvr` / `NotificationSvr` / `LoginSvr` 都注册到本地（Host `127.0.0.1:1`，由注册中心覆盖）。
+也就是说该配置描述的是「GW 作为本机前置网关、其余服务同机部署」的形态，
+与当前这条「本机 QuoteSvr 直连 STC QA（10.130.21.53:2181）」的验证链路不是同一拓扑，
+起服前需要先明确 GW 在本任务中扮演的角色。
