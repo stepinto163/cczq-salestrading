@@ -7,9 +7,11 @@ import ficc.common.client.SimulatorBaseDataClient;
 import ficc.common.client.SimulatorCrmClient;
 import java.util.List;
 import java.util.Map;
+import org.apache.log4j.Logger;
 
 /** Business facade; vendor fields and transport stay inside adapters. */
 public final class ReferenceData implements AutoCloseable {
+    private static final Logger LOGGER = Logger.getLogger(ReferenceData.class);
     private final BaseDataClient base;
     private final CrmClient crm;
 
@@ -31,8 +33,11 @@ public final class ReferenceData implements AutoCloseable {
     }
 
     public JSONObject require(String id) {
-        JSONObject security = securities().get(id);
+        Map<String, JSONObject> loaded = securities();
+        JSONObject security = loaded.get(id);
         if (security == null) {
+            LOGGER.warn("Reference lookup missed: securityId=" + JsonUtils.toJson(id)
+                    + ", loadedSecurities=" + loaded.size() + ", adapter=" + base.getClass().getSimpleName());
             throw ApiException.forField("1001", "VALIDATION_FAILED", "Security is not in the configured reference universe", "securityId");
         }
         return security;

@@ -12,9 +12,11 @@ import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.log4j.Logger;
 
 /** Cache STC reference data outside query and quote-processing threads. */
 public final class StcBaseDataClient implements BaseDataClient {
+    private static final Logger LOGGER = Logger.getLogger(StcBaseDataClient.class);
     private final StcTransport transport;
     private final StcBaseMapper mapper;
     private final List<String> securityIds;
@@ -51,6 +53,7 @@ public final class StcBaseDataClient implements BaseDataClient {
     }
 
     private synchronized void invalidate() {
+        LOGGER.info("BaseSvr reference cache invalidated; generation=" + (generation + 1));
         generation++;
         invalidated = true;
         nextRefreshNanos = 0;
@@ -75,12 +78,15 @@ public final class StcBaseDataClient implements BaseDataClient {
             } catch (Exception error) {
                 invalidated = true;
                 nextRefreshNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-                System.err.println("BaseSvr reference refresh unavailable: " + error.getMessage());
+                LOGGER.warn("BaseSvr reference refresh unavailable; retrySeconds=30: " + error.getMessage());
             }
         }, 0, 1, TimeUnit.SECONDS);
     }
 
     public void refresh() {
+        long started = System.nanoTime();
+        LOGGER.info("BaseSvr reference refresh started: mode=" + (universeLoader == null ? "subset" : "all")
+                + ", configuredSecurityIds=" + securityIds);
         long startedGeneration = generation;
         Map<String, JSONObject> securities = new LinkedHashMap<>();
         Map<String, JSONObject> issuers = new LinkedHashMap<>();
@@ -105,9 +111,10 @@ public final class StcBaseDataClient implements BaseDataClient {
             invalidated = false;
             nextRefreshNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(refreshSeconds);
         }
-        System.out.println("BaseSvr reference cache ready: mode=" + (universeLoader == null ? "subset" : "all")
+        LOGGER.info("BaseSvr reference cache ready: mode=" + (universeLoader == null ? "subset" : "all")
                 + ", securities=" + securities.size() + ", issuers=" + issuers.size()
-                + ", valuations=" + valuations.size());
+                + ", valuations=" + valuations.size() + ", referenceVersion=" + version
+                + ", elapsedMillis=" + (System.nanoTime() - started) / 1_000_000);
     }
 
     private void loadSubset(long startedGeneration, String version, Map<String, JSONObject> securities,

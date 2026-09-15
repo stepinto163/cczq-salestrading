@@ -17,6 +17,9 @@ namespace Ficc.SalesTrading {
         readonly List<Tuple<string,JObject>> pending=new List<Tuple<string,JObject>>();
         readonly QuoteGrid grid = new QuoteGrid();
         readonly ComboBox user=Choice("trader1","trader2","admin");
+        readonly TextBox gatewayHost = new TextBox { Text = "127.0.0.1", Width = 110 };
+        readonly NumericUpDown gatewayPort = new NumericUpDown { Minimum = 1, Maximum = 65535, Value = 18600, Width = 70 };
+        readonly TextBox loginPassword = new TextBox { Text = "trader1", Width = 90, UseSystemPasswordChar = true };
         readonly ComboBox security=Choice("250001.IB","250002.IB","102500001.IB","102500002.IB");
         readonly ComboBox side=Choice("1","2"), settlement=Choice("1","2");
         readonly ComboBox statusFilter=Choice("全部我的报价","待确认","有效报价","已撤出","已删除");
@@ -41,7 +44,12 @@ namespace Ficc.SalesTrading {
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=3,ColumnCount=1,Padding=new Padding(4)};
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,28));
             Controls.Add(layout);
-            var connectBar=Bar();connectBar.Controls.Add(Label("账户"));connectBar.Controls.Add(user);AddButton(connectBar,"连接 GW",Connect);
+            user.DropDownStyle = ComboBoxStyle.DropDown;
+            var connectBar = Bar();
+            connectBar.Controls.AddRange(new Control[] {
+                Label("GW"), gatewayHost, gatewayPort, Label("账户"), user, Label("密码"), loginPassword
+            });
+            AddButton(connectBar, "连接 GW", Connect);
             connectBar.Controls.Add(diagnosticToggle);diagnosticToggle.Click+=(s,e)=>SetDiagnosticsVisible(workspace.Panel2Collapsed);
             layout.Controls.Add(connectBar,0,0);layout.Controls.Add(workspace,0,1);state.Dock=DockStyle.Fill;layout.Controls.Add(state,0,2);
             workspace.Panel1.Controls.Add(boards);workspace.Panel2.Controls.Add(tabs);
@@ -63,7 +71,14 @@ namespace Ficc.SalesTrading {
             var quoteBoard=new TabPage("报价管理");quoteBoard.Controls.Add(quoteLayout);boards.TabPages.Add(quoteBoard);InitializePriceBoard();InitializeNotificationBoard();
             var details=new TabPage("操作结果 / 历史 / 行情");details.Controls.Add(detail);var messages=new TabPage("DPS 消息（最近 200 条；完整记录见文件）");messages.Controls.Add(log);messages.Controls.Add(new TextBox{Dock=DockStyle.Top,ReadOnly=true,Text=client.LogDirectory});tabs.TabPages.AddRange(new[]{details,messages});InitializeAutoTestTab();
             var toolsBar=Bar();toolsBar.Dock=DockStyle.Top;toolsBar.Height=40;
-            AddButton(toolsBar,"自动测试",RunAutoTests);AddButton(toolsBar,"多用户场景",RunMultiUserScenario);AddButton(toolsBar,"API 调试器",OpenApiDebugger);
+            AddButton(toolsBar, "自动测试", RunSelectedAutoTests);
+            AddButton(toolsBar, "多用户场景（本机模拟）", async () => {
+                if (testMode.SelectedIndex != 1) {
+                    throw new InvalidOperationException("QA 多用户检查已包含在自动测试中；该按钮仅用于本机模拟回归。");
+                }
+                await RunMultiUserScenario();
+            });
+            AddButton(toolsBar, "API 调试器", OpenApiDebugger);
             AddButton(toolsBar, "筛选性能测试(500条)", OpenFilterPerformanceTest);
             AddButton(toolsBar, "滚动性能测试(500条)", OpenScrollingPerformanceTest);
             testTab.Controls.Add(toolsBar);
@@ -93,7 +108,35 @@ namespace Ficc.SalesTrading {
             }
             log.AppendText(DateTime.Now.ToString("HH:mm:ss.fff") + " " + line + Environment.NewLine);
         }
-        async Task Connect(){if(connected)throw new Exception("切换账户请关闭并重新打开平台。");string name=user.Text;await Task.Run(()=>client.Connect(name));connected=true;user.Enabled=false;var data=await Request("ficc.quote.stream.open",new JObject());streamId=(string)data["streamId"];topic=(string)data["pushTopic"];sequence=(long?)data["sequence"]??0;await Task.Run(()=>client.Subscribe(topic,false));await OpenView();await OpenPriceView();await ConnectNotifications();var institutions=await Request("ficc.base.query",new JObject{["kind"]="INSTITUTION"});var contacts=await Request("ficc.base.query",new JObject{["kind"]="CONTACT"});counterpartyEditor.SetReferenceData(((JArray)institutions["records"]).OfType<JObject>(),((JArray)contacts["records"]).OfType<JObject>());counterpartyEditor.LoadFields(Selected());}
+        async Task Connect() {
+            if (connected) {
+                throw new Exception("切换账户请关闭并重新打开平台。");
+            }
+            string account = user.Text;
+            string address = gatewayHost.Text;
+            string password = loginPassword.Text;
+            int portNumber = (int)gatewayPort.Value;
+            await Task.Run(() => client.Connect(account, portNumber, address, password));
+            connected = true;
+            user.Enabled = false;
+            gatewayHost.Enabled = false;
+            gatewayPort.Enabled = false;
+            loginPassword.Enabled = false;
+            var data = await Request("ficc.quote.stream.open", new JObject());
+            streamId = (string)data["streamId"];
+            topic = (string)data["pushTopic"];
+            sequence = (long?)data["sequence"] ?? 0;
+            await Task.Run(() => client.Subscribe(topic, false));
+            await OpenView();
+            await OpenPriceView();
+            await ConnectNotifications();
+            var institutions = await Request("ficc.base.query", new JObject { ["kind"] = "INSTITUTION" });
+            var contacts = await Request("ficc.base.query", new JObject { ["kind"] = "CONTACT" });
+            counterpartyEditor.SetReferenceData(
+                ((JArray)institutions["records"]).OfType<JObject>(),
+                ((JArray)contacts["records"]).OfType<JObject>());
+            counterpartyEditor.LoadFields(Selected());
+        }
         async Task<JObject> Request(string requestTopic, JObject request) {
             if (!connected) {
                 throw new Exception("请先连接 GW。");

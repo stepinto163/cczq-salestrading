@@ -21,9 +21,26 @@ namespace Ficc.SalesTrading {
             var bar=new FlowLayoutPanel{Dock=DockStyle.Top,Height=38,WrapContents=false};
             bar.Controls.Add(stopTest);bar.Controls.Add(openTestLogs);bar.Controls.Add(testStatus);
             testTab.Controls.Add(testOutput);testTab.Controls.Add(bar);tabs.TabPages.Add(testTab);
-            stopTest.Click+=(s,e)=>{testCancelled=true;StopTestProcess();};
+            InitializeQaTestSettings();
+            stopTest.Click += (sender, args) => {
+                if (qaProcess != null) {
+                    RequestQaStop();
+                } else {
+                    testCancelled = true;
+                    StopTestProcess();
+                }
+            };
             openTestLogs.Click+=(s,e)=>{if(testDirectory!=null)Process.Start(new ProcessStartInfo("explorer.exe","\""+testDirectory+"\""){UseShellExecute=true});};
-            FormClosing+=(s,e)=>{testCancelled=true;StopTestProcess();};
+            FormClosing += (sender, args) => {
+                if (qaProcess != null && !qaProcess.HasExited) {
+                    RequestQaStop();
+                    args.Cancel = true;
+                    TestLine("正在清理测试数据，结束后可关闭窗口。");
+                } else {
+                    testCancelled = true;
+                    StopTestProcess();
+                }
+            };
         }
         void StopTestProcess(){try{if(testProcess!=null&&!testProcess.HasExited)testProcess.Kill();}catch(InvalidOperationException){} }
         void TestLine(string line){if(line==null)return;Ui(()=>testOutput.AppendText(line+Environment.NewLine));}

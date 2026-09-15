@@ -7,13 +7,6 @@ namespace Ficc.SalesTrading {
     static class Program {
         [STAThread]
         static int Main(string[] args) {
-            if (args.Length == 2 && args[0] == "--qa-autotest") {
-                try {
-                    return QaFunctionalTest.Run(args[1]);
-                } finally {
-                    MessageLog.Close();
-                }
-            }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             int exitCode = 0;
