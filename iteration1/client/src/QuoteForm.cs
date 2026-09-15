@@ -182,6 +182,29 @@ namespace Ficc.SalesTrading {
         async Task Command(string op){if(op=="create"){await Create(1);return;}var selected=Selected();if(selected==null)throw new Exception("请先选中一条报价。");var q=op=="update"?Input():new JObject();if(op=="confirm"){var fields=counterpartyEditor.Fields();if(CounterpartyEditor.NeedsMatching(fields)){fields=counterpartyEditor.ConfirmSelection(this);if(fields==null)return;counterpartyEditor.LoadFields(fields);}foreach(var field in fields.Properties())q[field.Name]=field.Value.DeepClone();}q["expectedRevision"]=selected["revision"].DeepClone();if(op=="clone"){q["sourceQuoteId"]=selected["quoteId"].DeepClone();q["clientQuoteId"]="UI-"+Guid.NewGuid().ToString("N");}else q["quoteId"]=selected["quoteId"].DeepClone();detail.Text=(await Request("ficc.quote."+op,new JObject{["quotes"]=new JArray(q)})).ToString();}
         async Task History(){var q=Selected();if(q==null)throw new Exception("请先选中报价。");detail.Text=(await Request("ficc.quote.history.query",new JObject{["quoteId"]=q["quoteId"].DeepClone(),["limit"]=100})).ToString();}
         async Task PriceBook(){detail.Text=(await Request("ficc.price.query",new JObject{["securityIds"]=new JArray(security.Text),["mode"]="FULL"})).ToString();}
-        Task OpenApiDebugger(){var path=new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);while(path!=null&&!System.IO.File.Exists(System.IO.Path.Combine(path.FullName,"SalesTradingClient.csproj")))path=path.Parent;if(path==null)throw new Exception("无法定位 API 调试器。");string exe=System.IO.Path.Combine(path.Parent.FullName,"api-debugger","bin","Debug","net472","Ficc.DpsApiDebugger.exe");if(!System.IO.File.Exists(exe))throw new Exception("请先构建 API 调试器。");System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe){WorkingDirectory=System.IO.Path.GetDirectoryName(exe),UseShellExecute=true});return Task.CompletedTask;}
+        Task OpenApiDebugger() {
+            string executable = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                    "api-debugger", "Ficc.DpsApiDebugger.exe");
+            if (!System.IO.File.Exists(executable)) {
+                var directory = new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+                while (directory != null && !System.IO.File.Exists(
+                        System.IO.Path.Combine(directory.FullName, "SalesTradingClient.csproj"))) {
+                    directory = directory.Parent;
+                }
+                if (directory == null) {
+                    throw new Exception("缺少 API 调试器，请复制完整客户端 bin 文件夹。");
+                }
+                executable = System.IO.Path.Combine(directory.Parent.FullName,
+                        "api-debugger", "bin", "Debug", "net472", "Ficc.DpsApiDebugger.exe");
+            }
+            if (!System.IO.File.Exists(executable)) {
+                throw new Exception("缺少 API 调试器，请复制完整客户端 bin 文件夹。");
+            }
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(executable) {
+                WorkingDirectory = System.IO.Path.GetDirectoryName(executable),
+                UseShellExecute = true
+            });
+            return Task.CompletedTask;
+        }
     }
 }
