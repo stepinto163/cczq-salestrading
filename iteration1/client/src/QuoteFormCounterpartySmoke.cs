@@ -4,6 +4,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
 namespace Ficc.SalesTrading {
@@ -14,6 +15,30 @@ namespace Ficc.SalesTrading {
             Action<bool,string> check=(ok,label)=>{if(!ok)throw new Exception(label);checks++;Console.WriteLine("PASS "+label);};
             Func<Task<JObject>> get=async()=> (JObject)(await Request("ficc.quote.get",new JObject{["quoteId"]=quoteId}))["quote"];
             await Connect();
+            var institutionRecords = (JArray)(await Request("ficc.base.query", new JObject { ["kind"] = "INSTITUTION", ["limit"] = 50 }))["records"];
+            check(institutionRecords.Count >= 2, "local fixture has two selectable institutions");
+            var firstInstitution = (JObject)institutionRecords[0];
+            var secondInstitution = (JObject)institutionRecords[1];
+            string firstInstitutionId = (string)firstInstitution["institutionId"];
+            string secondInstitutionId = (string)secondInstitution["institutionId"];
+            var contactRecords = (JArray)(await Request("ficc.base.query", new JObject {
+                ["kind"] = "CONTACT", ["institutionId"] = secondInstitutionId, ["limit"] = 50
+            }))["records"];
+            JObject selectedContact = contactRecords.OfType<JObject>().First(record =>
+                (string)record["institutionId"] != firstInstitutionId &&
+                (record["institutionIds"] as JArray)?.Values<string>().Contains(firstInstitutionId) != true);
+            string contactId = (string)selectedContact["contactId"];
+            var crmInputs = counterpartyEditor.Controls.OfType<FlowLayoutPanel>().Single().Controls.OfType<ComboBox>().ToArray();
+            crmInputs[0].Text = (string)secondInstitution["institutionName"];
+            await counterpartyEditor.SearchAsync(false);
+            crmInputs[0].SelectedItem = crmInputs[0].Items.Cast<object>().Single(item => item.ToString().EndsWith("[" + secondInstitutionId + "]"));
+            crmInputs[0].DroppedDown = false;
+            crmInputs[1].Text = (string)selectedContact["contactName"];
+            await counterpartyEditor.SearchAsync(true);
+            crmInputs[1].SelectedItem = crmInputs[1].Items.Cast<object>().Single(item => item.ToString().EndsWith("[" + contactId + "]"));
+            crmInputs[1].DroppedDown = false;
+            check((string)counterpartyEditor.Fields()["institutionId"] == secondInstitutionId &&
+                (string)counterpartyEditor.Fields()["contactId"] == contactId, "CRM search controls preserve selected IDs, including duplicate names");
             try{
                 security.SelectedIndex=0;side.SelectedIndex=0;price.Text="2.4500";quantity.Text="1000";
                 counterpartyEditor.LoadFields(new JObject{["institutionName"]="机构简称（待匹配）",["contactName"]="联系人简称（待匹配）"});
@@ -25,13 +50,13 @@ namespace Ficc.SalesTrading {
                 var rejected=await Request("ficc.quote.confirm",new JObject{["quotes"]=new JArray(new JObject{["quoteId"]=quoteId,["expectedRevision"]=pending["revision"].DeepClone()})});
                 check((string)rejected["results"][0]["error"]["type"]=="UNRESOLVED_COUNTERPARTY","server rejects confirmation with unresolved names");
                 check((string)(await get())["revision"]==(string)pending["revision"]&&(string)(await get())["status"]=="PENDING_CONFIRM","rejected confirmation changes neither revision nor status");
-                rejected=await Request("ficc.quote.confirm",new JObject{["quotes"]=new JArray(new JObject{["quoteId"]=quoteId,["expectedRevision"]=pending["revision"].DeepClone(),["institutionId"]="I-001",["contactId"]="C-002"})});
+                rejected=await Request("ficc.quote.confirm",new JObject{["quotes"]=new JArray(new JObject{["quoteId"]=quoteId,["expectedRevision"]=pending["revision"].DeepClone(),["institutionId"]=firstInstitutionId,["contactId"]=contactId})});
                 check((string)rejected["results"][0]["Code"]=="1001","server rejects contact belonging to another institution");
-                counterpartyEditor.LoadFields(new JObject{["institutionId"]="I-002",["contactId"]="C-002",["institutionName"]="机构简称（待匹配）",["contactName"]="联系人简称（待匹配）"});
+                counterpartyEditor.LoadFields(new JObject{["institutionId"]=secondInstitutionId,["contactId"]=contactId,["institutionName"]=(string)secondInstitution["institutionName"],["contactName"]=(string)selectedContact["contactName"]});
                 check(!CounterpartyEditor.NeedsMatching(counterpartyEditor.Fields()),"UI resolves names through explicit reference selection");
                 await Command("confirm");await AwaitQuote(quoteId,"ACTIVE");var confirmed=await get();
-                check((string)confirmed["quoteId"]==quoteId&&(string)confirmed["institutionId"]=="I-002"&&(string)confirmed["contactId"]=="C-002","confirmation attaches selected IDs to the same quote");
-                check((string)confirmed["institutionName"]=="示例证券公司"&&(string)confirmed["contactName"]=="示例联系人","selected IDs provide canonical display names");
+                check((string)confirmed["quoteId"]==quoteId&&(string)confirmed["institutionId"]==secondInstitutionId&&(string)confirmed["contactId"]==contactId,"confirmation attaches selected IDs to the same quote");
+                check((string)confirmed["institutionName"]==(string)secondInstitution["institutionName"]&&(string)confirmed["contactName"]==(string)selectedContact["contactName"],"selected IDs provide canonical display names");
                 var history=(JArray)(await Request("ficc.quote.history.query",new JObject{["quoteId"]=quoteId}))["records"];
                 check(history.Any(record=>(string)record["after"]?["institutionName"]=="机构简称（待匹配）"),"history retains the original entered names");
                 using(var other=new DpsClient()){

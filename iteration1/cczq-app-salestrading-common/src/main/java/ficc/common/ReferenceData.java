@@ -67,6 +67,10 @@ public final class ReferenceData implements AutoCloseable {
         return crm.institution(userId, institutionId);
     }
 
+    public JSONObject queryCrm(String userId, String kind, String text, String institutionId, int offset, int limit) {
+        return crm.query(userId, kind, text, institutionId, offset, limit);
+    }
+
     public JSONObject security(String securityId) {
         return base.security(securityId);
     }

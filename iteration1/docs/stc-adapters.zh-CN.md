@@ -12,6 +12,7 @@
 | 债券、发行人、中债估值 | `base.mode=stc` | `StcBaseDataClient`，经 `NetClientWrapper` 查询并缓存真实数据 |
 | CRM | `crm.mode=simulator` | 固定机构、联系人样例 |
 | CRM | `crm.mode=empty` | 空列表；按 ID 查询返回空 |
+| CRM | `crm.mode=postgresql` | 只读访问独立 PostgreSQL 的机构、联系人和当前关系表 |
 | CRM | `crm.mode=custom` | 独立 JAR 实现 `CrmClient` |
 
 三类依赖可以分别切换。真实模式失败时不会回退到模拟数据。业务仍使用 `ReferenceData` 与 `LoginSessionClient`，不直接依赖供应商字段。
@@ -97,6 +98,8 @@ QA 处理方式：优先使用一个正常 STC 业务账号。若必须使用 `t
 普通 STC 用户表模式下，可只读核对 `SELECT userid, username, enable FROM stc_tbook_users WHERE username = 'test01';`。CRM 登录模式则检查其实际认证数据源。验收应同时看到登录返回有效 SID，以及同一 SID 的 `userInfo` 返回 `Code=0001` 与真实 `userid`。
 
 ## 3．CRM 独立实现
+
+现已提供内置 PostgreSQL 实现，可直接配置接入 `crm_org`、`crm_contact`、`crm_contact_org_rel`，无需另写插件。配置、接口样例和本机验证见 [CRM PostgreSQL 接入](crm-postgresql.zh-CN.md)。下面的独立 JAR 方案仍适用于以后其他来源的扩展。
 
 空模式没有假机构或假联系人。待确认报价仍能保存手工输入的机构/联系人名称；确认时，已输入名称必须匹配可访问的真实 ID，所以空 CRM 无法完成这类报价的确认。
 

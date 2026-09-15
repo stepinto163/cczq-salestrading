@@ -51,6 +51,7 @@ public final class AdapterFactory {
         switch (mode) {
             case "simulator" -> client = new SimulatorCrmClient();
             case "empty" -> client = new EmptyCrmClient();
+            case "postgresql" -> client = new PostgresCrmClient();
             case "custom" -> {
                 String className = configuration.getProperty("crm.adapterClass", "");
                 String jar = configuration.getProperty("crm.adapterJar", "");
@@ -69,13 +70,17 @@ public final class AdapterFactory {
                     throw error;
                 }
             }
-            default -> throw new IllegalArgumentException("crm.mode must be simulator, empty or custom");
+            default -> throw new IllegalArgumentException("crm.mode must be simulator, empty, postgresql or custom");
         }
         client.initialize(network, configuration);
         return client;
     }
 
     private record LoadedCrmClient(CrmClient delegate, URLClassLoader loader) implements CrmClient {
+        @Override
+        public JSONObject query(String userId, String kind, String text, String institutionId, int offset, int limit) {
+            return delegate.query(userId, kind, text, institutionId, offset, limit);
+        }
         @Override
         public List<JSONObject> institutions(String userId) {
             return delegate.institutions(userId);

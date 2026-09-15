@@ -130,11 +130,8 @@ namespace Ficc.SalesTrading {
             await OpenView();
             await OpenPriceView();
             await ConnectNotifications();
-            var institutions = await Request("ficc.base.query", new JObject { ["kind"] = "INSTITUTION" });
-            var contacts = await Request("ficc.base.query", new JObject { ["kind"] = "CONTACT" });
-            counterpartyEditor.SetReferenceData(
-                ((JArray)institutions["records"]).OfType<JObject>(),
-                ((JArray)contacts["records"]).OfType<JObject>());
+            counterpartyEditor.ConfigureSearch(Request);
+            counterpartyEditor.SetReferenceData(Array.Empty<JObject>(), Array.Empty<JObject>());
             counterpartyEditor.LoadFields(Selected());
         }
         async Task<JObject> Request(string requestTopic, JObject request) {

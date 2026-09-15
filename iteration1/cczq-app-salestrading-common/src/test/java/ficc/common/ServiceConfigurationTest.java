@@ -42,7 +42,7 @@ final class ServiceConfigurationTest {
             List<String> logs = new ArrayList<>();
             Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), adapterFile, logs::add);
             assertEquals("250001.IB", configuration.getProperty("base.securityIds"));
-            assertTrue(String.join("\n", logs).contains("base.loadMode=stc-client-on-demand, securityIdsCount=1"));
+            assertTrue(String.join("\n", logs).contains("base.loadMode=stc-client-on-demand, crm.mode=simulator, securityIdsCount=1"));
         }
     }
 }

@@ -3,6 +3,7 @@ export function displayQuote(quote, security = {}, userId = '') {
     const bid = quote.side === '1';
     return {
         quoteId: quote.quoteId, sourceQuoteId: quote.quoteId,
+        institutionId: quote.institutionId, contactId: quote.contactId,
         ownerAccountId: quote.ownerUserId, ownerDisplayName: quote.ownerUserId,
         canManage: quote.ownerUserId === userId, version: quote.revision, dataVersion: quote.revision,
         status: { ACTIVE: 'active', REFERRED: 'revoked', PENDING_CONFIRM: 'pending', DELETED: 'deleted' }[quote.status],
@@ -30,7 +31,9 @@ export function pendingQuote(quote, security, userId) {
         ...row, recognitionId: quote.quoteId, batchId: quote.quoteId, batchStatus: 'pending_review',
         src: quote.source?.type || 'MANUAL', receivedAt: quote.createTime,
         d: quote.side === '1' ? 'Bid' : 'Ofr', p: quote.price, vol: quote.quantity,
-        date: quote.tradeDate, pt: row.priceType, tr: quote.contactName || '',
+        date: quote.tradeDate, pt: row.priceType,
+        inst: quote.institutionId ? `${quote.institutionName} [${quote.institutionId}]` : row.inst,
+        tr: quote.contactId ? `${quote.contactName} [${quote.contactId}]` : quote.contactName || '',
         rec: quote.recommended, whole: quote.whole
     };
 }

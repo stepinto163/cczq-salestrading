@@ -37,6 +37,7 @@ public final class ServiceConfiguration {
         // Do not dump properties: the same files can contain database and service credentials.
         log.accept(serviceName + " adapters: identity.mode=" + configuration.getProperty("identity.mode", "simulator")
                 + ", base.mode=" + baseMode + ", base.loadMode=" + loadMode
+                + ", crm.mode=" + configuration.getProperty("crm.mode", "simulator")
                 + ", securityIdsCount=" + securityIds.size() + ", securityIdsSample=" + securityIds.stream().limit(5).toList());
         var source = StcBaseDataClient.class.getProtectionDomain().getCodeSource();
         log.accept(serviceName + " base adapter: diagnostics=stc-base-config-v2, loadedFrom="

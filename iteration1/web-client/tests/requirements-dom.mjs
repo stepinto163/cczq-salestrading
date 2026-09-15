@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { GwClient } from '../src/gw-client.js';
 import { QuoteClient, PriceClient, NotificationClient } from '../src/business-clients.js';
 import * as mapping from '../src/requirements-model.js';
+import { CrmClient } from '../src/crm-client.js';
 
 const root = new URL('../', import.meta.url);
 const html = await readFile(new URL('index.html', root), 'utf8');
@@ -20,7 +21,7 @@ consoleBridge.on('jsdomError', error => {
 });
 const dom = new JSDOM(html, { url: 'http://127.0.0.1:8088', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: consoleBridge });
 const context = dom.getInternalVMContext();
-Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient, QuoteClient, PriceClient, NotificationClient, ...mapping });
+Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient, QuoteClient, PriceClient, NotificationClient, CrmClient, ...mapping });
 let createdId;
 let failed;
 const watchdog = setTimeout(() => {
@@ -59,8 +60,34 @@ try {
     await waitFor('original confirmation table receives pending quote', () => data().quoteConfirm.some(row => !previous.has(row.recognitionId)));
     createdId = data().quoteConfirm.find(row => !previous.has(row.recognitionId)).recognitionId;
     vm.runInContext(`quoteSelected = new Set([${JSON.stringify(createdId)}])`, context);
+    if (process.env.CRM_LOCAL_TEST === '1') {
+        const pending = data().quoteConfirm.find(row => row.recognitionId === createdId);
+        const inputs = dom.window.document.querySelector(`[data-quote-index="${pending._idx}"]`);
+        const institutionInput = inputs.querySelector('[data-quote-field="inst"]');
+        const contactInput = inputs.querySelector('[data-quote-field="tr"]');
+        // JSDOM outside-only does not compile inline HTML handlers; bind their existing functions explicitly.
+        institutionInput.addEventListener('input', () => dom.window.setQuoteConfirmRowField(pending, 'inst', institutionInput.value, institutionInput));
+        contactInput.addEventListener('input', () => dom.window.setQuoteConfirmRowField(pending, 'tr', contactInput.value, contactInput));
+        institutionInput.value = '测试乙证券';
+        dom.window.prepareCrmInstitutionSearch(institutionInput);
+        await waitFor('CRM institution popup receives PostgreSQL records through GW', () =>
+            vm.runInContext('crmSuggestionState.items.some(item => item.value.includes("9000000000000000002"))', context));
+        const institutionIndex = vm.runInContext('crmSuggestionState.items.findIndex(item => item.value.includes("9000000000000000002"))', context);
+        dom.window.selectCrmSuggestion(institutionIndex);
+        contactInput.value = '测试张明';
+        dom.window.prepareCrmTraderSearch(contactInput, institutionInput.value);
+        await waitFor('CRM contact popup keeps duplicate names as separate choices', () =>
+            vm.runInContext('crmSuggestionState.items.length === 2 && crmSuggestionState.kind === "trader"', context));
+        const contactIndex = vm.runInContext('crmSuggestionState.items.findIndex(item => item.value.includes("c9000000000000000002"))', context);
+        dom.window.selectCrmSuggestion(contactIndex);
+    }
     await dom.window.doConfirmQuotes();
     await waitFor('original confirm button activates quote', () => data().liveQuotes.some(row => row.quoteId === createdId && row.status === 'active'));
+    if (process.env.CRM_LOCAL_TEST === '1') {
+        const quote = data().liveQuotes.find(row => row.quoteId === createdId);
+        check('web confirmation persists CRM IDs and canonical names', quote.institutionId === '9000000000000000002'
+            && quote.contactId === 'c9000000000000000002' && quote.inst === '测试乙证券股份有限公司');
+    }
     await waitFor('original market table receives price entry', () => data().boardRateAll.some(row => row.quoteId === createdId));
     const row = data().boardRateAll.find(row => row.quoteId === createdId);
     dom.window.setRecommendationTarget(row, null, 'boardRateAllBody');

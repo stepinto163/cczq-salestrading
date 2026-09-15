@@ -1,6 +1,7 @@
 import { GwClient } from './gw-client.js';
 import { QuoteClient, PriceClient, NotificationClient } from './business-clients.js';
 import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput } from './requirements-model.js';
+import { CrmClient } from './crm-client.js';
 
 // These bindings are the original app.js integration points, shared with its inline event handlers.
 let quoteView;
@@ -14,6 +15,8 @@ const gateway = new GwClient('ws://127.0.0.1:18601/gateway', {
     onDisconnect: () => doLogout(true)
 });
 const element = id => document.getElementById(id);
+const crm = new CrmClient(gateway);
+const inputWithCrm = row => ({ ...quoteInput(row), ...crm.resolve(row) });
 const userId = () => currentAccountId();
 const reasonNames = { MY_BEST: '我的最优', WATCHLIST: '关注债券', FILTER_GROUP: '筛选分组', COUNTER_QUOTE: '对价提醒' };
 
@@ -27,6 +30,7 @@ function scheduleUpdate() {
 }
 
 function refreshDisplay() {
+    quoteView.rows().forEach(quote => crm.seed(quote));
     const previousAlerts = allAlertKeys();
     const previousPending = new Set(D.quoteConfirm.map(row => row.recognitionId));
     D.liveQuotes = quoteView.rows().map(quote => displayQuote(quote, securities.get(quote.securityId), userId()));
@@ -150,6 +154,7 @@ doLogin = async function () {
 element('loginBtn').onclick = doLogin;
 
 doLogout = function (expired) {
+    crm.clear();
     signedIn = false;
     gateway.close();
     resetAccountState();
@@ -194,7 +199,7 @@ doConfirmPrecise = () => operate(async () => {
     commitRecognitionTableControls('preciseTableWrap');
     const selected = [...preciseSelected].map(index => D.preciseData[index]).filter(Boolean);
     if (!selected.length || selected.length > 5) throw new Error('请选择 1 至 5 条报价');
-    const inputs = selected.map(quoteInput);
+    const inputs = selected.map(inputWithCrm);
     try {
         for (let index = 0; index < inputs.length; index++) {
             await quoteView.create(inputs[index]);
@@ -212,7 +217,7 @@ doConfirmQuotes = () => operate(async () => {
     const rows = selectedQuoteRows();
     if (!rows.length || rows.length > 5) throw new Error('请选择 1 至 5 条报价');
     for (const row of rows) {
-        await command('confirm', row.recognitionId, quoteInput(row));
+        await command('confirm', row.recognitionId, inputWithCrm(row));
         pendingQuoteDrafts.delete(row.recognitionId);
     }
     showToast('success', '确认成功；行情及提醒由服务端推送');
@@ -225,7 +230,9 @@ deleteManagedQuotes = ids => operate(() => changeQuotes(ids, 'delete'));
 saveEditQuote = () => operate(async () => {
     if (!quoteModalState || !validateQuoteForm()) return;
     const state = quoteModalState;
-    const input = quoteInput({
+    const originalQuote = quoteView.records.get(state.quoteId);
+    const input = inputWithCrm({
+        institutionId: originalQuote?.institutionId, contactId: originalQuote?.contactId,
         c: state.sourceRow.c, d: state.direction, p: quoteFieldValue('quotePrice'),
         vol: quoteFieldValue('quoteVolume'), pt: quoteFieldValue('quotePriceType'),
         cs: quoteFieldValue('quoteSettlement'), date: quoteFieldValue('quoteTradeDate'),
@@ -240,6 +247,19 @@ saveEditQuote = () => operate(async () => {
     quoteModalState = null;
     showToast('success', state.mode === 'edit' ? '修改已提交' : '已新建待确认报价，请到报价确认完成确认');
 });
+
+const originalOpenQuoteForm = openQuoteForm;
+openQuoteForm = function (...args) {
+    originalOpenQuoteForm(...args);
+    if (!quoteModalState) return;
+    const quote = quoteView.records.get(quoteModalState.quoteId);
+    if (quote?.institutionId && element('quoteInstitution')) {
+        element('quoteInstitution').value = `${quote.institutionName} [${quote.institutionId}]`;
+    }
+    if (quote?.contactId && element('quoteTrader')) {
+        element('quoteTrader').value = `${quote.contactName} [${quote.contactId}]`;
+    }
+};
 
 loadQuoteState = async function () {
     if (!signedIn) return false;
@@ -294,6 +314,60 @@ renderInstQuoteRows = function () {
 };
 
 // Preserve remaining controls, but do not pretend their old HTTP backend is connected.
+// Keep the original CRM popup and keyboard interaction; replace its mock data lookup.
+let crmSearchTimer;
+let crmSearchVersion = 0;
+renderCrmSuggestions = function () {
+    clearTimeout(crmSearchTimer);
+    const version = ++crmSearchVersion;
+    const state = crmSuggestionState;
+    if (!state.input) return;
+    const text = state.input.value;
+    const panel = crmSuggestionPanel();
+    state.items = [];
+    state.activeIndex = -1;
+    panel.replaceChildren();
+    const message = document.createElement('div');
+    message.className = 'crm-suggest-empty';
+    message.textContent = '正在查询 CRM…';
+    panel.append(message);
+    panel.classList.add('show');
+    requestAnimationFrame(positionCrmSuggestionPanel);
+    crmSearchTimer = setTimeout(async () => {
+        const current = () => signedIn && version === crmSearchVersion && crmSuggestionState === state
+            && state.input.isConnected && state.input.value === text;
+        if (!current()) return;
+        try {
+            const data = await crm.search(state.kind === 'institution' ? 'INSTITUTION' : 'CONTACT', text, state.institution);
+            if (!current()) return;
+            state.items = data.items;
+            state.activeIndex = data.items.length ? 0 : -1;
+            panel.replaceChildren();
+            for (const [index, item] of data.items.entries()) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'crm-suggest-item' + (index === 0 ? ' active' : '');
+                button.setAttribute('role', 'option');
+                button.textContent = item.value;
+                button.addEventListener('click', () => selectCrmSuggestion(index));
+                panel.append(button);
+            }
+            if (!data.items.length || data.hasMore) {
+                message.textContent = data.items.length ? '显示前 50 条，请细化搜索' : '无匹配记录，可保留名称待确认';
+                panel.append(message);
+            }
+            // Long IDs must remain readable in the existing popup.
+            requestAnimationFrame(() => {
+                positionCrmSuggestionPanel();
+                panel.style.width = Math.min(460, innerWidth - 12) + 'px';
+                panel.style.left = Math.max(6, Math.min(innerWidth - panel.offsetWidth - 6, state.input.getBoundingClientRect().left)) + 'px';
+            });
+        } catch (error) {
+            if (current()) message.textContent = 'CRM 查询失败：' + error.message;
+        }
+    }, 250);
+};
+
 initBondFilterPanels = async () => false;
 populateRegionSelectors = async () => false;
 loadRecommendations = async () => false;

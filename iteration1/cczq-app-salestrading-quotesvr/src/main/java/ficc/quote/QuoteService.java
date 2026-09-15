@@ -170,7 +170,7 @@ final class QuoteService {
             if (contact == null || !contactId.equals(contact.getString("contactId"))) {
                 throw ApiException.forField("1001", "VALIDATION_FAILED", "Contact is unavailable to this user", "contactId");
             }
-            if (!Objects.equals(institutionId, contact.getString("institutionId"))) {
+            if (!ficc.common.client.CrmClient.belongsTo(contact, institutionId)) {
                 throw ApiException.forField("1001", "VALIDATION_FAILED", "Contact/institution mismatch", "contactId");
             }
             quote.put("contactName", RequestValidator.requireString(contact, "contactName"));
@@ -286,6 +286,13 @@ final class QuoteService {
         };
         if (query) {
             String text = JsonUtils.getStringOrDefault(call.request, "text", "");
+            if ("INSTITUTION".equals(kind) || "CONTACT".equals(kind)) {
+                int offset = call.request.getIntValue("offset", 0);
+                if (offset < 0 || offset > 1000000) {
+                    throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid CRM offset", "offset");
+                }
+                return refs.queryCrm(call.user, kind, text, call.request.getString("institutionId"), offset, limit(call.request, 200));
+            }
             List<JSONObject> records = "SECURITY".equals(kind)
                     ? refs.querySecurities(text)
                     : refs.records(kind, call.user).stream()
@@ -302,6 +309,15 @@ final class QuoteService {
                     .map(refs::security).filter(Objects::nonNull).toList();
             records = "SECURITY".equals(kind) ? securities : refs.records(kind, call.user).stream()
                     .filter(value -> ids.contains(value.getString(key))).toList();
+        } else if ("INSTITUTION".equals(kind) || "CONTACT".equals(kind)) {
+            if (ids.size() > 200) {
+                throw ApiException.forField("1008", "RESOURCE_LIMIT", "At most 200 CRM IDs per request", "ids");
+            }
+            records = ids.stream().map(Object::toString).distinct()
+                    .map(id -> "INSTITUTION".equals(kind) ? refs.institution(call.user, id) : refs.contact(call.user, id))
+                    .filter(Objects::nonNull).toList();
+            return JsonUtils.object("records", records, "missingIds", ids.stream()
+                    .filter(id -> records.stream().noneMatch(value -> id.equals(value.getString(key)))).toList());
         } else {
             records = refs.records(kind, call.user).stream()
                     .filter(value -> ids.contains(value.getString(key))).toList();
