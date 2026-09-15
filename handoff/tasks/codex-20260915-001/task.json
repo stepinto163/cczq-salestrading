@@ -1,0 +1,61 @@
+{
+  "protocolVersion": 1,
+  "taskId": "codex-20260915-001",
+  "from": "codex",
+  "to": "workbuddy",
+  "state": "ready",
+  "baseCommit": "dd9195222f0a73a36ab4773b3c3d7734d1db592d",
+  "workBranch": "work/codex-20260915-001",
+  "goal": "基于当前 main 恢复可复现的本地模拟 C#→GW→销售交易服务只读链路，定位旧分支 GW 超时原因，并提交最小基础资料适配修复。",
+  "readFiles": [
+    "handoff/tasks/codex-20260915-001/context.md",
+    "iteration1/gateway/config/spring-config.xml",
+    "iteration1/gateway/control/ATSConfig.ini",
+    "iteration1/scripts/start-gateway.ps1",
+    "iteration1/scripts/foundation-classpath.ps1",
+    "iteration1/compat/patch_foundations.py",
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseMapper.java",
+    "iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/StcBaseDataClient.java",
+    "iteration1/client/src/ServiceDiscoveryProbe.cs",
+    "iteration1/client/src/DpsClient.cs",
+    "iteration1/docs/stc-adapters.zh-CN.md",
+    "iteration1/docs/maven-jenkins.zh-CN.md"
+  ],
+  "writePaths": [
+    "handoff/tasks/codex-20260915-001/",
+    "iteration1/cczq-app-salestrading-common/",
+    "iteration1/cczq-app-salestrading-quotesvr/",
+    "iteration1/cczq-app-salestrading-notificationsvr/",
+    "iteration1/gateway/",
+    "iteration1/client/",
+    "iteration1/config/",
+    "iteration1/scripts/",
+    "iteration1/compat/",
+    "iteration1/build/",
+    "iteration1/docs/",
+    "iteration1/pom.xml",
+    "iteration1/stc-foundation-runtime/"
+  ],
+  "constraints": [
+    "本任务替代已取消的 codex-20260914-002。从包含本任务的 origin/main 发布提交创建新工作分支；不得从旧工作分支继续或整支合并旧改动。旧报告和代码可按 context.md 指定提交只读参考。",
+    "优先完成不需要 STC 凭据的本机模拟链路。真实账号缺失不阻塞模拟 GW 诊断、C# 构建及映射修复；不得将模拟通过报告为真实 STC 通过。",
+    "用户已授权本机 C# net472 客户端构建，无需再申请构建许可。使用已有 SDK/MSBuild 或仓库约定依赖恢复方式；工具链或合法 DLL 来源缺失时报告精确缺项，不擅自大规模安装工具。",
+    "只读验证：demo 模拟登录、报价 limit=1 查询、单债券价格查询、提醒偏好读取；不创建、确认、修改或删除报价，不运行压力测试或全量基础数据查询。",
+    "保留现有 STC/BBox/DPS 框架及权限校验。不得靠关闭登录校验、绕过 onlineStatus 或放宽通配订阅权限让测试通过。",
+    "优先在独立本机 ZK 内验证模拟服务及 GW；不要把本机服务注册进共享 STC ZK。旧 QuoteSvrSeed 持久节点只作为历史诊断证据，不作为正式注册实现，也不能让旧节点伪装在线服务。",
+    "真实服务地址只用上一任务已确认的配置。不得访问其他 IBOR 系统、扩大网络扫描、读取私钥、提取 SSH 会话凭据、尝试堡垒机转发或变更远端系统。日志不可访问则说明即可。",
+    "环境配置、凭据、许可证、SID、真实原始报文留在本机且受 gitignore 保护；报告只写脱敏摘要。不要导入整个 gw/ 源码树或 JAR。外部源码保持独立仓库，兼容改动用最小补丁记录。",
+    "默认 Maven verify 必须覆盖 common、quotesvr、notificationsvr、gateway；不得通过默认跳过 GW 得到成功。依赖未能解析时报告缺少坐标、版本及构建范围，不宣称全模块通过。",
+    "Java 服务先限制 Xmx192m 和 ActiveProcessorCount=2，依赖已有脚本上限；构建单进程，禁止并行测试。每次主动联调最多10分钟，请求超时5秒、最多一次重试。C# 探针必须有外部20秒终止保护。不得定时重复同一失败实验。",
+    "仅跟踪及停止本任务创建的进程，不按进程名批量终止，不覆盖用户未提交内容，不卸载或重装数据库。完成后记录端口及进程清理，保留用户已有进程。",
+    "先提交代码，再验证该提交，最后单独提交 result.json 并推送本任务分支。结果包含 testedCommit、实际加载依赖版本、各跳请求证据及剩余最小阻塞；不得合并 main。"
+  ],
+  "acceptance": [
+    "解释 GW 超时的实际断点，或提供已排除和仍未确定的具体位置；TCP已连通、servers已装载、onlineStatus打印为空均不能单独证明根因。",
+    "模拟模式下 C# --probe-services 完成3项只读请求（quotes/prices/notification preference），quotesCreated=0；无法完成则逐项写 fail/not_run 和准确原因。",
+    "比较成功与失败配置、GW/STC/common/DPS实际加载版本及类来源；区分 NetType字面量差异、运行库行为差异和配置未加载，不以本地源码代替所加载JAR证据。",
+    "bondRating仅映射债项评级，issuerRating仅映射主体评级。补充债项缺失但主体存在、二者不相等的测试；Datas/datas兼容和估值双值映射仅在证据支持下选择性迁入。",
+    "默认 Maven 构建明确包含GW，报告各模块结果；C# net472编译结果单独记录。任何缺失工具或私服依赖列出精确名称，不混为账号阻塞。",
+    "交付最小、可审查代码差异及可复跑命令，不导入整套外部GW源码、不替换生产服务发现语义；真实 STC 登录缺少凭据时明确 not_run，本任务不要求真实登录成功。"
+  ]
+}

@@ -4,6 +4,6 @@
 
 | taskId | 执行方 | 工作分支 | 任务文件 |
 |---|---|---|---|
-| codex-20260914-002 | workbuddy | work/codex-20260914-002 | handoff/tasks/codex-20260914-002/task.json |
+| codex-20260915-001 | workbuddy | work/codex-20260915-001 | handoff/tasks/codex-20260915-001/task.json |
 
 只列当前任务，不在这里重复记录状态或结果；分别以 task.json、result.json 为准。
