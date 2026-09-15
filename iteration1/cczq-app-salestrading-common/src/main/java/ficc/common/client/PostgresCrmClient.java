@@ -44,7 +44,6 @@ public final class PostgresCrmClient implements CrmClient {
         connectionProperties.setProperty("ApplicationName", "SalesTrading-CRM");
         execute("INSTITUTION", "", null, null, 0, 1);
         execute("CONTACT", "", null, null, 0, 1);
-        LOGGER.info("CRM PostgreSQL adapter ready: schema=" + schema + ", ownershipFiltering=false");
     }
 
     private static String required(Properties configuration, String key) {
@@ -156,7 +155,10 @@ public final class PostgresCrmClient implements CrmClient {
             LOGGER.warn("CRM query failed: kind=" + kind + ", sqlState=" + error.getSQLState()
                     + ", errorCode=" + error.getErrorCode() + ", reason=" + error.getMessage()
                     + ", elapsedMillis=" + (System.nanoTime() - started) / 1000000);
-            throw ApiException.forField("1009", "NOT_READY", "CRM database unavailable; check CRM configuration and server log", null);
+            ApiException failure = ApiException.forField("1009", "NOT_READY",
+                    "CRM database unavailable; check CRM configuration and server log", null);
+            failure.initCause(error);
+            throw failure;
         }
     }
 

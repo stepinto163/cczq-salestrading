@@ -2,6 +2,7 @@ package ficc.common.client;
 
 import com.alibaba.fastjson2.JSONObject;
 import ficc.common.ReferenceData;
+import ficc.common.ComponentLog;
 import sc.app.stc.net.NetClientWrapper;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -20,6 +21,22 @@ public final class AdapterFactory {
     }
 
     public static LoginSessionClient identity(Properties configuration, NetClientWrapper network, boolean hostsSimulator) {
+        String selectedMode = configuration.getProperty("identity.mode", "simulator");
+        String implementation = "stc".equals(selectedMode) ? "StcLoginSessionClient"
+                : hostsSimulator ? "LocalLoginSimulator" : "SimulatorLoginSvrClient";
+        try {
+            return ComponentLog.initialize(configuration, "IDENTITY", selectedMode, implementation,
+                    hostsSimulator && "simulator".equals(selectedMode) ? "local"
+                            : configuration.getProperty("identity.serverKey", "SERVER.LoginSvr"),
+                    () -> createIdentity(configuration, network, hostsSimulator));
+        } catch (RuntimeException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IllegalStateException(error);
+        }
+    }
+
+    private static LoginSessionClient createIdentity(Properties configuration, NetClientWrapper network, boolean hostsSimulator) {
         if ("stc".equals(mode(configuration, "identity.mode", "simulator"))) {
             return new StcLoginSessionClient(network, configuration);
         }
@@ -31,21 +48,55 @@ public final class AdapterFactory {
     }
 
     public static ReferenceData references(Properties configuration, NetClientWrapper network) throws Exception {
-        BaseDataClient base = "stc".equals(mode(configuration, "base.mode", "simulator"))
-                ? new StcBaseDataClient(network, configuration)
-                : new SimulatorBaseDataClient();
         CrmClient crm = crm(configuration, network);
         try {
-            base.start();
+            String selectedMode = configuration.getProperty("base.mode", "simulator");
+            BaseDataClient base = ComponentLog.initialize(configuration, "BASE_DATA", selectedMode,
+                    "stc".equals(selectedMode) ? "StcBaseDataClient" : "SimulatorBaseDataClient",
+                    "stc".equals(selectedMode) ? configuration.getProperty("base.serverKey", "SERVER.BaseSvr") : "local",
+                    () -> {
+                        BaseDataClient client = "stc".equals(mode(configuration, "base.mode", "simulator"))
+                                ? new StcBaseDataClient(network, configuration) : new SimulatorBaseDataClient();
+                        try {
+                            client.start();
+                            return client;
+                        } catch (Exception error) {
+                            try {
+                                client.close();
+                            } catch (Exception cleanupError) {
+                                error.addSuppressed(cleanupError);
+                            }
+                            throw error;
+                        }
+                    });
             return new ReferenceData(base, crm);
         } catch (Exception error) {
-            base.close();
-            crm.close();
+            try {
+                crm.close();
+            } catch (Exception cleanupError) {
+                error.addSuppressed(cleanupError);
+            }
             throw error;
         }
     }
 
     public static CrmClient crm(Properties configuration, NetClientWrapper network) throws Exception {
+        String selectedMode = configuration.getProperty("crm.mode", "simulator");
+        String implementation = switch (selectedMode) {
+            case "postgresql" -> "PostgresCrmClient";
+            case "simulator" -> "SimulatorCrmClient";
+            case "empty" -> "EmptyCrmClient";
+            case "custom" -> configuration.getProperty("crm.adapterClass", "<missing>");
+            default -> "<invalid mode>";
+        };
+        String target = "postgresql".equals(selectedMode)
+                ? ComponentLog.databaseTarget(configuration, "crm.jdbcUrl", "crm.schema")
+                : "custom".equals(selectedMode) ? configuration.getProperty("crm.adapterJar", "<missing>") : "local";
+        return ComponentLog.initialize(configuration, "CRM", selectedMode, implementation, target,
+                () -> createCrm(configuration, network));
+    }
+
+    private static CrmClient createCrm(Properties configuration, NetClientWrapper network) throws Exception {
         String mode = configuration.getProperty("crm.mode", "simulator");
         CrmClient client;
         switch (mode) {
@@ -66,7 +117,11 @@ public final class AdapterFactory {
                     delegate.initialize(network, configuration);
                     return new LoadedCrmClient(delegate, loader);
                 } catch (Exception error) {
-                    loader.close();
+                    try {
+                        loader.close();
+                    } catch (Exception cleanupError) {
+                        error.addSuppressed(cleanupError);
+                    }
                     throw error;
                 }
             }

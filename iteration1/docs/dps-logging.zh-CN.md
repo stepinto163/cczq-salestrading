@@ -2,6 +2,8 @@
 
 QuoteSvr 与 NotificationSvr 的 `control/<服务名>/log4j.ini` 已为 `ficc.common` 配置 INFO 级别滚动日志。部署时需同时更新公共库和这两个配置文件，重启服务后生效。
 
+组件启动、配置失败、初始化异常统一在控制台及 `logs/startup.log` 可见，不依赖 DPS DEBUG 日志。规则见 [组件启动日志](component-logging.zh-CN.md)。
+
 请求摘要、订阅和连接事件为 INFO，完整脱敏消息体为 DEBUG，故障为 WARN。当前排障配置单独启用 `log4j.logger.ficc.common.client.NetClientTransport=DEBUG`；改为 INFO 可关闭消息体，保留摘要与故障信息。未启用 DEBUG 时不执行消息体解析和脱敏，减少开销。
 
 日志路径为各服务工作目录下的 `logs/dps-messages.log`，UTF-8；单文件 10MB，保留 3 个备份。
@@ -10,8 +12,8 @@ QuoteSvr 与 NotificationSvr 的 `control/<服务名>/log4j.ini` 已为 `ficc.co
 - `ERROR`：离线、无回复、传输异常、非法 JSON 等原因；传输异常记录类型，不将可能含凭据的底层异常文本直接写入。
 - `SUBSCRIBE / SUBSCRIBE_REGISTERED / PUSH`：订阅调用、底层方法返回、实际收到的 topic 与内容。REGISTERED 只表示本地调用返回，不代表收到远端订阅确认。
 - `CONNECTED / DISCONNECTED`：连接状态。
-- 基础资料：刷新开始、全部/子集模式、刷新完成数量及版本、耗时、失效及失败重试信息。
-- `Reference lookup missed`：查不到的 securityId、当前缓存数量、适配器类型，便于区分模拟数据和 STC 数据。
+- 基础资料：现使用 STC 客户端按需查券，记录方法、参数、返回对象是否存在和耗时；DEBUG 记录对象内容。
+- `Reference lookup missed`：查不到的 securityId 和适配器类型，便于区分模拟数据和 STC 数据。
 
 密码、会话 SID、token 等字段递归脱敏，包含字符串内嵌 JSON；原请求不修改。不截断正常 JSON 业务内容。无法解析的 JSON 仅记录字符数，避免无法可靠脱敏时泄露凭据。
 

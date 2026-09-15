@@ -14,7 +14,18 @@ public final class ServiceConfiguration {
     private ServiceConfiguration() {}
 
     public static Properties load(String serviceName, String databaseFile, String adapterFile) throws IOException {
-        return load(serviceName, databaseFile, adapterFile, System.out::println);
+        Properties context = new Properties();
+        context.setProperty("diagnostics.serviceName", serviceName);
+        String files = "workingDirectory=" + Path.of("").toAbsolutePath().normalize()
+                + ", quote.properties=" + databaseFile + ", adapter.properties=" + adapterFile;
+        try {
+            return ComponentLog.initialize(context, "CONFIGURATION", "files", "ServiceConfiguration", files,
+                    () -> load(serviceName, databaseFile, adapterFile, org.apache.log4j.Logger.getLogger("ficc.startup")::info));
+        } catch (IOException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IOException("Cannot load service configuration", error);
+        }
     }
 
     static Properties load(String serviceName, String databaseFile, String adapterFile,
@@ -42,6 +53,7 @@ public final class ServiceConfiguration {
         var source = StcBaseDataClient.class.getProtectionDomain().getCodeSource();
         log.accept(serviceName + " base adapter: diagnostics=stc-base-config-v2, loadedFrom="
                 + (source == null ? "<unavailable>" : source.getLocation()));
+        configuration.setProperty("diagnostics.serviceName", serviceName);
         return configuration;
     }
 

@@ -91,4 +91,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/setup-crm
 
 本轮验证：23 项 Java 测试通过（包含真实本机 PostgreSQL 的 CRM 查询与关系校验），两个服务构建成功；C# 现有对手方测试 15 项通过；Web 原页面 DOM/GW 测试 14 项通过，两者均创建、确认并清理一条报价，验证 CRM ID/名称落入报价。服务身份和债券数据仍用模拟适配器，CRM 使用真实 PostgreSQL；没有执行压力测试。
 
-报告：`iteration1/runtime/counterparty-ui-smoke.json`、`iteration1/runtime/requirements-dom-report.json`；CRM 日志：服务工作目录 `logs/dps-messages.log`（INFO 行数/耗时，DEBUG 查询参数）。
+报告：`iteration1/runtime/counterparty-ui-smoke.json`、`iteration1/runtime/requirements-dom-report.json`。CRM 启动状态统一输出到控制台及 `logs/startup.log`，搜索 `"component":"CRM"`；运行期查询仍在 `logs/dps-messages.log`（INFO 行数/耗时，DEBUG 查询参数）。格式和失败处理见 [组件启动日志](component-logging.zh-CN.md)。

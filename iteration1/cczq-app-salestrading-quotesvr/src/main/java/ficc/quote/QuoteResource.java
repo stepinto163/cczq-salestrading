@@ -24,7 +24,8 @@ public final class QuoteResource extends ResourceAdapter {
         try {
             configuration = ServiceConfiguration.load("QuoteSvr", getConfig().getString("quote.properties"),
                     getConfig().getString("adapter.properties", ""));
-            store = new PgStore(configuration);
+            store = ComponentLog.initialize(configuration, "DATABASE", "postgresql", "PgStore",
+                    ComponentLog.databaseTarget(configuration, "db.url", "db.schema"), () -> new PgStore(configuration));
             super.init();
         } catch (Exception error) {
             throw new LifecycleException(error);
@@ -39,7 +40,8 @@ public final class QuoteResource extends ResourceAdapter {
             var network = resource.getNetClientWrapper();
             identity = AdapterFactory.identity(configuration, network, true);
             ReferenceData references = AdapterFactory.references(configuration, network);
-            service = new QuoteService(store, references, new AccessPolicy(configuration));
+            service = ComponentLog.initialize(configuration, "QUOTE_SERVICE", "local", "QuoteService", "QuoteSvr",
+                    () -> new QuoteService(store, references, new AccessPolicy(configuration)));
             service.publish = publisher;
             identity.onInvalidated(sessionId -> {
                 synchronized (service) {

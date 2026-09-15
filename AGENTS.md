@@ -19,3 +19,12 @@ Treat performance experiments conservatively:
 - Use one statement per line, conventional indentation, and separate field declarations. Do not compress methods, branches, or several operations onto a single line.
 - When changing existing code, format the affected methods clearly and use descriptive local variable names.
 - Keep utility responsibilities explicit; separate JSON handling, API replies and validation.
+
+# Startup and failure logging
+
+- Every important component must log initialization with a consistent format: service, component, state, mode, implementation, target and elapsed time.
+- Important startup messages must be visible at INFO in both the console and the startup log file. They must not depend on enabling DPS payload DEBUG logging.
+- Configuration or initialization failures must log ERROR with the exception stack and propagate the failure. Do not swallow the exception, silently fall back to a simulator or report successful startup.
+- Distinguish successful local initialization from remote connectivity and data readiness. Do not claim a remote dependency is ready merely because its client object was created.
+- Preserve underlying causes and redact credentials from messages, connection addresses and exception stacks.
+- Verify actual console/file output and failure propagation, not only the presence of logging calls in source.

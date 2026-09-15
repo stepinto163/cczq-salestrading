@@ -15,6 +15,7 @@ import ficc.common.client.AdapterFactory;
 import ficc.common.client.AccessPolicy;
 import ficc.common.ReferenceData;
 import ficc.common.ServiceConfiguration;
+import ficc.common.ComponentLog;
 import sc.app.stc.net.NetClientResource;
 import sc.app.stc.net.NetClientWrapper;
 
@@ -55,7 +56,9 @@ public final class NotificationResource extends ResourceAdapter {
         try {
             configuration = ServiceConfiguration.load("NotificationSvr",
                     getConfig().getString("quote.properties"), getConfig().getString("adapter.properties", ""));
-            store = new JdbcStore(configuration, "notification_");
+            store = ComponentLog.initialize(configuration, "DATABASE", "postgresql", "JdbcStore",
+                    ComponentLog.databaseTarget(configuration, "db.url", "db.schema"),
+                    () -> new JdbcStore(configuration, "notification_"));
             super.init();
         } catch (Exception error) {
             throw new LifecycleException(error);
@@ -76,7 +79,8 @@ public final class NotificationResource extends ResourceAdapter {
         NetClientWrapper network = resource.getNetClientWrapper();
         try {
             ReferenceData references = AdapterFactory.references(configuration, network);
-            service = new NotificationService(store, references, new AccessPolicy(configuration));
+            service = ComponentLog.initialize(configuration, "NOTIFICATION_SERVICE", "local", "NotificationService", "NotificationSvr",
+                    () -> new NotificationService(store, references, new AccessPolicy(configuration)));
             service.publish = publisher;
             identity = AdapterFactory.identity(configuration, network, false);
             identity.onInvalidated(sessionId -> {
@@ -88,21 +92,28 @@ public final class NotificationResource extends ResourceAdapter {
         } catch (Exception error) {
             throw new LifecycleException(error);
         }
-        long timeoutMillis = getConfig().getInt("source.requestTimeoutMillis", 3000);
-        source = new QuoteSvrClient(network, timeoutMillis);
-        source.initialize(new ICedaConnectionListener() {
-            @Override
-            public void onConnected(String serverName) {
-                invalidateSource();
-            }
+        try {
+            source = ComponentLog.initialize(configuration, "QUOTE_SOURCE", "stc", "QuoteSvrClient", "SERVER.QuoteSvr", () -> {
+                long timeoutMillis = getConfig().getInt("source.requestTimeoutMillis", 3000);
+                QuoteSvrClient client = new QuoteSvrClient(network, timeoutMillis);
+                client.initialize(new ICedaConnectionListener() {
+                    @Override
+                    public void onConnected(String serverName) {
+                        invalidateSource();
+                    }
 
-            @Override
-            public void onDisconnected(String serverName) {
-                invalidateSource();
-            }
-        });
-        source.subscribeQuoteEvents(message -> enqueue(true, message));
-        source.subscribePrices(message -> enqueue(false, message));
+                    @Override
+                    public void onDisconnected(String serverName) {
+                        invalidateSource();
+                    }
+                });
+                client.subscribeQuoteEvents(message -> enqueue(true, message));
+                client.subscribePrices(message -> enqueue(false, message));
+                return client;
+            });
+        } catch (Exception error) {
+            throw new LifecycleException(error);
+        }
         worker = Executors.newSingleThreadScheduledExecutor(task -> {
             Thread thread = new Thread(task, "notification-source");
             thread.setDaemon(true);
