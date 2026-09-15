@@ -91,15 +91,33 @@ final class AdapterContractTest {
     }
 
     @Test
-    void baseRejectsWrongBondAndUnmappedBusinessMarket() {
+    void baseRejectsWrongBondAndInvalidOverrideWithoutGuessingUnknownClassification() {
         Properties configuration = new Properties();
         StcBaseMapper mapper = new StcBaseMapper(configuration);
         JSONObject bond = JsonUtils.object("Bond_ID", "250001", "Listed_Market", "CIB", "Option_Type", "NON");
         assertThrows(IllegalArgumentException.class, () -> mapper.security("250002.IB", bond, null, null, "v1"));
+        assertNull(mapper.security("250001.IB", bond, null, null, "v1").getString("market"));
+        configuration.setProperty("base.market.250001.IB", "INVALID");
         assertThrows(IllegalArgumentException.class, () -> mapper.security("250001.IB", bond, null, null, "v1"));
         configuration.setProperty("base.market.250001.IB", "RATE");
         bond.put("Option_Type", "PUT");
         assertTrue(mapper.security("250001.IB", bond, null, null, "v1").getBooleanValue("hasExerciseOption"));
+    }
+
+    @Test
+    void baseSubsetAcceptsLegacyLowercaseRowsAndReportsMissingStcRows() {
+        FakeBase transport = new FakeBase();
+        Properties configuration = new Properties();
+        configuration.setProperty("base.securityIds", "250001.IB");
+        configuration.setProperty("base.market.250001.IB", "RATE");
+        StcBaseDataClient base = new StcBaseDataClient(transport, configuration);
+        transport.rowsField = "datas";
+        base.refresh();
+        assertEquals(1, base.securities().size());
+        transport.rowsField = "wrongField";
+        ApiException failure = assertThrows(ApiException.class, base::refresh);
+        assertTrue(failure.getMessage().contains("topic=querySecurity"));
+        assertTrue(failure.getMessage().contains("no Datas array"));
     }
 
     static final class FakeNetwork extends NetClientWrapper {
@@ -150,6 +168,7 @@ final class AdapterContractTest {
         final Map<String, Consumer<JSONObject>> listeners = new HashMap<>();
         boolean connected = true;
         String rating = "AAA";
+        String rowsField = "Datas";
         int requests;
         @Override
         public JSONObject request(String topic, String sid, JSONObject request) {
@@ -165,7 +184,7 @@ final class AdapterContractTest {
                             "Issuer_Code", "ISS-1", "Rating_Current", rating, "Issuer_Rating_Current", "AAA", "Option_Type", "NON")
                     : JsonUtils.object("Id", "VAL-1", "valuation_date", "20260914", "valuation_yield", "2.4500",
                             "remaining_year", "2.5", "bondTypeFlag", "2");
-            return JsonUtils.object("Code", "0000", "datas", JsonUtils.array(data));
+            return JsonUtils.object("Code", "0000", rowsField, JsonUtils.array(data));
         }
         @Override
         public boolean online() {

@@ -13,16 +13,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/** Refresh a configured QA universe outside query/quote-processing threads. */
+/** Cache STC reference data outside query and quote-processing threads. */
 public final class StcBaseDataClient implements BaseDataClient {
     private final StcTransport transport;
     private final StcBaseMapper mapper;
     private final List<String> securityIds;
     private final int refreshSeconds;
+    private final StcBaseUniverseLoader universeLoader;
     private volatile Snapshot snapshot;
     private volatile long generation;
     private volatile boolean invalidated = true;
     private ScheduledExecutorService worker;
+    private volatile long nextRefreshNanos;
     private record Snapshot(Map<String, JSONObject> securities, List<JSONObject> issuers,
             List<JSONObject> valuations, String version) {}
 
@@ -31,38 +33,51 @@ public final class StcBaseDataClient implements BaseDataClient {
         mapper = new StcBaseMapper(configuration);
         securityIds = Arrays.stream(configuration.getProperty("base.securityIds", "").split(","))
                 .map(String::trim).filter(value -> !value.isEmpty()).distinct().toList();
-        if (securityIds.isEmpty() || securityIds.size() > 1000) {
-            throw new IllegalArgumentException("base.securityIds must contain 1..1000 explicit QA security IDs");
+        if (securityIds.size() > 1000) {
+            throw new IllegalArgumentException("Optional base.securityIds test subset cannot exceed 1000 IDs");
         }
-        refreshSeconds = Integer.parseInt(configuration.getProperty("base.refreshSeconds", "60"));
+        universeLoader = securityIds.isEmpty() ? new StcBaseUniverseLoader(transport, configuration) : null;
+        refreshSeconds = Integer.parseInt(configuration.getProperty("base.refreshSeconds",
+                securityIds.isEmpty() ? "3600" : "60"));
         if (refreshSeconds < 10) {
             throw new IllegalArgumentException("base.refreshSeconds must be at least 10");
         }
         transport.connectionChanged(this::invalidate);
         transport.subscribe("stc.base.clear", event -> invalidate());
         transport.subscribe("stc.base.manualClear.**", event -> invalidate());
+        transport.subscribe("stc.base.loadBondsInfo", event -> invalidate());
+        transport.subscribe("stc.base.bondsinfo", event -> invalidate());
+        transport.subscribe("stc.base.chianBond", event -> invalidate());
     }
 
     private synchronized void invalidate() {
         generation++;
         invalidated = true;
+        nextRefreshNanos = 0;
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
+        if (worker != null) {
+            throw new IllegalStateException("BaseSvr reference worker is already started");
+        }
         worker = Executors.newSingleThreadScheduledExecutor(task -> {
             Thread thread = new Thread(task, "stc-reference-refresh");
             thread.setDaemon(true);
             return thread;
         });
         worker.scheduleWithFixedDelay(() -> {
+            if (System.nanoTime() < nextRefreshNanos) {
+                return;
+            }
             try {
                 refresh();
             } catch (Exception error) {
                 invalidated = true;
+                nextRefreshNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
                 System.err.println("BaseSvr reference refresh unavailable: " + error.getMessage());
             }
-        }, 0, refreshSeconds, TimeUnit.SECONDS);
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     public void refresh() {
@@ -72,9 +87,35 @@ public final class StcBaseDataClient implements BaseDataClient {
         Map<String, JSONObject> rawIssuers = new LinkedHashMap<>();
         java.util.ArrayList<JSONObject> valuations = new java.util.ArrayList<>();
         String version = "STC-" + java.time.Instant.now();
+        if (universeLoader != null) {
+            StcBaseUniverseLoader.Universe universe = universeLoader.load(() -> checkGeneration(startedGeneration));
+            for (Map.Entry<String, JSONObject> entry : universe.bonds().entrySet()) {
+                JSONObject bond = entry.getValue();
+                String issuerId = StcBaseMapper.text(bond, "Issuer_Code");
+                addSecurity(entry.getKey(), bond, universe.issuers().get(issuerId),
+                        universe.valuations().get(entry.getKey()), version, securities, issuers, valuations);
+            }
+        } else {
+            loadSubset(startedGeneration, version, securities, issuers, rawIssuers, valuations);
+        }
+        synchronized (this) {
+            checkGeneration(startedGeneration);
+            snapshot = new Snapshot(java.util.Collections.unmodifiableMap(securities),
+                    List.copyOf(issuers.values()), List.copyOf(valuations), version);
+            invalidated = false;
+            nextRefreshNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(refreshSeconds);
+        }
+        System.out.println("BaseSvr reference cache ready: mode=" + (universeLoader == null ? "subset" : "all")
+                + ", securities=" + securities.size() + ", issuers=" + issuers.size()
+                + ", valuations=" + valuations.size());
+    }
+
+    private void loadSubset(long startedGeneration, String version, Map<String, JSONObject> securities,
+            Map<String, JSONObject> issuers, Map<String, JSONObject> rawIssuers, List<JSONObject> valuations) {
         for (String securityId : securityIds) {
+            checkGeneration(startedGeneration);
             JSONObject request = JsonUtils.object("SecurityID", securityId);
-            JSONObject bond = first(transport.request("querySecurity", null, request), true);
+            JSONObject bond = first(transport.request("querySecurity", null, request), "querySecurity", true);
             String issuerId = StcBaseMapper.text(bond, "Issuer_Code");
             JSONObject issuer = new JSONObject();
             if (issuerId != null) {
@@ -84,52 +125,67 @@ public final class StcBaseDataClient implements BaseDataClient {
                     if (reply.isEmpty()) {
                         return new JSONObject();
                     }
-                    success(reply);
+                    success(reply, "stc.base.info.query");
                     JSONObject data = reply.getJSONObject("Datas");
                     return data == null ? new JSONObject() : data;
                 });
             }
-            JSONObject valuation = first(transport.request("queryChianSecurity", null, request), false);
-            JSONObject security = mapper.security(securityId, bond, issuer, valuation, version);
-            securities.put(securityId, security);
-            if (issuerId != null) {
-                issuers.put(issuerId, mapper.issuer(security, issuer));
-            }
-            JSONObject record = mapper.valuation(securityId, valuation);
-            if (record != null) {
-                valuations.add(record);
-            }
-        }
-        synchronized (this) {
-            if (generation != startedGeneration || !transport.online()) {
-                throw unavailable();
-            }
-            snapshot = new Snapshot(java.util.Collections.unmodifiableMap(securities),
-                    List.copyOf(issuers.values()), List.copyOf(valuations), version);
-            invalidated = false;
+            JSONObject valuation = first(transport.request("queryChianSecurity", null, request),
+                    "queryChianSecurity", false);
+            addSecurity(securityId, bond, issuer, valuation, version, securities, issuers, valuations);
         }
     }
 
-    private static void success(JSONObject reply) {
+    private void addSecurity(String securityId, JSONObject bond, JSONObject issuer, JSONObject valuation,
+            String version, Map<String, JSONObject> securities, Map<String, JSONObject> issuers,
+            List<JSONObject> valuations) {
+        JSONObject security = mapper.security(securityId, bond, issuer, valuation, version);
+        securities.put(securityId, security);
+        String issuerId = security.getString("issuerId");
+        if (issuerId != null) {
+            issuers.put(issuerId, mapper.issuer(security, issuer));
+        }
+        JSONObject record = mapper.valuation(securityId, valuation);
+        if (record != null) {
+            valuations.add(record);
+        }
+    }
+
+    private void checkGeneration(long expectedGeneration) {
+        if (!transport.online()) {
+            throw refreshFailure("BaseSvr client is offline; check service discovery and connection logs");
+        }
+        if (Thread.currentThread().isInterrupted()) {
+            throw refreshFailure("BaseSvr refresh thread was interrupted");
+        }
+        if (generation != expectedGeneration) {
+            throw refreshFailure("BaseSvr references changed during loading; retrying with a new generation");
+        }
+    }
+
+    private static void success(JSONObject reply, String topic) {
         if (!"0000".equals(reply.getString("Code"))) {
-            throw unavailable();
+            throw refreshFailure("BaseSvr topic=" + topic + " returned Code=" + reply.getString("Code"));
         }
     }
 
-    private static JSONObject first(JSONObject reply, boolean required) {
-        success(reply);
-        JSONArray rows = reply.getJSONArray("datas");
+    private static JSONObject first(JSONObject reply, String topic, boolean required) {
+        success(reply, topic);
+        // Supplied BaseSvr handlers return Datas. Retain lowercase compatibility with older replies.
+        String rowsField = reply.containsKey("Datas") ? "Datas" : "datas";
+        JSONArray rows = reply.getJSONArray(rowsField);
         if (rows == null) {
-            throw unavailable();
+            throw refreshFailure("BaseSvr topic=" + topic + " returned Code=0000 but no Datas array");
         }
         if (rows.isEmpty()) {
             if (required) {
-                throw ApiException.forField("1009", "NOT_READY", "BaseSvr did not return a configured bond", null);
+                throw refreshFailure("BaseSvr topic=" + topic + " returned an empty Datas array for a configured bond");
             }
             return new JSONObject();
         }
         if (rows.size() != 1) {
-            throw ApiException.forField("1009", "NOT_READY", "Ambiguous BaseSvr single-security reply", null);
+            throw refreshFailure("BaseSvr topic=" + topic + " returned " + rows.size()
+                    + " rows for a single-security request");
         }
         return rows.getJSONObject(0);
     }
@@ -144,6 +200,10 @@ public final class StcBaseDataClient implements BaseDataClient {
 
     private static ApiException unavailable() {
         return ApiException.forField("1009", "NOT_READY", "STC base data is unavailable or refreshing", null);
+    }
+
+    private static ApiException refreshFailure(String message) {
+        return ApiException.forField("1009", "NOT_READY", message, null);
     }
 
     @Override

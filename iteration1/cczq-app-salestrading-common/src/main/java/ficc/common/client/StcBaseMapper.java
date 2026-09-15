@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import java.util.Set;
+import sc.app.stc.api.base.po.Bond;
+import sc.app.stc.api.base.po.TSmallView;
 
 /** Based on BondInfoView, TIssuerInfo and TBondValuationView in the supplied STC source. */
 public final class StcBaseMapper {
@@ -16,6 +18,42 @@ public final class StcBaseMapper {
     }
 
     public JSONObject security(String securityId, JSONObject bond, JSONObject issuer, JSONObject valuation, String version) {
+        if (!securityId.equals(securityId(bond))) {
+            throw new IllegalArgumentException("BaseSvr security ID mismatch: " + securityId);
+        }
+        String goodsType = goodsType(bond);
+        String market = configuration.getProperty("base.market." + securityId,
+                configuration.getProperty("base.marketBySubtype." + text(bond, "Bond_Subtype")));
+        if (market == null) {
+            market = switch (goodsType) {
+                case "2" -> "RATE";
+                case "1" -> "CREDIT";
+                default -> null;
+            };
+        } else if (!Set.of("RATE", "CREDIT").contains(market)) {
+            throw new IllegalArgumentException("Invalid base.market mapping for " + securityId);
+        }
+        String option = text(bond, "Option_Type");
+        Set<String> exercise = Set.of("PUT", "CNP", "CAL", "ETS", "ASS", "DCN", "CNV");
+        if (option != null && !exercise.contains(option) && !Set.of("NON", "SLB", "OTH", "PRS").contains(option)) {
+            throw new IllegalArgumentException("Unmapped STC Option_Type: " + option);
+        }
+        String issuerType = configuration.getProperty("base.issuerType." + text(issuer, "issuer_type"));
+        return JsonUtils.object(
+                "securityId", securityId, "securityName", text(bond, "Short_Name"), "market", market,
+                "bondSubtype", text(bond, "Bond_Subtype"), "stcGoodsType", goodsType,
+                "issuerId", text(bond, "Issuer_Code"), "issuerType", issuerType,
+                "sourceIssuerType", text(issuer, "issuer_type"),
+                "bondRating", text(bond, "Rating_Current"), "issuerRating", text(bond, "Issuer_Rating_Current"),
+                "region", text(issuer, "province"), "remainingYears", text(valuation, "remaining_year"),
+                "hasExerciseOption", option != null && exercise.contains(option),
+                "optionType", option, "maturityDate", date(text(bond, "Maturity_Date")),
+                "referenceVersion", version, "dataVendor", "SUMSCOPE",
+                "valuationYield", text(valuation, "valuation_yield"),
+                "valuationDate", date(text(valuation, "valuation_date")));
+    }
+
+    public static String securityId(JSONObject bond) {
         String rawId = text(bond, "Bond_ID");
         String marketCode = text(bond, "Listed_Market");
         String suffix = switch (marketCode == null ? "" : marketCode) {
@@ -24,32 +62,28 @@ public final class StcBaseMapper {
             case "SZE" -> ".SZ";
             default -> "";
         };
-        String normalized = rawId == null ? null : rawId.contains(".") ? rawId : rawId + suffix;
-        if (!securityId.equals(normalized)) {
-            throw new IllegalArgumentException("BaseSvr security ID mismatch: " + securityId);
+        if (rawId == null) {
+            throw new IllegalArgumentException("BaseSvr bond is missing Bond_ID");
         }
-        String market = configuration.getProperty("base.market." + securityId,
-                configuration.getProperty("base.marketBySubtype." + text(bond, "Bond_Subtype")));
-        if (!Set.of("RATE", "CREDIT").contains(market == null ? "" : market)) {
-            throw new IllegalArgumentException("Configure base.market." + securityId + " or base.marketBySubtype");
+        if (rawId.endsWith(".IB") || rawId.endsWith(".SH") || rawId.endsWith(".SZ")) {
+            if (!suffix.isEmpty() && !rawId.endsWith(suffix)) {
+                throw new IllegalArgumentException("BaseSvr Listed_Market mismatch: " + rawId);
+            }
+            return rawId;
         }
-        String option = text(bond, "Option_Type");
-        Set<String> exercise = Set.of("PUT", "CNP", "CAL", "ETS", "ASS", "DCN", "CNV");
-        if (option != null && !exercise.contains(option) && !Set.of("NON", "SLB", "OTH", "PRS").contains(option)) {
-            throw new IllegalArgumentException("Unmapped STC Option_Type: " + option);
+        if (rawId.contains(".") || suffix.isEmpty()) {
+            return null;
         }
-        String issuerType = configuration.getProperty("base.issuerType." + text(issuer, "issuer_type"));
-        JSONObject result = JsonUtils.object(
-                "securityId", securityId, "securityName", text(bond, "Short_Name"), "market", market,
-                "issuerId", text(bond, "Issuer_Code"), "issuerType", issuerType,
-                "bondRating", text(bond, "Rating_Current"), "issuerRating", text(bond, "Issuer_Rating_Current"),
-                "region", text(issuer, "province"), "remainingYears", text(valuation, "remaining_year"),
-                "hasExerciseOption", option != null && exercise.contains(option),
-                "optionType", option, "maturityDate", date(text(bond, "Maturity_Date")),
-                "referenceVersion", version, "dataVendor", "SUMSCOPE",
-                "valuationYield", text(valuation, "valuation_yield"),
-                "valuationDate", date(text(valuation, "valuation_date")));
-        return result;
+        return rawId + suffix;
+    }
+
+    private static String goodsType(JSONObject bond) {
+        Bond source = new Bond();
+        source.Bond_Subtype = text(bond, "Bond_Subtype");
+        source.Ent_Cor = text(bond, "Ent_Cor");
+        TSmallView view = new TSmallView();
+        view.b = source;
+        return view.getGoodsType();
     }
 
     public JSONObject issuer(JSONObject security, JSONObject raw) {

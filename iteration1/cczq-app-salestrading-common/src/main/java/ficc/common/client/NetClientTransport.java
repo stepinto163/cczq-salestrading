@@ -21,22 +21,36 @@ public final class NetClientTransport implements StcTransport {
 
     @Override
     public JSONObject request(String topic, String sessionId, JSONObject request) {
+        long started = System.nanoTime();
         if (!online()) {
-            throw unavailable();
+            throw unavailable(topic, "OFFLINE", started);
         }
+        String content;
         try {
-            String content = network.requestSync(serverKey, sessionId, topic, JsonUtils.toJson(request), timeoutMillis);
-            if (content == null || content.isBlank()) {
-                throw unavailable();
-            }
-            return JsonUtils.parseObject(content);
+            content = network.requestSync(serverKey, sessionId, topic, JsonUtils.toJson(request), timeoutMillis);
         } catch (Exception error) {
-            throw unavailable();
+            throw unavailable(topic, "REQUEST_FAILED(" + error.getClass().getSimpleName() + ")", started);
         }
+        if (content == null || content.isBlank()) {
+            throw unavailable(topic, "NO_REPLY", started);
+        }
+        JSONObject reply;
+        try {
+            reply = JsonUtils.parseObject(content);
+        } catch (Exception error) {
+            throw unavailable(topic, "INVALID_JSON", started);
+        }
+        if (reply == null) {
+            throw unavailable(topic, "NULL_JSON", started);
+        }
+        return reply;
     }
 
-    private ApiException unavailable() {
-        return ApiException.forField("1009", "NOT_READY", serverKey + " is unavailable", null);
+    private ApiException unavailable(String topic, String reason, long started) {
+        long elapsedMillis = (System.nanoTime() - started) / 1_000_000;
+        return ApiException.forField("1009", "NOT_READY",
+                "STC request failed: server=" + serverKey + ", topic=" + topic + ", reason=" + reason
+                        + ", elapsedMillis=" + elapsedMillis + ", timeoutMillis=" + timeoutMillis, null);
     }
 
     @Override
