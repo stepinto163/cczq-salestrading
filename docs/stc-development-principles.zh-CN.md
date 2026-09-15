@@ -87,10 +87,13 @@ QuoteSvrClient quoteSvrClient = new QuoteSvrClient(netClientResource.getNetClien
 quoteSvrClient.initialize(connectionListener);
 quoteSvrClient.subscribeQuoteEvents(onQuoteEvent);
 quoteSvrClient.subscribePrices(onPrice);
-quoteSvrClient.queryState(sessionId, request);
+quoteSvrClient.queryState(request);
+quoteSvrClient.queryPriceSnapshot();
 ```
 
 依据：[ServerApi](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/ServerApi.java)、[ClientApi](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/ClientApi.java)、[BaseApi](D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java)、[BaseSvrClient](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/BaseSvrClient.java)。
+
+内部状态与价格同步不执行用户登录：复用 STC 服务连接，调用两个专用只读主题 `ficc.quote.internal.state.query`、`ficc.price.internal.snapshot.query`。用户账号密码由前端登录界面提供，QuoteSvr/NotificationSvr 仅解析用户请求携带的会话，不配置 `identity.serviceUsername` 等服务登录参数。内部网络需限制服务端口的访问；ZooKeeper 注册不等于认证。具体边界与部署步骤见 [STC 适配说明](../iteration1/docs/stc-adapters.zh-CN.md#内部同步与用户登录的边界)。
 
 ## 4．Handler、Stream、Resource 与公共库职责
 

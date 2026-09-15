@@ -13,6 +13,8 @@ public final class QuoteSvrClient {
     public static final String SERVER_KEY = "SERVER.QuoteSvr";
     public static final String QUOTE_EVENTS = "ficc.quote.events";
     public static final String PRICE_SNAPSHOTS = "ficc.price.snapshots";
+    public static final String INTERNAL_STATE_QUERY = "ficc.quote.internal.state.query";
+    public static final String INTERNAL_PRICE_QUERY = "ficc.price.internal.snapshot.query";
 
     private final NetClientWrapper network;
     private final long requestTimeoutMillis;
@@ -41,31 +43,35 @@ public final class QuoteSvrClient {
                 (topic, content) -> listener.accept(JsonUtils.parseObject(content)));
     }
 
-    public JSONObject queryState(String sessionId, JSONObject request) throws Exception {
+    public JSONObject queryState(JSONObject request) throws Exception {
         JSONObject payload = new JSONObject(request);
         payload.put("requestId", IdGenerator.newId("NS-"));
-        String content = network.requestSync(SERVER_KEY, sessionId,
-                "ficc.quote.state.query", JsonUtils.toJson(payload), requestTimeoutMillis);
+        String content = network.requestSync(SERVER_KEY, null,
+                INTERNAL_STATE_QUERY, JsonUtils.toJson(payload), requestTimeoutMillis);
         JSONObject reply = JsonUtils.parseObject(content);
         if (reply == null || !"0000".equals(reply.getString("Code"))) {
             throw new IllegalStateException("QuoteSvr state query failed");
         }
-        return reply.getJSONObject("Data");
+        JSONObject state = reply.getJSONObject("Data");
+        if (state == null) {
+            throw new IllegalStateException("QuoteSvr did not return synchronization state");
+        }
+        return state;
     }
 
-    public JSONObject queryPriceSnapshot(String sessionId) throws Exception {
-        // The supplied GwClient.subscribeWithImage does not forward its business sid.
-        // Keep the ordinary subscription and fetch the native image with an explicit sid.
-        String content = network.requestSync(SERVER_KEY, sessionId,
-                PRICE_SNAPSHOTS, "", requestTimeoutMillis);
+    public JSONObject queryPriceSnapshot() throws Exception {
+        // Internal service calls use STC discovery/transport, not an end-user login session.
+        JSONObject request = JsonUtils.object("requestId", IdGenerator.newId("NS-"));
+        String content = network.requestSync(SERVER_KEY, null,
+                INTERNAL_PRICE_QUERY, JsonUtils.toJson(request), requestTimeoutMillis);
         JSONObject reply = JsonUtils.parseObject(content);
-        if (reply == null || reply.containsKey("Code")) {
+        if (reply == null || !"0000".equals(reply.getString("Code"))) {
             throw new IllegalStateException("QuoteSvr price snapshot query failed");
         }
-        String snapshot = reply.getString(PRICE_SNAPSHOTS);
+        JSONObject snapshot = reply.getJSONObject("Data");
         if (snapshot == null) {
             throw new IllegalStateException("QuoteSvr did not return a price snapshot");
         }
-        return JsonUtils.parseObject(snapshot);
+        return snapshot;
     }
 }

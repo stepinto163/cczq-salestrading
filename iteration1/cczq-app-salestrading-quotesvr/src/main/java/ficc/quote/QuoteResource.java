@@ -91,6 +91,14 @@ public final class QuoteResource extends ResourceAdapter {
                         ApiException.forField("1001", "VALIDATION_FAILED", "Invalid JSON", null));
             }
             requestId = request.getString("requestId");
+            if (QuoteSvrClient.INTERNAL_STATE_QUERY.equals(topic) || QuoteSvrClient.INTERNAL_PRICE_QUERY.equals(topic)) {
+                // STC may put a transport connection ID in signalID even without user login.
+                // Internal reads rely on the trusted backend network; GW blocks these topics.
+                if (service == null) {
+                    throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
+                }
+                return service.handleInternalRead(topic, request);
+            }
             if (identity == null || service == null) {
                 throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
             }

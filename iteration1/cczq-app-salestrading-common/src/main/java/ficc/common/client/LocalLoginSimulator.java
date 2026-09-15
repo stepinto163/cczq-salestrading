@@ -42,8 +42,4 @@ public final class LocalLoginSimulator implements LoginSessionClient {
         return sessionId == null ? null : sessions.get(sessionId);
     }
 
-    @Override
-    public String loginService() {
-        return login(JsonUtils.object("method", "login", "username", "search", "password", "trader1")).getString("sid");
-    }
 }

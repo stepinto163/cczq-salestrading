@@ -75,7 +75,7 @@ STC 分批接口没有跨表一致性版本，当前只能保证本机不发布�
 ## 2．内网配置步骤
 
 1. 内网使用 `mvn -f iteration1/pom_stc.xml clean verify` 构建，部署 `target-stc` 中的服务包，参阅 [STC 构建说明](maven-stc.zh-CN.md)。本机兼容版本使用 `target-maven`，不要混用。
-2. 复制 [内网适配配置模板](../config/adapters.integration.example.properties) 为部署机本地文件，例如 `D:/services/salestrading/adapters.local.properties`。正常模式保持 `base.securityIds` 为空；按需配置字典覆盖及服务账号。
+2. 复制 [内网适配配置模板](../config/adapters.integration.example.properties) 为部署机本地文件，例如 `D:/services/salestrading/adapters.local.properties`。正常模式保持 `base.securityIds` 为空；按需配置字典覆盖及用户权限。
 3. 在 QuoteSvr、NotificationSvr 各自 `control/<服务名>/resourceCfg.ini` 中设置：
 
 ```ini
@@ -86,12 +86,33 @@ adapter.properties=D:/services/salestrading/adapters.local.properties
 
 4. 将 [服务消费者配置](../config/stc-consumers.example.ini) 合并到相应服务的 `ATSConfig.ini`，配置内网 ZooKeeper。调用方以服务键寻址，不能把模板的 `127.0.0.1:1` 当成服务监听地址。真实 provider 名称须与内网注册信息一致。
 5. GW 的 `SERVER.LoginSvr.ServiceName` 从本机模拟使用的 `QuoteSvr` 改为真实 `LoginSvr`；NotificationSvr 的同项也改为真实服务。GW 仍独立运行，使用其原有登录流程。
-6. NotificationSvr 使用专用 STC 服务账号登录并读取内部报价/价格流。填写 `identity.serviceUsername`，把该账号的真实 `userid` 加入 QuoteSvr 的 `identity.internalUserIds`。密码从 `identity.servicePasswordEnv` 指定的环境变量读取；启动进程须继承它。普通用户无需加入内部账号列表。
+6. NotificationSvr 通过 `QuoteSvrClient` 和 `NetClientResource` 直接同步 QuoteSvr，不执行用户登录、不需要配置服务账号密码，也不需要为此增加 `identity.internalUserIds`。旧 `identity.serviceUsername/servicePasswordEnv/serviceClientType/serviceIp`、模拟调用方的 `identity.username/password` 已不再读取，可从本地适配配置删除。两个服务仍保留 `identity.mode=stc`，用于验证前端用户请求的 SID。
 7. 重启相应服务，使用真实账号经 GW 登录。可先通过 DPS API 调试器查询基础资料及创建一条报价，检查返回值和数据库中的实际操作人，再验证 NotificationSvr 的内部订阅。
 
 本机无需修改配置即可继续模拟运行；显式配置见 [本机模板](../config/adapters.local.example.properties)。切回模拟模式还需把 GW、NotificationSvr 的 LoginSvr 服务发现目标改回模拟服务。不要对正在运行的进程热切换模式。
 
 C# 平台的固定样例账号、债券选择尚未完整改造成内网业务界面；本轮内网适配验证可使用支持输入地址和账号的独立 DPS API 调试器。模拟自动测试使用固定账号与数据，不可直接当作真实环境验收脚本。
+
+### 内部同步与用户登录的边界
+
+| 调用 | 主题/方式 | 用户会话 |
+|---|---|---|
+| NotificationSvr 初始化/恢复报价及分组 | `ficc.quote.internal.state.query`，请求 `requestId` 与可选 `limit/cursor`，返回 `Code/Msg/Data`，`Data` 含 `records/epoch/sequence/nextCursor/done` | 不发送用户 SID |
+| NotificationSvr 初始化/恢复价格簿 | `ficc.price.internal.snapshot.query`，请求 `requestId`，返回 `Code/Msg/Data`，`Data` 为现有价格快照消息 | 不发送用户 SID |
+| 后续内部推送 | `ficc.quote.events`、`ficc.price.snapshots` | STC 服务订阅，不执行用户登录 |
+| 前端报价/价格/通知业务操作 | 原有业务请求和私有 report 主题 | 用户在 UI 输入账号密码，经 GW 登录；服务通过 LoginSvrClient 解析 SID 和 userid |
+
+QuoteSvr 在 `handler/` 和 `control/QuoteSvr/resourceCfg.ini` 注册两个只读内部 Handler；不会给普通业务接口增加匿名访问。GW 拒绝转发这两个内部请求。STC 底层可能把连接标识写入 `signalID`，即使调用方没有发送用户 SID，因此内部 Handler 不把该字段当成已登录用户，也不要求它为空。内部端口按 STC 可信服务网络部署，仅对受信服务开放。连接标识和 ZooKeeper 注册本身均不代表身份认证。
+
+升级时同时更新 common、QuoteSvr、NotificationSvr 和 GW，并合并 QuoteSvr 新增的 Handler 配置。旧服务端没有这些主题，不能只替换 NotificationSvr。同步完成日志为 `NotificationSvr source synchronized at ...`。
+
+### 2026-09-15 登录日志说明
+
+对比日志中，我们发送的是 `test1`，STC 客户端发送的是 `test01`。前者走普通用户查询并返回 `user:[] / Code=5006`；后者进入 `loginDefault`，不是同一认证路径。`LoginService.login` 明确支持 `isEncrypt=N` 与 `Y`；不能把这次失败直接归因于未加密。
+
+`LoginHandler` 根据 `Consts.DefaultUser` 选择特殊登录路径。所给成功回复中 `sid/userid` 均为空，不能仅凭 `Code=0001` 或 `onLine` 判定已经获得 FICC 可用的业务会话。请使用 QA 中实际存在、能够取得有效 SID 和 userid 的 STC 账号；若配置 CRM 登录模式，还应检查其实际用户数据源。不要把特殊默认用户自动当作业务用户，也不在 QuoteSvr 配置用户密码。
+
+C# 平台与 API 调试器共用 `DpsClient`，错误提示统一为 `Login failed: Code=..., Msg=...`，不再把真实 LoginSvr 的错误误标为 Simulator。登录请求仍由现有 DPS SDK 发送。
 
 ## 3．CRM 独立实现
 
@@ -109,6 +130,10 @@ crm.serverKey=SERVER.CrmSvr
 适配器接收现有 `NetClientWrapper` 和配置，沿用 STC 服务发现。需要时自行增加 CRM 的消费者配置。主服务不硬编码 CRM 消息格式。更换 JAR 后重启服务，无需修改报价生命周期代码。
 
 ## 4．验证记录
+
+2026-09-15 内部调用修复：本机兼容 Maven 五个模块 `verify` 通过，26 项单元/契约测试通过；独立 PostgreSQL schema 中以 5 条报价完成 50 项功能检查，包括内部读取、分批完整性、普通业务仍需登录和拒绝内部写操作。另启动两个隔离服务，均使用 `identity.mode=stc`，LoginSvr 故意指向不可用地址，基础数据使用模拟适配；NotificationSvr 通过真实 DPS 连接完成 QuoteSvr 状态及价格同步，无服务账号配置。该链路测试为零报价，25 秒期限，结束后停止测试进程并删除临时 schema。C# 平台与 API 调试器均编译通过。没有执行压力测试，也尚未连接 QA；内网 Maven/STC 实际运行仍需在 QA 验证。
+
+记录：`iteration1/runtime/internal-sync-verify.log`、`internal-sync-business.json`、`internal-sync-20260915140311/`。
 
 2026-09-15：取消正常模式的人工债券清单限制。兼容 Maven 全部五个模块 `verify` 通过，17 个单元/契约测试通过，其中新增 7 个批量同步测试，使用最多 5 只债券的内存样例，覆盖多批读取、历史债券、STC 分类、最新估值、评级不混用、新增债券、断线恢复、刷新期间失效、失败不发布半套数据、重复/不完整批次、保护上限、缺失日期及同日估值冲突。没有连接 QA、没有执行压力测试；内网 STC 依赖版本及真实接口仍需在目标环境验证。日志：`iteration1/runtime/base-universe-verify.log`。
 

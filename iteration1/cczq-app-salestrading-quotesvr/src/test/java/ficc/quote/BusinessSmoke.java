@@ -30,6 +30,7 @@ public final class BusinessSmoke {
             call("ficc.quote.view.open",JsonUtils.object("viewId",prefix,"ownerScope","MINE","status",JsonUtils.array("ACTIVE"),"filter",filter,"limit",20));
             for(JSONObject q:created.toJavaList(JSONObject.class))check("0000".equals(action("confirm",q.getString("quoteId")).getString("Code")),"confirm activates quote");
             check(depthSize()==3,"depth two includes every quote at two price levels");
+            InternalSyncChecks.verify(svc, 4);
             check(pushes.stream().anyMatch(x->x.getString("topic").equals(stream.getString("pushTopic"))&&x.getJSONObject("message").getJSONArray("quotes")!=null),"confirmation inserts quote into subscribed view");
             check(pushes.stream().filter(x->x.getString("topic").startsWith("ficc.quote.report.")).noneMatch(x->x.getJSONObject("message").containsKey("books")),"quote push never carries price books");
             JSONObject conflict=call("ficc.quote.update",JsonUtils.object("quotes",JsonUtils.array(JsonUtils.object("quoteId",id,"expectedRevision","1","price","2.4000")))).getJSONArray("results").getJSONObject(0);check("1004".equals(conflict.getString("Code")),"stale revision rejected");

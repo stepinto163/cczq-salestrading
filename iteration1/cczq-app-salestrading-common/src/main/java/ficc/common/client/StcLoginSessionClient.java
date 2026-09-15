@@ -1,8 +1,6 @@
 package ficc.common.client;
 
-import com.alibaba.fastjson2.JSONObject;
 import ficc.common.ApiException;
-import ficc.common.JsonUtils;
 import ficc.common.stc.LoginSvrClient;
 import sc.app.stc.net.NetClientWrapper;
 import java.util.Properties;
@@ -12,11 +10,9 @@ import java.util.function.Consumer;
 public final class StcLoginSessionClient implements LoginSessionClient {
     private static final String TOPIC = "SYS.ATS.LOGIN";
     private final StcTransport transport;
-    private final Properties configuration;
     private volatile Consumer<String> invalidated = sessionId -> {};
 
     public StcLoginSessionClient(NetClientWrapper network, Properties configuration) {
-        this.configuration = configuration;
         String serverKey = configuration.getProperty("identity.serverKey", "SERVER.LoginSvr");
         long timeout = Long.parseLong(configuration.getProperty("identity.requestTimeoutMillis", "3000"));
         if (timeout < 100 || timeout > 10000) {
@@ -62,21 +58,4 @@ public final class StcLoginSessionClient implements LoginSessionClient {
         return user.userid;
     }
 
-    @Override
-    public String loginService() {
-        String username = configuration.getProperty("identity.serviceUsername", "");
-        String password = AdapterFactory.secret(configuration, "identity.servicePasswordEnv");
-        if (username.isBlank()) {
-            throw new IllegalStateException("identity.serviceUsername is required for NotificationSvr");
-        }
-        JSONObject parameters = JsonUtils.object("userName", username, "password", password,
-                "ip", configuration.getProperty("identity.serviceIp", ""),
-                "clientType", configuration.getProperty("identity.serviceClientType", "client"));
-        JSONObject reply = transport.request(TOPIC, null, JsonUtils.object(
-                "method", "login", "isEncrypt", "N", "isManage", "N", "parameter", parameters));
-        if (!"0001".equals(reply.getString("Code")) || reply.getString("sid") == null) {
-            throw new IllegalStateException("STC service account login failed");
-        }
-        return reply.getString("sid");
-    }
 }

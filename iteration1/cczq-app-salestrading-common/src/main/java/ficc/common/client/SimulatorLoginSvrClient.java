@@ -8,29 +8,14 @@ import sc.app.stc.net.NetClientWrapper;
 public final class SimulatorLoginSvrClient implements LoginSessionClient {
     private final NetClientWrapper network;
     private final String serverKey;
-    private final String username;
-    private final String password;
     private final long requestTimeoutMillis;
 
     public SimulatorLoginSvrClient(NetClientWrapper network, String serverKey,
-                                  String username, String password, long requestTimeoutMillis) {
+                                  long requestTimeoutMillis) {
         this.network = network;
         this.serverKey = serverKey;
-        this.username = username;
-        this.password = password;
         this.requestTimeoutMillis = requestTimeoutMillis;
         network.init(serverKey);
-    }
-
-    @Override
-    public String loginService() throws Exception {
-        JSONObject request = JsonUtils.object(
-                "method", "login", "username", username, "password", password);
-        JSONObject reply = request(request);
-        if (!"0001".equals(reply.getString("Code")) || reply.getString("sid") == null) {
-            throw new IllegalStateException("Simulator service login failed");
-        }
-        return reply.getString("sid");
     }
 
     @Override

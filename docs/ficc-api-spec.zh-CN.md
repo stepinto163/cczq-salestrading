@@ -4,6 +4,8 @@
 
 本次修订：Quote与Price分别使用`ficc.quote.*`和`ficc.price.*`接口、DTO及推送通道；去掉前端view的dataset参数。报价订阅只推事件，初始报价列表通过显式查询获得；市场价格提供按券快照。第4.1节按行情中心页面列出调用顺序，第13节标明未完成的需求覆盖。
 
+2026-09-15 实现补充：NotificationSvr 的内部初始化/恢复改用 `ficc.quote.internal.state.query` 和 `ficc.price.internal.snapshot.query`，通过 STC 服务连接调用，不执行用户账号登录。后续仍订阅 `ficc.quote.events`、`ficc.price.snapshots`。两个内部请求不向前端 GW 开放；普通业务接口仍验证用户 SID。下文旧 `quote.state.query/event.query` 设计不代表 NotificationSvr 必须配置服务账号，具体请求、配置升级及权限边界见 [STC 适配说明](../iteration1/docs/stc-adapters.zh-CN.md#内部同步与用户登录的边界)。
+
 ## 1．范围与依据
 
 本稿以[当前架构](ficc-sales-trading-architecture.zh-CN.md)、[核心ER](models/core-data-model-er.zh-CN.md)、[行情模型](models/market-data-model.zh-CN.md)为设计依据，独立列出接口、模型和消息规则。旧API及看板协议不作为补充契约；不要从旧稿复制未在本文列出的topic。

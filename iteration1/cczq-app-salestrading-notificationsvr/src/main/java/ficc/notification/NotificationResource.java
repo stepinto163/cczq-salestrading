@@ -43,7 +43,6 @@ public final class NotificationResource extends ResourceAdapter {
     private QuoteSvrClient source;
     private LoginSessionClient identity;
     private ScheduledExecutorService worker;
-    private String internalSessionId;
     private long restoredGeneration = -1;
     private long retryAt;
     private long heartbeatAt;
@@ -126,10 +125,9 @@ public final class NotificationResource extends ResourceAdapter {
     private void restore() throws Exception {
         long generation = sourceGeneration.get();
         incoming.clear();
-        internalSessionId = identity.loginService();
         List<JSONObject> quotes = new ArrayList<>();
         List<JSONObject> settings = new ArrayList<>();
-        JSONObject state = source.queryState(internalSessionId, JsonUtils.object("limit", 1000));
+        JSONObject state = source.queryState(JsonUtils.object("limit", 1000));
         JSONObject firstPage = state;
         while (true) {
             JSONObject records = state.getJSONObject("records");
@@ -140,9 +138,9 @@ public final class NotificationResource extends ResourceAdapter {
             if (cursor == null) {
                 break;
             }
-            state = source.queryState(internalSessionId, JsonUtils.object("cursor", cursor));
+            state = source.queryState(JsonUtils.object("cursor", cursor));
         }
-        JSONObject snapshot = source.queryPriceSnapshot(internalSessionId);
+        JSONObject snapshot = source.queryPriceSnapshot();
         synchronized (service) {
             service.replaceQuotes(firstPage, quotes, settings);
             if (!service.priceMessage(snapshot)) {

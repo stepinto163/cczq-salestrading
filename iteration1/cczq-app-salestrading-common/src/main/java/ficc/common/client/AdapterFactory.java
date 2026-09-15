@@ -27,7 +27,6 @@ public final class AdapterFactory {
             return new LocalLoginSimulator();
         }
         return new SimulatorLoginSvrClient(network, configuration.getProperty("identity.serverKey", "SERVER.LoginSvr"),
-                configuration.getProperty("identity.username", "search"), configuration.getProperty("identity.password", "trader1"),
                 Long.parseLong(configuration.getProperty("identity.requestTimeoutMillis", "3000")));
     }
 
@@ -82,15 +81,6 @@ public final class AdapterFactory {
         }
         client.initialize(network, configuration);
         return client;
-    }
-
-    public static String secret(Properties configuration, String key) {
-        String variable = configuration.getProperty(key, "");
-        String value = variable.isBlank() ? null : System.getenv(variable);
-        if (value == null || value.isBlank()) {
-            throw new IllegalStateException("Configure an environment variable through " + key);
-        }
-        return value;
     }
 
     private record LoadedCrmClient(CrmClient delegate, URLClassLoader loader) implements CrmClient {

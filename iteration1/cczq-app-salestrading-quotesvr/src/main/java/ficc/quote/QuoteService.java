@@ -2,6 +2,7 @@ package ficc.quote;
 
 import ficc.common.*;
 import ficc.common.client.AccessPolicy;
+import ficc.common.client.QuoteSvrClient;
 
 import com.alibaba.fastjson2.*;
 import java.util.*;
@@ -221,7 +222,57 @@ final class QuoteService {
         try{store.begin();if(delete)store.update("DELETE FROM settings WHERE id=?",id);else store.update("INSERT INTO settings VALUES (?,?,?,?,?::jsonb) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload",id,c.user,kind,g.getLongValue("revision"),JsonUtils.toJson(g));event=store.event(JsonUtils.object("type",kind.equals("watchlist")?"WATCHLIST":"FILTER_GROUP","action",delete?"REMOVE":"UPSERT","id",id,"record",delete?null:g,"userId",c.user));store.receipt(c.user,c.topic,rid,JsonUtils.array(out));store.commit();}catch(Exception e){store.rollback();throw e;}
         if(delete)settings.remove(id);else settings.put(id,g);committed(event);views.settingsChanged(c.user,kind,id,g.getString("revision"),delete);return out;
     }
-    Object state(Call c){internal(c);if(c.request.getString("cursor")!=null){JSONObject d=(JSONObject)continuePage(c);finishState(d);return d;}List<JSONObject> entries=new ArrayList<>();quotes.values().forEach(q->entries.add(JsonUtils.object("collection","quotes","record",q)));settings.values().forEach(g->entries.add(JsonUtils.object("collection",g.containsKey("watchlistId")?"watchlists":"filterGroups","record",g)));JSONObject d=(JSONObject)page(c,"entries",entries,JsonUtils.object("epoch",store.epoch,"sequence",Long.toString(lastSequence)));finishState(d);return d;}
+    synchronized JSONObject handleInternalRead(String topic, JSONObject request) {
+        String requestId = request.getString("requestId");
+        try {
+            RequestValidator.requireString(request, "requestId");
+            Object data;
+            if (QuoteSvrClient.INTERNAL_STATE_QUERY.equals(topic)) {
+                RequestValidator.allowOnlyFields(request, "requestId", "limit", "cursor");
+                // Cursor scope is internal transport context, never a user or audit identity.
+                Call call = new Call("<internal-read>", "<internal-read>", topic, request);
+                data = stateRecords(call);
+            } else if (QuoteSvrClient.INTERNAL_PRICE_QUERY.equals(topic)) {
+                RequestValidator.allowOnlyFields(request, "requestId");
+                List<String> securities = quotes.values().stream().map(quote -> quote.getString("securityId"))
+                        .filter(Objects::nonNull).distinct().toList();
+                data = views.feed(true, securities);
+            } else {
+                throw ApiException.forField("1003", "FORBIDDEN", "Only internal synchronization reads are allowed", null);
+            }
+            return ApiResponse.success(requestId, data);
+        } catch (ApiException error) {
+            return ApiResponse.failure(requestId, error);
+        } catch (Exception error) {
+            System.err.println("Internal synchronization failed: " + topic + " (" + error.getClass().getSimpleName() + ")");
+            return ApiResponse.failure(requestId,
+                    ApiException.forField("1099", "INTERNAL_ERROR", "Internal synchronization failed", null));
+        }
+    }
+
+    Object state(Call call) {
+        internal(call);
+        return stateRecords(call);
+    }
+
+    private Object stateRecords(Call call) {
+        if (call.request.getString("cursor") != null) {
+            JSONObject data = (JSONObject) continuePage(call);
+            finishState(data);
+            return data;
+        }
+        List<JSONObject> entries = new ArrayList<>();
+        quotes.values().forEach(quote -> entries.add(JsonUtils.object("collection", "quotes", "record", quote)));
+        settings.values().forEach(setting -> entries.add(JsonUtils.object("collection",
+                setting.containsKey("watchlistId") ? "watchlists" : "filterGroups", "record", setting)));
+        JSONObject position = JsonUtils.object("epoch", store.epoch, "sequence", Long.toString(lastSequence));
+        Cursor cursor = new Cursor(call.user, call.session, call.topic, "entries",
+                entries.stream().map(JsonUtils::deepCopy).toList(), 0, limit(call.request, 1000),
+                System.currentTimeMillis() + 120000, position);
+        JSONObject data = (JSONObject) pageResult(cursor);
+        finishState(data);
+        return data;
+    }
     void finishState(JSONObject d){JSONObject records=JsonUtils.object("quotes",JsonUtils.array(),"watchlists",JsonUtils.array(),"filterGroups",JsonUtils.array());for(Object x:(List<?>)d.remove("entries")){JSONObject e=(JSONObject)x;records.getJSONArray(e.getString("collection")).add(e.get("record"));}d.put("records",records);d.put("done",d.get("nextCursor")==null);}
     Object events(Call c)throws Exception{internal(c);String epoch=RequestValidator.requireString(c.request,"epoch");long after=Long.parseLong(RequestValidator.requireString(c.request,"afterSequence"));if(!epoch.equals(store.epoch)||after<0||after>lastSequence)throw ApiException.forField("1007","RESET_REQUIRED","Event position invalid",null);int n=limit(c.request,1000);List<JSONObject> es=store.rows("SELECT payload FROM events WHERE sequence>? ORDER BY sequence LIMIT ?",after,n);long next=es.isEmpty()?after:es.get(es.size()-1).getLongValue("sequence");return JsonUtils.object("epoch",epoch,"events",es,"nextSequence",Long.toString(next),"seenSequence",Long.toString(lastSequence),"hasMore",next<lastSequence);}
     void internal(Call c){if(!access.internal(c.user))throw ApiException.forField("1003","FORBIDDEN","Internal service identity required",null);}
