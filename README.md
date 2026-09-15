@@ -27,6 +27,8 @@ mvn -B -ntp -f iteration1/pom.xml clean verify
 
 详细步骤见 [Maven / Jenkins 构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。[Jenkinsfile](iteration1/Jenkinsfile) 构建 4 个 Java 模块并归档 JAR 与部署 ZIP；Maven 产物位于各模块的 `target-maven`。
 
+内网 STC Maven 环境使用独立入口 `mvn -f iteration1/pom_stc.xml clean verify`，包含 Common、QuoteSvr、NotificationSvr 和 GW，输出到各模块 `target-stc`。原有 `pom.xml` 保留供本机兼容构建使用。详见 [STC Maven 构建](iteration1/docs/maven-stc.zh-CN.md)。
+
 C# 原型与调试器要求 Windows、.NET SDK 和 .NET Framework 4.7.2 开发工具：
 
 ```powershell
