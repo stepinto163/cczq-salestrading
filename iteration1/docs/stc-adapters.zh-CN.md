@@ -62,6 +62,10 @@ STC 分批接口没有跨表一致性版本，当前只能保证本机不发布�
 
 ### 启动与接口故障定位
 
+启动时 `ServiceConfiguration` 输出四行诊断：实际工作目录、`quote.properties` 与 `adapter.properties` 的绝对路径、生效的身份/基础数据模式与债券列表数量，以及 `StcBaseDataClient` 实际加载的 JAR/类目录（`loadedFrom`）。标识为 `diagnostics=stc-base-config-v2`。不打印数据库密码或服务账号密码。
+
+如果仍报 `topic=querySecurity ... configured bond`，先检查 `base.loadMode`：`subset` 表示合并后的 `base.securityIds` 仍非空；配置先加载数据库文件，再加载 adapter 文件，删除或注释 adapter 中的键不会清除数据库文件中的同名值，明确写 `base.securityIds=` 才会覆盖。`adapter.properties=<not configured>` 表示未加载单独适配配置。若没有新诊断标识，或 `loadedFrom` 指向旧 JAR，检查 IntelliJ 的运行模块及依赖类路径，不要继续反复修改无效配置。
+
 `QuoteSvr READY` 只表示业务框架已启动，不代表异步基础数据缓存已就绪。需要看到 `BaseSvr reference cache ready` 才表示本轮数据加载成功。`LoginSimulatorHandler` 出现在处理器注册日志也不代表正在使用模拟身份适配器。
 
 真实 `BondQueryHandler`、`ChinaBondQueryHandler` 返回字段为大写 `Datas`。旧适配器错误地读取小写 `datas`，会把成功回复误报为基础数据不可用；已改为优先读取 `Datas`，兼容旧小写回复，测试样例也改用真实大写字段。

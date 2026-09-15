@@ -8,7 +8,6 @@ import sc.app.stc.net.NetClientResource;
 import ats.bbox.framework.LifecycleException;
 import ats.bbox.framework.resource.ResourceAdapter;
 import com.alibaba.fastjson2.*;
-import java.nio.file.*;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -23,16 +22,8 @@ public final class QuoteResource extends ResourceAdapter {
     @Override
     public void init() throws LifecycleException {
         try {
-            configuration = new Properties();
-            try (var reader = Files.newBufferedReader(Path.of(getConfig().getString("quote.properties")))) {
-                configuration.load(reader);
-            }
-            String adapterFile = getConfig().getString("adapter.properties", "");
-            if (!adapterFile.isBlank()) {
-                try (var reader = Files.newBufferedReader(Path.of(adapterFile))) {
-                    configuration.load(reader);
-                }
-            }
+            configuration = ServiceConfiguration.load("QuoteSvr", getConfig().getString("quote.properties"),
+                    getConfig().getString("adapter.properties", ""));
             store = new PgStore(configuration);
             super.init();
         } catch (Exception error) {

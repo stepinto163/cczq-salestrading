@@ -14,11 +14,10 @@ import ficc.common.client.QuoteSvrClient;
 import ficc.common.client.AdapterFactory;
 import ficc.common.client.AccessPolicy;
 import ficc.common.ReferenceData;
+import ficc.common.ServiceConfiguration;
 import sc.app.stc.net.NetClientResource;
 import sc.app.stc.net.NetClientWrapper;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -55,16 +54,8 @@ public final class NotificationResource extends ResourceAdapter {
     @Override
     public void init() throws LifecycleException {
         try {
-            configuration = new Properties();
-            try (var reader = Files.newBufferedReader(Path.of(getConfig().getString("quote.properties")))) {
-                configuration.load(reader);
-            }
-            String adapterFile = getConfig().getString("adapter.properties", "");
-            if (!adapterFile.isBlank()) {
-                try (var reader = Files.newBufferedReader(Path.of(adapterFile))) {
-                    configuration.load(reader);
-                }
-            }
+            configuration = ServiceConfiguration.load("NotificationSvr",
+                    getConfig().getString("quote.properties"), getConfig().getString("adapter.properties", ""));
             store = new JdbcStore(configuration, "notification_");
             super.init();
         } catch (Exception error) {
