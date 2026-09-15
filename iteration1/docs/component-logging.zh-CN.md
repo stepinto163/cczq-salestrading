@@ -41,6 +41,8 @@ iteration1/cczq-app-salestrading-notificationsvr/control/NotificationSvr/log4j.i
 
 搜索 `"component":"CRM"` 即可看到实际 `mode`、实现类、数据库地址/schema 以及初始化结果。`empty` 或 `simulator` 模式也会明确输出，不再依靠是否出现某条 PostgreSQL 专用提示猜测配置。
 
+配置加载使用 `mode=single-file`：只读取 `quote.properties` 指定的文件。数据库、登录、债券资料和 CRM 设置均在其中，日志打印唯一配置路径。旧 `adapter.properties` 入口尚未移除时，配置步骤会报 FAILED 并提示迁移，不再执行覆盖。
+
 CRM 查询运行期失败保留 SQLException 为 cause；若发生在启动阶段，统一失败日志显示该原因链。`INITIALIZED` 后断网不属于初始化异常，应查看后续请求和连接日志，不能据启动成功推断一直在线。
 
 ## 验证

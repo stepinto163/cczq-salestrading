@@ -52,7 +52,7 @@ QuoteSvr 自身仍配置实际 `127.0.0.1:18680`，NotificationSvr 自身为 `12
 ## 3．身份与订阅边界
 
 - 真实 LoginSvr 暂未启动；原来的模拟登录仍由 QuoteSvr 承载。因此调用方 `SERVER.LoginSvr.ServiceName=QuoteSvr`，发现的是 QuoteSvr 节点，不是一个新增 LoginSvr 进程。
-- `SimulatorLoginSvrClient` 实现 `LoginSessionClient`，把模拟登录和用户解析从 NotificationResource 中分离。模拟账号现通过 `adapter.properties` 指向的配置文件设置，业务资源没有固定地址或账号。
+- `SimulatorLoginSvrClient` 实现 `LoginSessionClient`，把模拟登录和用户解析从 NotificationResource 中分离。相关设置与其他适配器设置一起放在 `quote.properties` 指定的文件，业务资源没有固定地址或账号。
 - `QuoteSvrClient` 使用实例化的 `NetClientWrapper` 调用，显式传入 sessionId 和 3 秒超时；不修改 `BaseApi` 全局静态 sid，不另建底层网络连接。
 - 普通报价事件和价格更新分别订阅。当前公共库 `GwClient.subscribeWithImage` 未向底层转发业务 sid，因此采用普通价格订阅加显式带 sid 的原生价格快照请求，避免绕过认证或复制错误实现。
 - STC 管理网络恢复；NotificationResource 保留有界队列、连接代次、事件序号检测和业务状态重建。连接变化或队列溢出时进入未就绪状态，重新登录模拟服务并查询状态。

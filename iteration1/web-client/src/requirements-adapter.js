@@ -8,6 +8,7 @@ let quoteView;
 let priceView;
 let notificationView;
 let securities = new Map();
+let requestedVisibleSecurities = new Set();
 let pendingRender = false;
 let operationBusy = false;
 let signedIn = false;
@@ -30,6 +31,7 @@ function scheduleUpdate() {
 }
 
 function refreshDisplay() {
+    loadVisibleSecurities();
     quoteView.rows().forEach(quote => crm.seed(quote));
     const previousAlerts = allAlertKeys();
     const previousPending = new Set(D.quoteConfirm.map(row => row.recognitionId));
@@ -57,6 +59,36 @@ function refreshDisplay() {
     notifyNewAlerts(previousAlerts);
     const stale = [quoteView, priceView, notificationView].some(view => view.stale);
     element('pendingSyncState').textContent = stale ? '同步中断，请点击行情刷新或重新登录' : 'GW 实时同步正常';
+}
+
+async function loadSecurities(ids) {
+    const cache = securities;
+    const missing = [...new Set(ids.filter(Boolean))].filter(id => !cache.has(id));
+    for (let offset = 0; offset < missing.length; offset += 20) {
+        if (cache !== securities) return;
+        const data = await gateway.request('QuoteSvr', 'ficc.base.get', {
+            kind: 'SECURITY', ids: missing.slice(offset, offset + 20)
+        });
+        if (cache !== securities) return;
+        for (const record of data.records) cache.set(record.securityId, record);
+    }
+}
+
+function loadVisibleSecurities() {
+    const ids = [...new Set([
+        ...quoteView.rows(), ...priceView.rows(), ...notificationView.rows()
+    ].map(row => row.securityId).filter(Boolean))]
+        .filter(id => !securities.has(id) && !requestedVisibleSecurities.has(id));
+    if (!ids.length) return;
+    const cache = securities;
+    ids.forEach(id => requestedVisibleSecurities.add(id));
+    loadSecurities(ids).catch(error => {
+        if (cache === securities && signedIn) {
+            showToast('error', `债券资料加载失败，暂显示债券代码：${error.message}`);
+        }
+    }).finally(() => {
+        if (cache === securities) scheduleUpdate();
+    });
 }
 
 rebuildBoardProjections = function () {
@@ -121,10 +153,10 @@ doLogin = async function () {
     element('loginError').textContent = '';
     try {
         resetAccountState();
+        securities = new Map();
+        requestedVisibleSecurities = new Set();
         const username = element('loginUser').value.trim();
         const login = await gateway.connect(username, element('loginPass').value);
-        const base = await gateway.request('QuoteSvr', 'ficc.base.query', { kind: 'SECURITY' });
-        securities = new Map(base.records.map(row => [row.securityId, row]));
         const callbacks = { onChange: scheduleUpdate, onStale: message => showToast('error', message) };
         quoteView = new QuoteClient(gateway, callbacks);
         priceView = new PriceClient(gateway, callbacks);
@@ -155,6 +187,8 @@ element('loginBtn').onclick = doLogin;
 
 doLogout = function (expired) {
     crm.clear();
+    securities = new Map();
+    requestedVisibleSecurities = new Set();
     signedIn = false;
     gateway.close();
     resetAccountState();
@@ -169,16 +203,22 @@ doLogout = function (expired) {
 fillPreciseExample = function () {
     element('preciseInput').value = 'Bid 2.5000 250001.IB 1000 T+0';
 };
-doPreciseIdentify = function () {
+doPreciseIdentify = async function () {
     try {
         const lines = element('preciseInput').value.trim().split(/\r?\n/).filter(Boolean);
         if (!lines.length || lines.length > 5) throw new Error('首轮请输入 1 至 5 行固定格式：Bid 2.5000 250001.IB 1000 T+0');
-        const drafts = lines.map(line => {
+        const parsed = lines.map(line => {
             if (!/^(Bid|Ofr)\s+\d+(\.\d{1,4})?\s+\d+\.(IB|SH|SZ)\s+\d+(\.\d+)?\s+T\+[01]$/i.test(line)) {
                 throw new Error('识别服务尚未接入；首轮仅支持“示例填充”的固定格式');
             }
             const row = parseQuoteLine(line);
             row.vol = line.split(/\s+/)[3];
+            return row;
+        });
+        const cache = securities;
+        await loadSecurities(parsed.map(row => row.c));
+        if (!signedIn || cache !== securities) return;
+        const drafts = parsed.map(row => {
             const security = securities.get(row.c);
             if (!security) throw new Error(`基础资料未找到 ${row.c}`);
             return { ...row, n: security.securityName, d: row.d.toLowerCase() === 'bid' ? 'Bid' : 'Ofr',
@@ -186,6 +226,7 @@ doPreciseIdentify = function () {
                 recognitionId: crypto.randomUUID(), quoteAction: 'NEW', quoteType: '新增', inst: '', tr: '' };
         });
         D.preciseData = drafts;
+        scheduleUpdate();
         preciseSelected = new Set(drafts.map((row, index) => index));
         renderPreciseTable();
         updatePreciseSelectedCount();

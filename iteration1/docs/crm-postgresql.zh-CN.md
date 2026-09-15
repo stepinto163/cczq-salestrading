@@ -12,7 +12,7 @@ ID 均为字符串。只查询 `deleted=false` 的机构、联系人；所属机
 
 ## 配置与本机数据
 
-将 [配置模板](../config/crm.postgresql.example.properties) 中的 `crm.*` 合并到部署已有的 adapter properties 文件，保留原有 LoginSvr、BaseSvr 设置。也可以放入现有 `quote.properties` 指向的文件；adapter 文件中的同名项优先。两个服务都使用该配置加载方式。
+将 [配置模板](../config/crm.postgresql.example.properties) 中的 `crm.*` 写入 `quote.properties` 指向的同一份文件，与 `db.*`、`identity.*`、`base.*` 放在一起，同名键只保留一份。每个服务只加载这一份配置，没有适配器覆盖文件。旧部署需将原适配文件的有效设置迁入，然后删除 `resourceCfg.ini` 中的 `adapter.properties` 项。
 
 ```properties
 crm.mode=postgresql

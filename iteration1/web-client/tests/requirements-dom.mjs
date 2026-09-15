@@ -21,7 +21,21 @@ consoleBridge.on('jsdomError', error => {
 });
 const dom = new JSDOM(html, { url: 'http://127.0.0.1:8088', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: consoleBridge });
 const context = dom.getInternalVMContext();
-Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient, QuoteClient, PriceClient, NotificationClient, CrmClient, ...mapping });
+const securityRequests = [];
+class ExactSecurityGwClient extends GwClient {
+    async request(server, topic, payload) {
+        if (payload?.kind === 'SECURITY') {
+            securityRequests.push({ topic, payload });
+            if (topic === 'ficc.base.query') {
+                throw new Error('1009: Bond search exceeded its time budget; use an exact securityId');
+            }
+            assert.equal(topic, 'ficc.base.get');
+            assert.ok(payload.ids.length > 0 && payload.ids.length <= 20);
+        }
+        return super.request(server, topic, payload);
+    }
+}
+Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient: ExactSecurityGwClient, QuoteClient, PriceClient, NotificationClient, CrmClient, ...mapping });
 let createdId;
 let failed;
 const watchdog = setTimeout(() => {
@@ -51,10 +65,13 @@ try {
     dom.window.document.getElementById('loginPass').value = 'trader1';
     await dom.window.doLogin();
     check('original login uses GW', dom.window.document.getElementById('app').style.display === 'flex');
+    check('login does not depend on a broad bond search', !securityRequests.some(request => request.topic === 'ficc.base.query'));
     check('original quote tables and right panel exist', Boolean(dom.window.document.getElementById('quoteTableWrap') && dom.window.document.getElementById('instQuoteBody')));
     const previous = new Set(data().quoteConfirm.map(row => row.recognitionId));
     dom.window.document.getElementById('preciseInput').value = 'Bid 0.0001 250001.IB 1 T+0';
-    dom.window.doPreciseIdentify();
+    await dom.window.doPreciseIdentify();
+    check('entered bond is resolved by exact ID', securityRequests.some(request =>
+        request.topic === 'ficc.base.get' && request.payload.ids.includes('250001.IB')));
     check('original precise table renders the draft', data().preciseData.length === 1 && dom.window.document.getElementById('preciseTableWrap').textContent.includes('示例国债'));
     await dom.window.doConfirmPrecise();
     await waitFor('original confirmation table receives pending quote', () => data().quoteConfirm.some(row => !previous.has(row.recognitionId)));

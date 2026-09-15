@@ -4,12 +4,10 @@ import ficc.common.client.StcBaseDataClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-/** Loads deployment properties and reports only the settings needed to diagnose adapter selection. */
+/** Loads one deployment properties file. Adapter settings are in that same file. */
 public final class ServiceConfiguration {
     private ServiceConfiguration() {}
 
@@ -17,9 +15,9 @@ public final class ServiceConfiguration {
         Properties context = new Properties();
         context.setProperty("diagnostics.serviceName", serviceName);
         String files = "workingDirectory=" + Path.of("").toAbsolutePath().normalize()
-                + ", quote.properties=" + databaseFile + ", adapter.properties=" + adapterFile;
+                + ", quote.properties=" + databaseFile;
         try {
-            return ComponentLog.initialize(context, "CONFIGURATION", "files", "ServiceConfiguration", files,
+            return ComponentLog.initialize(context, "CONFIGURATION", "single-file", "ServiceConfiguration", files,
                     () -> load(serviceName, databaseFile, adapterFile, org.apache.log4j.Logger.getLogger("ficc.startup")::info));
         } catch (IOException error) {
             throw error;
@@ -32,24 +30,20 @@ public final class ServiceConfiguration {
             Consumer<String> log) throws IOException {
         Properties configuration = new Properties();
         Path databasePath = Path.of(databaseFile).toAbsolutePath().normalize();
-        loadFile(configuration, databasePath);
-        Path adapterPath = null;
+        // Reject the old override explicitly so an upgrade cannot silently switch STC to simulator mode.
         if (adapterFile != null && !adapterFile.isBlank()) {
-            adapterPath = Path.of(adapterFile).toAbsolutePath().normalize();
-            loadFile(configuration, adapterPath);
+            throw new IOException("adapter.properties is no longer supported. Move its identity.*, base.* and crm.* settings into "
+                    + databasePath + " and remove adapter.properties from resourceCfg.ini. Only quote.properties is loaded.");
         }
+        loadFile(configuration, databasePath);
         log.accept(serviceName + " configuration: workingDirectory=" + Path.of("").toAbsolutePath().normalize());
-        log.accept(serviceName + " configuration: quote.properties=" + databasePath
-                + ", adapter.properties=" + (adapterPath == null ? "<not configured>" : adapterPath));
-        List<String> securityIds = Arrays.stream(configuration.getProperty("base.securityIds", "").split(","))
-                .map(String::trim).filter(value -> !value.isEmpty()).distinct().toList();
+        log.accept(serviceName + " configuration: quote.properties=" + databasePath);
         String baseMode = configuration.getProperty("base.mode", "simulator");
         String loadMode = "stc".equals(baseMode) ? "stc-client-on-demand" : "simulator";
         // Do not dump properties: the same files can contain database and service credentials.
         log.accept(serviceName + " adapters: identity.mode=" + configuration.getProperty("identity.mode", "simulator")
                 + ", base.mode=" + baseMode + ", base.loadMode=" + loadMode
-                + ", crm.mode=" + configuration.getProperty("crm.mode", "simulator")
-                + ", securityIdsCount=" + securityIds.size() + ", securityIdsSample=" + securityIds.stream().limit(5).toList());
+                + ", crm.mode=" + configuration.getProperty("crm.mode", "simulator"));
         var source = StcBaseDataClient.class.getProtectionDomain().getCodeSource();
         log.accept(serviceName + " base adapter: diagnostics=stc-base-config-v2, loadedFrom="
                 + (source == null ? "<unavailable>" : source.getLocation()));

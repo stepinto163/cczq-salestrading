@@ -28,6 +28,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/start-web
 
 机构、联系人输入框已接入 CRM：输入名称或代码，从原下拉提示中选定机构，再查询联系人；选项包含 ID，用于区分同名记录。手工名称可先保存为待确认报价，确认前须匹配 ID。配置与样例见 [CRM PostgreSQL 接入](../docs/crm-postgresql.zh-CN.md)。
 
+登录不再调用无条件的 `ficc.base.query(kind=SECURITY)` 扫描全市场。已显示报价、行情和提醒涉及的债券，通过 `ficc.base.get(kind=SECURITY, ids=[...])` 在后台按需读取，每次最多 20 个代码。加载失败提示资料错误并暂显示代码，不退出登录，也不在每次渲染时反复重试；重新登录可重新加载。精确报价按用户输入的代码查询基础资料后再生成待提交记录，查询失败或代码不存在时明确报错。
+
 ## 接入边界
 
 业务流为浏览器 → GW WebSocket/DPS → QuoteSvr / NotificationSvr。HTTP :8088 仅提供静态文件。Quote、Price、Notification 使用各自接口、主题和缓存，行情不再由浏览器从 Quote 集合计算；旧 SSE 和轮询入口停用。
