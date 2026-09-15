@@ -28,54 +28,28 @@
 
 ### BaseSvr 基础数据接入
 
-`base.mode=stc` 且 `base.securityIds` 留空或不配置时，默认加载 BaseSvr 中银行间、上交所、深交所的债券基础数据，不再要求人工列出债券代码。保留已到期债券，供历史报价补充最新属性。数据范围仍取决于上游 BaseSvr 的数据覆盖。
+`base.mode=stc` 现在直接使用部署环境的 `sc.app.stc.utils.BaseSvrClient`，设置 `isSubOrReq=R`，由其委托当前工作的 `BaseSvr2Client`。旧 `StcBaseUniverseLoader` 和分页加载路径已删除。
 
-正常模式复用 STC 的 `NetClientWrapper` 服务发现与消息调用，以及 BaseSvr 已有批量接口；并非直接把 `BaseSvrClient` 的静态订阅缓存搬入本项目。
+- 报价校验、`ficc.base.get`、历史报价补充属性：按 securityId 调用 `getBondInfo`；首次访问由 STC 查询 BaseSvr，后续使用 STC 缓存。
+- 原生接口由 STC 实现调用：债券 `querySecurity`、估值 `queryChianSecurity`；发行人使用 `BaseSvr2Client.getInfoTableVal("p_issuer_info", issuerId)`。
+- 缓存、断线清理、基础资料更新通知由原有 STC 客户端负责。FICC 只映射业务字段，不再自行周期性下载三张表。
+- `ficc.base.query` 的完整代码查询（例如 `240210.IB`）同样执行按需查询，不要求债券预先存在本地缓存。
+- 名称、部分代码或空条件检索由我们自己的适配器扩展：调用 STC 前端使用的 `stc.base.search`，按页读取 BaseSvr 债券字典，再匹配代码、简称和拼音。无需预先访问债券，也不修改上游 `BaseSvrClient` / `BaseSvr2Client` 源码。选择列表不逐条查询发行人和估值，选中后的完整代码查询再补充属性。
+- 名称检索每页 500 条，翻页前检查 3 秒预算；单次请求超时由 `base.requestTimeoutMillis` 设置。字典不完整、页总数变化或超时会返回错误，不会伪装成无匹配；超过 10,000 个匹配时要求缩小条件。大字典冷查询的延迟尚需 QA 验证，可优先使用完整代码。
+- `base.securityIds`、分页和刷新周期配置已不再控制此路径。遗留非空 securityIds 会提示已忽略，不会成为报价白名单。
 
-| STC 请求主题 | 请求示例 | 返回及用途 |
-|---|---|---|
-| `stc.query.page.securityInfo` | `{"pageNum":1,"pageSize":500,"onlyValid":false}` | `Code/Total/Datas`，债券、债项评级、主体评级、条款 |
-| `stc.query.page.issuerInfo` | `{"pageNum":1,"pageSize":500,"onlyValid":false}` | `Code/Datas`，发行人、地域、发行人类型 |
-| `stc.query.page.cdcValuation` | `{"pageNum":1,"pageSize":500,"onlyValid":false}` | `Code/Datas`，中债日估值 |
+启动日志应显示 `base.loadMode=stc-client-on-demand`，随后显示实际 `BaseSvr2Client` 所在 JAR；不会再出现 `cache ready: mode=all, securities=0` 这种误导性全量就绪提示。每次 STC 方法调用记录方法、债券参数、结果是否存在、耗时；DEBUG 记录返回对象，配置见 [DPS 日志](dps-logging.zh-CN.md)。
 
-这里的分批获取仅用于服务间基础数据同步，不涉及前端页面交互。每次只发一个请求；没有 `Total` 的接口读到不足一批为止。有总数时校验总数、实际条数；重复债券/发行人主键、重复整批、条数超限或加载超时均中止本轮，不发布截断数据。默认每批 500 条、每表保护上限 500000 条、整轮请求加载期限 300 秒；上限可通过配置调整，不能把保护上限当成正常数据截断条件。单个请求仍受 `base.requestTimeoutMillis` 限制。
+当前笔记本兼容运行库过旧，不含 BaseSvr2Client。桥接类通过运行时绑定调用 QA 的现有 STC 类，以便模拟模式仍能在本机编译、运行。若错误地用旧兼容运行库启动 STC 模式，会明确启动失败，不再退回自写协议。该桥接没有重新实现 STC 网络协议。
 
-单后台线程完成一轮后整体替换本地缓存；报价处理和筛选只读缓存，不按每条报价发远程请求。正常模式默认每小时刷新；收到 `stc.base.clear`、`stc.base.manualClear.**`、`stc.base.loadBondsInfo`、债券/中债更新通知或连接变化后使缓存失效，由后台线程重新加载。后台检查间隔一秒，失败后等待 30 秒重试。首次未就绪、已失效或后台刷新失败时返回不可用错误，不回退到模拟数据。
+真实数据返回空且 STC 将债券记入 failedBonds 时，才视为未找到；未完成查询或离线报 NOT_READY。正常数据仍通过 StcBaseMapper 映射评级、发行人、条款及 STC 返回的估值，不伪造参考数据。现有业务视图尚未实现基础数据变化单独触发全量重算，验证评级变化时应重新查询。
 
-STC 分批接口没有跨表一致性版本，当前只能保证本机不发布半套缓存，并检测部分上游变动（总数变化、重复主键及刷新通知），不能宣称取得了上游同一时刻的数据库快照。已打开业务视图尚未实现基础数据变化单独触发全量重算，验证评级/估值变化时应重新查询。
-
-分类直接复用 `sc.app.stc.api.base.po.TSmallView.getGoodsType()`：`2→RATE`、`1→CREDIT`，沿用实际 STC 依赖版本的字典。其他类型仍加载，保留 `bondSubtype/stcGoodsType`，`market` 留空，不擅自把存单或 ABS 归入信用债。可以用 `base.market.<securityId>` 或 `base.marketBySubtype.<子类型>` 明确覆盖。发行人类型通过 `base.issuerType.<原值>` 映射，同时保留 `sourceIssuerType`；债项评级与主体评级分别保存，不互相补值。
-
-中债批量模型为 `TCdcBondValuation`：`bond_id/listed_market` 关联债券，`valuate_date` 为实际估值日期，`val_yield/val_clean_price/remaining_year` 映射收益率、净价及剩余期限。同一债券取最新日期；同日冲突值报错，缺少日期不伪造为今天。该批量模型没有明确的行权/到期估值标识，因此 `valuationBasis` 留空。中证估值和 CalSvr 不在本轮接入范围。
-
-**从旧配置升级：删除 `base.securityIds=250001.IB`，或将值清空。** 建议同时把原来的 `base.refreshSeconds=60` 改为 `3600`，避免频繁整轮加载。成功后日志包含 `BaseSvr reference cache ready: mode=all, securities=..., issuers=..., valuations=...`。
-
-仅在有意限制联调范围时，才填写可选 `base.securityIds`（最多 1000 个）。这种子集模式继续使用以下已有单债请求；未列出的债券不加载，默认刷新间隔为 60 秒：
-
-| STC 请求主题 | 请求示例 | 读取内容 |
-|---|---|---|
-| `querySecurity` | `{"SecurityID":"250001.IB"}` | `Datas` 中的 `BondInfoView`，包括债项评级、主体评级、发行人、条款类型 |
-| `stc.base.info.query` | `{"TableName":"p_issuer_info","KeyValue":"实际发行人代码"}` | `Datas` 中的发行人名称、类型、地域 |
-| `queryChianSecurity` | `{"SecurityID":"250001.IB"}` | `Datas` 中的中债估值、估值日期与剩余期限 |
-
-保留 STC 原主题拼写 `queryChianSecurity`。债券代码按 STC 的 `CIB→IB`、`SSE→SH`、`SZE→SZ` 规则转换并校验。
-
-### 启动与接口故障定位
-
-启动时 `ServiceConfiguration` 输出四行诊断：实际工作目录、`quote.properties` 与 `adapter.properties` 的绝对路径、生效的身份/基础数据模式与债券列表数量，以及 `StcBaseDataClient` 实际加载的 JAR/类目录（`loadedFrom`）。标识为 `diagnostics=stc-base-config-v2`。不打印数据库密码或服务账号密码。
-
-如果仍报 `topic=querySecurity ... configured bond`，先检查 `base.loadMode`：`subset` 表示合并后的 `base.securityIds` 仍非空；配置先加载数据库文件，再加载 adapter 文件，删除或注释 adapter 中的键不会清除数据库文件中的同名值，明确写 `base.securityIds=` 才会覆盖。`adapter.properties=<not configured>` 表示未加载单独适配配置。若没有新诊断标识，或 `loadedFrom` 指向旧 JAR，检查 IntelliJ 的运行模块及依赖类路径，不要继续反复修改无效配置。
-
-`QuoteSvr READY` 只表示业务框架已启动，不代表异步基础数据缓存已就绪。需要看到 `BaseSvr reference cache ready` 才表示本轮数据加载成功。`LoginSimulatorHandler` 出现在处理器注册日志也不代表正在使用模拟身份适配器。
-
-真实 `BondQueryHandler`、`ChinaBondQueryHandler` 返回字段为大写 `Datas`。旧适配器错误地读取小写 `datas`，会把成功回复误报为基础数据不可用；已改为优先读取 `Datas`，兼容旧小写回复，测试样例也改用真实大写字段。
-
-错误日志现区分：`OFFLINE`（STC 客户端未在线）、`NO_REPLY`（同步调用未返回内容，不直接断言一定超时）、`INVALID_JSON/NULL_JSON`（回复无法解析）、上游 `Code` 错误、成功回复缺少 `Datas`、配置债券返回空集合，以及加载期间的基础数据失效。请求错误包含服务键、topic、耗时和超时配置，不输出密码、SID、原始请求/回复内容。若 `CONNECTION_CLOSED` 紧随调试进程停止出现，可能是正常清理；仅凭该顺序不能认定为网络故障。
+本轮本机 22 项单元/契约测试通过，两个服务构建成功。验证覆盖空缓存首次查券、不受旧清单限制、精确代码查询、名称检索、参考数据变更、离线与未找到区分。真实 QA 的 STC 类调用及远端数据仍需在目标环境验证；本机测试使用 Source 替身，不能视为 QA 已通过。
 
 ## 2．内网配置步骤
 
 1. 内网使用 `mvn -f iteration1/pom_stc.xml clean verify` 构建，部署 `target-stc` 中的服务包，参阅 [STC 构建说明](maven-stc.zh-CN.md)。本机兼容版本使用 `target-maven`，不要混用。
-2. 复制 [内网适配配置模板](../config/adapters.integration.example.properties) 为部署机本地文件，例如 `D:/services/salestrading/adapters.local.properties`。正常模式保持 `base.securityIds` 为空；按需配置字典覆盖及用户权限。
+2. 复制 [内网适配配置模板](../config/adapters.integration.example.properties) 为部署机本地文件，例如 `D:/services/salestrading/adapters.local.properties`。不再配置债券白名单；按需配置字典覆盖及用户权限。
 3. 在 QuoteSvr、NotificationSvr 各自 `control/<服务名>/resourceCfg.ini` 中设置：
 
 ```ini
@@ -139,7 +113,7 @@ crm.serverKey=SERVER.CrmSvr
 
 ## 4．验证记录
 
-真实 STC 环境可使用 C# 客户端的 **自动测试 → STC QA** 模式，选择当前 BaseSvr 适配器已加载的任意符合前置条件的债券及两个真实账号；每轮三条报价，覆盖四类提醒。配置、操作及边界见 [QA 功能自动测试](qa-autotest.zh-CN.md)。原有模拟账号测试不应直接用于 QA。
+真实 STC 环境可使用 C# 客户端的 **自动测试 → STC QA** 模式，选择 BaseSvr 支持且符合前置条件的债券及两个真实账号；每轮三条报价，覆盖四类提醒。配置、操作及边界见 [QA 功能自动测试](qa-autotest.zh-CN.md)。原有模拟账号测试不应直接用于 QA。
 
 2026-09-15 内部调用修复：本机兼容 Maven 五个模块 `verify` 通过，26 项单元/契约测试通过；独立 PostgreSQL schema 中以 5 条报价完成 50 项功能检查，包括内部读取、分批完整性、普通业务仍需登录和拒绝内部写操作。另启动两个隔离服务，均使用 `identity.mode=stc`，LoginSvr 故意指向不可用地址，基础数据使用模拟适配；NotificationSvr 通过真实 DPS 连接完成 QuoteSvr 状态及价格同步，无服务账号配置。该链路测试为零报价，25 秒期限，结束后停止测试进程并删除临时 schema。C# 平台与 API 调试器均编译通过。没有执行压力测试，也尚未连接 QA；内网 Maven/STC 实际运行仍需在 QA 验证。
 

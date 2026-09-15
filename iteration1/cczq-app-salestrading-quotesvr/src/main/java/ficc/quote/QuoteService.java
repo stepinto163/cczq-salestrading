@@ -276,7 +276,40 @@ final class QuoteService {
     void finishState(JSONObject d){JSONObject records=JsonUtils.object("quotes",JsonUtils.array(),"watchlists",JsonUtils.array(),"filterGroups",JsonUtils.array());for(Object x:(List<?>)d.remove("entries")){JSONObject e=(JSONObject)x;records.getJSONArray(e.getString("collection")).add(e.get("record"));}d.put("records",records);d.put("done",d.get("nextCursor")==null);}
     Object events(Call c)throws Exception{internal(c);String epoch=RequestValidator.requireString(c.request,"epoch");long after=Long.parseLong(RequestValidator.requireString(c.request,"afterSequence"));if(!epoch.equals(store.epoch)||after<0||after>lastSequence)throw ApiException.forField("1007","RESET_REQUIRED","Event position invalid",null);int n=limit(c.request,1000);List<JSONObject> es=store.rows("SELECT payload FROM events WHERE sequence>? ORDER BY sequence LIMIT ?",after,n);long next=es.isEmpty()?after:es.get(es.size()-1).getLongValue("sequence");return JsonUtils.object("epoch",epoch,"events",es,"nextSequence",Long.toString(next),"seenSequence",Long.toString(lastSequence),"hasMore",next<lastSequence);}
     void internal(Call c){if(!access.internal(c.user))throw ApiException.forField("1003","FORBIDDEN","Internal service identity required",null);}
-    Object reference(Call c,boolean query){String kind=RequestValidator.requireString(c.request,"kind");List<JSONObject> all=refs.records(kind,c.user);String key=switch(kind){case "SECURITY","DAILY_VALUATION"->"securityId";case "ISSUER"->"issuerId";case "CONTACT"->"contactId";default->"institutionId";};if(query){String text=JsonUtils.getStringOrDefault(c.request,"text","");return page(c,"records",all.stream().filter(x->JsonUtils.toJson(x).contains(text)).toList(),JsonUtils.object());}JSONArray ids=c.request.getJSONArray("ids");if(ids==null)throw ApiException.forField("1001","VALIDATION_FAILED","ids required","ids");List<JSONObject> records=all.stream().filter(x->ids.contains(x.getString(key))).toList();return JsonUtils.object("records",records,"missingIds",ids.stream().filter(id->records.stream().noneMatch(x->id.equals(x.getString(key)))).toList(),"referenceVersion",refs.version());}
+    Object reference(Call call, boolean query) {
+        String kind = RequestValidator.requireString(call.request, "kind");
+        String key = switch (kind) {
+            case "SECURITY", "DAILY_VALUATION" -> "securityId";
+            case "ISSUER" -> "issuerId";
+            case "CONTACT" -> "contactId";
+            default -> "institutionId";
+        };
+        if (query) {
+            String text = JsonUtils.getStringOrDefault(call.request, "text", "");
+            List<JSONObject> records = "SECURITY".equals(kind)
+                    ? refs.querySecurities(text)
+                    : refs.records(kind, call.user).stream()
+                            .filter(value -> JsonUtils.toJson(value).contains(text)).toList();
+            return page(call, "records", records, JsonUtils.object());
+        }
+        JSONArray ids = call.request.getJSONArray("ids");
+        if (ids == null) {
+            throw ApiException.forField("1001", "VALIDATION_FAILED", "ids required", "ids");
+        }
+        List<JSONObject> records;
+        if ("SECURITY".equals(kind) || "DAILY_VALUATION".equals(kind)) {
+            List<JSONObject> securities = ids.stream().map(Object::toString).distinct()
+                    .map(refs::security).filter(Objects::nonNull).toList();
+            records = "SECURITY".equals(kind) ? securities : refs.records(kind, call.user).stream()
+                    .filter(value -> ids.contains(value.getString(key))).toList();
+        } else {
+            records = refs.records(kind, call.user).stream()
+                    .filter(value -> ids.contains(value.getString(key))).toList();
+        }
+        return JsonUtils.object("records", records, "missingIds", ids.stream()
+                .filter(id -> records.stream().noneMatch(value -> id.equals(value.getString(key)))).toList(),
+                "referenceVersion", refs.version());
+    }
     Object dictionary(boolean price,JSONObject r){JSONObject d=JsonUtils.object("side",JsonUtils.array(JsonUtils.object("value","1","label","买入"),JsonUtils.object("value","2","label","卖出")),"quoteType",JsonUtils.array(JsonUtils.object("value","1","label","收益率"),JsonUtils.object("value","2","label","净价"),JsonUtils.object("value","3","label","全价")),"yieldType",JsonUtils.array(JsonUtils.object("value","1","label","到期"),JsonUtils.object("value","2","label","行权")),"settlType",JsonUtils.array(JsonUtils.object("value","1","label","T+0"),JsonUtils.object("value","2","label","T+1")),"market",JsonUtils.array(JsonUtils.object("value","RATE","label","利率"),JsonUtils.object("value","CREDIT","label","信用")));if(price)d.put("mode",JsonUtils.array(JsonUtils.object("value","BEST","label","最优"),JsonUtils.object("value","FULL","label","全部"),JsonUtils.object("value","DEPTH","label","档数")));if(r.getJSONArray("names")!=null){Set<String> names=new HashSet<>(r.getJSONArray("names").toJavaList(String.class));d.keySet().retainAll(names);}return JsonUtils.object("dictionaries",d,"filterFields",FilterEngine.catalog(price));}
     Object intake(Call c)throws Exception{return Intake.apply(this,c);}
 }

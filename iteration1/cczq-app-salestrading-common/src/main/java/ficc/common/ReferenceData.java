@@ -33,11 +33,10 @@ public final class ReferenceData implements AutoCloseable {
     }
 
     public JSONObject require(String id) {
-        Map<String, JSONObject> loaded = securities();
-        JSONObject security = loaded.get(id);
+        JSONObject security = base.security(id);
         if (security == null) {
             LOGGER.warn("Reference lookup missed: securityId=" + JsonUtils.toJson(id)
-                    + ", loadedSecurities=" + loaded.size() + ", adapter=" + base.getClass().getSimpleName());
+                    + ", adapter=" + base.getClass().getSimpleName());
             throw ApiException.forField("1001", "VALIDATION_FAILED", "Security is not in the configured reference universe", "securityId");
         }
         return security;
@@ -66,6 +65,14 @@ public final class ReferenceData implements AutoCloseable {
 
     public JSONObject institution(String userId, String institutionId) {
         return crm.institution(userId, institutionId);
+    }
+
+    public JSONObject security(String securityId) {
+        return base.security(securityId);
+    }
+
+    public List<JSONObject> querySecurities(String text) {
+        return base.querySecurities(text);
     }
 
     public JSONObject contact(String userId, String contactId) {

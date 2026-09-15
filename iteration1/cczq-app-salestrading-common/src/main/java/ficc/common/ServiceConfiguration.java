@@ -33,7 +33,7 @@ public final class ServiceConfiguration {
         List<String> securityIds = Arrays.stream(configuration.getProperty("base.securityIds", "").split(","))
                 .map(String::trim).filter(value -> !value.isEmpty()).distinct().toList();
         String baseMode = configuration.getProperty("base.mode", "simulator");
-        String loadMode = "stc".equals(baseMode) ? (securityIds.isEmpty() ? "all" : "subset") : "simulator";
+        String loadMode = "stc".equals(baseMode) ? "stc-client-on-demand" : "simulator";
         // Do not dump properties: the same files can contain database and service credentials.
         log.accept(serviceName + " adapters: identity.mode=" + configuration.getProperty("identity.mode", "simulator")
                 + ", base.mode=" + baseMode + ", base.loadMode=" + loadMode

@@ -22,7 +22,16 @@ final class LocalSearchSvrClient implements SearchSvrClient {
         LocalDate from=LocalDate.parse(RequestValidator.requireString(query,"fromDate")),to=LocalDate.parse(RequestValidator.requireString(query,"toDate"));if(from.isAfter(to)||java.time.temporal.ChronoUnit.DAYS.between(from,to)>366)throw ApiException.forField("1001","VALIDATION_FAILED","Invalid date range",null);
         JSONObject f=query.getJSONObject("filter");FilterEngine.validate(f);
         List<JSONObject> found=store.rows("SELECT payload FROM history WHERE operation_time>=?::date AND operation_time<(?::date+interval '1 day') ORDER BY operation_time",from.toString(),to.toString());
-        Map<String,JSONObject> daily=new LinkedHashMap<>();for(JSONObject h:found){JSONObject q=h.getJSONObject("after");if(q==null||!access.owns(user,q.getString("ownerUserId")))continue;String date=h.getString("operationTime").substring(0,10);daily.put(date+q.getString("quoteId"),JsonUtils.object("tradeDate",date,"quote",q,"reference",refs.securities().get(q.getString("securityId"))));}
+        Map<String, JSONObject> daily = new LinkedHashMap<>();
+        for (JSONObject history : found) {
+            JSONObject quote = history.getJSONObject("after");
+            if (quote == null || !access.owns(user, quote.getString("ownerUserId"))) {
+                continue;
+            }
+            String date = history.getString("operationTime").substring(0, 10);
+            daily.put(date + quote.getString("quoteId"), JsonUtils.object("tradeDate", date,
+                    "quote", quote, "reference", refs.security(quote.getString("securityId"))));
+        }
         return daily.values().stream().filter(r->matcher.matches(user,r.getJSONObject("quote"),f)).map(JsonUtils::deepCopy).toList();
     }
 }

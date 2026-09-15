@@ -1,244 +1,185 @@
 package ficc.common.client;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
 import ficc.common.ApiException;
 import ficc.common.JsonUtils;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
+import sc.app.stc.net.NetClientWrapper;
 
-/** Cache STC reference data outside query and quote-processing threads. */
+/** Maps STC objects; STC owns loading, caching and invalidation. */
 public final class StcBaseDataClient implements BaseDataClient {
-    private static final Logger LOGGER = Logger.getLogger(StcBaseDataClient.class);
-    private final StcTransport transport;
-    private final StcBaseMapper mapper;
-    private final List<String> securityIds;
-    private final int refreshSeconds;
-    private final StcBaseUniverseLoader universeLoader;
-    private volatile Snapshot snapshot;
-    private volatile long generation;
-    private volatile boolean invalidated = true;
-    private ScheduledExecutorService worker;
-    private volatile long nextRefreshNanos;
-    private record Snapshot(Map<String, JSONObject> securities, List<JSONObject> issuers,
-            List<JSONObject> valuations, String version) {}
-
-    public StcBaseDataClient(StcTransport transport, Properties configuration) {
-        this.transport = transport;
-        mapper = new StcBaseMapper(configuration);
-        securityIds = Arrays.stream(configuration.getProperty("base.securityIds", "").split(","))
-                .map(String::trim).filter(value -> !value.isEmpty()).distinct().toList();
-        if (securityIds.size() > 1000) {
-            throw new IllegalArgumentException("Optional base.securityIds test subset cannot exceed 1000 IDs");
-        }
-        universeLoader = securityIds.isEmpty() ? new StcBaseUniverseLoader(transport, configuration) : null;
-        refreshSeconds = Integer.parseInt(configuration.getProperty("base.refreshSeconds",
-                securityIds.isEmpty() ? "3600" : "60"));
-        if (refreshSeconds < 10) {
-            throw new IllegalArgumentException("base.refreshSeconds must be at least 10");
-        }
-        transport.connectionChanged(this::invalidate);
-        transport.subscribe("stc.base.clear", event -> invalidate());
-        transport.subscribe("stc.base.manualClear.**", event -> invalidate());
-        transport.subscribe("stc.base.loadBondsInfo", event -> invalidate());
-        transport.subscribe("stc.base.bondsinfo", event -> invalidate());
-        transport.subscribe("stc.base.chianBond", event -> invalidate());
+    interface Source {
+        void start() throws Exception;
+        boolean online();
+        JSONObject bond(String securityId);
+        JSONObject issuer(String issuerId);
+        JSONObject valuation(String securityId);
+        JSONObject searchPage(int page, int pageSize);
     }
 
-    private synchronized void invalidate() {
-        LOGGER.info("BaseSvr reference cache invalidated; generation=" + (generation + 1));
-        generation++;
-        invalidated = true;
-        nextRefreshNanos = 0;
+    private static final Logger LOGGER = Logger.getLogger(StcBaseDataClient.class);
+    private final Source source;
+    private final StcBaseMapper mapper;
+    private final Map<String, JSONObject> mappedSecurities = new ConcurrentHashMap<>();
+    private final Map<String, JSONObject> mappedIssuers = new ConcurrentHashMap<>();
+    private final Map<String, JSONObject> mappedValuations = new ConcurrentHashMap<>();
+
+    public StcBaseDataClient(NetClientWrapper network, Properties configuration) {
+        this(new StcBaseSvrClientBridge(network, configuration), configuration);
+    }
+
+    StcBaseDataClient(Source source, Properties configuration) {
+        this.source = source;
+        mapper = new StcBaseMapper(configuration);
+        if (!configuration.getProperty("base.securityIds", "").isBlank()) {
+            LOGGER.warn("base.securityIds is obsolete and ignored; STC bond lookup is unrestricted");
+        }
     }
 
     @Override
-    public synchronized void start() {
-        if (worker != null) {
-            throw new IllegalStateException("BaseSvr reference worker is already started");
-        }
-        worker = Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, "stc-reference-refresh");
-            thread.setDaemon(true);
-            return thread;
-        });
-        worker.scheduleWithFixedDelay(() -> {
-            if (System.nanoTime() < nextRefreshNanos) {
-                return;
-            }
-            try {
-                refresh();
-            } catch (Exception error) {
-                invalidated = true;
-                nextRefreshNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-                LOGGER.warn("BaseSvr reference refresh unavailable; retrySeconds=30: " + error.getMessage());
-            }
-        }, 0, 1, TimeUnit.SECONDS);
+    public void start() throws Exception {
+        source.start();
+        LOGGER.info("BaseSvr adapter initialized: BaseSvrClient request mode -> BaseSvr2Client; lookup=on-demand");
     }
 
-    public void refresh() {
-        long started = System.nanoTime();
-        LOGGER.info("BaseSvr reference refresh started: mode=" + (universeLoader == null ? "subset" : "all")
-                + ", configuredSecurityIds=" + securityIds);
-        long startedGeneration = generation;
-        Map<String, JSONObject> securities = new LinkedHashMap<>();
-        Map<String, JSONObject> issuers = new LinkedHashMap<>();
-        Map<String, JSONObject> rawIssuers = new LinkedHashMap<>();
-        java.util.ArrayList<JSONObject> valuations = new java.util.ArrayList<>();
-        String version = "STC-" + java.time.Instant.now();
-        if (universeLoader != null) {
-            StcBaseUniverseLoader.Universe universe = universeLoader.load(() -> checkGeneration(startedGeneration));
-            for (Map.Entry<String, JSONObject> entry : universe.bonds().entrySet()) {
-                JSONObject bond = entry.getValue();
-                String issuerId = StcBaseMapper.text(bond, "Issuer_Code");
-                addSecurity(entry.getKey(), bond, universe.issuers().get(issuerId),
-                        universe.valuations().get(entry.getKey()), version, securities, issuers, valuations);
-            }
-        } else {
-            loadSubset(startedGeneration, version, securities, issuers, rawIssuers, valuations);
-        }
-        synchronized (this) {
-            checkGeneration(startedGeneration);
-            snapshot = new Snapshot(java.util.Collections.unmodifiableMap(securities),
-                    List.copyOf(issuers.values()), List.copyOf(valuations), version);
-            invalidated = false;
-            nextRefreshNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(refreshSeconds);
-        }
-        LOGGER.info("BaseSvr reference cache ready: mode=" + (universeLoader == null ? "subset" : "all")
-                + ", securities=" + securities.size() + ", issuers=" + issuers.size()
-                + ", valuations=" + valuations.size() + ", referenceVersion=" + version
-                + ", elapsedMillis=" + (System.nanoTime() - started) / 1_000_000);
-    }
-
-    private void loadSubset(long startedGeneration, String version, Map<String, JSONObject> securities,
-            Map<String, JSONObject> issuers, Map<String, JSONObject> rawIssuers, List<JSONObject> valuations) {
-        for (String securityId : securityIds) {
-            checkGeneration(startedGeneration);
-            JSONObject request = JsonUtils.object("SecurityID", securityId);
-            JSONObject bond = first(transport.request("querySecurity", null, request), "querySecurity", true);
-            String issuerId = StcBaseMapper.text(bond, "Issuer_Code");
-            JSONObject issuer = new JSONObject();
-            if (issuerId != null) {
-                issuer = rawIssuers.computeIfAbsent(issuerId, id -> {
-                    JSONObject reply = transport.request("stc.base.info.query", null,
-                            JsonUtils.object("TableName", "p_issuer_info", "KeyValue", id));
-                    if (reply.isEmpty()) {
-                        return new JSONObject();
-                    }
-                    success(reply, "stc.base.info.query");
-                    JSONObject data = reply.getJSONObject("Datas");
-                    return data == null ? new JSONObject() : data;
-                });
-            }
-            JSONObject valuation = first(transport.request("queryChianSecurity", null, request),
-                    "queryChianSecurity", false);
-            addSecurity(securityId, bond, issuer, valuation, version, securities, issuers, valuations);
+    private void ensureOnline() {
+        if (!source.online()) {
+            throw ApiException.forField("1009", "NOT_READY", "STC BaseSvr is offline", null);
         }
     }
 
-    private void addSecurity(String securityId, JSONObject bond, JSONObject issuer, JSONObject valuation,
-            String version, Map<String, JSONObject> securities, Map<String, JSONObject> issuers,
-            List<JSONObject> valuations) {
-        JSONObject security = mapper.security(securityId, bond, issuer, valuation, version);
-        securities.put(securityId, security);
-        String issuerId = security.getString("issuerId");
+    @Override
+    public JSONObject security(String securityId) {
+        ensureOnline();
+        JSONObject bond = source.bond(securityId);
+        if (bond == null) {
+            mappedSecurities.remove(securityId);
+            mappedValuations.remove(securityId);
+            LOGGER.warn("STC BaseSvr bond not found: securityId=" + JsonUtils.toJson(securityId));
+            return null;
+        }
+        return mapSecurity(securityId, bond);
+    }
+
+    private JSONObject mapSecurity(String securityId, JSONObject bond) {
+        String issuerId = StcBaseMapper.text(bond, "Issuer_Code");
+        JSONObject issuer = issuerId == null ? null : source.issuer(issuerId);
+        JSONObject valuation = source.valuation(securityId);
+        ensureOnline();
+        String recordVersion = "STC-" + JsonUtils.canonicalHash(JsonUtils.object(
+                "bond", bond, "issuer", issuer, "valuation", valuation));
+        JSONObject result = mapper.security(securityId, bond, issuer, valuation, recordVersion);
+        mappedSecurities.put(securityId, result);
         if (issuerId != null) {
-            issuers.put(issuerId, mapper.issuer(security, issuer));
+            mappedIssuers.put(issuerId, mapper.issuer(result, issuer));
         }
-        JSONObject record = mapper.valuation(securityId, valuation);
-        if (record != null) {
-            valuations.add(record);
+        JSONObject mappedValuation = mapper.valuation(securityId, valuation);
+        if (mappedValuation == null) {
+            mappedValuations.remove(securityId);
+        } else {
+            mappedValuations.put(securityId, mappedValuation);
         }
-    }
-
-    private void checkGeneration(long expectedGeneration) {
-        if (!transport.online()) {
-            throw refreshFailure("BaseSvr client is offline; check service discovery and connection logs");
-        }
-        if (Thread.currentThread().isInterrupted()) {
-            throw refreshFailure("BaseSvr refresh thread was interrupted");
-        }
-        if (generation != expectedGeneration) {
-            throw refreshFailure("BaseSvr references changed during loading; retrying with a new generation");
-        }
-    }
-
-    private static void success(JSONObject reply, String topic) {
-        if (!"0000".equals(reply.getString("Code"))) {
-            throw refreshFailure("BaseSvr topic=" + topic + " returned Code=" + reply.getString("Code"));
-        }
-    }
-
-    private static JSONObject first(JSONObject reply, String topic, boolean required) {
-        success(reply, topic);
-        // Supplied BaseSvr handlers return Datas. Retain lowercase compatibility with older replies.
-        String rowsField = reply.containsKey("Datas") ? "Datas" : "datas";
-        JSONArray rows = reply.getJSONArray(rowsField);
-        if (rows == null) {
-            throw refreshFailure("BaseSvr topic=" + topic + " returned Code=0000 but no Datas array");
-        }
-        if (rows.isEmpty()) {
-            if (required) {
-                throw refreshFailure("BaseSvr topic=" + topic + " returned an empty Datas array for a configured bond");
-            }
-            return new JSONObject();
-        }
-        if (rows.size() != 1) {
-            throw refreshFailure("BaseSvr topic=" + topic + " returned " + rows.size()
-                    + " rows for a single-security request");
-        }
-        return rows.getJSONObject(0);
-    }
-
-    private Snapshot current() {
-        Snapshot current = snapshot;
-        if (invalidated || current == null || !transport.online()) {
-            throw unavailable();
-        }
-        return current;
-    }
-
-    private static ApiException unavailable() {
-        return ApiException.forField("1009", "NOT_READY", "STC base data is unavailable or refreshing", null);
-    }
-
-    private static ApiException refreshFailure(String message) {
-        return ApiException.forField("1009", "NOT_READY", message, null);
+        return result;
     }
 
     @Override
     public Map<String, JSONObject> securities() {
-        return current().securities();
+        ensureOnline();
+        Map<String, JSONObject> current = new LinkedHashMap<>();
+        for (String id : new ArrayList<>(mappedSecurities.keySet())) {
+            JSONObject security = security(id);
+            if (security != null) {
+                current.put(id, security);
+            }
+        }
+        return current;
     }
 
     @Override
-    public String version() {
-        return current().version();
+    public List<JSONObject> querySecurities(String text) {
+        if (text != null && text.matches("[^\\s]+\\.(IB|SH|SZ)")) {
+            JSONObject security = security(text);
+            return security == null ? List.of() : List.of(security);
+        }
+        ensureOnline();
+        String keyword = text == null ? "" : text.toLowerCase(java.util.Locale.ROOT);
+        List<JSONObject> matches = new ArrayList<>();
+        int expectedTotal = -1;
+        int received = 0;
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int page = 1; ; page++) {
+            if (System.nanoTime() > deadline) {
+                throw ApiException.forField("1009", "NOT_READY", "Bond search exceeded its time budget; use an exact securityId", null);
+            }
+            JSONObject reply = source.searchPage(page, 500);
+            if (reply == null) {
+                throw ApiException.forField("1009", "NOT_READY", "BaseSvr bond search returned no reply", null);
+            }
+            JSONArray rows = reply.getJSONArray("Datas");
+            Integer total = reply.getInteger("Total");
+            if (!"0000".equals(reply.getString("Code")) || rows == null || rows.size() > 500
+                    || total == null || total < 0 || total > 500000
+                    || (expectedTotal >= 0 && total != expectedTotal)) {
+                throw ApiException.forField("1009", "NOT_READY", "BaseSvr bond search returned an invalid or changing page", null);
+            }
+            expectedTotal = total;
+            for (Object item : rows) {
+                JSONObject bond = (JSONObject)item;
+                String id = StcBaseMapper.securityId(bond);
+                if (id == null) {
+                    continue;
+                }
+                if (!seen.add(id)) {
+                    throw ApiException.forField("1009", "NOT_READY", "BaseSvr bond search returned duplicate securities", null);
+                }
+                String searchable = id + " " + StcBaseMapper.text(bond, "Short_Name")
+                        + " " + StcBaseMapper.text(bond, "pinyin") + " " + StcBaseMapper.text(bond, "pinyin_full");
+                if (searchable.toLowerCase(java.util.Locale.ROOT).contains(keyword)) {
+                    matches.add(bond);
+                    if (matches.size() > 10000) {
+                        throw ApiException.forField("1001", "VALIDATION_FAILED", "Too many matching bonds; narrow the search", "text");
+                    }
+                }
+            }
+            received += rows.size();
+            if (received == expectedTotal) {
+                break;
+            }
+            if (received > expectedTotal || rows.size() < 500) {
+                throw ApiException.forField("1009", "NOT_READY", "BaseSvr bond search returned an incomplete dictionary", null);
+            }
+        }
+        // A selector needs bond fields, not a separate issuer/valuation RPC per row.
+        List<JSONObject> results = new ArrayList<>();
+        for (JSONObject bond : matches) {
+            String id = StcBaseMapper.securityId(bond);
+            results.add(mapper.security(id, bond, null, null, "STC-" + JsonUtils.canonicalHash(bond)));
+        }
+        return results;
     }
 
     @Override
     public List<JSONObject> records(String kind) {
-        Snapshot current = current();
+        Map<String, JSONObject> current = securities();
         return switch (kind) {
-            case "SECURITY" -> List.copyOf(current.securities().values());
-            case "ISSUER" -> current.issuers();
-            case "DAILY_VALUATION" -> current.valuations();
+            case "SECURITY" -> List.copyOf(current.values());
+            case "ISSUER" -> List.copyOf(mappedIssuers.values());
+            case "DAILY_VALUATION" -> List.copyOf(mappedValuations.values());
             default -> throw ApiException.forField("1001", "VALIDATION_FAILED", "Unknown reference kind", "kind");
         };
     }
 
     @Override
-    public void close() throws InterruptedException {
-        if (worker != null) {
-            worker.shutdownNow();
-            worker.awaitTermination(4, TimeUnit.SECONDS);
-        }
+    public String version() {
+        ensureOnline();
+        return "STC-" + JsonUtils.canonicalHash(mappedSecurities);
     }
 }

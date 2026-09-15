@@ -23,7 +23,7 @@ final class ServiceConfigurationTest {
         Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), adapter.toString(), logs::add);
         assertEquals("", configuration.getProperty("base.securityIds"));
         String output = String.join("\n", logs);
-        assertTrue(output.contains("base.loadMode=all"));
+        assertTrue(output.contains("base.loadMode=stc-client-on-demand"));
         assertTrue(output.contains("securityIdsCount=0"));
         assertTrue(output.contains(adapter.toAbsolutePath().toString()));
         assertTrue(output.contains("diagnostics=stc-base-config-v2"));
@@ -42,7 +42,7 @@ final class ServiceConfigurationTest {
             List<String> logs = new ArrayList<>();
             Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), adapterFile, logs::add);
             assertEquals("250001.IB", configuration.getProperty("base.securityIds"));
-            assertTrue(String.join("\n", logs).contains("base.loadMode=subset, securityIdsCount=1"));
+            assertTrue(String.join("\n", logs).contains("base.loadMode=stc-client-on-demand, securityIdsCount=1"));
         }
     }
 }

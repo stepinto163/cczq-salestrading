@@ -32,7 +32,7 @@ public final class AdapterFactory {
 
     public static ReferenceData references(Properties configuration, NetClientWrapper network) throws Exception {
         BaseDataClient base = "stc".equals(mode(configuration, "base.mode", "simulator"))
-                ? new StcBaseDataClient(transport(network, configuration, "base", "SERVER.BaseSvr"), configuration)
+                ? new StcBaseDataClient(network, configuration)
                 : new SimulatorBaseDataClient();
         CrmClient crm = crm(configuration, network);
         try {
@@ -43,14 +43,6 @@ public final class AdapterFactory {
             crm.close();
             throw error;
         }
-    }
-
-    private static StcTransport transport(NetClientWrapper network, Properties configuration, String prefix, String serverKey) {
-        long timeout = Long.parseLong(configuration.getProperty(prefix + ".requestTimeoutMillis", "3000"));
-        if (timeout < 100 || timeout > 10000) {
-            throw new IllegalArgumentException(prefix + ".requestTimeoutMillis must be between 100 and 10000");
-        }
-        return new NetClientTransport(network, configuration.getProperty(prefix + ".serverKey", serverKey), timeout);
     }
 
     public static CrmClient crm(Properties configuration, NetClientWrapper network) throws Exception {

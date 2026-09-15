@@ -91,34 +91,6 @@ final class AdapterContractTest {
     }
 
     @Test
-    void baseMappingRefreshAndFilteringDoNotUseFakeDataOrPerRowRemoteCalls() throws Exception {
-        FakeBase transport = new FakeBase();
-        Properties configuration = new Properties();
-        configuration.setProperty("base.securityIds", "250001.IB");
-        configuration.setProperty("base.market.250001.IB", "RATE");
-        configuration.setProperty("base.issuerType.GOV", "GOVERNMENT");
-        StcBaseDataClient base = new StcBaseDataClient(transport, configuration);
-        assertThrows(ApiException.class, base::securities);
-        base.refresh();
-        ReferenceData references = new ReferenceData(base, new EmptyCrmClient());
-        assertEquals("AAA", references.require("250001.IB").getString("bondRating"));
-        assertEquals("2026-09-14", references.require("250001.IB").getString("valuationDate"));
-        assertEquals("GOVERNMENT", references.require("250001.IB").getString("issuerType"));
-        assertFalse(references.require("250001.IB").getBooleanValue("hasExerciseOption"));
-        int calls = transport.requests;
-        references.enrich(JsonUtils.object("securityId", "250001.IB", "quoteId", "Q-1"));
-        references.enrich(JsonUtils.object("securityId", "250001.IB", "quoteId", "Q-2"));
-        assertEquals(calls, transport.requests);
-        transport.rating = "AA+";
-        transport.listeners.get("stc.base.clear").accept(new JSONObject());
-        assertThrows(ApiException.class, base::securities);
-        base.refresh();
-        assertEquals("AA+", references.require("250001.IB").getString("bondRating"));
-        transport.connected = false;
-        assertThrows(ApiException.class, base::securities);
-    }
-
-    @Test
     void baseRejectsWrongBondAndInvalidOverrideWithoutGuessingUnknownClassification() {
         Properties configuration = new Properties();
         StcBaseMapper mapper = new StcBaseMapper(configuration);
@@ -130,22 +102,6 @@ final class AdapterContractTest {
         configuration.setProperty("base.market.250001.IB", "RATE");
         bond.put("Option_Type", "PUT");
         assertTrue(mapper.security("250001.IB", bond, null, null, "v1").getBooleanValue("hasExerciseOption"));
-    }
-
-    @Test
-    void baseSubsetAcceptsLegacyLowercaseRowsAndReportsMissingStcRows() {
-        FakeBase transport = new FakeBase();
-        Properties configuration = new Properties();
-        configuration.setProperty("base.securityIds", "250001.IB");
-        configuration.setProperty("base.market.250001.IB", "RATE");
-        StcBaseDataClient base = new StcBaseDataClient(transport, configuration);
-        transport.rowsField = "datas";
-        base.refresh();
-        assertEquals(1, base.securities().size());
-        transport.rowsField = "wrongField";
-        ApiException failure = assertThrows(ApiException.class, base::refresh);
-        assertTrue(failure.getMessage().contains("topic=querySecurity"));
-        assertTrue(failure.getMessage().contains("no Datas array"));
     }
 
     static final class FakeNetwork extends NetClientWrapper {
@@ -192,37 +148,4 @@ final class AdapterContractTest {
         }
     }
 
-    static final class FakeBase implements StcTransport {
-        final Map<String, Consumer<JSONObject>> listeners = new HashMap<>();
-        boolean connected = true;
-        String rating = "AAA";
-        String rowsField = "Datas";
-        int requests;
-        @Override
-        public JSONObject request(String topic, String sid, JSONObject request) {
-            requests++;
-            if (topic.equals("stc.base.info.query")) {
-                assertEquals("p_issuer_info", request.getString("TableName"));
-                return JsonUtils.object("Code", "0000", "Datas", JsonUtils.object(
-                        "institution_code", "ISS-1", "issuer_name", "Test Issuer", "issuer_type", "GOV", "province", "北京"));
-            }
-            assertEquals("250001.IB", request.getString("SecurityID"));
-            JSONObject data = topic.equals("querySecurity")
-                    ? JsonUtils.object("Bond_ID", "250001", "Listed_Market", "CIB", "Short_Name", "Test Bond",
-                            "Issuer_Code", "ISS-1", "Rating_Current", rating, "Issuer_Rating_Current", "AAA", "Option_Type", "NON")
-                    : JsonUtils.object("Id", "VAL-1", "valuation_date", "20260914", "valuation_yield", "2.4500",
-                            "remaining_year", "2.5", "bondTypeFlag", "2");
-            return JsonUtils.object("Code", "0000", rowsField, JsonUtils.array(data));
-        }
-        @Override
-        public boolean online() {
-            return connected;
-        }
-        @Override
-        public void subscribe(String topic, Consumer<JSONObject> listener) {
-            listeners.put(topic, listener);
-        }
-        @Override
-        public void connectionChanged(Runnable listener) {}
-    }
 }
