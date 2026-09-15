@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     static class GatewaySmoke {
         static int checks;
         static readonly HashSet<string> topics=new HashSet<string>();
@@ -16,7 +16,7 @@ namespace Ficc.Prototype {
             try{using(var client=new DpsClient()){
                 Track(client);
                 var quoteEvents=new BlockingCollection<JObject>(64);var prices=new BlockingCollection<JObject>(64);
-                client.Connect("demo", gatewayPort);Check(true,"C# DPS DLL connects through GW");
+                client.Connect("trader1", gatewayPort);Check(true,"C# DPS DLL connects through GW");
                 var stream=client.Data("ficc.quote.stream.open",new JObject());string qt=(string)stream["pushTopic"];
                 client.Message+=(t,m)=>{if(t==qt)quoteEvents.TryAdd(m);else if(t.StartsWith("ficc.price.report."))prices.TryAdd(m);};
                 client.Subscribe(qt,false);
@@ -75,7 +75,7 @@ namespace Ficc.Prototype {
                 }
                 Check((bool)client.Data("ficc.quote.view.close",new JObject{["viewId"]=qv})["closed"],"close quote view");
                 Check((bool)client.Data("ficc.price.view.close",new JObject{["viewId"]=pv})["closed"],"close price view");
-                using(var other=new DpsClient()){other.Connect("demo2", gatewayPort);bool denied=false;try{other.Subscribe(qt,false);}catch{denied=true;}Check(denied,"GW rejects another user's private topic");}
+                using(var other=new DpsClient()){other.Connect("trader2", gatewayPort);bool denied=false;try{other.Subscribe(qt,false);}catch{denied=true;}Check(denied,"GW rejects another user's private topic");}
                 Check(topics.Count==32,"all 32 QuoteSvr request topics exercised");
                 File.WriteAllText(resultFile,new JObject{["result"]="PASS",["checks"]=checks,["quotesCreated"]=3,["requestTopics"]=new JArray(topics),["messageLogDirectory"]=client.LogDirectory,["path"]="C# DPS -> GW -> STC QuoteSvr -> PostgreSQL"}.ToString());
                 Console.WriteLine("PASS "+checks+" checks; three quotes; no performance load.");return 0;

@@ -8,7 +8,7 @@
 
 2026-09-13职责更新：QuoteSvr同时维护行情条目及价格簿，提供报价和价格查询/订阅，不另部署FICC行情服务。本文为早期接口记录；当前报价及新增行情接口以完整API评审稿为准，模型见[行情模型与STC映射](../models/market-data-model.zh-CN.md)，不将QuoteReport当作价格簿快照。
 
-完整的具体消息见[QuoteSvr消息示例](quote-svr-examples.zh-CN.md)：覆盖create、confirm、update、refer、unrefer、delete、get、history.query及失败应答，使用同一报价演示连续版本变化。
+完整的具体消息见[QuoteSvr消息示例](quote-svr-examples.zh-CN.md)：覆盖create、confirm、update、refer、unrefer、delete、get、history.query及失败应答，使用同一报价示例连续版本变化。
 
 ## 1．消息约定
 

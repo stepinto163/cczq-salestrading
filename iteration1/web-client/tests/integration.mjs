@@ -31,7 +31,7 @@ async function login(user) {
     const transport = new GwClient('ws://127.0.0.1:18601/gateway');
     const client = { transport, quotes: new QuoteClient(transport), prices: new PriceClient(transport), notifications: new NotificationClient(transport) };
     clients.push(client);
-    await transport.connect(user, 'demo');
+    await transport.connect(user, 'trader1');
     await client.quotes.initialize({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], limit: 50 });
     await client.prices.initialize({ mode: 'FULL', limit: 20 });
     await client.notifications.initialize({ limit: 50 });
@@ -43,8 +43,8 @@ const containsPrice = (client, id) => client.prices.rows().some(book => book.mar
 const containsAlert = (client, id) => client.notifications.rows().some(row => row.quoteIds.includes(id) && row.reasons.some(reason => reason.type === 'MY_BEST'));
 
 try {
-    const first = await login('demo');
-    const second = await login('demo2');
+    const first = await login('trader1');
+    const second = await login('trader2');
     preference = await first.notifications.preferences();
     await first.notifications.setMyBest(true);
     await assert.rejects(second.transport.subscribe(`ficc.quote.report.${first.transport.sessionId}`, () => {}));
@@ -53,7 +53,7 @@ try {
     for (const [client, securityId] of [[first, '250001.IB'], [second, '250002.IB']]) {
         const result = await client.quotes.create({ securityId, side: '1', quoteType: '1', yieldType: '1', price: '0.0001', quantity: '1', settlType: '1',
             tradeDate: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date()) });
-        report.createdQuoteIds.push({ quoteId: result.quoteId, user: client === first ? 'demo' : 'demo2' });
+        report.createdQuoteIds.push({ quoteId: result.quoteId, user: client === first ? 'trader1' : 'trader2' });
         check('server quote ID uses STC Snowflake format as a string',
             typeof result.quoteId === 'string' && /^Q-[0-9]+$/.test(result.quoteId));
         await waitFor('new pending quote arrives by push', () => client.quotes.records.get(result.quoteId)?.status === 'PENDING_CONFIRM');
@@ -88,7 +88,7 @@ try {
     console.error(error);
 } finally {
     for (const item of report.createdQuoteIds) {
-        const client = clients[item.user === 'demo' ? 0 : 1];
+        const client = clients[item.user === 'trader1' ? 0 : 1];
         try {
             if (client.quotes.stale) await client.quotes.open();
             let quote = client.quotes.records.get(item.quoteId);

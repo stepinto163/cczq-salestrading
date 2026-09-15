@@ -13,8 +13,8 @@ DECLARE
     target_table text;
     contains_rows boolean;
 BEGIN
-    IF NOT pg_try_advisory_xact_lock(hashtext('ficc_demo.quotesvr.writer'))
-       OR NOT pg_try_advisory_xact_lock(hashtext('ficc_demo.notificationsvr.writer'))
+    IF NOT pg_try_advisory_xact_lock(hashtext('ficc_salestrading.quotesvr.writer'))
+       OR NOT pg_try_advisory_xact_lock(hashtext('ficc_salestrading.notificationsvr.writer'))
        OR NOT pg_try_advisory_xact_lock(hashtext('ficc_notification.quotesvr.writer')) THEN
         RAISE EXCEPTION 'Stop QuoteSvr and NotificationSvr before migrating';
     END IF;
@@ -31,42 +31,42 @@ BEGIN
         IF to_regclass(format('ficc_notification.%I', source_table)) IS NULL THEN
             RAISE EXCEPTION 'Missing source table: ficc_notification.%', source_table;
         END IF;
-        EXECUTE format('SELECT EXISTS (SELECT 1 FROM ficc_demo.%I)', target_table)
+        EXECUTE format('SELECT EXISTS (SELECT 1 FROM ficc_salestrading.%I)', target_table)
             INTO contains_rows;
         IF contains_rows THEN
-            RAISE EXCEPTION 'Target ficc_demo.% is not empty; migration aborted', target_table;
+            RAISE EXCEPTION 'Target ficc_salestrading.% is not empty; migration aborted', target_table;
         END IF;
     END LOOP;
 END
 $migration$;
 
-INSERT INTO ficc_demo.notification_metadata (key, value)
+INSERT INTO ficc_salestrading.notification_metadata (key, value)
 SELECT key, value FROM ficc_notification.metadata;
 
-INSERT INTO ficc_demo.notification_events (sequence, payload)
+INSERT INTO ficc_salestrading.notification_events (sequence, payload)
 SELECT sequence, payload FROM ficc_notification.events;
 
-INSERT INTO ficc_demo.notification_requests (owner_id, topic, request_id, hash, results)
+INSERT INTO ficc_salestrading.notification_requests (owner_id, topic, request_id, hash, results)
 SELECT owner_id, topic, request_id, hash, results FROM ficc_notification.requests;
 
-INSERT INTO ficc_demo.notification_settings (id, owner_id, kind, revision, payload)
+INSERT INTO ficc_salestrading.notification_settings (id, owner_id, kind, revision, payload)
 SELECT id, owner_id, kind, revision, payload FROM ficc_notification.settings;
 
-INSERT INTO ficc_demo.notifications (id, user_id, active, payload)
+INSERT INTO ficc_salestrading.notifications (id, user_id, active, payload)
 SELECT id, user_id, active, payload FROM ficc_notification.notifications;
 
-INSERT INTO ficc_demo.notification_preferences (user_id, payload)
+INSERT INTO ficc_salestrading.notification_preferences (user_id, payload)
 SELECT user_id, payload FROM ficc_notification.notification_preferences;
 
-INSERT INTO ficc_demo.notification_reads (id, content_token, read_time)
+INSERT INTO ficc_salestrading.notification_reads (id, content_token, read_time)
 SELECT id, content_token, read_time FROM ficc_notification.notification_reads;
 
--- 原型按已提交最大事件号继续分配；同时使序列默认值与数据保持一致。
+-- 平台按已提交最大事件号继续分配；同时使序列默认值与数据保持一致。
 SELECT setval(
-    pg_get_serial_sequence('ficc_demo.notification_events', 'sequence'),
+    pg_get_serial_sequence('ficc_salestrading.notification_events', 'sequence'),
     greatest(coalesce(max(sequence), 0), 1),
     coalesce(max(sequence), 0) > 0
 )
-FROM ficc_demo.notification_events;
+FROM ficc_salestrading.notification_events;
 
 COMMIT;

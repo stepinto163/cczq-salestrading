@@ -114,7 +114,7 @@ def generate_report(directory):
              f"测量样本：{len(measured)}；预热样本：{len(samples) - len(measured)}；"
              f"请求的 GW / QuoteSvr 关联完整数：{complete}/{len(measured_requests)}。", "",
              "## 实际调用链", "", "```text",
-             "C# 原型 → GW → QuoteSvr → LocalSearchSvrClient（进程内存筛选）",
+             "C# 平台 → GW → QuoteSvr → LocalSearchSvrClient（进程内存筛选）",
              "C# 网格 ← GW ← QuoteSvr",
              "```", "",
              "每次切换条件先关闭旧视图，再打开新视图，两次请求分别计时。SearchSvr 尚未独立部署；"
@@ -176,7 +176,7 @@ def generate_report(directory):
         slowest = max(opens, key=lambda request: request["clientRequestMs"])
         lines += ["## 一次真实请求示例", "",
                   f"选择客户端打开视图请求耗时最长的测量样本：`{slowest['requestId']}`（{slowest['scenario']}）。", "",
-                  "```mermaid", "sequenceDiagram", "    participant C as C# 原型", "    participant G as GW",
+                  "```mermaid", "sequenceDiagram", "    participant C as C# 平台", "    participant G as GW",
                   "    participant Q as QuoteSvr", "    C->>G: ficc.quote.view.open",
                   "    G->>Q: DPS 转发（原异步路径）",
                   f"    Note over Q: dispatch {number(slowest.get('quoteSvrMs'))} ms，搜索 {number(slowest.get('searchMs'))} ms",

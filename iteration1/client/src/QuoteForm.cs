@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     // Bounded virtual grid; performance mode measures the same view path.
     public sealed partial class QuoteForm : Form {
         readonly DpsClient client=new DpsClient();
@@ -16,7 +16,7 @@ namespace Ficc.Prototype {
         readonly List<string> ids=new List<string>();
         readonly List<Tuple<string,JObject>> pending=new List<Tuple<string,JObject>>();
         readonly QuoteGrid grid = new QuoteGrid();
-        readonly ComboBox user=Choice("demo","demo2","admin");
+        readonly ComboBox user=Choice("trader1","trader2","admin");
         readonly ComboBox security=Choice("250001.IB","250002.IB","102500001.IB","102500002.IB");
         readonly ComboBox side=Choice("1","2"), settlement=Choice("1","2");
         readonly ComboBox statusFilter=Choice("全部我的报价","待确认","有效报价","已撤出","已删除");
@@ -36,7 +36,7 @@ namespace Ficc.Prototype {
         int lastFilterTotalCount;
         readonly string[] fields={"quoteId","securityId","side","price","quantity","settlType","status","revision","updateTime"};
         public QuoteForm(){
-            Text="FICC 报价生命周期原型 · GW / DPS";Width=1180;Height=760;MinimumSize=new Size(900,600);
+            Text="FICC 报价生命周期平台 · GW / DPS";Width=1180;Height=760;MinimumSize=new Size(900,600);
             Font=new Font("Microsoft YaHei UI",9F);StartPosition=FormStartPosition.CenterScreen;
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=3,ColumnCount=1,Padding=new Padding(4)};
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,28));
@@ -93,7 +93,7 @@ namespace Ficc.Prototype {
             }
             log.AppendText(DateTime.Now.ToString("HH:mm:ss.fff") + " " + line + Environment.NewLine);
         }
-        async Task Connect(){if(connected)throw new Exception("切换账户请关闭并重新打开原型。");string name=user.Text;await Task.Run(()=>client.Connect(name));connected=true;user.Enabled=false;var data=await Request("ficc.quote.stream.open",new JObject());streamId=(string)data["streamId"];topic=(string)data["pushTopic"];sequence=(long?)data["sequence"]??0;await Task.Run(()=>client.Subscribe(topic,false));await OpenView();await OpenPriceView();await ConnectNotifications();var institutions=await Request("ficc.base.query",new JObject{["kind"]="INSTITUTION"});var contacts=await Request("ficc.base.query",new JObject{["kind"]="CONTACT"});counterpartyEditor.SetReferenceData(((JArray)institutions["records"]).OfType<JObject>(),((JArray)contacts["records"]).OfType<JObject>());counterpartyEditor.LoadFields(Selected());}
+        async Task Connect(){if(connected)throw new Exception("切换账户请关闭并重新打开平台。");string name=user.Text;await Task.Run(()=>client.Connect(name));connected=true;user.Enabled=false;var data=await Request("ficc.quote.stream.open",new JObject());streamId=(string)data["streamId"];topic=(string)data["pushTopic"];sequence=(long?)data["sequence"]??0;await Task.Run(()=>client.Subscribe(topic,false));await OpenView();await OpenPriceView();await ConnectNotifications();var institutions=await Request("ficc.base.query",new JObject{["kind"]="INSTITUTION"});var contacts=await Request("ficc.base.query",new JObject{["kind"]="CONTACT"});counterpartyEditor.SetReferenceData(((JArray)institutions["records"]).OfType<JObject>(),((JArray)contacts["records"]).OfType<JObject>());counterpartyEditor.LoadFields(Selected());}
         async Task<JObject> Request(string requestTopic, JObject request) {
             if (!connected) {
                 throw new Exception("请先连接 GW。");
@@ -139,6 +139,6 @@ namespace Ficc.Prototype {
         async Task Command(string op){if(op=="create"){await Create(1);return;}var selected=Selected();if(selected==null)throw new Exception("请先选中一条报价。");var q=op=="update"?Input():new JObject();if(op=="confirm"){var fields=counterpartyEditor.Fields();if(CounterpartyEditor.NeedsMatching(fields)){fields=counterpartyEditor.ConfirmSelection(this);if(fields==null)return;counterpartyEditor.LoadFields(fields);}foreach(var field in fields.Properties())q[field.Name]=field.Value.DeepClone();}q["expectedRevision"]=selected["revision"].DeepClone();if(op=="clone"){q["sourceQuoteId"]=selected["quoteId"].DeepClone();q["clientQuoteId"]="UI-"+Guid.NewGuid().ToString("N");}else q["quoteId"]=selected["quoteId"].DeepClone();detail.Text=(await Request("ficc.quote."+op,new JObject{["quotes"]=new JArray(q)})).ToString();}
         async Task History(){var q=Selected();if(q==null)throw new Exception("请先选中报价。");detail.Text=(await Request("ficc.quote.history.query",new JObject{["quoteId"]=q["quoteId"].DeepClone(),["limit"]=100})).ToString();}
         async Task PriceBook(){detail.Text=(await Request("ficc.price.query",new JObject{["securityIds"]=new JArray(security.Text),["mode"]="FULL"})).ToString();}
-        Task OpenApiDebugger(){var path=new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);while(path!=null&&!System.IO.File.Exists(System.IO.Path.Combine(path.FullName,"QuotePrototype.csproj")))path=path.Parent;if(path==null)throw new Exception("无法定位 API 调试器。");string exe=System.IO.Path.Combine(path.Parent.FullName,"api-debugger","bin","Debug","net472","Ficc.DpsApiDebugger.exe");if(!System.IO.File.Exists(exe))throw new Exception("请先构建 API 调试器。");System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe){WorkingDirectory=System.IO.Path.GetDirectoryName(exe),UseShellExecute=true});return Task.CompletedTask;}
+        Task OpenApiDebugger(){var path=new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);while(path!=null&&!System.IO.File.Exists(System.IO.Path.Combine(path.FullName,"SalesTradingClient.csproj")))path=path.Parent;if(path==null)throw new Exception("无法定位 API 调试器。");string exe=System.IO.Path.Combine(path.Parent.FullName,"api-debugger","bin","Debug","net472","Ficc.DpsApiDebugger.exe");if(!System.IO.File.Exists(exe))throw new Exception("请先构建 API 调试器。");System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe){WorkingDirectory=System.IO.Path.GetDirectoryName(exe),UseShellExecute=true});return Task.CompletedTask;}
     }
 }

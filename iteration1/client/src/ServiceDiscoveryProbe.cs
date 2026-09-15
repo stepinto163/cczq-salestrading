@@ -2,13 +2,13 @@ using System;
 using System.IO;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     // Read-only requests through the real C# DPS client and STC gateway.
     static class ServiceDiscoveryProbe {
         public static int Run(string outputPath) {
             try {
                 using (var client = new DpsClient()) {
-                    client.Connect("demo");
+                    client.Connect("trader1");
                     var quotes = client.Data("ficc.quote.query", new JObject {
                         ["ownerScope"] = "MINE",
                         ["limit"] = 1

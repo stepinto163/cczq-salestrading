@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     // Fixed functional scenario: two users, two bonds, four quotes. No concurrent writers.
     static class MultiUserQuoteScenario {
         const string TestQuantity="9876";
@@ -67,10 +67,10 @@ namespace Ficc.Prototype {
             readonly string output,runId=Guid.NewGuid().ToString("N");
             readonly Dictionary<string,ScenarioClient> clients=new Dictionary<string,ScenarioClient>();
             readonly QuoteFixture[] fixtures={
-                new QuoteFixture{Alias="A1",Owner="demo",Bond="250001.IB",Side="1",Yield="2.5000"},
-                new QuoteFixture{Alias="A2",Owner="demo",Bond="250002.IB",Side="1",Yield="2.7000"},
-                new QuoteFixture{Alias="B1",Owner="demo2",Bond="250001.IB",Side="1",Yield="2.4000"},
-                new QuoteFixture{Alias="B2",Owner="demo2",Bond="250001.IB",Side="2",Yield="2.6000"}
+                new QuoteFixture{Alias="A1",Owner="trader1",Bond="250001.IB",Side="1",Yield="2.5000"},
+                new QuoteFixture{Alias="A2",Owner="trader1",Bond="250002.IB",Side="1",Yield="2.7000"},
+                new QuoteFixture{Alias="B1",Owner="trader2",Bond="250001.IB",Side="1",Yield="2.4000"},
+                new QuoteFixture{Alias="B2",Owner="trader2",Bond="250001.IB",Side="2",Yield="2.6000"}
             };
             readonly JObject report=new JObject{["result"]="RUNNING",["steps"]=new JArray(),["cleanup"]=new JArray()};
             string activeStep;int checks;
@@ -85,15 +85,15 @@ namespace Ficc.Prototype {
             }
             public int Run(){
                 try{
-                    foreach(string user in new[]{"demo","demo2"})clients[user]=new ScenarioClient(user);
+                    foreach(string user in new[]{"trader1","trader2"})clients[user]=new ScenarioClient(user);
                     // Refuse conflicting live fixtures instead of changing existing user data.
                     foreach(var client in clients.Values){var found=(JArray)client.Client.Data("ficc.quote.query",new JObject{["ownerScope"]="VISIBLE",["status"]=new JArray("ACTIVE","PENDING_CONFIRM","REFERRED"),["filter"]=Filter(),["limit"]=10})["quotes"];Check(found.Count==0,"preflight "+client.User+": no existing live quotes in test filter");client.Open();}
                     Step("01 Create A1,A2,B1,B2 as pending",()=>{foreach(var quote in fixtures)Create(quote);},"","");
-                    var hidden=clients["demo2"].Client.Request("ficc.quote.get",new JObject{["quoteId"]=Quote("A1").Id});Check((string)hidden["Code"]=="1002","Bob cannot read Alice's pending A1");
+                    var hidden=clients["trader2"].Client.Request("ficc.quote.get",new JObject{["quoteId"]=Quote("A1").Id});Check((string)hidden["Code"]=="1002","Bob cannot read Alice's pending A1");
                     Step("02 Alice confirms A1",()=>Write("A1","confirm"),"250001.IB:A1","250001.IB:A1");
                     Step("03 Bob confirms B1 and B2",()=>{Write("B1","confirm");Write("B2","confirm");},"250001.IB:B1,A1,B2","250001.IB:B1,B2");
                     Step("04 Alice confirms A2 on the second bond",()=>Write("A2","confirm"),"250001.IB:B1,A1,B2|250002.IB:A2","250001.IB:B1,B2|250002.IB:A2");
-                    Step("05 Alice cannot modify Bob's B1",()=>Write("B1","update",new JObject{["price"]="1.0000"},"demo","1003"),"250001.IB:B1,A1,B2|250002.IB:A2","250001.IB:B1,B2|250002.IB:A2");
+                    Step("05 Alice cannot modify Bob's B1",()=>Write("B1","update",new JObject{["price"]="1.0000"},"trader1","1003"),"250001.IB:B1,A1,B2|250002.IB:A2","250001.IB:B1,B2|250002.IB:A2");
                     Step("06 Alice matches Bob's best bid",()=>Write("A1","update",new JObject{["price"]="2.4000"}),"250001.IB:A1,B1,B2|250002.IB:A2","250001.IB:A1,B1,B2|250002.IB:A2");
                     Step("07 Bob improves B1 to 2.3000",()=>Write("B1","update",new JObject{["price"]="2.3000"}),"250001.IB:B1,A1,B2|250002.IB:A2","250001.IB:B1,B2|250002.IB:A2");
                     Step("08 Reject Bob's stale revision 2",()=>Write("B1","update",new JObject{["price"]="1.0000",["expectedRevision"]="2"},null,"1004"),"250001.IB:B1,A1,B2|250002.IB:A2","250001.IB:B1,B2|250002.IB:A2");
@@ -117,7 +117,7 @@ namespace Ficc.Prototype {
                 return (string)report["result"]=="PASS"?0:1;
             }
             void Create(QuoteFixture quote){
-                var input=new JObject{["clientQuoteId"]=runId+"-"+quote.Alias,["securityId"]=quote.Bond,["side"]=quote.Side,["quoteType"]="1",["yieldType"]="1",["price"]=quote.Yield,["quantity"]=TestQuantity,["settlType"]="1",["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd"),["institutionId"]=quote.Owner=="demo"?"I-001":"I-002",["contactId"]=quote.Owner=="demo"?"C-001":"C-002"};
+                var input=new JObject{["clientQuoteId"]=runId+"-"+quote.Alias,["securityId"]=quote.Bond,["side"]=quote.Side,["quoteType"]="1",["yieldType"]="1",["price"]=quote.Yield,["quantity"]=TestQuantity,["settlType"]="1",["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd"),["institutionId"]=quote.Owner=="trader1"?"I-001":"I-002",["contactId"]=quote.Owner=="trader1"?"C-001":"C-002"};
                 var result=clients[quote.Owner].Client.Data("ficc.quote.create",new JObject{["quotes"]=new JArray(input)})["results"][0];Check((string)result["Code"]=="0000","create "+quote.Alias);quote.Id=(string)result["quoteId"];Save();
             }
             void Write(string alias,string operation,JObject fields=null,string caller=null,string expectedCode="0000",string requestId=null){
@@ -155,10 +155,10 @@ namespace Ficc.Prototype {
                     foreach(string id in client.Views["visible"].Ids){var quote=client.Views["visible"].Records[id];var fixture=fixtures.Single(value=>value.Id==id);
                         bool owner=fixture.Owner==client.User;Check(new[]{"institutionId","institutionName","contactId","contactName"}.All(field=>owner?!string.IsNullOrEmpty((string)quote[field]):quote[field]==null||quote[field].Type==JTokenType.Null),client.User+" sees permitted counterparty fields for "+fixture.Alias);
                     }
-                    foreach(string id in client.Views["full"].Ids)foreach(JObject entry in (JArray)client.Views["full"].Records[id]["marketData"]["NoMDEntries"]){var quote=Quote(Alias(((string)entry["MDEntryID"]).Substring(5)));Check((string)entry["MDEntryPx"]==quote.Yield&&(string)entry["MDEntryType"]==(quote.Side=="1"?"0":"1")&&(string)entry["UserID"]==(quote.Owner=="demo"?"U-001":"U-002")&&(string)entry["MDEntrySize"]==quote.Quantity&&(string)client.Views["full"].Records[id]["quoteRefs"][(string)entry["MDEntryID"]]["quoteRevision"]==quote.Revision.ToString(),client.User+" receives correct price/side/owner/quantity/revision for "+quote.Alias);}
+                    foreach(string id in client.Views["full"].Ids)foreach(JObject entry in (JArray)client.Views["full"].Records[id]["marketData"]["NoMDEntries"]){var quote=Quote(Alias(((string)entry["MDEntryID"]).Substring(5)));Check((string)entry["MDEntryPx"]==quote.Yield&&(string)entry["MDEntryType"]==(quote.Side=="1"?"0":"1")&&(string)entry["UserID"]==(quote.Owner=="trader1"?"U-001":"U-002")&&(string)entry["MDEntrySize"]==quote.Quantity&&(string)client.Views["full"].Records[id]["quoteRefs"][(string)entry["MDEntryID"]]["quoteRevision"]==quote.Revision.ToString(),client.User+" receives correct price/side/owner/quantity/revision for "+quote.Alias);}
                 }
                 foreach(var quote in fixtures.Where(quote=>quote.Id!=null)){var current=Get(quote);Check((string)current["status"]==quote.Status&&(string)current["revision"]==quote.Revision.ToString()&&(string)current["price"]==quote.Yield,title+": persisted "+quote.Alias+" agrees");}
-                step["result"]="PASS";Console.WriteLine("  EXPECT FULL "+(full.Length==0?"empty":full));Console.WriteLine("  ACTUAL demo="+actual["demo"]["full"]+"; demo2="+actual["demo2"]["full"]);Console.WriteLine("  PASS both users; BEST="+(best.Length==0?"empty":best));Save();
+                step["result"]="PASS";Console.WriteLine("  EXPECT FULL "+(full.Length==0?"empty":full));Console.WriteLine("  ACTUAL trader1="+actual["trader1"]["full"]+"; trader2="+actual["trader2"]["full"]);Console.WriteLine("  PASS both users; BEST="+(best.Length==0?"empty":best));Save();
             }
             void Cleanup(){
                 foreach(var quote in fixtures.Where(quote=>quote.Id!=null)){
@@ -177,7 +177,7 @@ namespace Ficc.Prototype {
             }
         }
         public static int Run(string output){
-            using(var single=new Semaphore(1,1,@"Local\FiccQuotePrototype.MultiUserScenario")){
+            using(var single=new Semaphore(1,1,@"Local\FiccSalesTradingClient.MultiUserScenario")){
                 if(!single.WaitOne(0)){File.WriteAllText(output,new JObject{["result"]="FAIL",["error"]="Another multi-user scenario is running."}.ToString());return 1;}
                 try{return new Scenario(output).Run();}finally{single.Release();}
             }

@@ -4,7 +4,7 @@
 
 目标为用户确认筛选条件后，首批报价结果在网格中完成重绘的样本 P95 ≤ 100ms。另行记录 `ficc.quote.view.open` 的请求/回复耗时，区分后台查询链路与前端更新成本。
 
-**50,000 指服务端可搜索的报价总数，不是一次下载并绘制 50,000 行。** 本轮沿用原型的 `limit=200` 和虚拟网格，只加载当前结果的前 200 行，条件变化时仍调用原有 `view.close → view.open`。行情视图、持续报价更新、并发用户和历史数据库搜索不属于本轮测试。
+**50,000 指服务端可搜索的报价总数，不是一次下载并绘制 50,000 行。** 本轮沿用平台的 `limit=200` 和虚拟网格，只加载当前结果的前 200 行，条件变化时仍调用原有 `view.close → view.open`。行情视图、持续报价更新、并发用户和历史数据库搜索不属于本轮测试。
 
 100ms 可作为低延迟目标；是否达到取决于筛选实现、排序、数据复制、返回体积、消息库、日志与 UI 重绘。不能仅凭 50,000 这个数量保证达标。[NN/g 对响应时间的说明](https://www.nngroup.com/articles/response-times-3-important-limits/)将约 0.1 秒视为接近即时反馈的体验尺度，这不是数据库性能保证。
 
@@ -12,8 +12,8 @@
 
 - [外部驱动与看门狗](../scripts/test-filter-performance.py)：一次只运行一个数据档位，创建独立 QuoteSvr、GW 和临时 PostgreSQL schema。
 - [固定测试数据 SQL](../scripts/filter-performance-fixture.sql)：全部为 U-001 的有效报价，均匀分布在现有 4 个模拟债券中，方向、收益率、交割条件按固定规则生成。
-- [C# 计时与校验](../client/src/QuoteFormFilterPerformance.cs)：调用原型自身的 `OpenView()`，检查总匹配数及前 200 个报价 ID 和顺序。
-- 临时端口为 GW `18700`、QuoteSvr `18780`。隔离环境采用 STC 的静态服务寻址，关闭 ZooKeeper 注册，防止普通客户端发现测试服务；正常演示配置不修改。
+- [C# 计时与校验](../client/src/QuoteFormFilterPerformance.cs)：调用平台自身的 `OpenView()`，检查总匹配数及前 200 个报价 ID 和顺序。
+- 临时端口为 GW `18700`、QuoteSvr `18780`。隔离环境采用 STC 的静态服务寻址，关闭 ZooKeeper 注册，防止普通客户端发现测试服务；正常示例配置不修改。
 - 直接向独立 schema 生成只读查询夹具，不通过报价录入接口产生大批历史、提醒或实时推送。正常报价库不写入测试报价。
 
 固定场景：全部有效报价、AAA 评级、AA+ 评级、企业债 + 买方 + 收益率区间、无匹配结果。每个场景默认预热一次、测量六次，串行请求之间间隔 250ms。预热也保留记录，但不计入统计。
@@ -25,7 +25,7 @@
 先完成已有 Maven 构建，保留本机 STC 兼容库、有效许可证和 PostgreSQL 配置。构建本次客户端：
 
 ```powershell
-dotnet build iteration1/client/QuotePrototype.csproj --no-restore -m:1 -p:OutputPath=bin/FilterPerformance/
+dotnet build iteration1/client/SalesTradingClient.csproj --no-restore -m:1 -p:OutputPath=bin/FilterPerformance/
 ```
 
 使用新客户端的“操作结果 / 开发工具 → 自动测试 → 筛选性能测试(500条)”按钮，或在项目根目录执行：
@@ -145,7 +145,7 @@ python iteration1/scripts/test-filter-performance.py --quotes 2000
 本次已构建的客户端可以不带性能测试参数，作为普通 UI 启动：
 
 ```powershell
-Start-Process .\iteration1\client\bin\FilterPerformance\Ficc.QuotePrototype.exe
+Start-Process .\iteration1\client\bin\FilterPerformance\Ficc.SalesTradingClient.exe
 ```
 
 已打开的旧客户端不会自动替换为新版本；后台服务本次无需重启。后续瓶颈包括关闭旧视图和打开新视图两次请求，以及后台重复搜索；本次未修改服务协议或后台查询语义。

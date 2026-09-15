@@ -18,7 +18,7 @@ if ($process.ExitCode -ne 0) {
     throw "Registry probe failed. See runtime/$Name-registry.err."
 }
 
-$executable = Join-Path $taskRoot 'client/bin/Discovery/Ficc.QuotePrototype.exe'
+$executable = Join-Path $taskRoot 'client/bin/Discovery/Ficc.SalesTradingClient.exe'
 $report = Join-Path $taskRoot "runtime/$Name-client.json"
 $process = Start-Process $executable -ArgumentList ('--probe-services "' + $report + '"') -WorkingDirectory (Split-Path $executable) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/$Name-client.log" -RedirectStandardError "$taskRoot/runtime/$Name-client.err"
 $null = $process.Handle

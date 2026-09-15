@@ -5,7 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed class CounterpartyEditor : UserControl {
         readonly ComboBox institution=new ComboBox{Width=235,DropDownStyle=ComboBoxStyle.DropDown};
         readonly ComboBox contact=new ComboBox{Width=235,DropDownStyle=ComboBoxStyle.DropDown};

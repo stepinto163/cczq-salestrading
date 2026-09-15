@@ -10,10 +10,10 @@ using System.Windows.Forms;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
-    public sealed class ApiDebugForm : Form {
+namespace Ficc.SalesTrading {
+    public sealed partial class ApiDebugForm : Form {
         DpsClient client;bool connected;
-        readonly TextBox host=new TextBox{Text="127.0.0.1",Width=115},user=new TextBox{Text="demo",Width=80},password=new TextBox{Text="demo",UseSystemPasswordChar=true,Width=80};
+        readonly TextBox host=new TextBox{Text="127.0.0.1",Width=115},user=new TextBox{Text="trader1",Width=80},password=new TextBox{Text="trader1",UseSystemPasswordChar=true,Width=80};
         readonly NumericUpDown port=new NumericUpDown{Minimum=1,Maximum=65535,Value=18600,Width=70};
         readonly ComboBox server=Choice("QuoteSvr","NotificationSvr"),presets=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=430};
         readonly TextBox topic=new TextBox{Text="ficc.quote.dictionary.query",Width=420},subscribeTopic=new TextBox{Width=520};
@@ -32,7 +32,7 @@ namespace Ficc.Prototype {
             var address=Bar();server.Width=150;address.Controls.AddRange(new Control[]{Label("服务"),server,Label("接口模板"),presets,Label("topic"),topic});layout.Controls.Add(address,0,1);
             var commands=Bar();commands.Controls.Add(send);commands.Controls.Add(newId);Button(commands,"格式化 JSON",()=>{request.Text=JObject.Parse(request.Text).ToString();return Task.CompletedTask;});Button(commands,"保存请求",SaveRequest);Button(commands,"载入请求",LoadRequest);commands.Controls.Add(Label("模板中的 ${变量} 在发送时替换；请求和回复分别显示。"));layout.Controls.Add(commands,0,2);send.Click+=async(s,e)=>await Guard(Send);
             var pair=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1};pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));pair.Controls.Add(Group("请求 JSON",request),0,0);pair.Controls.Add(Group("回复 JSON",response),1,0);layout.Controls.Add(pair,0,3);request.Text="{}";
-            var tabs=new TabControl{Dock=DockStyle.Fill};var sub=new TabPage("订阅 / 发布");var subBar=Bar();subBar.Dock=DockStyle.Top;subBar.Height=38;subBar.Controls.Add(subscribeTopic);subBar.Controls.Add(image);Button(subBar,"订阅",Subscribe);Button(subBar,"退订",Unsubscribe);sub.Controls.Add(messageList);sub.Controls.Add(subscriptionList);sub.Controls.Add(subBar);messageList.Dock=DockStyle.Fill;
+            var tabs=new TabControl{Dock=DockStyle.Fill};var sub=new TabPage("订阅 / 发布");sub.Controls.Add(messageList);sub.Controls.Add(subscriptionList);messageList.Dock=DockStyle.Fill;InitializeSubscriptionPanel(sub);
             var push=new TabPage("推送内容");push.Controls.Add(pushBody);messageList.SelectedIndexChanged+=(s,e)=>{int i=messageList.SelectedIndex;if(i>=0&&i<messages.Count)pushBody.Text=messages[i].ToString();};
             var vars=new TabPage("变量");variables.Text=new JObject{["quoteId"]="",["revision"]="1",["viewId"]="DBG-"+Guid.NewGuid().ToString("N"),["clientQuoteId"]="DBG-"+Guid.NewGuid().ToString("N"),["sourceMessageId"]="",["watchlistId"]="",["filterGroupId"]="",["notificationId"]="",["epoch"]=""}.ToString();vars.Controls.Add(variables);
             var past=new TabPage("请求历史（最近 100 条）");past.Controls.Add(historyList);historyList.Dock=DockStyle.Fill;historyList.SelectedIndexChanged+=(s,e)=>{int i=historyList.SelectedIndex;if(i<0||i>=history.Count)return;var record=history[i];server.Text=(string)record["serverName"];topic.Text=(string)record["topic"];request.Text=record["request"].ToString();response.Text=record["reply"].ToString();};
@@ -59,7 +59,7 @@ namespace Ficc.Prototype {
             string account=user.Text,address=host.Text,secret=password.Text;int p=(int)port.Value;
             try{await Task.Run(()=>current.Connect(account,p,address,secret));connected=true;status.Text="已连接 "+address+":"+p;}finally{connect.Enabled=true;}
         }
-        Task Disconnect(){client?.Dispose();client=null;connected=false;subscriptionList.Items.Clear();status.Text="已断开";return Task.CompletedTask;}
+        Task Disconnect(){client?.Dispose();client=null;connected=false;subscriptionList.Items.Clear();SelectSubscriptionTopic();status.Text="已断开";return Task.CompletedTask;}
         JToken Resolve(JToken value,JObject vars){
             if(value is JObject obj){foreach(var property in obj.Properties())property.Value=Resolve(property.Value,vars);}
             else if(value is JArray array){for(int i=0;i<array.Count;i++)array[i]=Resolve(array[i],vars);}
@@ -80,19 +80,54 @@ namespace Ficc.Prototype {
             if(token is JObject obj){foreach(string key in new[]{"quoteId","revision","viewId","sourceMessageId","watchlistId","filterGroupId","notificationId","epoch"})if(obj[key]!=null&&obj[key].Type!=JTokenType.Null)vars[key]=obj[key].DeepClone();foreach(var property in obj.Properties())if(property.Value is JObject||property.Value is JArray)CaptureVariables(property.Value,vars);}
             else if(token is JArray array&&array.Count>0)CaptureVariables(array[0],vars);
         }
-        async Task Subscribe(){if(!connected)throw new Exception("请先连接 GW。");string t=subscribeTopic.Text,name=server.Text;bool snapshot=image.Checked;if(snapshot&&!t.StartsWith("ficc.price."))throw new Exception("本原型只有行情 topic 提供订阅快照；报价和通知使用普通订阅。");await Task.Run(()=>client.Subscribe(t,snapshot,name));subscriptionList.Items.Add(t);status.Text="已订阅："+t;}
-        async Task Unsubscribe(){string t=subscriptionList.SelectedItem as string??subscribeTopic.Text;if(client==null)return;await Task.Run(()=>client.Unsubscribe(t));subscriptionList.Items.Remove(t);status.Text="已退订："+t;}
+        async Task Subscribe() {
+            if (!connected) throw new InvalidOperationException("请先连接 GW。");
+            string selectedTopic = subscribeTopic.Text.Trim();
+            string serverName = server.Text;
+            if (string.IsNullOrWhiteSpace(selectedTopic) || selectedTopic.Contains("${")) {
+                throw new InvalidOperationException("请先获取会话 Topic，或将占位符替换为实际值。");
+            }
+            bool snapshot = image.Checked;
+            if (snapshot && !selectedTopic.StartsWith("ficc.price.")) {
+                throw new InvalidOperationException("只有行情 topic 提供订阅快照；报价和通知使用普通订阅。");
+            }
+            await Task.Run(() => client.Subscribe(selectedTopic, snapshot, serverName));
+            subscriptionList.Items.Add(selectedTopic);
+            status.Text = "已订阅：" + selectedTopic;
+        }
         Task SaveRequest(){using(var dialog=new SaveFileDialog{Filter="DPS request (*.json)|*.json",FileName="dps-request.json"})if(dialog.ShowDialog(this)==DialogResult.OK)File.WriteAllText(dialog.FileName,new JObject{["serverName"]=server.Text,["topic"]=topic.Text,["request"]=JObject.Parse(request.Text),["variables"]=JObject.Parse(variables.Text)}.ToString());return Task.CompletedTask;}
         Task LoadRequest(){using(var dialog=new OpenFileDialog{Filter="DPS request (*.json)|*.json"})if(dialog.ShowDialog(this)==DialogResult.OK){var record=JObject.Parse(File.ReadAllText(dialog.FileName));server.Text=(string)record["serverName"];topic.Text=(string)record["topic"];request.Text=record["request"].ToString();if(record["variables"]!=null)variables.Text=record["variables"].ToString();}return Task.CompletedTask;}
         internal async Task SelfTest(string output){
+            if (visibleSubscriptionTopics.Count != 5 || visibleSubscriptionTopics.Any(item => (string)item["serverName"] != "QuoteSvr")) throw new Exception("Quote subscription catalog mismatch");
+            server.Text = "NotificationSvr";
+            if (visibleSubscriptionTopics.Count != 2 || visibleSubscriptionTopics.Any(item => (string)item["serverName"] != "NotificationSvr")) throw new Exception("Notification subscription catalog mismatch");
+            if (subscriptionCatalog.Any(item => string.IsNullOrWhiteSpace((string)item["description"]))) throw new Exception("Subscription description missing");
+            server.Text = "QuoteSvr";
             await Connect();topic.Text="ficc.quote.dictionary.query";request.Text="{}";await Send();if((string)lastReply["Code"]!="0000")throw new Exception("Quote request failed");
             server.Text="NotificationSvr";topic.Text="ficc.notification.preference.get";await Send();if(lastReply["Data"]?["preference"]==null)throw new Exception("Notification request failed");
-            server.Text="QuoteSvr";topic.Text="ficc.price.stream.open";await Send();image.Checked=true;await Subscribe();
+            server.Text="QuoteSvr";
+            subscriptionPresets.SelectedIndex = visibleSubscriptionTopics.FindIndex(item => (string)item["streamOpen"] == "ficc.price.stream.open");
+            await PrepareSubscriptionTopic();
+            if (subscribeTopic.Text.Contains("${") || !image.Checked) throw new Exception("Private topic resolution failed");
+            await Subscribe();
             var end=DateTime.UtcNow.AddSeconds(4);while(DateTime.UtcNow<end&&!messages.Any(m=>(string)m["message"]["kind"]=="SNAPSHOT"))await Task.Delay(50);
             if(!messages.Any(m=>(string)m["message"]["kind"]=="SNAPSHOT"))throw new Exception("Native price subscription snapshot missing");
             await Unsubscribe();if(history.Count!=3||subscriptionList.Items.Count!=0)throw new Exception("History/unsubscribe failed");
+            foreach (string deniedTopic in new[] { "ficc.price.report.*", "ficc.price.**", "ficc.quote.events", "ficc.notification.events" }) {
+                bool rejected = false;
+                try {
+                    await Task.Run(() => client.Subscribe(deniedTopic, false));
+                } catch (Exception error) {
+                    if (!error.Message.Contains("Only this session's FICC report topics")) throw;
+                    rejected = true;
+                }
+                if (!rejected) {
+                    client.Unsubscribe(deniedTopic);
+                    throw new Exception("Expected GW rejection: " + deniedTopic);
+                }
+            }
             using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Path.ChangeExtension(output,"png"),ImageFormat.Png);}
-            File.WriteAllText(output,new JObject{["result"]="PASS",["requests"]=3,["quotesCreated"]=0,["templateCount"]=catalog.Count,["nativePriceSnapshot"]=true,["messageLogDirectory"]=MessageLog.DirectoryPath}.ToString());
+            File.WriteAllText(output,new JObject{["result"]="PASS",["requests"]=3,["quotesCreated"]=0,["templateCount"]=catalog.Count,["subscriptionTopicCount"]=subscriptionCatalog.Count,["serverFilteredCatalog"]=true,["wildcardAndInternalTopicsRejected"]=true,["nativePriceSnapshot"]=true,["messageLogDirectory"]=MessageLog.DirectoryPath}.ToString());
         }
     }
 }

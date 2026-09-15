@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         internal async Task RunScrollingSmoke(string resultFile) {
             var checks = new JArray();
@@ -119,7 +119,7 @@ namespace Ficc.Prototype {
             heartbeat.Start();
             File.WriteAllText(heartbeatFile, DateTime.UtcNow.ToString("o"));
             try {
-                await Task.Run(() => client.Connect("demo", port));
+                await Task.Run(() => client.Connect("trader1", port));
                 connected = true;
                 JObject stream = await Request("ficc.quote.stream.open", new JObject());
                 streamId = (string)stream["streamId"];

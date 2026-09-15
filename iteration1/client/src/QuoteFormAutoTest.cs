@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         readonly TabPage testTab=new TabPage("自动测试");
         readonly TextBox testOutput=new TextBox{Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false};
@@ -29,13 +29,13 @@ namespace Ficc.Prototype {
         void TestLine(string line){if(line==null)return;Ui(()=>testOutput.AppendText(line+Environment.NewLine));}
 
         internal async Task RunAutoTests(){
-            using(var single=new Semaphore(1,1,@"Local\FiccQuotePrototype.AutoTests")){
-                if(!single.WaitOne(0))throw new InvalidOperationException("另一个原型窗口正在运行自动测试。");
+            using(var single=new Semaphore(1,1,@"Local\FiccSalesTradingClient.AutoTests")){
+                if(!single.WaitOne(0))throw new InvalidOperationException("另一个平台窗口正在运行自动测试。");
                 try{
                     SetDiagnosticsVisible(true);tabs.SelectedTab=testTab;testOutput.Clear();testCancelled=false;LastAutoTestResult=null;
                     testDirectory=Path.Combine(client.LogDirectory,"autotest-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(testDirectory);
                     stopTest.Enabled=true;openTestLogs.Enabled=true;
-                    TestLine("使用 demo 固定测试账户。每个子进程最多 30 秒；失败即停止，不增加压力。");
+                    TestLine("使用 trader1 固定测试账户。每个子进程最多 30 秒；失败即停止，不增加压力。");
                     testStatus.Text="1/5 正在检查 32 个报价及行情接口（3 条报价）…";
                     var apiResult=await RunTestProcess("--autotest","interfaces.json",false);
                     testStatus.Text="2/5 正在检查四类提醒（3 条报价）…";

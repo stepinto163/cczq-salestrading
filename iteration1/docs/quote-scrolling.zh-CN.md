@@ -9,7 +9,7 @@
 ## 功能检查
 
 ```powershell
-dotnet build iteration1/client/QuotePrototype.csproj --no-restore -m:1 -p:UseSharedCompilation=false -o iteration1/runtime/scroll-client
+dotnet build iteration1/client/SalesTradingClient.csproj --no-restore -m:1 -p:UseSharedCompilation=false -o iteration1/runtime/scroll-client
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-scrolling-ui.ps1
 ```
 
@@ -17,14 +17,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-scro
 
 ## 滚动压力测试
 
-原型“操作结果 / 开发工具”的自动测试页新增“滚动性能测试(500条)”按钮。或运行：
+平台“操作结果 / 开发工具”的自动测试页新增“滚动性能测试(500条)”按钮。或运行：
 
 ```powershell
-dotnet build iteration1/client/QuotePrototype.csproj --no-restore -m:1 -p:UseSharedCompilation=false
-python iteration1/scripts/test-filter-performance.py --scrolling --quotes 500 --client iteration1/client/bin/Debug/net472/Ficc.QuotePrototype.exe
+dotnet build iteration1/client/SalesTradingClient.csproj --no-restore -m:1 -p:UseSharedCompilation=false
+python iteration1/scripts/test-filter-performance.py --scrolling --quotes 500 --client iteration1/client/bin/Debug/net472/Ficc.SalesTradingClient.exe
 ```
 
-复用筛选测试的隔离 GW、QuoteSvr、临时 PostgreSQL schema、互斥锁及进程资源保护。每轮生成独立报告，结束后停止测试服务并删除本轮 schema。当前已有的普通原型服务不受影响。
+复用筛选测试的隔离 GW、QuoteSvr、临时 PostgreSQL schema、互斥锁及进程资源保护。每轮生成独立报告，结束后停止测试服务并删除本轮 schema。当前已有的普通平台服务不受影响。
 
 程序以小步长驱动真实网格滚动到底部，使用真实 GW 请求扩展。报告区分滚动到重绘、网格绘制、请求、应用数据、UI 50ms 定时器最大间隔和进程工作集；按 requestId 关联 GW / QuoteSvr 计时与回复大小。这不是操作系统鼠标输入延迟测试，也不是有实时更新的压力测试。
 

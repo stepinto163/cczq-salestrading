@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 using com.gateway.connector;
 using com.gateway.connector.tcp;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed class DpsClient : IEventListener, IDisposable {
         readonly GateWayApi api=new GateWayApi();
         readonly Dictionary<string,Listener> listeners=new Dictionary<string,Listener>();
@@ -16,10 +16,10 @@ namespace Ficc.Prototype {
         public event Action<string> Trace;
         internal event Action<JObject> RequestMeasured;
         public DpsClient(){api.IsGzip=false;api.ReconnectFlag=false;api.Eventlistener=this;}
-        public void Connect(string user,int port=18600,string host="127.0.0.1",string password="demo"){
+        public void Connect(string user,int port=18600,string host="127.0.0.1",string password="trader1"){
             account=user;
             Record("SEND","CONNECT","SYS.ATS.LOGIN",new JObject{["host"]=host,["port"]=port,["userName"]=user,["password"]="[REDACTED]"});
-            // Fixed LoginSvr simulator accepts only the configured demo identities.
+            // Fixed LoginSvr simulator accepts only the configured simulator identities.
             string result;try{result=api.connect(host,port,user,password,false,1,new Dictionary<string,object>());}catch(Exception e){Error("SYS.ATS.LOGIN",e);throw;}
             RecordRaw("RECEIVE","LOGIN_REPLY","SYS.ATS.LOGIN",result);
             var r=JObject.Parse(result??"{}");if((string)r["Code"]!="0000"&&(string)r["Code"]!="0001")throw new Exception("Simulator login failed: "+result);

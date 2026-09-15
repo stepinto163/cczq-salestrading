@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         internal async Task RunCounterpartyUiSmoke(string output){
             automatedUi=true;busy=true;foreach(var button in actions)button.Enabled=false;
@@ -35,7 +35,7 @@ namespace Ficc.Prototype {
                 var history=(JArray)(await Request("ficc.quote.history.query",new JObject{["quoteId"]=quoteId}))["records"];
                 check(history.Any(record=>(string)record["after"]?["institutionName"]=="机构简称（待匹配）"),"history retains the original entered names");
                 using(var other=new DpsClient()){
-                    await Task.Run(()=>other.Connect("demo2"));var publicQuote=(await Task.Run(()=>other.Data("ficc.quote.get",new JObject{["quoteId"]=quoteId})))["quote"];
+                    await Task.Run(()=>other.Connect("trader2"));var publicQuote=(await Task.Run(()=>other.Data("ficc.quote.get",new JObject{["quoteId"]=quoteId})))["quote"];
                     check(new[]{"institutionId","institutionName","contactId","contactName"}.All(field=>publicQuote[field]==null||publicQuote[field].Type==JTokenType.Null),"counterparty names follow the same permissions as IDs");
                 }
                 rejected=await Request("ficc.quote.update",new JObject{["quotes"]=new JArray(new JObject{["quoteId"]=quoteId,["expectedRevision"]=confirmed["revision"].DeepClone(),["institutionId"]=null,["contactId"]=null})});

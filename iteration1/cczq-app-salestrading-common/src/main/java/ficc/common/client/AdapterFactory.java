@@ -27,7 +27,7 @@ public final class AdapterFactory {
             return new LocalLoginSimulator();
         }
         return new SimulatorLoginSvrClient(network, configuration.getProperty("identity.serverKey", "SERVER.LoginSvr"),
-                configuration.getProperty("identity.username", "search"), configuration.getProperty("identity.password", "demo"),
+                configuration.getProperty("identity.username", "search"), configuration.getProperty("identity.password", "trader1"),
                 Long.parseLong(configuration.getProperty("identity.requestTimeoutMillis", "3000")));
     }
 

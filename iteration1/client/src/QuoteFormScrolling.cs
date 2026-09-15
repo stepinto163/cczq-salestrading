@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         const int MaximumLoadedQuotes = 10000;
         readonly SemaphoreSlim quoteViewGate = new SemaphoreSlim(1, 1);

@@ -142,7 +142,7 @@ final class QuoteService {
         if(q.get("tradeDate")!=null)try{LocalDate.parse(q.getString("tradeDate"));}catch(Exception e){throw ApiException.forField("1001","VALIDATION_FAILED","Invalid tradeDate","tradeDate");}
         for(String field:List.of("institutionName","contactName"))if(q.get(field)!=null&&!(q.get(field) instanceof String))throw ApiException.forField("1001","VALIDATION_FAILED","Expected text",field);
         validateCounterparty(q,active,userId);
-        if(!"WAN".equals(q.getString("quantityUnit"))||!"CNY".equals(q.getString("currency")))throw ApiException.forField("1010","UNSUPPORTED","Prototype supports CNY / WAN",null);
+        if(!"WAN".equals(q.getString("quantityUnit"))||!"CNY".equals(q.getString("currency")))throw ApiException.forField("1010","UNSUPPORTED","Client supports CNY / WAN",null);
         if(active){for(String f:List.of("securityId","side","quoteType","price","quantity","tradeDate","settlType"))RequestValidator.requireString(q,f);if("1".equals(q.getString("quoteType")))RequestValidator.requireString(q,"yieldType");}
     }
     void validateCounterparty(JSONObject quote, boolean active, String userId) {
@@ -196,7 +196,7 @@ final class QuoteService {
     JSONArray referenceFor(List<JSONObject> qs){JSONArray a=new JSONArray();Set<String> seen=new HashSet<>();for(JSONObject q:qs)if(q.getString("securityId")!=null&&seen.add(q.getString("securityId")))a.add(refs.require(q.getString("securityId")));return a;}
     int limit(JSONObject r,int max){int n=r.getIntValue("limit",200);if(n<1||n>max)throw ApiException.forField("1008","RESOURCE_LIMIT","limit out of range","limit");return n;}
     Object page(Call c,String field,List<JSONObject> rows,JSONObject extra){
-        if(rows.size()>10000)throw ApiException.forField("1008","RESOURCE_LIMIT","Prototype result cap: narrow the filter","filter");
+        if(rows.size()>10000)throw ApiException.forField("1008","RESOURCE_LIMIT","Client result cap: narrow the filter","filter");
         int n=limit(c.request,1000);return pageResult(new Cursor(c.user,c.session,c.topic,field,rows.stream().map(JsonUtils::deepCopy).toList(),0,n,System.currentTimeMillis()+120000,extra));
     }
     Object pageResult(Cursor cur){int end=Math.min(cur.offset+cur.limit,cur.rows.size());JSONObject d=JsonUtils.deepCopy(cur.extra);d.put(cur.field,cur.rows.subList(cur.offset,end));d.put("totalCount",cur.rows.size());String next=null;if(end<cur.rows.size()){cursors.entrySet().removeIf(e->e.getValue().expires<System.currentTimeMillis());if(cursors.size()>=64)throw ApiException.forField("1008","RESOURCE_LIMIT","Too many cursors",null);next=IdGenerator.newId("CUR-");cursors.put(next,new Cursor(cur.user,cur.session,cur.topic,cur.field,cur.rows,end,cur.limit,cur.expires,cur.extra));}d.put("nextCursor",next);return d;}

@@ -1,6 +1,6 @@
-﻿# 本机启动、测试与停止指南
+# 本机启动、测试与停止指南
 
-适用于当前电脑上已配置完成的第一轮原型。使用 **PowerShell**，所有命令均从以下目录执行：
+适用于当前电脑上已配置完成的第一轮平台。使用 **PowerShell**，所有命令均从以下目录执行：
 
 ```powershell
 cd D:\workspace\greatewall\ficc\ficc
@@ -46,13 +46,13 @@ Get-NetTCPConnection -State Listen -LocalPort 55432,12181,18680,18690,18600 |
 
 ## 2. 打开客户端
 
-当前版本包含布局调整、多债券行情、分组管理、CRM对手确认、多用户测试及只读服务发现检查。最新完整构建位于 Discovery 目录：
+当前版本包含布局调整、多债券行情、分组管理、CRM对手确认、多用户测试及只读服务发现检查。当前构建位于 Debug/net472 目录：
 
 ```powershell
-Start-Process .\iteration1\client\bin\Discovery\Ficc.QuotePrototype.exe
+Start-Process .\iteration1\client\bin\Debug\net472\Ficc.SalesTradingClient.exe
 ```
 
-选择 `demo`，点击 **连接 GW**。账户及基础资料使用固定模拟数据。
+选择 `trader1`，点击 **连接 GW**。账户及基础资料使用固定模拟数据。
 
 - **报价管理**：新建 → 选中待确认报价 → 确认 → 修改 → 撤出 → 恢复或删除。
 - **行情中心**：只显示有效报价形成的行情。新建但未确认的报价不进入行情；左侧列出匹配债券，右侧显示选中债券的买卖盘。
@@ -70,7 +70,7 @@ Start-Process .\iteration1\client\bin\Discovery\Ficc.QuotePrototype.exe
 Start-Process .\iteration1\api-debugger\bin\Debug\net472\Ficc.DpsApiDebugger.exe
 ```
 
-连接地址为 `127.0.0.1:18600`，模拟用户名和密码均为 `demo`。可编辑请求 JSON，查看回复，并订阅推送；详见 [API 调试器说明](api-debugger.zh-CN.md)。
+连接地址为 `127.0.0.1:18600`，模拟用户名和密码均为 `trader1`。可编辑请求 JSON，查看回复，并订阅推送；详见 [API 调试器说明](api-debugger.zh-CN.md)。
 
 ## 3. 运行自动测试
 
@@ -121,4 +121,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\stop-zo
 powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\stop-postgres.ps1
 ```
 
-停止进程不会删除数据库中的业务数据。项目结构、构建命令及实现边界见 [原型总说明](../README.zh-CN.md)。
+停止进程不会删除数据库中的业务数据。项目结构、构建命令及实现边界见 [平台总说明](../README.zh-CN.md)。

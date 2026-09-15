@@ -1,7 +1,7 @@
 param([string]$ExecutablePath)
 $ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
-if(!$ExecutablePath){$ExecutablePath=Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.QuotePrototype.exe'}
+if(!$ExecutablePath){$ExecutablePath=Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe'}
 $exe=(Resolve-Path -LiteralPath $ExecutablePath).Path
 $testArgs='--autotest-price "'+$taskRoot+'/runtime/price-multibond-smoke.json"'
 $p=Start-Process -FilePath $exe -ArgumentList $testArgs -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/price-multibond-smoke.log" -RedirectStandardError "$taskRoot/runtime/price-multibond-smoke.err"

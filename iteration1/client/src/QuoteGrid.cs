@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Windows.Forms;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     internal sealed class QuoteGrid : DataGridView {
         internal QuoteGrid() {
             // Compose cells in memory before presenting the grid to the window.

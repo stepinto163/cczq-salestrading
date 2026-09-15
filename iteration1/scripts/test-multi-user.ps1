@@ -1,7 +1,7 @@
 param([string]$ExecutablePath)
 $ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
-if(!$ExecutablePath){$ExecutablePath=Join-Path $taskRoot 'client/bin/MultiUser/Ficc.QuotePrototype.exe'}
+if(!$ExecutablePath){$ExecutablePath=Join-Path $taskRoot 'client/bin/MultiUser/Ficc.SalesTradingClient.exe'}
 $exe=(Resolve-Path -LiteralPath $ExecutablePath).Path
 $runDirectory=Join-Path $taskRoot ('runtime/multi-user-runs/'+[Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $runDirectory -Force | Out-Null

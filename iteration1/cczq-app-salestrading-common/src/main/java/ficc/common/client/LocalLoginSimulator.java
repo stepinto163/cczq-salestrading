@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class LocalLoginSimulator implements LoginSessionClient {
     private final Map<String, String> sessions = new ConcurrentHashMap<>();
     private static final Map<String, String> USERS = Map.of(
-            "demo", "U-001", "demo2", "U-002", "admin", "U-ADMIN",
+            "trader1", "U-001", "trader2", "U-002", "admin", "U-ADMIN",
             "intake", "S-INTAKE", "search", "S-SEARCH");
 
     public JSONObject login(JSONObject request) {
@@ -23,7 +23,7 @@ public final class LocalLoginSimulator implements LoginSessionClient {
         String username = parameters == null ? request.getString("username") : parameters.getString("userName");
         String password = parameters == null ? request.getString("password") : parameters.getString("password");
         String userId = username == null ? null : USERS.get(username);
-        if (userId == null || !"demo".equals(password)) {
+        if (userId == null || !"trader1".equals(password)) {
             return JsonUtils.object("Code", "1003", "Msg", "Invalid simulator login");
         }
         // A session token is a credential, not a time-ordered business identifier.
@@ -34,7 +34,7 @@ public final class LocalLoginSimulator implements LoginSessionClient {
 
     private JSONObject result(String sessionId, String userId) {
         return JsonUtils.object("Code", "0001", "Msg", "Fixed LoginSvr simulator",
-                "sid", sessionId, "userId", userId, "userid", userId, "companyId", "FICC-DEMO");
+                "sid", sessionId, "userId", userId, "userid", userId, "companyId", "FICC-TEST");
     }
 
     @Override
@@ -44,6 +44,6 @@ public final class LocalLoginSimulator implements LoginSessionClient {
 
     @Override
     public String loginService() {
-        return login(JsonUtils.object("method", "login", "username", "search", "password", "demo")).getString("sid");
+        return login(JsonUtils.object("method", "login", "username", "search", "password", "trader1")).getString("sid");
     }
 }

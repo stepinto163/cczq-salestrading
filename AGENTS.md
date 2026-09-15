@@ -12,6 +12,8 @@ Treat performance experiments conservatively:
 
 # Naming and readability
 
+- Treat this repository as the sales-trading platform. Use product terminology in current code, UI, filenames, scripts and documentation. Preserve literal names only where needed for historical evidence, external source references or backward-compatible data migration.
+
 - Prefer clear, descriptive class and method names over brevity.
 - Do not use cryptic abbreviations such as `J` for shared utilities.
 - Use one statement per line, conventional indentation, and separate field declarations. Do not compress methods, branches, or several operations onto a single line.

@@ -305,7 +305,7 @@ requestPreciseValuations = () => {};
 
 element('app').style.display = 'none';
 element('loginOverlay').classList.remove('hidden');
-element('loginUser').value = 'demo';
+element('loginUser').value = 'trader1';
 element('loginPass').value = '';
 window.ficcMessageLog = () => gateway.logs;
 for (const panel of document.querySelectorAll('[id^="filters-"]')) {

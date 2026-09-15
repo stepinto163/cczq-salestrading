@@ -1,6 +1,6 @@
-﻿# 原需求界面的 GW 接入版
+# 原需求界面的 GW 接入版
 
-本版直接使用已有需求原型的 HTML、CSS 和 app.js，保留原导航、行情表、右侧盘口、精确报价表、报价确认表、报价管理及弹窗。上一版重新绘制的简化界面已移除。
+本版直接使用已有需求界面的 HTML、CSS 和 app.js，保留原导航、行情表、右侧盘口、精确报价表、报价确认表、报价管理及弹窗。上一版重新绘制的简化界面已移除。
 
 `requirements/` 中的 17 个原脚本和样式文件原样复制，哈希记录于 `source-manifest.json`。HTML 只调整资源路径、CSP、脚本接入，并移除应用 body 后的浏览器扩展残留。消息与数据转换集中在 `src/requirements-adapter.js` 和 `src/requirements-model.js`。
 
@@ -10,12 +10,12 @@ PostgreSQL、ZooKeeper、QuoteSvr、NotificationSvr 与 GW 需先运行，参见
 
 ```powershell
 # 仓库根目录；需要 Node.js 22 或以上，无运行时 npm 依赖。
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/start-web-prototype.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/start-web-client.ps1
 ```
 
-打开 <http://127.0.0.1:8088>，刷新旧页面即可看到原需求界面。模拟账号 `demo`、`demo2`，密码均为 `demo`。
+打开 <http://127.0.0.1:8088>，刷新旧页面即可看到原需求界面。模拟账号 `trader1`、`trader2`，密码均为 `trader1`。
 
-如果 GW 尚未加载 WebSocket 配置，执行 `stop-gateway.ps1`、`start-gateway.ps1`。停止静态服务器使用 `stop-web-prototype.ps1`。
+如果 GW 尚未加载 WebSocket 配置，执行 `stop-gateway.ps1`、`start-gateway.ps1`。停止静态服务器使用 `stop-web-client.ps1`。
 
 ## 首轮业务检查
 
@@ -42,7 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/start-web
 
 ```powershell
 node --test iteration1/web-client/tests/*.test.mjs
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-web-prototype.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-web-client.ps1
 ```
 
 原页面脚本/DOM 联调检查另使用 jsdom，仅安装到忽略的 runtime 目录，不随页面部署：

@@ -1,6 +1,6 @@
-﻿# FICC 第一轮功能原型
+# FICC 第一轮功能平台
 
-已运行并验证：**C# 原型 / 独立 DPS 调试器 → STC GW → STC/BBox QuoteSvr、NotificationSvr → PostgreSQL**。代码位于本目录；用户提供的基础库原仓库未修改，也未回退分支。
+已运行并验证：**C# 平台 / 独立 DPS 调试器 → STC GW → STC/BBox QuoteSvr、NotificationSvr → PostgreSQL**。代码位于本目录；用户提供的基础库原仓库未修改，也未回退分支。
 
 日常操作请参阅 [本机启动、测试与停止指南](docs/local-startup.zh-CN.md)，包含可直接复制的 PowerShell 命令。
 
@@ -10,11 +10,11 @@
 
 Java 模块现已提供 [Maven 父 POM](pom.xml) 和 [Jenkinsfile](Jenkinsfile)，构建、基础依赖准备及部署包说明见 [Maven 与 Jenkins 构建](docs/maven-jenkins.zh-CN.md)。Maven 使用独立的 `target-maven` 输出目录。
 
-迁移至 QA 空库时，使用 [建表 SQL](sql/001-create-demo-tables.sql)；执行方法及数据库配置见 [QA 环境数据库初始化](docs/qa-database.zh-CN.md)。
+迁移至 QA 空库时，使用 [建表 SQL](sql/001-create-tables.sql)；执行方法及数据库配置见 [QA 环境数据库初始化](docs/qa-database.zh-CN.md)。
 
 开发约定见 [STC 服务开发原则与实现约定](../docs/stc-development-principles.zh-CN.md)。标准启动、公共服务 Client 及 ZooKeeper 发现已接入，配置与验证见 [本机 ZooKeeper 与 STC 服务发现](docs/zookeeper-discovery.zh-CN.md)。
 
-行情中心内“关注债券”和“筛选分组”已提供创建、编辑、删除及应用行情的管理窗口，详见 [分组管理界面](docs/group-management.zh-CN.md)。最新完整客户端位于 `client/bin/Discovery`，包含 [报价确认时手动选择CRM对手](docs/counterparty-confirmation.zh-CN.md)及独立的 [多用户报价场景](docs/multi-user-scenario.zh-CN.md)；本次保留正在使用的旧窗口，因此另目录构建。常规源码构建仍输出至 `client/bin/Debug/net472`。
+行情中心内“关注债券”和“筛选分组”已提供创建、编辑、删除及应用行情的管理窗口，详见 [分组管理界面](docs/group-management.zh-CN.md)。当前客户端位于 `client/bin/Debug/net472`，包含 [报价确认时手动选择CRM对手](docs/counterparty-confirmation.zh-CN.md)及独立的 [多用户报价场景](docs/multi-user-scenario.zh-CN.md)。
 
 ## STC 项目结构
 
@@ -69,23 +69,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/start-gat
 `runtime/quotesvr.log` 出现 `QuoteSvr READY`，GW 启动完成后打开 UI：
 
 ```powershell
-& .\iteration1\client\bin\Discovery\Ficc.QuotePrototype.exe
+& .\iteration1\client\bin\Debug\net472\Ficc.SalesTradingClient.exe
 ```
 
-选择 `demo`，点击“连接 GW”。可试用“新建 → 确认 → 修改 → 撤出 → 恢复”；有效报价需先撤出再删除，待确认报价可直接删除。另有评级与状态筛选、批量新建两条、历史、该债行情。界面通过真实 DPS 推送更新。
+选择 `trader1`，点击“连接 GW”。可试用“新建 → 确认 → 修改 → 撤出 → 恢复”；有效报价需先撤出再删除，待确认报价可直接删除。另有评级与状态筛选、批量新建两条、历史、该债行情。界面通过真实 DPS 推送更新。
 
 上方有 **自动测试** 和 **API 调试器** 按钮。主表分为 **报价管理、行情视图、报价提醒**：行情视图支持最优／全部／指定档数、债券及清算筛选，使用独立行情订阅。报价提醒提供四个开关、未读数、实时弹窗、已读操作和关联报价表。详见 [报价提醒实现](docs/notifications.zh-CN.md)、[DPS API 调试器](docs/api-debugger.zh-CN.md)。
 
 | 进程 | 本地地址 | 说明 |
 |---|---|---|
-| PostgreSQL 16.15 | 127.0.0.1:55432 | 数据库 `ficc_quote`，原型 schema `ficc_demo` |
+| PostgreSQL 16.15 | 127.0.0.1:55432 | 数据库 `ficc_quote`，平台 schema `ficc_salestrading` |
 | QuoteSvr | 127.0.0.1:18680 | 独立 STC/BBox 进程 |
-| NotificationSvr | 127.0.0.1:18690 | 独立 STC/BBox 进程，与 QuoteSvr 共用 `ficc_demo` schema |
+| NotificationSvr | 127.0.0.1:18690 | 独立 STC/BBox 进程，与 QuoteSvr 共用 `ficc_salestrading` schema |
 | GW | 127.0.0.1:18600 | 使用提供的 GW 源码，独立进程 |
 
 PostgreSQL 是本项目单独安装的实例，未删除或修改旧实例。数据库凭据保存在被忽略的 `runtime/*.local.properties`。STC 许可证仍由原 SDK 验证，许可证文件不提交。
 
-模拟账户：`demo` → U-001，`demo2` → U-002，`admin` → U-ADMIN；`intake`、`search` 为内部功能测试身份。模拟密码均为 `demo`。业务操作者从登录会话取得；GW 拒绝订阅其他会话的私有 topic。
+模拟账户：`trader1` → U-001，`trader2` → U-002，`admin` → U-ADMIN；`intake`、`search` 为内部功能测试身份。模拟密码均为 `trader1`。业务操作者从登录会话取得；GW 拒绝订阅其他会话的私有 topic。
 
 停止时先关闭 C# 窗口，再执行：
 
@@ -137,7 +137,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-ui.p
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-price-ui.ps1
 ```
 
-最初修复版保留于 `client/bin/PriceFix/Ficc.QuotePrototype.exe`；当前修复已合入常规构建 `client/bin/Debug/net472`，该版本同时包含分组管理界面。
+当前修复已合入常规构建 `client/bin/Debug/net472`，该版本同时包含分组管理界面。
 
 UI 和自动测试共用 [DpsClient](client/src/DpsClient.cs) 与 [MessageLog](client/src/MessageLog.cs)。每次启动在 `runtime/client-logs/<时间-进程号>/` 创建独立日志目录；UI 的 DPS 消息页及测试结果 JSON 中可找到路径。
 
@@ -153,7 +153,7 @@ UI 和自动测试共用 [DpsClient](client/src/DpsClient.cs) 与 [MessageLog](c
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/build-server.ps1
-dotnet build iteration1/client/QuotePrototype.csproj -m:1
+dotnet build iteration1/client/SalesTradingClient.csproj -m:1
 dotnet build iteration1/api-debugger/DpsApiDebugger.csproj -m:1
 ```
 
@@ -166,10 +166,10 @@ dotnet build iteration1/api-debugger/DpsApiDebugger.csproj -m:1
 ## 第一轮边界
 
 - [SearchSvrClient](docs/search-dependency.zh-CN.md) 使用本地真实缓存和 PostgreSQL 历史查询；查询与订阅共用筛选逻辑。独立 SearchSvr、分布式扩展、高可用尚未实现。
-- LoginSvr、BaseSvr 使用固定数据；筛选字典仅覆盖原型字段。
+- LoginSvr、BaseSvr 使用固定数据；筛选字典仅覆盖平台字段。
 - CalSvr 尚未接入。行情支持直接可比较的收益率，含权债使用行权收益率；需要净价/全价换算时返回 `NOT_READY`。交割暂支持 T+0、T+1。
 - PostgreSQL 保存报价、历史、事件、来源原文、幂等记录和个人分组。行情由已持久化的当前报价重建，暂不单独保存历史行情快照。
-- 历史查询按“该日最后一次变更后的报价”返回，不补齐无变更日；基础属性及最新日估值来自当前模拟数据。这是原型限制，不是新的产品约定。
+- 历史查询按“该日最后一次变更后的报价”返回，不补齐无变更日；基础属性及最新日估值来自当前模拟数据。这是平台限制，不是新的产品约定。
 - Intake 暂实现新增及待确认报价更新，没有真实外部 QT 连接。
 - UI 最多加载 200 行；QuoteSvr/GW Java 堆分别限制 256/192 MB，各限制两个可用处理器。断线后重新打开客户端；自动补流、服务端会话回收及真实认证需后续完成。
 - NotificationSvr Java 堆限制为 160 MB，使用单个工作线程和容量 128 的输入队列；缺号或溢出后重新读取 QuoteSvr 状态及原生行情快照。通知服务是独立进程，未把通知规则塞入 QuoteSvr。

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     static class NotificationSmoke {
         static int checks;
         static void Check(bool ok,string text){if(!ok)throw new Exception(text);checks++;Console.WriteLine("PASS "+text);}
@@ -20,7 +20,7 @@ namespace Ficc.Prototype {
         static string Create(DpsClient c,string side,string yield,string settl){var r=c.Data("ficc.quote.create",new JObject{["quotes"]=new JArray(new JObject{["clientQuoteId"]="NTEST-"+Guid.NewGuid().ToString("N"),["securityId"]="250002.IB",["side"]=side,["quoteType"]="1",["yieldType"]="1",["price"]=yield,["quantity"]="1000",["settlType"]=settl,["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd")})})["results"][0];if((string)r["Code"]!="0000")throw new Exception(r.ToString());string id=(string)r["quoteId"];Action(c,"confirm",id);return id;}
         public static int Run(string output){
             try{using(var mine=new DpsClient())using(var other=new DpsClient()){
-                mine.Connect("demo");other.Connect("demo2");
+                mine.Connect("trader1");other.Connect("trader2");
                 var original=(JObject)Call(mine,"preference.get",new JObject())["preference"];
                 string[] keys={"watchlistEnabled","filterGroupEnabled","counterQuoteEnabled","myBestEnabled"};
                 var all=new JObject();foreach(string k in keys)all[k]=true;Pref(mine,all);Check(true,"notification preferences saved through independent service");

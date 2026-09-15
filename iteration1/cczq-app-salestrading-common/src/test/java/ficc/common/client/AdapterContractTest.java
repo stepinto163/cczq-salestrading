@@ -19,7 +19,7 @@ final class AdapterContractTest {
         Properties configuration = new Properties();
         LoginSessionClient identity = AdapterFactory.identity(configuration, null, true);
         String sid = ((LocalLoginSimulator) identity).login(JsonUtils.object(
-                "username", "demo", "password", "demo")).getString("sid");
+                "username", "trader1", "password", "trader1")).getString("sid");
         assertEquals("U-001", identity.resolveUser(sid));
         assertNull(identity.resolveUser("unknown"));
         assertEquals(2, AdapterFactory.crm(configuration, null).institutions("U-001").size());

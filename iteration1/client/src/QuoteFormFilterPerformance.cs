@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         JObject performanceFilter;
         Action<string> filterPhase;
@@ -22,7 +22,7 @@ namespace Ficc.Prototype {
 
         Task StartGridPerformanceTest(bool scrolling) {
             var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (directory != null && !File.Exists(Path.Combine(directory.FullName, "QuotePrototype.csproj"))) {
+            while (directory != null && !File.Exists(Path.Combine(directory.FullName, "SalesTradingClient.csproj"))) {
                 directory = directory.Parent;
             }
             if (directory == null) {
@@ -76,7 +76,7 @@ namespace Ficc.Prototype {
             Action<JObject> measureRequest = measurement => requestMeasurements?.Add(measurement);
             client.RequestMeasured += measureRequest;
             try {
-                await Task.Run(() => client.Connect("demo", gatewayPort));
+                await Task.Run(() => client.Connect("trader1", gatewayPort));
                 connected = true;
                 user.Enabled = false;
                 JObject stream = await Request("ficc.quote.stream.open", new JObject());

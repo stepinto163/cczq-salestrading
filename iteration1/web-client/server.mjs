@@ -26,4 +26,4 @@ const server = http.createServer(async (request, response) => {
         response.end();
     }
 });
-server.listen(8088, '127.0.0.1', () => console.log('Web prototype: http://127.0.0.1:8088'));
+server.listen(8088, '127.0.0.1', () => console.log('Web client: http://127.0.0.1:8088'));

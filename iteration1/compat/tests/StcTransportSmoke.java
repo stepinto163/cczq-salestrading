@@ -29,7 +29,7 @@ public final class StcTransportSmoke {
     public static void main(String[] args)throws Exception{
         try{
             api.setReconnectFlag(false);api.connect("127.0.0.1",18680,"gateway","",false,1,null);
-            JSONObject login=JSON.parseObject(api.requestSync("LoginSvr","SYS.ATS.LOGIN",obj("method","login","username","demo","password","demo").toJSONString(),String.class,3000));
+            JSONObject login=JSON.parseObject(api.requestSync("LoginSvr","SYS.ATS.LOGIN",obj("method","login","username","trader1","password","trader1").toJSONString(),String.class,3000));
             check(login!=null&&"0001".equals(login.getString("Code")),"STC Login simulator handler");sid=login.getString("sid");
             topic=call("quote.stream.open",obj()).getString("pushTopic");
             IMessage<String> listener=(t,c)->ordinary.offer(JSON.parseObject(c));

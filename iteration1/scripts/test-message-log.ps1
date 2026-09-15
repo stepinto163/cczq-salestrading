@@ -6,8 +6,8 @@ $ErrorActionPreference = 'Stop'
 $clientFolder = (Resolve-Path $ClientDirectory).Path
 # This DPS DLL embeds Newtonsoft.Json; there is no separate Newtonsoft assembly.
 [void][Reflection.Assembly]::LoadFrom((Join-Path $clientFolder 'gateway-api.dll'))
-$clientAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $clientFolder 'Ficc.QuotePrototype.exe'))
-$logType = $clientAssembly.GetType('Ficc.Prototype.MessageLog', $true)
+$clientAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $clientFolder 'Ficc.SalesTradingClient.exe'))
+$logType = $clientAssembly.GetType('Ficc.SalesTrading.MessageLog', $true)
 $redactMethod = $logType.GetMethod('Redact', [Reflection.BindingFlags]'NonPublic,Static')
 $original = [Newtonsoft.Json.Linq.JToken]::Parse(@'
 {

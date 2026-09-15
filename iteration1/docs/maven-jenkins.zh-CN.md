@@ -11,7 +11,7 @@
 | `cczq-app-salestrading-notificationsvr` | NotificationSvr JAR、部署 ZIP |
 | `gateway` | `cczq-app-salestrading-gw` 扩展 JAR、包含既有 GW 的部署 ZIP |
 
-版本当前统一为 `0.1.0-SNAPSHOT`。C# 原型与 API 调试器继续使用 .NET 构建，不属于 Java Maven reactor。
+版本当前统一为 `0.1.0-SNAPSHOT`。C# 平台与 API 调试器继续使用 .NET 构建，不属于 Java Maven reactor。
 
 STC 的 innersvr 通过父 POM 管理公共依赖。本项目采用相同的 Maven 分层方式，但未直接继承其私有父 POM，以免隐式引入与当前兼容补丁不一致的基础库版本。
 
@@ -29,13 +29,13 @@ mvn -B -ntp clean verify
 mvn -B -ntp -pl cczq-app-salestrading-quotesvr -am clean verify
 ```
 
-产物位于各模块的 `target-maven`，部署包名为 `<artifactId>-0.1.0-SNAPSHOT-dist.zip`。这是有意与旧 PowerShell 构建的 `target` 分开，避免清理或覆盖正在运行的演示服务 JAR。
+产物位于各模块的 `target-maven`，部署包名为 `<artifactId>-0.1.0-SNAPSHOT-dist.zip`。这是有意与旧 PowerShell 构建的 `target` 分开，避免清理或覆盖正在运行的示例服务 JAR。
 
 `verify` 执行快速内存单元测试，生成 Surefire XML 报告。不会自动运行 `BusinessSmoke`、`SharedSchemaSmoke`、C# 自动测试，也不会连接 PostgreSQL、ZooKeeper 或启动服务。它们是需要独立环境的功能检查。
 
 ## 首次准备 STC 兼容依赖
 
-当前演示依赖本地构建过的 STC/DPS 兼容版本，部分基础类来自旧产品 JAR。不能直接把原版 Maven 坐标替换进来，也不能依赖某台电脑上的绝对路径。
+当前示例依赖本地构建过的 STC/DPS 兼容版本，部分基础类来自旧产品 JAR。不能直接把原版 Maven 坐标替换进来，也不能依赖某台电脑上的绝对路径。
 
 本轮将现有 **123 个 JAR** 原样登记为 `cczq.salestrading.compat` 下的普通 Maven 依赖，版本含 SHA-256 摘要。清单见 [foundation-artifacts.json](../build/foundation-artifacts.json)。[stc-foundation-runtime.pom.xml](../build/stc-foundation-runtime.pom.xml) 按已验证的顺序声明 122 个服务基础依赖；GW 额外先加载其自身兼容 JAR。每个导入 JAR 使用明确的 POM，不继承其内嵌旧 POM 的额外依赖。
 
@@ -93,13 +93,13 @@ python iteration1/scripts/bootstrap-maven-foundations.py --lib iteration1/runtim
 
 JAR Manifest 指定入口类和有序 `lib/` 依赖。保留整个目录后，可以使用 `java -jar` 启动，避免使用顺序未定义的 `lib/*` 替代原有覆盖关系。主类仍为 `ficc.quote.Main`、`ficc.notification.NotificationMain`、`GW`。
 
-包内不包含 `server.lic`、本机数据库配置、测试数据或运行日志。将有效许可证及 QA 配置通过部署步骤放入；详细步骤见包内说明及 [QA 数据库指南](qa-database.zh-CN.md)。包内 control 仍以演示环境为模板，部署时需要替换网络地址和 `quote.properties` 文件位置。
+包内不包含 `server.lic`、本机数据库配置、测试数据或运行日志。将有效许可证及 QA 配置通过部署步骤放入；详细步骤见包内说明及 [QA 数据库指南](qa-database.zh-CN.md)。包内 control 仍以示例环境为模板，部署时需要替换网络地址和 `quote.properties` 文件位置。
 
 ## 本机验证（2026-09-14）
 
 - 从独立 Maven 本地仓库完成首次 `clean verify`，父工程与 4 个 Java 模块全部成功。
 - 最终依赖顺序校正后，离线 `clean verify` 成功，耗时约 17 秒；3 个内存单元测试通过。
-- `python iteration1/scripts/verify-maven-packages.py` 检查 3 个部署 ZIP，确认入口类、control、SQL、依赖文件及全部 JAR 校验值，有序 classpath 与现有演示环境一致。未启动服务或生成报价。
+- `python iteration1/scripts/verify-maven-packages.py` 检查 3 个部署 ZIP，确认入口类、control、SQL、依赖文件及全部 JAR 校验值，有序 classpath 与现有示例环境一致。未启动服务或生成报价。
 - 兼容依赖也已安装到当前用户默认 `~/.m2/repository`，IDE 可解析父 POM。
 - 日志：`runtime/maven-verify.log`、`runtime/maven-verify-offline.log`；包检查结果：`runtime/maven-package-check.json`。
 

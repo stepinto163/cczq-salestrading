@@ -7,7 +7,7 @@ def generate_report(directory):
     summary = json.loads((directory / "summary.json").read_text(encoding="utf-8-sig"))
     data_file = directory / "latency.json"
     report = json.loads(data_file.read_text(encoding="utf-8-sig")) if data_file.exists() else {}
-    lines = ["# C# 原型滚动测试报告", "",
+    lines = ["# C# 平台滚动测试报告", "",
              f"- 结果：{summary['result']}",
              f"- 服务端报价：{summary['quoteCount']}；客户端已加载：{report.get('loadedRows', '未完成')}",
              f"- 滚动至重绘 p95 / 最大：{report.get('scrollP95Ms', '—')} / {report.get('scrollMaxMs', '—')} ms",

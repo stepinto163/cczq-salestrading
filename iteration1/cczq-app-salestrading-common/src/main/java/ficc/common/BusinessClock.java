@@ -3,7 +3,7 @@ package ficc.common;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
-/** Business timestamps retain the prototype's Asia/Shanghai zone and ISO format. */
+/** Business timestamps retain the client's Asia/Shanghai zone and ISO format. */
 public final class BusinessClock {
     private BusinessClock() {}
 

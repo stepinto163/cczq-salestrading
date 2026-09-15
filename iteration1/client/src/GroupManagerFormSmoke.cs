@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class GroupManagerForm {
         // Exercises the editor's actual save/delete paths; creates one group and zero quotes.
         internal async Task<int> RunEditorSmoke(string screenshot,Func<JObject,Task> apply){

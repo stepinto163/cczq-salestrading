@@ -28,6 +28,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/build-ser
 
 QuoteSvr classpath 排除 `gw-local.jar`；GW 将自己的 JAR 放在优先位置，避免重复协议类覆盖。C# 使用 `stc-client` 的真实 DPS DLL；该 DLL 已合并 Newtonsoft 类型，项目不重复引用另一份 Newtonsoft 程序集。
 
-C# DLL 的 `subscribe()` 对非空错误回复也可能返回 true。原型额外检查 GW 的回复 `Code`，失败时移除本地注册；已通过另一用户私有 topic 拒绝用例验证。
+C# DLL 的 `subscribe()` 对非空错误回复也可能返回 true。平台额外检查 GW 的回复 `Code`，失败时移除本地注册；已通过另一用户私有 topic 拒绝用例验证。
 
 许可证验证沿用原 SDK，未删除或绕过。

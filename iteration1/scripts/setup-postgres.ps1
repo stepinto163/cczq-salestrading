@@ -49,7 +49,7 @@ timezone = 'Asia/Shanghai'
         if ($LASTEXITCODE -ne 0) { throw 'Database provisioning failed; see local provision.log.' }
     } finally { $env:PGPASSWORD = $previousPgPassword }
     [IO.File]::WriteAllText((Join-Path $runtimePath 'postgres-admin.local.properties'),"host=127.0.0.1`nport=55432`nuser=ficc_admin`npassword=$adminPassword`n",[Text.Encoding]::UTF8)
-    [IO.File]::WriteAllText($localConfig,"db.url=jdbc:postgresql://127.0.0.1:55432/ficc_quote`ndb.user=ficc_quote`ndb.password=$appPassword`ndb.schema=ficc_demo`nlisten.port=18680`n",(New-Object Text.UTF8Encoding($false)))
+    [IO.File]::WriteAllText($localConfig,"db.url=jdbc:postgresql://127.0.0.1:55432/ficc_quote`ndb.user=ficc_quote`ndb.password=$appPassword`ndb.schema=ficc_salestrading`nlisten.port=18680`n",(New-Object Text.UTF8Encoding($false)))
     Write-Output 'Project PostgreSQL ready: 127.0.0.1:55432 / ficc_quote. Credentials saved locally; not printed.'
 } finally {
     foreach ($tempPath in @($pwFile,$sqlFile)) { if (Test-Path -LiteralPath $tempPath) { Remove-Item -LiteralPath $tempPath } }

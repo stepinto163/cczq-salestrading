@@ -44,7 +44,7 @@ def main():
             names = set(package.namelist())
             assert not any(name.endswith((".lic", ".local.properties", ".log")) for name in names)
             assert root + "control/ATSConfig.ini" in names
-            assert root + "sql/001-create-demo-tables.sql" in names
+            assert root + "sql/001-create-tables.sql" in names
             assert root + "config/database.properties.example" in names
             jars = [name for name in names if name.startswith(root)
                     and "/" not in name[len(root):] and name.endswith(".jar")]

@@ -46,8 +46,8 @@ try {
         const code = script.source.includes('requirements-adapter') ? `(() => {\n${script.code.replace(/^import .*;\r?\n/gm, '')}\n})();` : script.code;
         vm.runInContext(code, context, { filename: script.source, timeout: 4000 });
     }
-    dom.window.document.getElementById('loginUser').value = 'demo';
-    dom.window.document.getElementById('loginPass').value = 'demo';
+    dom.window.document.getElementById('loginUser').value = 'trader1';
+    dom.window.document.getElementById('loginPass').value = 'trader1';
     await dom.window.doLogin();
     check('original login uses GW', dom.window.document.getElementById('app').style.display === 'flex');
     check('original quote tables and right panel exist', Boolean(dom.window.document.getElementById('quoteTableWrap') && dom.window.document.getElementById('instQuoteBody')));

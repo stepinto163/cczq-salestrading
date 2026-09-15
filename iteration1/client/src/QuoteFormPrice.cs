@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         readonly TabPage priceBoard=new TabPage("行情中心");
         readonly ComboBox priceBond=Choice("全部债券","250001.IB","250002.IB","102500001.IB","102500002.IB");

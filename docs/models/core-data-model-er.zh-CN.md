@@ -247,7 +247,7 @@ erDiagram
 - WATCHLIST表示关注债券的命名分组，WATCHLIST_SECURITY保存用户选入的债券；同一债券可属于多个分组，同一分组内不重复。FILTER_GROUP保存筛选条件，不保存固定的命中债券成员；命中结果随当前基础资料及业务数据变化重新计算。
 - 两类分组均归属单个STC用户，按信用/利率债区分。scope为落实产品“行情与历史分组条件隔离”建议的使用范围字段；相同模型可供不同业务页面使用，不代表自动共享同一条分组记录。具体页面编码在接口设计时统一。当前不增加跨用户共享分组。
 - FILTER_SUBGROUP仅组织编辑器中的条件，不代表查询逻辑的括号。按产品现行要求，保存时丢弃空子分组，查询时合并各子分组条件，同字段OR、跨字段AND；不将其解释为多个AND条件组之间的OR。FILTER_CONDITION的field、operator、value使用SearchSvr和SearchSvrClient共用的字段字典及过滤语义；value是有类型的条件值，不复制整份前端控件状态，物理存储是否使用JSON另定。
-- 提醒通过共同userId使用该用户的行情关注分组和筛选分组。根据演示实现matchedFavoriteGroups/matchedMarketFilterGroups，提醒匹配该市场下的全部个人分组，不限于行情面板当前点选的分组；因此不增加NotificationPreference到“选中提醒分组”的关联表。Notification.reasons可记录命中分组标识及显示名称，便于解释提醒来源；无需复制分组条件。
+- 提醒通过共同userId使用该用户的行情关注分组和筛选分组。根据示例实现matchedFavoriteGroups/matchedMarketFilterGroups，提醒匹配该市场下的全部个人分组，不限于行情面板当前点选的分组；因此不增加NotificationPreference到“选中提醒分组”的关联表。Notification.reasons可记录命中分组标识及显示名称，便于解释提醒来源；无需复制分组条件。
 - 根据产品的同券合并要求，NOTIFICATION.reasons保存提醒原因列表，每项描述提醒类型及命中依据；非对价提醒可在同券通知内包含多种原因，对价提醒独立。因此不将一条通知限定为一种提醒类型，也不为每一种提醒单独复制通知实体。
 - NOTIFICATION_QUOTE表达通知与报价的多对多关系：一条通知可关联多条报价，一条报价可参与多个用户的通知。对价提醒关联同券、反方向的一条本人报价与一条他人报价；关注债券等提醒也通过该关系引用相关报价，不复制Quote业务记录。
 - “我的最优报价”由NotificationSvr消费QuoteSvr的最优价格档及成员变化后判断，依据同券、同买卖方向最优档中的quoteId与Quote.ownerUserId确定用户归属，并保留并列最优。其他人的报价变化也会影响本人的最优资格，不能只监听本人报价。该通知通过NOTIFICATION_QUOTE关联相关报价；PriceLevel是可重建且会变化的分档，不为通知增加永久priceLevelId外键。服务依赖已补入[架构图](../ficc-sales-trading-architecture.zh-CN.md)。
@@ -387,8 +387,8 @@ Price是衍生视图，不能限制成只含一个Bid和一个Ofr的独立业务
 | 5 | STCUser、Institution、Contact | STC用户引用已定；明确对手机构/联系人主数据来源、联系人转机构后的历史口径及可见范围，不混淆发行人与对手机构 |
 | 6 | 关注债券及筛选分组 | 已补入Watchlist及债券成员、FilterGroup及条件子组和条件记录；个人归属、信用/利率范围、行情/历史隔离、同字段OR与跨字段AND按产品要求建模。字段编码及物理DDL后续细化；持久化设置与运行时订阅分开 |
 
-产品复核依据：[整合需求](../../FICC销售智能交易平台_files/srs-integrated-data.js)中的BR-3.1（全部/最优报价）、BR-3.5（筛选子分组）、BR-3.8（四类提醒），以及[演示数据模型](../../FICC销售智能交易平台_files/data-model-spec-data.js)中的board_credit_best、board_rate_best、alert_read。演示模型保存用户维度已读记录，但不足以替代新系统对通知归属和共享方式的确认；不直接复制演示表结构。
+产品复核依据：[整合需求](../../FICC销售智能交易平台_files/srs-integrated-data.js)中的BR-3.1（全部/最优报价）、BR-3.5（筛选子分组）、BR-3.8（四类提醒），以及[示例数据模型](../../FICC销售智能交易平台_files/data-model-spec-data.js)中的board_credit_best、board_rate_best、alert_read。示例模型保存用户维度已读记录，但不足以替代新系统对通知归属和共享方式的确认；不直接复制示例表结构。
 
-关注分组与筛选分组补充依据：[筛选子分组需求](../../FICC销售智能交易平台_files/requirement-spec-page.js:105)、[行情与历史条件隔离](../../FICC销售智能交易平台_files/requirement-spec-page.js:150)、演示数据模型中的market_groups与market_group_items，以及[提醒匹配分组实现](../../FICC销售智能交易平台_files/app.js:944)。演示表用kind区分收藏/筛选，本逻辑ER分开表达两类业务模型及其成员，不要求物理表名照搬演示实现。
+关注分组与筛选分组补充依据：[筛选子分组需求](../../FICC销售智能交易平台_files/requirement-spec-page.js:105)、[行情与历史条件隔离](../../FICC销售智能交易平台_files/requirement-spec-page.js:150)、示例数据模型中的market_groups与market_group_items，以及[提醒匹配分组实现](../../FICC销售智能交易平台_files/app.js:944)。示例表用kind区分收藏/筛选，本逻辑ER分开表达两类业务模型及其成员，不要求物理表名照搬示例实现。
 
 每项确认后同步更新上方ER及对应字段说明；涉及服务职责或现有Quote字典的变更，再同步架构或报价模型文档。未确认项继续明确标注，不将本图称为已完成的数据库设计。

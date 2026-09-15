@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         // One real quote through the UI's normal request and push paths. No benchmark.
         internal async Task RunUiSmoke(string resultFile){

@@ -3,7 +3,7 @@ using System.IO;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     static class Program {
         [STAThread] static int Main(string[] args){
             Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);int code=0;

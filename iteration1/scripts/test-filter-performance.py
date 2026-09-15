@@ -166,7 +166,7 @@ def main():
     parser.add_argument("--quotes", type=int, choices=[500, 2000, 10000, 50000], default=500)
     parser.add_argument("--repeats", type=int, choices=range(1, 11), default=6)
     parser.add_argument("--scrolling", action="store_true", help="Exercise incremental loading and grid scrolling, at most 10,000 quotes")
-    parser.add_argument("--client", type=Path, default=ROOT / "client/bin/FilterPerformance/Ficc.QuotePrototype.exe")
+    parser.add_argument("--client", type=Path, default=ROOT / "client/bin/FilterPerformance/Ficc.SalesTradingClient.exe")
     parser.add_argument("--functional-smoke", action="store_true",
                         help="Reuse isolation for the three-quote C# functional test; no performance fixture")
     arguments = parser.parse_args()
@@ -223,8 +223,10 @@ def main():
             raise RuntimeError("Build the FilterPerformance client first")
         sql("create", "CREATE SCHEMA " + schema + ";")
         schema_created = True
-        initialization = (ROOT / "sql/001-create-demo-tables.sql").read_text(encoding="utf-8")
-        initialization = initialization.replace("ficc_demo", schema)
+        initialization = (ROOT / "sql/001-create-tables.sql").read_text(encoding="utf-8")
+        initialization = initialization.replace("ficc_salestrading", schema)
+        # Keep the old-installation guard inside the isolated fixture namespace too.
+        initialization = initialization.replace("ficc_demo", schema + "_previous")
         sql("tables", initialization)
         if not arguments.functional_smoke:
             fixture = (ROOT / "scripts/filter-performance-fixture.sql").read_text(encoding="utf-8")

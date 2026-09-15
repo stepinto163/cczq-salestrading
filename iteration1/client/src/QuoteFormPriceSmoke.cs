@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         // Two temporary quotes, sequentially. Exercises real GW requests and UI push handling.
         internal async Task RunPriceSmoke(string resultFile){

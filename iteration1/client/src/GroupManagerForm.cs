@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class GroupManagerForm : Form {
         readonly Func<string,JObject,Task<JObject>> request;
         readonly string groupKind;

@@ -28,7 +28,7 @@ public class JdbcStore implements AutoCloseable {
             throw new IllegalArgumentException("Unsupported storage table prefix");
         }
         this.tablePrefix = tablePrefix;
-        String schema = configuration.getProperty("db.schema", "ficc_demo");
+        String schema = configuration.getProperty("db.schema", "ficc_salestrading");
         if (!schema.matches("ficc_[a-z0-9_]+")) {
             throw new IllegalArgumentException("Use a dedicated ficc_* schema");
         }
@@ -41,6 +41,20 @@ public class JdbcStore implements AutoCloseable {
         db = DriverManager.getConnection(configuration.getProperty("db.url"), connectionProperties);
 
         try {
+            // Do not silently create an empty product schema beside an existing installation.
+            if ("ficc_salestrading".equals(schema)) {
+                try (var statement = db.prepareStatement(
+                        "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'ficc_demo')"
+                        + " AND NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'ficc_salestrading')");
+                        var result = statement.executeQuery()) {
+                    result.next();
+                    if (result.getBoolean(1)) {
+                        throw new IllegalStateException(
+                                "Existing schema requires 003-rename-salestrading-schema.sql;"
+                                + " retain the existing db.schema until migration is completed");
+                    }
+                }
+            }
             // Two different services can share a schema; each still has only one writer.
             String writer = tablePrefix.isEmpty() ? "quotesvr" : "notificationsvr";
             try (var statement = db.prepareStatement("SELECT pg_try_advisory_lock(hashtext(?))")) {

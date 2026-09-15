@@ -1,0 +1,61 @@
+[
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.quote.report.${sessionId}",
+    "name": "报价变化（当前会话）",
+    "streamOpen": "ficc.quote.stream.open",
+    "snapshot": false,
+    "access": "当前会话",
+    "description": "推送报价变化、面板成员变化和心跳。点击“获取会话 Topic”取得真实地址，再订阅；随后发送 ficc.quote.view.open 登记筛选条件。报价没有订阅快照，初始列表由 view.open 返回。"
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.price.report.${sessionId}",
+    "name": "行情价格簿（当前会话）",
+    "streamOpen": "ficc.price.stream.open",
+    "snapshot": true,
+    "access": "当前会话",
+    "description": "独立行情模型，推送价格簿、面板变化和心跳。先获取会话 Topic 并订阅，再发送 ficc.price.view.open 选择债券、筛选条件及 BEST/FULL/DEPTH。可请求订阅快照；尚未打开行情面板时快照可能为空。"
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.quote.events",
+    "name": "报价事件（服务间）",
+    "snapshot": false,
+    "access": "内部；当前 GW 禁止",
+    "description": "供内部服务同步报价事件，带 epoch 和 sequence；初始化及缺口补取分别使用 state.query / event.query。不是前端报价面板。当前 FICC GW 拒绝此 topic，即使使用内部账户也不放行。"
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.price.snapshots",
+    "name": "批量行情同步（服务间）",
+    "snapshot": true,
+    "access": "内部；当前 GW 禁止",
+    "description": "供通知等内部服务同步市场价格簿；支持初始化快照和后续价格簿更新。当前 FICC GW 不开放此 topic，前端使用 ficc.price.report.<sessionId>。"
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.price.book.${securityId}",
+    "name": "单债券 STC 行情（服务间）",
+    "snapshot": true,
+    "access": "内部；当前 GW 禁止",
+    "description": "原始 STC MarketData 结构。例如 ficc.price.book.250001.IB。服务端也处理 ficc.price.book.** 的全部债券快照；securityId 本身含点，不能把 * 当成一个完整债券代码。当前 FICC GW 拒绝精确地址和通配地址。"
+  },
+  {
+    "serverName": "NotificationSvr",
+    "topic": "ficc.notification.report.${sessionId}",
+    "name": "个人报价提醒（当前会话）",
+    "streamOpen": "ficc.notification.stream.open",
+    "snapshot": false,
+    "access": "当前会话",
+    "description": "推送个人通知、已读状态、提醒设置变化和心跳。获取会话 Topic 后订阅，再发送 ficc.notification.view.open 登记筛选条件。初始列表由 view.open/query 返回，没有订阅快照。"
+  },
+  {
+    "serverName": "NotificationSvr",
+    "topic": "ficc.notification.events",
+    "name": "通知事件（服务间）",
+    "snapshot": false,
+    "access": "内部；当前 GW 禁止",
+    "description": "供内部服务同步通知事件，包含 epoch 和事件序号；缺口通过 ficc.notification.event.query 补取。当前 FICC GW 不开放此 topic，客户端使用自己的通知 report。"
+  }
+]

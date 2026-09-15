@@ -20,7 +20,7 @@
 
 已有源码：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java`。
 
-当前源码使用 `initialize(String, NetClientWrapper)`；原型打包的旧 STC JAR 使用 `initialize(String, CedaClientWrapper)`。因此本轮把已有源码编入 common 模块的 `ficc.common.stc` 包，避免旧 JAR 同名类覆盖，并将请求超时改为可配置。不是重新实现一套用户缓存或登录协议，也没有要求升级全部基础框架。移植文件与差异说明见 [源码说明](../cczq-app-salestrading-common/src/main/java/ficc/common/stc/README.zh-CN.md)。
+当前源码使用 `initialize(String, NetClientWrapper)`；平台打包的旧 STC JAR 使用 `initialize(String, CedaClientWrapper)`。因此本轮把已有源码编入 common 模块的 `ficc.common.stc` 包，避免旧 JAR 同名类覆盖，并将请求超时改为可配置。不是重新实现一套用户缓存或登录协议，也没有要求升级全部基础框架。移植文件与差异说明见 [源码说明](../cczq-app-salestrading-common/src/main/java/ficc/common/stc/README.zh-CN.md)。
 
 客户端经 GW 登录真实 LoginSvr；业务服务用请求的 SID 解析 STC `userid`，所有权与审计保存该真实 ID。客户端填写的操作人不能替代已验证会话。管理员和内部服务账号分别通过 `identity.adminUserIds`、`identity.internalUserIds` 明确授权，不按 `S-` 等 ID 前缀推断权限。
 
@@ -61,7 +61,7 @@ adapter.properties=D:/services/salestrading/adapters.local.properties
 
 本机无需修改配置即可继续模拟运行；显式配置见 [本机模板](../config/adapters.local.example.properties)。切回模拟模式还需把 GW、NotificationSvr 的 LoginSvr 服务发现目标改回模拟服务。不要对正在运行的进程热切换模式。
 
-C# 原型的固定样例账号、债券选择尚未完整改造成内网业务界面；本轮内网适配验证可使用支持输入地址和账号的独立 DPS API 调试器。模拟自动测试使用固定账号与数据，不可直接当作真实环境验收脚本。
+C# 平台的固定样例账号、债券选择尚未完整改造成内网业务界面；本轮内网适配验证可使用支持输入地址和账号的独立 DPS API 调试器。模拟自动测试使用固定账号与数据，不可直接当作真实环境验收脚本。
 
 ## 3．CRM 独立实现
 
@@ -81,7 +81,7 @@ crm.serverKey=SERVER.CrmSvr
 ## 4．本轮验证（2026-09-14）
 
 - Maven 全模块构建通过；9 个单元/契约测试通过，包括已有筛选测试、复用 LoginSvrClient 源码的请求与缓存测试、基础资料映射和失效、真实用户权限，以及外部 CRM JAR 的编译与加载。
-- CRM 独立工程构建通过；C# 原型构建通过。
+- CRM 独立工程构建通过；C# 平台构建通过。
 - 仅使用 3 条报价，经真实 C# DPS → GW → QuoteSvr → PostgreSQL 完成 40 项功能检查；独立临时 schema 已删除。没有执行压力测试。
 - 本轮未连接内网真实 LoginSvr/BaseSvr/CRM；真实返回数据、字典、权限和网络重连需要内网集成验证。NotificationSvr 已接入适配接口，并按实际用户集合生成提醒；本轮三条报价的端到端测试未启动 NotificationSvr。
 

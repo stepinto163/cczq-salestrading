@@ -6,7 +6,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     // Shared by UI and automated tests. No truncation of business message bodies.
     static class MessageLog {
         static readonly object sync=new object();
@@ -15,8 +15,8 @@ namespace Ficc.Prototype {
         public static string CurrentFile {get;private set;}
         static string ResolveDirectory(){
             var current=new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while(current!=null){if(File.Exists(Path.Combine(current.FullName,"QuotePrototype.csproj"))||File.Exists(Path.Combine(current.FullName,"DpsApiDebugger.csproj")))return Path.Combine(current.Parent.FullName,"runtime","client-logs",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+Process.GetCurrentProcess().Id);current=current.Parent;}
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"FiccQuotePrototype","logs",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+Process.GetCurrentProcess().Id);
+            while(current!=null){if(File.Exists(Path.Combine(current.FullName,"SalesTradingClient.csproj"))||File.Exists(Path.Combine(current.FullName,"DpsApiDebugger.csproj")))return Path.Combine(current.Parent.FullName,"runtime","client-logs",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+Process.GetCurrentProcess().Id);current=current.Parent;}
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"FiccSalesTradingClient","logs",DateTime.Now.ToString("yyyyMMdd-HHmmss-fff")+"-"+Process.GetCurrentProcess().Id);
         }
         static readonly HashSet<string> sensitiveFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             "password", "passwd", "authorization", "accessToken", "refreshToken"

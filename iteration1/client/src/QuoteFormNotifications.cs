@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
-namespace Ficc.Prototype {
+namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
         readonly TabPage notificationBoard=new TabPage("报价提醒");
         readonly DataGridView notificationGrid=new DataGridView();
@@ -94,9 +94,9 @@ namespace Ficc.Prototype {
             view.Click+=async(s,e)=>{popup.Close();await MarkNotifications(fresh.Select(n=>(string)n["notificationId"]),true);suppressEnterMark=true;try{boards.SelectedTab=notificationBoard;}finally{suppressEnterMark=false;}int row=notificationIds.IndexOf((string)fresh[0]["notificationId"]);if(row>=0)notificationGrid.CurrentCell=notificationGrid[0,row];};close.Click+=(s,e)=>popup.Close();bar.Controls.Add(view);bar.Controls.Add(close);popup.Controls.Add(text);popup.Controls.Add(bar);popup.Show(this);
         }
         async Task SaveReminderWatchlist(){
-            string sec=security.Text,market=sec.StartsWith("102")?"CREDIT":"RATE";var records=(JArray)(await Request("ficc.watchlist.query",new JObject{["market"]=market,["scope"]="MARKET"}))["watchlists"];var old=records.OfType<JObject>().FirstOrDefault(g=>(string)g["name"]=="原型关注债券");
-            var req=new JObject{["name"]="原型关注债券",["market"]=market,["scope"]="MARKET",["securities"]=old?["securities"]?.DeepClone()??new JArray()};var securities=(JArray)req["securities"];if(!securities.Any(s=>(string)s["securityId"]==sec))securities.Add(new JObject{["securityId"]=sec});if(old!=null){req["watchlistId"]=old["watchlistId"].DeepClone();req["expectedRevision"]=old["revision"].DeepClone();}detail.Text=(await Request("ficc.watchlist.save",req)).ToString();
+            string sec=security.Text,market=sec.StartsWith("102")?"CREDIT":"RATE";var records=(JArray)(await Request("ficc.watchlist.query",new JObject{["market"]=market,["scope"]="MARKET"}))["watchlists"];var old=records.OfType<JObject>().FirstOrDefault(g=>(string)g["name"]=="平台关注债券");
+            var req=new JObject{["name"]="平台关注债券",["market"]=market,["scope"]="MARKET",["securities"]=old?["securities"]?.DeepClone()??new JArray()};var securities=(JArray)req["securities"];if(!securities.Any(s=>(string)s["securityId"]==sec))securities.Add(new JObject{["securityId"]=sec});if(old!=null){req["watchlistId"]=old["watchlistId"].DeepClone();req["expectedRevision"]=old["revision"].DeepClone();}detail.Text=(await Request("ficc.watchlist.save",req)).ToString();
         }
-        async Task SaveReminderFilter(){string market=security.Text.StartsWith("102")?"CREDIT":"RATE";detail.Text=(await Request("ficc.filterGroup.save",new JObject{["name"]="原型 AAA 提醒筛选组",["market"]=market,["scope"]="MARKET",["subgroups"]=new JArray(new JObject{["conditions"]=new JArray(new JObject{["field"]="bondRating",["operator"]="EQ",["value"]="AAA"})})})).ToString();}
+        async Task SaveReminderFilter(){string market=security.Text.StartsWith("102")?"CREDIT":"RATE";detail.Text=(await Request("ficc.filterGroup.save",new JObject{["name"]="平台 AAA 提醒筛选组",["market"]=market,["scope"]="MARKET",["subgroups"]=new JArray(new JObject{["conditions"]=new JArray(new JObject{["field"]="bondRating",["operator"]="EQ",["value"]="AAA"})})})).ToString();}
     }
 }
