@@ -9,6 +9,9 @@ namespace Ficc.SalesTrading {
             try{return Run(args);}finally{MessageLog.Close();}
         }
         static int Run(string[] args){
+            if (args.Length == 2 && args[0] == "--qa-autotest") {
+                return QaFunctionalTest.Run(args[1]);
+            }
             if (args.Length > 0 && args[0] == "--probe-services") {
                 return ServiceDiscoveryProbe.Run(args[1]);
             }
