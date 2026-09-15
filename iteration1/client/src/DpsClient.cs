@@ -31,11 +31,33 @@ namespace Ficc.SalesTrading {
             }
             RecordRaw("RECEIVE", "LOGIN_REPLY", "SYS.ATS.LOGIN", result);
             JObject reply = JObject.Parse(result ?? "{}");
-            string code = (string)reply["Code"];
-            if (code != "0000" && code != "0001") {
-                throw new Exception("Login failed: Code=" + code + ", Msg=" + (string)reply["Msg"]);
+            try {
+                ValidateLoginReply(reply);
+            } catch (Exception error) {
+                Error("SYS.ATS.LOGIN", error);
+                try {
+                    api.disConnect();
+                } catch (Exception disconnectError) {
+                    Record("LOCAL", "DISCONNECT_FAILED", "SYS.ATS.LOGIN",
+                        new JObject { ["type"] = disconnectError.GetType().Name });
+                }
+                throw;
             }
             Trace?.Invoke("DPS connected as " + user);
+        }
+
+        internal static void ValidateLoginReply(JObject reply) {
+            string code = (string)reply?["Code"];
+            if (code != "0000" && code != "0001") {
+                throw new InvalidOperationException("Login failed: Code=" + code + ", Msg=" + (string)reply?["Msg"]);
+            }
+            string sessionId = (string)reply["sid"];
+            if (string.IsNullOrWhiteSpace(sessionId)
+                || string.Equals(sessionId.Trim(), "null", StringComparison.OrdinalIgnoreCase)) {
+                throw new InvalidOperationException(
+                    "LoginSvr returned success without a valid session ID (sid). "
+                    + "Use a registered STC business account; a sessionless default login cannot access quote operations.");
+            }
         }
         public static string ServerFor(string topic)=>topic.StartsWith("ficc.notification.")?"NotificationSvr":"QuoteSvr";
         public JObject Request(string topic,JObject request)=>RequestTo(ServerFor(topic),topic,request);

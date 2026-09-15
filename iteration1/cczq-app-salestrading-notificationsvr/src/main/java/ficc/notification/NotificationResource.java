@@ -205,6 +205,8 @@ public final class NotificationResource extends ResourceAdapter {
                 return unavailable("Quote source changed during session lookup");
             }
             return service.handle(userId, sessionId, topic, JsonUtils.parseObject(content));
+        } catch (ApiException error) {
+            return ApiResponse.failure(null, error);
         } catch (Exception error) {
             return unavailable("Notification source/session lookup unavailable");
         }

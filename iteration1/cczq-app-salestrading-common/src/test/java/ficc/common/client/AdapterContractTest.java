@@ -50,6 +50,34 @@ final class AdapterContractTest {
     }
 
     @Test
+    void missingLoginSessionsAreRejectedWithoutCallingLoginSvr() {
+        FakeNetwork network = new FakeNetwork();
+        Properties configuration = new Properties();
+        configuration.setProperty("identity.mode", "stc");
+        LoginSessionClient identity = AdapterFactory.identity(configuration, network, true);
+        for (String sessionId : new String[] {null, "", " ", "null", " NULL "}) {
+            ApiException error = assertThrows(ApiException.class, () -> identity.resolveUser(sessionId));
+            assertEquals("1003", error.code);
+            assertTrue(error.getMessage().contains("valid session ID"));
+        }
+        assertEquals(0, network.requests);
+    }
+
+    @Test
+    void aSessionWithoutABusinessUserCannotCreateAnAuditIdentity() {
+        for (String userId : new String[] {null, "", "null", " NULL "}) {
+            FakeNetwork network = new FakeNetwork();
+            network.reply = JsonUtils.object("Code", "0001", "sid", "sid-42", "userid", userId);
+            Properties configuration = new Properties();
+            configuration.setProperty("identity.mode", "stc");
+            LoginSessionClient identity = AdapterFactory.identity(configuration, network, true);
+            ApiException error = assertThrows(ApiException.class, () -> identity.resolveUser("sid-42"));
+            assertEquals("1003", error.code);
+            assertTrue(error.getMessage().contains("business user ID"));
+        }
+    }
+
+    @Test
     void realModeDoesNotGrantSimulatorPrivilegesOrRenameAuditUser() {
         Properties configuration = new Properties();
         configuration.setProperty("identity.mode", "stc");

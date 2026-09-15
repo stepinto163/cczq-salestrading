@@ -114,6 +114,14 @@ QuoteSvr 在 `handler/` 和 `control/QuoteSvr/resourceCfg.ini` 注册两个只�
 
 C# 平台与 API 调试器共用 `DpsClient`，错误提示统一为 `Login failed: Code=..., Msg=...`，不再把真实 LoginSvr 的错误误标为 Simulator。登录请求仍由现有 DPS SDK 发送。
 
+14:23 的后续日志已确认同一问题：`test01` 返回 `Code=0001`、`sid=null`、`userid=null`；随后 `userInfo` 收到字符串 `"null"`，返回 `Code=5001`。原 GW `CedaProxy.processLogin` 只检查成功码，并通过 `rhm.get("sid") + ""` 把缺失 SID 转成了这个字符串。不是报价创建字段校验失败，也不是已经证明存在有效用户会话。
+
+当前 C# 平台和 API 调试器在登录阶段检查 SID：缺失、空白、JSON null 或字符串 `"null"` 均立即报错并断开连接，不显示已连接。共同身份适配器也拒绝这些 SID，不再向 LoginSvr 查询 `sid="null"`；有效 SID 缺少真实 `userid` 时返回明确权限错误。NotificationSvr 保留此权限错误，不再统一改写成同步未就绪。
+
+QA 处理方式：优先使用一个正常 STC 业务账号。若必须使用 `test01`，先通过 STC 用户管理确认该用户在实际认证数据源中存在、启用且具有真实 `userid`；再从 LoginSvr 的 `control/LoginSvr/streamCfg.ini` 中 `DefaultUser` 列表移除它，保留其他配置项，重启 LoginSvr 并重新登录。所提供源码的该列表为 `gwcust;test01`，部署机以实际文件为准。仅添加 `DefaultUserSession` 不足以保证真实 `userid`：该特殊路径没有普通用户的数据库查询。本项目未擅自修改 QA LoginSvr、创建用户或分配用户 ID。
+
+普通 STC 用户表模式下，可只读核对 `SELECT userid, username, enable FROM stc_tbook_users WHERE username = 'test01';`。CRM 登录模式则检查其实际认证数据源。验收应同时看到登录返回有效 SID，以及同一 SID 的 `userInfo` 返回 `Code=0001` 与真实 `userid`。
+
 ## 3．CRM 独立实现
 
 空模式没有假机构或假联系人。待确认报价仍能保存手工输入的机构/联系人名称；确认时，已输入名称必须匹配可访问的真实 ID，所以空 CRM 无法完成这类报价的确认。

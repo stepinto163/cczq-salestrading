@@ -43,19 +43,26 @@ public final class StcLoginSessionClient implements LoginSessionClient {
 
     @Override
     public String resolveUser(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
-            return null;
+        if (missingIdentity(sessionId)) {
+            throw ApiException.forField("1003", "FORBIDDEN",
+                    "STC login did not provide a valid session ID; use a registered STC business account", null);
         }
         if (!transport.online()) {
             invalidate(null);
             throw ApiException.forField("1009", "NOT_READY", "LoginSvr is unavailable", null);
         }
         LoginSvrClient.UserInfo user = LoginSvrClient.get(sessionId);
-        if (user == null || !sessionId.equals(user.sid) || user.userid == null || user.userid.isBlank()
-                || !transport.online()) {
+        if (user == null || !sessionId.equals(user.sid) || !transport.online()) {
             return null;
+        }
+        if (missingIdentity(user.userid)) {
+            throw ApiException.forField("1003", "FORBIDDEN",
+                    "STC session has no business user ID; use a registered STC business account", null);
         }
         return user.userid;
     }
 
+    private static boolean missingIdentity(String value) {
+        return value == null || value.isBlank() || "null".equalsIgnoreCase(value.trim());
+    }
 }
