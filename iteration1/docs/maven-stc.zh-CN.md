@@ -43,6 +43,24 @@ mvn -f iteration1/pom_stc.xml -pl :cczq-app-salestrading-quotesvr -am clean veri
 - Common保留用户已编译通过的 `mina-core:1.1.7` 及其日志依赖排除，只声明一次；JUnit 5用于测试，PostgreSQL驱动作为显式运行时依赖，随服务包携带。
 - GW使用 `sumscope.stcl:gw:0.1.1-SNAPSHOT`，坐标来自提供的GW源码POM。注意这里是 `stcl`，不是 `stc`。是否已发布及其API是否与扩展代码匹配，需要在内网构建确认。实际发布坐标不同，可修改根POM的 `stc.gw.groupId` / `stc.gw.artifactId` / `stc.gw.version`，或通过同名 `-D` 参数覆盖；不要重新引入 `gw-local`。
 - 项目自身坐标仍为 `cczq.salestrading:*:0.1.0-SNAPSHOT`，Common消费者通过父POM统一管理版本。
+- GW的STC POM显式使用 `zookeeper` 和 `zookeeper-jute` 3.8.6，版本由模块属性 `stc.gw.zookeeper.version` 统一配置。上游GW源码声明的3.4.14在Java 17上有地址解析兼容问题；升级的是GW进程的客户端库，不是QA ZooKeeper服务端。排除该依赖引入的SLF4J API/Logback，沿用STC已有日志组件。
+
+### GW 的 DPS 模式与 ZooKeeper 地址错误
+
+`control/ATSConfig.ini` 使用 `NetType=gw`。源码 `CedaApi.initNodeClientWrapper()` 在 `ceda` 分支使用 `CedaClientWrapper`，其他分支使用 `GwClientWrapper`；因此 `CedaProxy/CedaApi` 类名不代表实际用了CEDA。DPS仍通过ZooKeeper发现服务地址，ZooKeeper异常与业务消息传输类型是不同层次的问题。
+
+`SaslServerPrincipal` 报 `Unable to canonicalize address .../<unresolved>` 与ZooKeeper开发邮件中记录的3.4.14/Java 17问题一致：[开发邮件](https://www.mail-archive.com/dev@zookeeper.apache.org/msg75112.html)。本轮通过升级GW客户端依赖处理，不修改IP、不默认关闭SASL。3.8.6版本依据：[Apache发布说明](https://zookeeper.apache.org/doc/r3.8.6/releasenotes.html)。
+
+拉取更新后，内网执行以下命令并重新加载IntelliJ Maven项目，再启动GW：
+
+```powershell
+mvn -B -ntp -f iteration1/pom_stc.xml -pl :cczq-app-salestrading-gw -am clean verify
+mvn -f iteration1/gateway/pom_stc.xml dependency:tree "-Dincludes=org.apache.zookeeper:*"
+```
+
+依赖树中的 `zookeeper` 和 `zookeeper-jute` 应均为3.8.6。若仍有同样错误，在调试器求值 `org.apache.zookeeper.Version.getVersion()`，以及 `org.apache.zookeeper.ZooKeeper.class.getProtectionDomain().getCodeSource().getLocation()`，确认实际加载版本及JAR位置。
+
+本机验证：POM XML及差异检查通过；Java 17.0.20.1 + 官方ZooKeeper 3.8.6客户端 + 现有STC使用的SLF4J 1.7.7/Log4j日志库，以默认SASL设置连接本机 `127.0.0.1:12181`，完成一次根节点只读查询并退出，退出码0，外部进程超时20秒，零写入。日志位于 `iteration1/runtime/zk-client-smoke.log`。未连接QA，也未以内部STC父POM完成本机整包构建，完整GW依赖组合仍需内网验证。
 
 两套构建虽然文件名不同，产物坐标仍相同。在同一台机器上交替 `install` 会覆盖同一仓库坐标；`target-stc` 仅隔离构建目录。需要同机并存安装时，为STC版指定独立本地仓库：
 
