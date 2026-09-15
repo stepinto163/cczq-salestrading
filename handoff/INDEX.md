@@ -4,6 +4,7 @@
 
 | taskId | 执行方 | 工作分支 | 任务文件 |
 |---|---|---|---|
-| codex-20260915-001 | workbuddy | work/codex-20260915-001 | handoff/tasks/codex-20260915-001/task.json |
+
+当前无待执行任务。用户于 2026-09-15 取消本轮自动联调，改为手工修复 WorkBuddy 环境；不要继续旧任务或自动创建替代任务。
 
 只列当前任务，不在这里重复记录状态或结果；分别以 task.json、result.json 为准。
