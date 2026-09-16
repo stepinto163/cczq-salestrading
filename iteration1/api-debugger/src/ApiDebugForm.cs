@@ -67,6 +67,7 @@ namespace Ficc.SalesTrading {
         void Ui(Action action){if(!IsDisposed&&IsHandleCreated){if(InvokeRequired)BeginInvoke(action);else action();}}
         async Task Connect(){
             if(connected)throw new Exception("请先断开现有连接。");client?.Dispose();connect.Enabled=false;var current=new DpsClient();client=current;
+            current.LogHeartbeats = showHeartbeats.Checked;
             current.Trace+=line=>Ui(()=>{if(trace.Lines.Length>=200)trace.Lines=trace.Lines.Skip(1).ToArray();trace.AppendText(line+Environment.NewLine);});
             current.Message += (messageTopic, message) => Ui(() => {
                 if (client == current) ShowSubscriptionMessage(messageTopic, message);
@@ -75,6 +76,7 @@ namespace Ficc.SalesTrading {
             try{await Task.Run(()=>current.Connect(account,p,address,secret));connected=true;status.Text="已连接 "+address+":"+p;}finally{connect.Enabled=true;}
         }
         void ShowSubscriptionMessage(string messageTopic, JObject message) {
+            if ((string)message["kind"] == "HEARTBEAT" && !showHeartbeats.Checked) return;
             bool followLatest = messageList.SelectedIndex < 0 || messageList.SelectedIndex == messages.Count - 1;
             if (messages.Count >= 200) {
                 messages.RemoveAt(0);
@@ -165,6 +167,17 @@ namespace Ficc.SalesTrading {
             var end=DateTime.UtcNow.AddSeconds(4);while(DateTime.UtcNow<end&&!messages.Any(m=>(string)m["message"]["kind"]=="SNAPSHOT"))await Task.Delay(50);
             if(!messages.Any(m=>(string)m["message"]["kind"]=="SNAPSHOT"))throw new Exception("Native price subscription snapshot missing");
             await Unsubscribe();if(history.Count!=3||subscriptionList.Items.Count!=0)throw new Exception("History/unsubscribe failed");
+            int beforeHeartbeat = messages.Count;
+            client.ReceivePush("test.debugger.heartbeat", "{\"kind\":\"HEARTBEAT\"}");
+            if (messages.Count != beforeHeartbeat || client.LogHeartbeats) throw new Exception("Debugger must hide heartbeats by default");
+            showHeartbeats.Checked = true;
+            client.ReceivePush("test.debugger.heartbeat", "{\"kind\":\"HEARTBEAT\"}");
+            if (messages.Count != beforeHeartbeat + 1 || !client.LogHeartbeats) throw new Exception("Debugger heartbeat option did not enable display/logging");
+            showHeartbeats.Checked = false;
+            client.ReceivePush("test.debugger.heartbeat", "{\"kind\":\"HEARTBEAT\"}");
+            client.ReceivePush("test.debugger.update", "{\"kind\":\"UPDATE\"}");
+            if (messages.Count != beforeHeartbeat + 2 || client.LogHeartbeats) throw new Exception("Debugger heartbeat filtering affected business updates");
+            Console.WriteLine("PASS debugger heartbeat checkbox toggles subscription display and logging live");
             foreach (string deniedTopic in new[] { "ficc.price.report.*", "ficc.price.**", "ficc.quote.events", "ficc.notification.events" }) {
                 bool rejected = false;
                 try {

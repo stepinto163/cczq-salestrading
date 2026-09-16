@@ -24,6 +24,7 @@ namespace Ficc.SalesTrading {
             BackColor = SystemColors.Info
         };
         Button prepareSubscription;
+        readonly CheckBox showHeartbeats = new CheckBox { Text = "显示 HEARTBEAT", AutoSize = true };
 
         void InitializeSubscriptionPanel(TabPage page) {
             string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "subscriptions.json");
@@ -59,6 +60,10 @@ namespace Ficc.SalesTrading {
             actions.Controls.Add(image);
             Button(actions, "订阅", Subscribe);
             Button(actions, "退订", Unsubscribe);
+            actions.Controls.Add(showHeartbeats);
+            showHeartbeats.CheckedChanged += (sender, args) => {
+                if (client != null) client.LogHeartbeats = showHeartbeats.Checked;
+            };
             panel.Controls.Add(choices, 0, 0);
             panel.Controls.Add(actions, 0, 1);
             panel.Controls.Add(subscriptionDescription, 0, 2);
