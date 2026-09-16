@@ -1,6 +1,6 @@
 import { GwClient } from './gw-client.js';
 import { QuoteClient, PriceClient, NotificationClient } from './business-clients.js';
-import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput } from './requirements-model.js';
+import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput, historyRow } from './requirements-model.js';
 import { CrmClient } from './crm-client.js';
 
 // These bindings are the original app.js integration points, shared with its inline event handlers.
@@ -12,6 +12,12 @@ let requestedVisibleSecurities = new Set();
 let pendingRender = false;
 let operationBusy = false;
 let signedIn = false;
+const quoteDetails = new Map();
+let historyRequestVersion = 0;
+let historyQueryKey = '';
+let historyCursor = null;
+let historyTotal = 0;
+let historyLoading = false;
 const gateway = new GwClient('ws://127.0.0.1:18601/gateway', {
     onDisconnect: () => doLogout(true)
 });
@@ -33,6 +39,10 @@ function scheduleUpdate() {
 function refreshDisplay() {
     loadVisibleSecurities();
     quoteView.rows().forEach(quote => crm.seed(quote));
+    for (const quote of quoteView.rows()) {
+        const cached = quoteDetails.get(quote.quoteId);
+        if (cached && BigInt(quote.revision) >= BigInt(cached.revision)) quoteDetails.delete(quote.quoteId);
+    }
     const previousAlerts = allAlertKeys();
     const previousPending = new Set(D.quoteConfirm.map(row => row.recognitionId));
     D.liveQuotes = quoteView.rows().map(quote => displayQuote(quote, securities.get(quote.securityId), userId()));
@@ -124,7 +134,7 @@ async function operate(action, allowStale = false) {
     }
     operationBusy = true;
     try {
-        await action();
+        return await action();
     } catch (error) {
         showToast('error', error.message);
     } finally {
@@ -132,20 +142,62 @@ async function operate(action, allowStale = false) {
     }
 }
 
-async function command(action, quoteId, fields = {}) {
-    const quote = quoteView.records.get(quoteId);
-    if (!quote) throw new Error('该报价不在本人已加载报价中，请刷新后重试');
-    const reply = await quoteView.call(action, { quotes: [{ quoteId, expectedRevision: quote.revision, ...fields }] });
-    return quoteView.batchResult(reply);
+async function readQuote(quoteId) {
+    if (!quoteId) throw new Error('未找到报价ID，请重新选择报价');
+    const connection = quoteView;
+    const quote = (await connection.call('get', { quoteId })).quote;
+    if (!signedIn || connection !== quoteView) throw new Error('登录会话已改变，请重新操作');
+    crm.seed(quote);
+    quoteDetails.set(quoteId, quote);
+    return quote;
 }
 
-async function changeQuotes(ids, action) {
-    const unique = [...new Set(ids)];
-    if (!unique.length) throw new Error('请先选择报价');
-    if (unique.length > 5) throw new Error('首轮联调每批最多 5 条');
-    for (const id of unique) await command(action, id);
-    showToast('success', `已处理 ${unique.length} 条，状态由服务端事件更新`);
+async function command(action, quoteId, fields = {}, expectedQuote) {
+    // A price book is not a quote revision, and a displayed quote need not be in the small QuoteView cache.
+    const quote = expectedQuote || await readQuote(quoteId);
+    const reply = await quoteView.call(action, { quotes: [{ quoteId, expectedRevision: quote.revision, ...fields }] });
+    const result = quoteView.batchResult(reply);
+    quoteDetails.delete(quoteId);
+    return result;
 }
+
+async function changeQuotes(ids, action, selectionSet) {
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (!unique.length) throw new Error('请先选择报价');
+    if (unique.length > 100) throw new Error('每批最多操作100条报价');
+    let completed = 0;
+    const failures = [];
+    for (const id of unique) {
+        try {
+            await command(action, id);
+            selectionSet?.delete(id);
+            completed++;
+        } catch (error) {
+            failures.push(`${id}: ${error.message}`);
+        }
+    }
+    if (completed) {
+        await quoteView.open();
+        await priceView.open();
+        refreshDisplay();
+    }
+    if (failures.length) throw new Error(`成功${completed}条，失败${failures.length}条；${failures.join('；')}`);
+    showToast('success', `已处理 ${completed} 条报价`);
+    return true;
+}
+
+const originalQuoteById = quoteById;
+quoteById = function (id) {
+    const detail = quoteDetails.get(id);
+    if (detail) return displayQuote(detail, securities.get(detail.securityId), userId());
+    const current = originalQuoteById(id);
+    if (current) return current;
+    for (const book of priceView?.rows() || []) {
+        const row = priceRows(book, securities.get(book.securityId), userId()).find(item => item.quoteId === id);
+        if (row) return row;
+    }
+    return null;
+};
 
 doLogin = async function () {
     const button = element('loginBtn');
@@ -153,6 +205,7 @@ doLogin = async function () {
     element('loginError').textContent = '';
     try {
         resetAccountState();
+        quoteDetails.clear();
         securities = new Map();
         requestedVisibleSecurities = new Set();
         const username = element('loginUser').value.trim();
@@ -186,6 +239,11 @@ doLogin = async function () {
 element('loginBtn').onclick = doLogin;
 
 doLogout = function (expired) {
+    quoteDetails.clear();
+    historyRequestVersion++;
+    historyQueryKey = '';
+    historyCursor = null;
+    historyLoading = false;
     crm.clear();
     securities = new Map();
     requestedVisibleSecurities = new Set();
@@ -264,14 +322,48 @@ doConfirmQuotes = () => operate(async () => {
     showToast('success', '确认成功；行情及提醒由服务端推送');
 });
 doDeleteQuotes = () => operate(() => changeQuotes(selectedQuoteRows().map(row => row.recognitionId), 'delete'));
-setQuotesStatus = (ids, status) => operate(() => changeQuotes(ids, status === 'active' ? 'unrefer' : 'refer'));
-restoreManagedQuotes = ids => operate(() => changeQuotes(ids, 'unrefer'));
-deleteManagedQuotes = ids => operate(() => changeQuotes(ids, 'delete'));
+setQuotesStatus = (ids, status, selection) => operate(() => changeQuotes(ids, status === 'active' ? 'unrefer' : 'refer', selection));
+restoreManagedQuotes = (ids, selection) => operate(() => changeQuotes(ids, 'unrefer', selection));
+deleteManagedQuotes = (ids, selection) => operate(() => changeQuotes(ids, 'delete', selection));
+// The original caller expects a synchronous result object; the DPS action is asynchronous.
+referFuzzy = () => setQuotesStatus([...mgmtTodaySelected], 'revoked', mgmtTodaySelected);
+
+referSelectedBoardQuotes = key => operate(async () => {
+    const quotes = selectedBoardQuotes(key);
+    if (quotes.some(quote => !canManageQuote(quote))) throw new Error('选中报价包含他人报价，不能撤销');
+    await changeQuotes(quotes.map(quote => quote.quoteId), 'refer', boardSelectedQuoteIds);
+    syncBoardToolbarControls();
+});
+
+confirmRefer = () => operate(async () => {
+    const target = ctxReferTarget;
+    if (!target?.quoteId) throw new Error('请重新选择要撤销的报价');
+    if (await changeQuotes([target.quoteId], 'refer')) {
+        ctxReferTarget = null;
+        closeModal();
+    }
+});
+
+updateCtxQuoteFlag = field => {
+    const id = ctxTarget?.quoteId;
+    hideCtx();
+    return operate(async () => {
+        if (!['oco', 'packing'].includes(field)) throw new Error('不支持的报价标记');
+        const quote = await readQuote(id);
+        const enabled = !quote[field];
+        const fields = { [field]: enabled };
+        if (enabled) fields[field === 'oco' ? 'packing' : 'oco'] = false;
+        await command('update', id, fields, quote);
+        await quoteView.open();
+        refreshDisplay();
+        showToast('success', '报价标记已更新');
+    });
+};
 
 saveEditQuote = () => operate(async () => {
     if (!quoteModalState || !validateQuoteForm()) return;
     const state = quoteModalState;
-    const originalQuote = quoteView.records.get(state.quoteId);
+    const originalQuote = state.originalQuote;
     const input = inputWithCrm({
         institutionId: originalQuote?.institutionId, contactId: originalQuote?.contactId,
         c: state.sourceRow.c, d: state.direction, p: quoteFieldValue('quotePrice'),
@@ -282,7 +374,7 @@ saveEditQuote = () => operate(async () => {
         round: element('quoteRound').checked, oco: state.sourceRow.oco, packing: state.sourceRow.packing
     });
     input.remark = quoteFieldValue('quoteNote');
-    if (state.mode === 'edit') await command('update', state.quoteId, input);
+    if (state.mode === 'edit') await command('update', state.quoteId, input, originalQuote);
     else await quoteView.create(input);
     closeModal();
     quoteModalState = null;
@@ -290,16 +382,26 @@ saveEditQuote = () => operate(async () => {
 });
 
 const originalOpenQuoteForm = openQuoteForm;
-openQuoteForm = function (...args) {
-    originalOpenQuoteForm(...args);
-    if (!quoteModalState) return;
-    const quote = quoteView.records.get(quoteModalState.quoteId);
-    if (quote?.institutionId && element('quoteInstitution')) {
-        element('quoteInstitution').value = `${quote.institutionName} [${quote.institutionId}]`;
-    }
-    if (quote?.contactId && element('quoteTrader')) {
-        element('quoteTrader').value = `${quote.contactName} [${quote.contactId}]`;
-    }
+openQuoteForm = function (mode, index, dataType, requestedQuoteId, origin) {
+    return operate(async () => {
+        const source = boardDataByType(dataType)?.[index];
+        if (!source) throw new Error('未找到对应行情数据');
+        const id = requestedQuoteId || source.sourceQuoteId || (source.bp ? source.bidQuoteId : source.ofrQuoteId) || source.quoteId;
+        let quote;
+        if (mode === 'edit') {
+            quote = await readQuote(id);
+            if (quote.status !== 'ACTIVE' && quote.status !== 'PENDING_CONFIRM') throw new Error('仅有效或待确认报价可以修改');
+        }
+        quoteModalState = null;
+        originalOpenQuoteForm(mode, index, dataType, id, origin);
+        if (!quoteModalState) return;
+        quoteModalState.originalQuote = quote;
+        if (quote?.institutionId) element('quoteInstitution').value = `${quote.institutionName} [${quote.institutionId}]`;
+        if (quote?.contactId) element('quoteTrader').value = `${quote.contactName} [${quote.contactId}]`;
+        for (const option of element('quoteVolumeUnit').options) {
+            option.disabled = !['万', '万面额'].includes(option.value);
+        }
+    });
 };
 
 loadQuoteState = async function () {
@@ -309,6 +411,119 @@ loadQuoteState = async function () {
 };
 loadMgmtToday = loadQuoteState;
 loadQuoteConfirmBatches = loadQuoteState;
+
+// History is an explicit, bounded query, separate from live Quote/Price subscriptions.
+syncMgmtHistory = function () {
+    refreshMgmtDatalists('history');
+    filterMgmtHistory();
+};
+
+updateMgmtHistoryStatusbar = function () {
+    const status = element('mgmtHistoryStatusbar');
+    if (historyLoading) {
+        status.textContent = '正在查询历史报价…';
+        return;
+    }
+    if (!historyQueryKey) {
+        status.textContent = '请选择日期并查询历史报价';
+        return;
+    }
+    status.textContent = `已加载${D.mgmtHistory.length} / ${historyTotal}条；筛选后${D.mgmtHistoryFiltered.length}条；查询日期 ${historyQueryKey}`;
+};
+
+async function loadHistory(append = false) {
+    if (!signedIn) return;
+    const fromDate = element('historyStartDate').value;
+    const toDate = element('historyEndDate').value;
+    if (!fromDate || !toDate || fromDate > toDate) {
+        showToast('error', '请选择有效日期区间，开始日期不能晚于结束日期');
+        return;
+    }
+    const queryKey = `${fromDate}/${toDate}`;
+    if (append && (!historyCursor || historyQueryKey !== queryKey)) return;
+    if (append && D.mgmtHistory.length >= 1000) {
+        showToast('info', '当前界面最多加载1000条历史记录，请缩小日期范围');
+        return;
+    }
+    if (historyLoading && append) return;
+    const version = ++historyRequestVersion;
+    historyLoading = true;
+    element('historyQueryBtn').disabled = true;
+    element('historyMoreBtn').disabled = true;
+    element('mgmtHistoryStatusbar').textContent = '正在查询历史报价…';
+    try {
+        const request = append ? { cursor: historyCursor } : { fromDate, toDate, limit: 200 };
+        const data = await quoteView.call('history.search', request);
+        if (!signedIn || version !== historyRequestVersion) return;
+        for (const item of data.rows) {
+            if (item.reference) securities.set(item.quote.securityId, item.reference);
+        }
+        const rows = data.rows.map(item => historyRow(item, userId()));
+        D.mgmtHistory = append ? [...D.mgmtHistory, ...rows] : rows;
+        historyCursor = data.nextCursor;
+        historyTotal = data.totalCount;
+        historyQueryKey = queryKey;
+        mgmtHistorySelected.clear();
+        syncMgmtHistory();
+        element('mgmtHistoryStatusbar').textContent = `已加载${D.mgmtHistory.length} / ${historyTotal}条；筛选后${D.mgmtHistoryFiltered.length}条`;
+    } catch (error) {
+        if (!signedIn || version !== historyRequestVersion) return;
+        if (!append) {
+            D.mgmtHistory = [];
+            D.mgmtHistoryFiltered = [];
+            historyQueryKey = '';
+            historyCursor = null;
+            syncMgmtHistory();
+        }
+        element('mgmtHistoryStatusbar').textContent = `历史查询失败：${error.message}`;
+        showToast('error', `历史查询失败：${error.message}`);
+    } finally {
+        if (version === historyRequestVersion) {
+            historyLoading = false;
+            element('historyQueryBtn').disabled = false;
+            element('historyMoreBtn').disabled = !historyCursor;
+        }
+    }
+}
+
+const historyQueryButton = document.createElement('button');
+historyQueryButton.id = 'historyQueryBtn';
+historyQueryButton.className = 'tb-btn tb-btn-primary';
+historyQueryButton.textContent = '查询';
+historyQueryButton.onclick = () => loadHistory();
+const historyMoreButton = document.createElement('button');
+historyMoreButton.id = 'historyMoreBtn';
+historyMoreButton.className = 'tb-btn tb-btn-default';
+historyMoreButton.textContent = '加载更多';
+historyMoreButton.disabled = true;
+historyMoreButton.onclick = () => loadHistory(true);
+element('historyEndDate').after(historyQueryButton, historyMoreButton);
+
+const originalSwitchSubTab = switchSubTab;
+switchSubTab = function (tab) {
+    originalSwitchSubTab(tab);
+    if (tab.dataset.st === 'mgmt-history' && !historyQueryKey && !historyLoading) return loadHistory();
+};
+
+// A historical row is immutable. Restore/delete targets its current quote, with a fresh revision.
+unreferHistory = () => restoreManagedQuotes(selectedHistoryQuoteIds());
+deleteHistory = () => deleteManagedQuotes(selectedHistoryQuoteIds());
+
+ctxLog = function () {
+    const id = ctxTarget?.quoteId;
+    hideCtx();
+    return operate(async () => {
+        const data = await quoteView.call('history.query', { quoteId: id, limit: 200 });
+        const actions = { CREATE: 'quote', CONFIRM: 'quote', UPDATE: 'edit', REFER: 'revoke', UNREFER: 'restore', DELETE: 'delete' };
+        const logs = data.records.map(record => ({
+            time: record.operationTime, user: record.operatorUserId, action: actions[record.action] || record.action,
+            direction: record.after?.side === '1' ? 'bid' : 'ofr', oldPrice: record.before?.price,
+            price: record.after?.price, volume: record.after?.quantity, note: record.reason || ''
+        }));
+        showModal('报价操作记录', quoteLogRowsHtml(logs));
+    });
+};
+
 refreshBoardData = () => operate(async () => {
     for (const view of [quoteView, priceView, notificationView]) await view.open();
     showToast('success', 'GW 同步完成');

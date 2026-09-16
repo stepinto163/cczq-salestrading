@@ -22,6 +22,13 @@ consoleBridge.on('jsdomError', error => {
 const dom = new JSDOM(html, { url: 'http://127.0.0.1:8088', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: consoleBridge });
 const context = dom.getInternalVMContext();
 const securityRequests = [];
+const quoteClients = [];
+class TrackedQuoteClient extends QuoteClient {
+    constructor(...args) {
+        super(...args);
+        quoteClients.push(this);
+    }
+}
 class ExactSecurityGwClient extends GwClient {
     async request(server, topic, payload) {
         if (payload?.kind === 'SECURITY') {
@@ -35,7 +42,7 @@ class ExactSecurityGwClient extends GwClient {
         return super.request(server, topic, payload);
     }
 }
-Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient: ExactSecurityGwClient, QuoteClient, PriceClient, NotificationClient, CrmClient, ...mapping });
+Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient: ExactSecurityGwClient, QuoteClient: TrackedQuoteClient, PriceClient, NotificationClient, CrmClient, ...mapping });
 let createdId;
 let failed;
 const watchdog = setTimeout(() => {
@@ -110,6 +117,82 @@ try {
     dom.window.setRecommendationTarget(row, null, 'boardRateAllBody');
     check('original right panel renders price-book yield', dom.window.document.getElementById('instQuoteBody').textContent.includes('0.0001'));
     await waitFor('original notification area receives server reminder', () => data().boardAlert.some(row => row.quoteId === createdId));
+
+    const readQuote = async () => (await quoteClients[0].call('get', { quoteId: createdId })).quote;
+    const setContext = () => vm.runInContext(`ctxTarget = { quoteId: ${JSON.stringify(createdId)}, type: 'rate', idx: D.boardRateAll.findIndex(row => row.quoteId === ${JSON.stringify(createdId)}) }`, context);
+
+    // Reproduce a displayed price row whose quote has fallen outside the loaded QuoteView window.
+    quoteClients[0].records.delete(createdId);
+    quoteClients[0].ids = quoteClients[0].ids.filter(id => id !== createdId);
+    quoteClients[0].onChange();
+    await waitFor('price row remains actionable outside the quote cache', () =>
+        !data().liveQuotes.some(row => row.quoteId === createdId) && data().boardRateAll.some(row => row.quoteId === createdId));
+    vm.runInContext(`boardSelectedQuoteIds.clear(); boardSelectedQuoteIds.add(${JSON.stringify(createdId)})`, context);
+    await dom.window.referSelectedBoardQuotes('board-rate-all');
+    check('market toolbar Refer uses DPS outside loaded quote cache', (await readQuote()).status === 'REFERRED');
+    await dom.window.restoreManagedQuotes([createdId]);
+    await waitFor('Unrefer restores the same quote into the market', () => data().boardRateAll.some(row => row.quoteId === createdId));
+
+    setContext();
+    await dom.window.ctxOCO();
+    check('context OCO update uses DPS', (await readQuote()).oco === true);
+    setContext();
+    await dom.window.ctxPack();
+    check('context packing clears OCO atomically', (await readQuote()).packing === true && (await readQuote()).oco === false);
+
+    const rowIndex = data().boardRateAll.findIndex(row => row.quoteId === createdId);
+    await dom.window.openQuoteForm('edit', rowIndex, 'rate', createdId);
+    check('edit modal fetches full quote and preserves packing', vm.runInContext('quoteModalState.sourceRow.packing', context) === true);
+    dom.window.document.getElementById('quotePrice').value = '0.0002';
+    dom.window.document.getElementById('quoteNote').value = 'web action regression';
+    await dom.window.saveEditQuote();
+    const edited = await readQuote();
+    check('edit saves price, flags and note through DPS', edited.price === '0.0002' && edited.packing === true && edited.remark === 'web action regression');
+
+    await dom.window.openQuoteForm('edit', data().boardRateAll.findIndex(row => row.quoteId === createdId), 'rate', createdId);
+    const concurrent = quoteClients[0].batchResult(await quoteClients[0].call('update', {
+        quotes: [{ quoteId: createdId, expectedRevision: edited.revision, remark: 'concurrent edit' }]
+    }));
+    dom.window.document.getElementById('quotePrice').value = '0.0003';
+    await dom.window.saveEditQuote();
+    const afterConflict = await readQuote();
+    check('stale edit is rejected without overwriting another update', afterConflict.revision === concurrent.revision
+        && afterConflict.price === '0.0002' && afterConflict.remark === 'concurrent edit');
+    check('conflicting edit remains open and displays server error', vm.runInContext('quoteModalState !== null', context)
+        && dom.window.document.getElementById('toastContainer').textContent.includes('1004'));
+    dom.window.closeModal();
+
+    await waitFor('edited quote returns to market', () => data().boardRateAll.some(row => row.quoteId === createdId));
+    setContext();
+    dom.window.ctxRefer();
+    await dom.window.confirmRefer();
+    check('context Refer confirmation uses DPS', (await readQuote()).status === 'REFERRED');
+
+    const historyDate = edited.updateTime.slice(0, 10);
+    dom.window.document.getElementById('historyStartDate').value = historyDate;
+    dom.window.document.getElementById('historyEndDate').value = historyDate;
+    await dom.window.document.getElementById('historyQueryBtn').onclick();
+    check('history query returns persisted quote with matching calendar date', data().mgmtHistoryFiltered.some(row => row.quoteId === createdId && row.status === 'revoked'));
+    const actualCall = quoteClients[0].call.bind(quoteClients[0]);
+    quoteClients[0].call = (suffix, body) => suffix === 'history.search'
+        ? Promise.reject(new Error('history unavailable for test')) : actualCall(suffix, body);
+    await dom.window.document.getElementById('historyQueryBtn').onclick();
+    check('history failure displays an error instead of silently showing no results',
+        dom.window.document.getElementById('mgmtHistoryStatusbar').textContent.includes('history unavailable for test'));
+    quoteClients[0].call = actualCall;
+    await dom.window.document.getElementById('historyQueryBtn').onclick();
+    check('history can be queried again after failure', data().mgmtHistoryFiltered.some(row => row.quoteId === createdId));
+    const history = data().mgmtHistory.find(row => row.quoteId === createdId);
+    vm.runInContext(`mgmtHistorySelected = new Set([${JSON.stringify(history.eventId)}])`, context);
+    await dom.window.unreferHistory();
+    check('history Unrefer uses current revision and preserves quote ID', (await readQuote()).status === 'ACTIVE');
+    vm.runInContext(`mgmtTodaySelected = new Set([${JSON.stringify(createdId)}])`, context);
+    await dom.window.referFuzzy();
+    check('management Refer awaits the asynchronous action', (await readQuote()).status === 'REFERRED');
+    check('management action does not report a false synchronous failure', !dom.window.document.getElementById('toastContainer').textContent.includes('没有可操作的报价'));
+    setContext();
+    await dom.window.ctxLog();
+    check('quote log is loaded from persisted history', dom.window.document.getElementById('modalBody').textContent.includes('0.0002'));
     check('original scripts and adapter have no uncaught DOM errors', errors.length === 0);
 } catch (error) {
     failed = error.stack;
@@ -121,12 +204,13 @@ try {
 } finally {
     try {
         if (createdId) {
-            if (data().liveQuotes.find(row => row.quoteId === createdId)?.status === 'active') {
+            const current = (await quoteClients[0].call('get', { quoteId: createdId })).quote;
+            if (current.status === 'ACTIVE') {
                 await dom.window.setQuotesStatus([createdId], 'revoked');
-                await waitFor('cleanup refer', () => data().liveQuotes.find(row => row.quoteId === createdId)?.status === 'revoked');
+                check('cleanup refer', (await quoteClients[0].call('get', { quoteId: createdId })).quote.status === 'REFERRED');
             }
             await dom.window.deleteManagedQuotes([createdId]);
-            await waitFor('cleanup delete', () => !data().liveQuotes.some(row => row.quoteId === createdId));
+            check('cleanup delete', (await quoteClients[0].call('get', { quoteId: createdId })).quote.status === 'DELETED');
         }
     } catch (error) {
         failed = `${failed || ''}\nCleanup: ${error.message}`;

@@ -8,6 +8,32 @@ cd D:\workspace\greatewall\ficc\ficc
 
 ## 1. 启动后台进程
 
+### 一条命令重启应用
+
+已有本机部署可运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart-all.ps1
+```
+
+脚本关闭本项目C#客户端和Web服务，依次停止GW、NotificationSvr、QuoteSvr，再按相反顺序启动Java服务。确认服务监听、READY日志及通知源同步后启动Web，验证HTTP 200，最后打开C#客户端。浏览器刷新后重新登录；不自动运行测试。若客户端有未处理弹窗而无法正常关闭，脚本会停止，请先保存编辑并关闭窗口。
+
+默认不重启PostgreSQL和ZooKeeper，需保证配置中的依赖已可用。若也要重启**本项目本机**数据库和注册中心：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart-all.ps1 -IncludeInfrastructure
+```
+
+查看操作范围而不执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart-all.ps1 -WhatIf
+```
+
+脚本复用现有start/stop脚本及当前control、properties配置，不切换STC／模拟模式，不修改数据库或重建数据，不重编业务服务。GW启动脚本仍会编译已有网关扩展。适用于现有本机构建目录；Maven产物尚未部署到该目录、仅在IntelliJ启动的远程QA环境不能直接视为同一部署。API调试器不自动重开。失败时停止后续启动并指出日志位置，已启动的服务保留供排查。
+
+### 分步启动
+
 按 PostgreSQL → ZooKeeper → QuoteSvr → NotificationSvr → GW 的顺序逐条执行。ZooKeeper 已安装；安装目录和注册机制见 [服务发现说明](zookeeper-discovery.zh-CN.md)。
 
 ```powershell

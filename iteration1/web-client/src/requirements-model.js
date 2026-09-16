@@ -17,11 +17,14 @@ export function displayQuote(quote, security = {}, userId = '') {
         instBid: bid ? quote.institutionName || '' : '', instOfr: bid ? '' : quote.institutionName || '',
         trBid: bid ? quote.ownerUserId : '', trOfr: bid ? '' : quote.ownerUserId,
         cs: quote.settlType === '1' ? 'T+0' : quote.settlType === '2' ? 'T+1' : quote.settlType,
-        priceType: quote.yieldType === '2' ? '行权收益率' : '到期收益率',
+        priceType: quote.quoteType === '2' ? '净价' : quote.quoteType === '3' ? '全价'
+            : quote.yieldType === '2' ? '行权收益率' : '到期收益率',
         tradeDate: quote.tradeDate, createdAt: quote.createTime, updatedAt: quote.updateTime,
         quotedAt: quote.quoteTime || quote.createTime, t: quote.updateTime?.slice(11, 19) || '',
         urgent: quote.urgent, recommend: quote.recommended, round: quote.whole, oco: quote.oco, packing: quote.packing,
-        nzYTM: security.valuationYield || '', nzNet: '', csYTM: '', mode: '手工录入'
+        note: quote.remark || '',
+        nzYTM: security.valuationYield || '', nzNet: '', csYTM: '',
+        mode: { QT: 'QT', IDEAL: 'ideal' }[quote.source?.type] || '手工录入'
     };
 }
 
@@ -46,7 +49,9 @@ export function priceRows(book, security, userId) {
         return displayQuote({
             quoteId, ownerUserId: entry.UserID, side: entry.MDEntryType === '0' ? '1' : '2',
             price: entry.MDEntryPx, quantity: entry.MDEntrySize, settlType: entry.SettlType,
-            securityId: book.securityId, status: 'ACTIVE', revision: book.bookRevision,
+            securityId: book.securityId, status: 'ACTIVE',
+            revision: book.quoteRefs?.[entry.MDEntryID]?.quoteRevision,
+            institutionId: entry.InstitutionID, contactId: entry.TraderID,
             yieldType: entry.YieldToExecution != null ? '2' : '1', updateTime: time, quoteTime: time
         }, security, userId);
     });
@@ -58,10 +63,23 @@ export function bestRow(rows) {
     const bid = rows.find(row => row.direction === 'bid');
     const offer = rows.find(row => row.direction === 'ofr');
     return {
-        ...rows[0], bp: bid?.bp || '', op: offer?.op || '',
+        ...rows[0], quoteId: '', sourceQuoteId: '', bp: bid?.bp || '', op: offer?.op || '',
         bvBid: bid?.bvBid || '', bvOfr: offer?.bvOfr || '',
         trBid: bid?.trBid || '', trOfr: offer?.trOfr || '',
         bidQuoteId: bid?.quoteId || '', ofrQuoteId: offer?.quoteId || ''
+    };
+}
+
+export function historyRow(result, userId) {
+    const row = displayQuote(result.quote, result.reference || {}, userId);
+    return {
+        ...row,
+        eventId: `${result.tradeDate}:${row.quoteId}`,
+        historyDate: result.tradeDate,
+        gwtrader: row.ownerDisplayName,
+        rs: { active: '有效', revoked: '已撤销', deleted: '已删除', pending: '待确认' }[row.status],
+        // The original table filters dates by splitting on a space, not the ISO "T" separator.
+        t: `${result.tradeDate} ${result.quote.updateTime?.slice(11, 19) || ''}`.trim()
     };
 }
 

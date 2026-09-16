@@ -1,10 +1,10 @@
-# FICC服务API规范（v2评审稿：报价与行情通道分离）
+# FICC服务API规范（实现对照与评审稿）
 
-日期：2026-09-13。用于继续评审；本文是新设计，不表示接口已实现或已覆盖全部产品要求。
+日期：2026-09-16。本文对照当前仓库的服务注册、请求处理及客户端调用修订；“已注册”表示已有处理入口，不代表全部产品需求或所有部署环境均已验收。
 
-本次修订：Quote与Price分别使用`ficc.quote.*`和`ficc.price.*`接口、DTO及推送通道；去掉前端view的dataset参数。报价订阅只推事件，初始报价列表通过显式查询获得；市场价格提供按券快照。第4.1节按行情中心页面列出调用顺序，第13节标明未完成的需求覆盖。
+本次更新：补齐CRM机构／联系人搜索、确认时关联ID、内部同步接口；说明viewId、streamId与pushTopic关系；修正Handler名称、会话鉴权及当前限额。Quote、Price、Notification继续使用独立模型与推送频道。
 
-2026-09-15 实现补充：NotificationSvr 的内部初始化/恢复改用 `ficc.quote.internal.state.query` 和 `ficc.price.internal.snapshot.query`，通过 STC 服务连接调用，不执行用户账号登录。后续仍订阅 `ficc.quote.events`、`ficc.price.snapshots`。两个内部请求不向前端 GW 开放；普通业务接口仍验证用户 SID。下文旧 `quote.state.query/event.query` 设计不代表 NotificationSvr 必须配置服务账号，具体请求、配置升级及权限边界见 [STC 适配说明](../iteration1/docs/stc-adapters.zh-CN.md#内部同步与用户登录的边界)。
+当前运行服务为QuoteSvr与NotificationSvr。H36—H40、H48—H49及S06—S07是待实现设计；当前搜索在业务服务内完成，不能向部署环境直接调用这些规划中的topic。接口目录明确标出状态，后文保留其设计供评审。
 
 ## 1．范围与依据
 
@@ -21,7 +21,7 @@
 | LoginSvr / CalSvr / STC MarketSvr | 复用既有服务，不重写其对外契约；接入约定见后文 |
 | RecommendSvr | 按当前架构留待后续，无本版handler或订阅 |
 
-QuoteSvr内部维护报价、行情条目和价格簿；不再单独部署FICC MarketSvr。新handler、topic、错误码和默认限额为本次评审提案；尚未确定的业务规则集中列于最后，不隐藏在示例中。
+QuoteSvr内部维护报价、行情条目和价格簿；不再单独部署FICC MarketSvr。基础资料与CRM请求由SERVER.QuoteSvr承接，再调用对应适配器。SearchSvr、ParseSvr及供应商完整接入仍是后续设计，不能将其与已实现入口混淆。
 
 ## 2．STC／DPS接入方式
 
@@ -63,16 +63,16 @@ BaseApi.unSubscribeWithImage("SERVER.QuoteSvr", "QuoteSvr", pricePushTopic, pric
 
 `Code`、`Msg`沿用STC写法；`Data`是本规范统一结果包装，业务字段使用lowerCamelCase，STC行情报文保持原大写字段。`requestId`为业务关联及写入幂等键，DPS自身请求关联仍由其封装处理。本文不用额外batchId。
 
-用户身份从可信GW/DPS上下文解析，再由LoginSvrClient取得STC userid。客户端请求不能自行声明operatorUserId；普通创建的ownerUserId取当前用户。服务调用通过服务身份和授权范围认证；代用户查询的actorUserId只允许受信业务服务设置，不能由客户端绕过。
+用户身份从GW/DPS上下文中的SID解析，再通过STC身份适配取得userid。客户端请求不能自行声明operatorUserId；普通创建的ownerUserId取当前用户。登录账号和密码由用户输入，服务间同步不配置业务用户密码。STC的DefaultUser快捷登录可能返回成功但没有有效SID，不能用于这些业务接口；应使用已注册业务账号。内部同步的独立信任边界见H55／H56。
 
-私有topic中的sessionId为服务分配的路由标识，不是登录sid，也不是凭证。服务必须校验订阅者与路由标识绑定关系；拒绝客户端订阅他人topic或内部通配topic。登出／权限变化撤销或重建相应结果集。
+当前实现中，stream.open返回的sessionId及私有topic后缀使用当前GW/DPS登录SID；客户端直接使用返回的pushTopic，不自行拼接。GW只允许订阅当前SID的quote.report、price.report、notification.report三个精确topic，拒绝他人topic、通配订阅和内部频道。DPS底层支持通配符，不等于当前GW授权允许使用。重新登录后应按新SID重新建立订阅。
 
 | Code | error.type | 含义及调用方行为 |
 | --- | --- | --- |
 | 0000 | 无 | 请求成功；批量操作还需逐项查看结果 |
 | 1001 | VALIDATION_FAILED | 字段、格式或状态组合错误，按error.field修正 |
 | 1002 | NOT_FOUND | 记录不存在或不可见，不泄露权限外记录 |
-| 1003 | FORBIDDEN | 身份有效但无操作权限 |
+| 1003 | FORBIDDEN | 会话缺失、无效、过期，或无操作权限 |
 | 1004 | REVISION_CONFLICT | 重新读取后由用户决定，不能盲目覆盖 |
 | 1005 | INVALID_STATE | 当前生命周期不允许该动作 |
 | 1006 | IDEMPOTENCY_CONFLICT | 同requestId携带不同内容 |
@@ -80,7 +80,7 @@ BaseApi.unSubscribeWithImage("SERVER.QuoteSvr", "QuoteSvr", pricePushTopic, pric
 | 1008 | RESOURCE_LIMIT | 请求超限，显式缩小范围 |
 | 1009 | NOT_READY | 索引、资料或价格簿尚未就绪，可稍后重试 |
 | 1010 | UNSUPPORTED | 本版未支持的报价类型、清算等 |
-| 1099 | INTERNAL_ERROR | 服务内部错误，返回traceId，不返回堆栈 |
+| 1099 | INTERNAL_ERROR | 服务内部错误；当前回复不提供traceId，排查时结合requestId、topic及服务日志 |
 
 ### 2.3 写入约束
 
@@ -90,6 +90,31 @@ BaseApi.unSubscribeWithImage("SERVER.QuoteSvr", "QuoteSvr", pricePushTopic, pric
 4. update/confirm未传字段保留；null只清除可空字段；false明确关闭标记。不接受客户端修改status、revision和审计时间。
 5. 一条操作的Quote、QuoteHistory及待发布事件原子提交；提交后推进本地价格簿。内存更新或网络发布不代替持久化成功。回复可能先于推送到达，也可能晚于推送。
 6. 业务超时不是操作失败证明：使用原requestId重试。幂等数据保留期必须覆盖约定重试窗口，配置窗口外不能承诺安全重试。
+
+### 2.4 viewId、streamId与pushTopic
+
+| 字段 | 谁产生 | 作用 |
+| --- | --- | --- |
+| viewId | 客户端 | 标识一个面板及其过滤条件；open、extend、close和推送中的成员变化均用它定位面板 |
+| streamId | 服务端 | 标识当前领域推送流；结合sequence检查重复、缺号及流是否已重建 |
+| pushTopic | 服务端返回 | DPS实际订阅地址；客户端向该地址subscribe接收消息 |
+
+同一登录会话下，一个Quote流可以包含多个Quote view，它们共用一个pushTopic和一套sequence。一个view不需要单独创建一个DPS topic。Quote、Price、Notification各有自己的流和topic，不共享业务模型。
+
+```text
+当前登录会话 SID-001
+├─ pushTopic: ficc.quote.report.SID-001
+│  └─ streamId: QE-001
+│     ├─ viewId: V-MINE       我的报价
+│     └─ viewId: V-BANK       银行类发行人报价
+└─ pushTopic: ficc.price.report.SID-001
+   └─ streamId: PE-001
+      └─ viewId: PV-BEST      最优行情
+```
+
+调用示例：先quote.stream.open取得streamId和pushTopic，订阅pushTopic，然后分别quote.view.open两次，传V-MINE和V-BANK及各自条件。服务在同一报价流内发送变化；views中的viewId指明哪个面板增删或移动了哪些报价。同一批中被多个面板引用的报价内容只需发送一份。客户端缓存报价对象，面板各自保存有序quoteId列表。
+
+同一有效流内重复stream.open返回现有流，不自动建立新view。更换过滤条件时关闭旧view，并以新viewId打开；关闭的viewId在当前流内不复用。重新连接／服务重启后重新调用stream.open，检查返回streamId并按恢复流程重建视图，不假定旧流仍有效。HEARTBEAT也参与流序号处理；客户端关闭心跳显示或日志仅影响可见日志，不应停止接收和处理心跳。
 
 ## 3．统一模型与字典
 
@@ -130,10 +155,10 @@ clone是复制输入生成新Quote，不是恢复旧ID。confirm可在同一条�
 | quoteType | 1收益率，2净价，3全价 |
 | yieldType | 1到期，2行权；quoteType不为1时必须为null |
 | quantityUnit / currency | WAN（万单位面值）／CNY |
-| settlType | 1=T+0，2=T+1，3=明+0，4=明+1；3/4及远期日期依据仍须评审 |
+| settlType | 当前实现仅支持1=T+0、2=T+1；明+0／明+1及远期留待扩展 |
 | source.type（本稿建议） | MANUAL、QT、IDEAL；source含externalQuoteId、externalRevision和sourceTime |
 
-价格和数量使用十进制字符串；收益率为百分数且输入最多4位小数，超过直接拒绝。时间用带时区ISO 8601，日期YYYY-MM-DD。价格/报量能否在确认时为空、其他精度等见最终评审项；示例使用可确认的完整数值。未知正式报价类型不能静默转成收益率。
+价格和数量使用十进制字符串；收益率为百分数且输入最多4位小数，超过直接拒绝。时间用带时区ISO 8601，日期YYYY-MM-DD。当前确认／恢复有效报价时，securityId、side、quoteType、price、quantity、tradeDate、settlType必填，收益率报价还需yieldType；quantity必须大于0。CalSvr换算及其他精度规则仍待完善。未知正式报价类型不能静默转成收益率。
 
 quoteTime在首次确认前为null，确认、ACTIVE报价修改及unrefer时更新；updateTime反映最近一次事实变更，createTime永不改写。contactId与institutionId同时提供时必须属于同一机构；ownerUserId是我方STC用户，不能用对手联系人ID代替。
 
@@ -175,7 +200,7 @@ QuoteView为报价记录列表，PriceView为按券组织的行情列表，分�
 
 Watchlist包含watchlistId、name、market、scope、displayOrder、securities[]；成员为securityId、displayOrder。FilterGroup包含filterGroupId、name、market、scope、displayOrder、subgroups[]；子组含subgroupId和conditions[]，条件为conditionId、field、operator、value、displayOrder。保存为完整替换，服务端生成缺省子ID并丢弃空子组；调用者只能改自己的分组。
 
-为支持多端编辑，本稿建议为分组及NotificationPreference补充revision，save携带expectedRevision；这是ER尚未列出的技术字段。通知筛选组由NotificationSvr管理，scope=NOTIFICATION；行情及历史分组由QuoteSvr管理，scope=MARKET/HISTORY。分组所有者userId由服务端写入。
+分组及NotificationPreference已使用revision，save携带expectedRevision以检测多端修改冲突。通知筛选组由NotificationSvr管理，scope=NOTIFICATION；行情及历史分组由QuoteSvr管理，scope=MARKET/HISTORY。分组所有者userId由服务端写入。
 
 Notification包含notificationId、userId、securityId、reasons[]、content、quoteIds[]、readTime、createTime、updateTime。reasons项为type、groupIds、text；type取WATCHLIST、FILTER_GROUP、COUNTER_QUOTE、MY_BEST。非对价同券原因可合并，对价独立；通知拥有唯一用户，不能复用其他用户的已读状态。
 
@@ -187,74 +212,77 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 
 ### 4.0 请求Handler与发布频道
 
-| 编号 | 服务 | topic | Handler | 用途 |
-| --- | --- | --- | --- | --- |
-| H01 | QuoteSvr | `ficc.quote.create` | `QuoteCreateHandler` | 创建／批量创建报价 |
-| H02 | QuoteSvr | `ficc.quote.confirm` | `QuoteConfirmHandler` | 确认报价并允许同时修正 |
-| H03 | QuoteSvr | `ficc.quote.update` | `QuoteUpdateHandler` | 修改报价 |
-| H04 | QuoteSvr | `ficc.quote.refer` | `QuoteReferHandler` | 撤销报价 |
-| H05 | QuoteSvr | `ficc.quote.unrefer` | `QuoteUnreferHandler` | 恢复报价 |
-| H06 | QuoteSvr | `ficc.quote.delete` | `QuoteDeleteHandler` | 删除报价 |
-| H07 | QuoteSvr | `ficc.quote.clone` | `QuoteCloneHandler` | 克隆报价 |
-| H08 | QuoteSvr | `ficc.quote.get` | `QuoteGetHandler` | 读取单条报价 |
-| H09 | QuoteSvr | `ficc.quote.query` | `QuoteQueryHandler` | 当前报价搜索 |
-| H10 | QuoteSvr | `ficc.quote.history.query` | `QuoteHistoryHandler` | 单条报价变更历史 |
-| H11 | QuoteSvr | `ficc.quote.history.search` | `QuoteHistorySearchHandler` | 跨日期历史报价搜索 |
-| H12 | QuoteSvr | `ficc.quote.sourceMessage.query` | `QuoteSourceMessageQueryHandler` | 来源原文及候选关联查询 |
-| H13 | QuoteSvr | `ficc.price.query` | `PriceQueryHandler` | 单券／多券行情查询 |
-| H14 | QuoteSvr | `ficc.quote.dictionary.query` | `QuoteDictionaryHandler` | 业务字典与可用筛选字段 |
-| H15 | QuoteSvr | `ficc.quote.stream.open` | `QuoteStreamOpenHandler` | 取得当前连接的私有推送topic |
-| H16 | QuoteSvr | `ficc.quote.view.open` | `QuoteViewOpenHandler` | 登记条件并查询初始列表 |
-| H17 | QuoteSvr | `ficc.quote.view.extend` | `QuoteViewExtendHandler` | 滚动扩大已加载范围 |
-| H18 | QuoteSvr | `ficc.quote.view.close` | `QuoteViewCloseHandler` | 关闭实时面板 |
-| H19 | QuoteSvr | `ficc.watchlist.query` | `WatchlistQueryHandler` | 读取个人关注分组 |
-| H20 | QuoteSvr | `ficc.watchlist.save` | `WatchlistSaveHandler` | 保存关注分组及全部成员 |
-| H21 | QuoteSvr | `ficc.watchlist.delete` | `WatchlistDeleteHandler` | 删除关注分组 |
-| H22 | QuoteSvr | `ficc.filterGroup.query` | `FilterGroupQueryHandler` | 读取个人筛选分组 |
-| H23 | QuoteSvr | `ficc.filterGroup.save` | `FilterGroupSaveHandler` | 保存筛选组及全部条件 |
-| H24 | QuoteSvr | `ficc.filterGroup.delete` | `FilterGroupDeleteHandler` | 删除筛选分组 |
-| H25 | NotificationSvr | `ficc.notification.stream.open` | `NotificationStreamOpenHandler` | 取得当前连接的私有推送topic |
-| H26 | NotificationSvr | `ficc.notification.view.open` | `NotificationViewOpenHandler` | 登记条件并查询初始列表 |
-| H27 | NotificationSvr | `ficc.notification.view.extend` | `NotificationViewExtendHandler` | 滚动扩大已加载范围 |
-| H28 | NotificationSvr | `ficc.notification.view.close` | `NotificationViewCloseHandler` | 关闭实时面板 |
-| H29 | NotificationSvr | `ficc.notification.query` | `NotificationQueryHandler` | 读取当前通知 |
-| H30 | NotificationSvr | `ficc.notification.read` | `NotificationReadHandler` | 标记已读／未读 |
-| H31 | NotificationSvr | `ficc.notification.preference.get` | `NotificationPreferenceGetHandler` | 读取个人提醒开关 |
-| H32 | NotificationSvr | `ficc.notification.preference.save` | `NotificationPreferenceSaveHandler` | 保存个人提醒开关 |
-| H33 | NotificationSvr | `ficc.notification.filterGroup.query` | `FilterGroupQueryHandler` | 读取个人筛选分组 |
-| H34 | NotificationSvr | `ficc.notification.filterGroup.save` | `FilterGroupSaveHandler` | 保存筛选组及全部条件 |
-| H35 | NotificationSvr | `ficc.notification.filterGroup.delete` | `FilterGroupDeleteHandler` | 删除筛选分组 |
-| H36 | SearchSvr | `ficc.search.query` | `SearchQueryHandler` | 内部DSL查询 |
-| H37 | SearchSvr | `ficc.search.attributes.get` | `SearchAttributesGetHandler` | 取得完整搜索属性 |
-| H38 | SearchSvr | `ficc.search.fields.query` | `SearchFieldsQueryHandler` | 读取模型的筛选字段目录 |
-| H39 | SearchSvr | `ficc.search.status.get` | `SearchStatusGetHandler` | 查询索引及持久化处理位置 |
-| H40 | ParseSvr | `ficc.quote.recognize` | `QuoteRecognizeHandler` | 自然语言识别为候选报价 |
-| H41 | QuoteSvr | `ficc.quote.intake.apply` | `QuoteIntakeHandler` | QT／IDEAL统一来源接入 |
-| H42 | BaseSvr适配模块 | `ficc.base.get` | `ReferenceGetHandler` | 按ID批量读取统一基础资料 |
-| H43 | BaseSvr适配模块 | `ficc.base.query` | `ReferenceQueryHandler` | 基础资料输入联想与查找 |
-| H44 | QuoteSvr | `ficc.quote.state.query` | `StateQueryHandler` | 显式读取内部初始化记录 |
-| H45 | QuoteSvr | `ficc.quote.event.query` | `EventReplayQueryHandler` | 按位置补取内部事件 |
-| H46 | NotificationSvr | `ficc.notification.state.query` | `StateQueryHandler` | 显式读取内部初始化记录 |
-| H47 | NotificationSvr | `ficc.notification.event.query` | `EventReplayQueryHandler` | 按位置补取内部事件 |
-| H48 | BaseSvr适配模块 | `ficc.base.state.query` | `StateQueryHandler` | 显式读取内部初始化记录 |
-| H49 | BaseSvr适配模块 | `ficc.base.event.query` | `EventReplayQueryHandler` | 按位置补取内部事件 |
-| H50 | QuoteSvr | `ficc.price.stream.open` | `PriceStreamOpenHandler` | 取得独立的行情推送topic |
-| H51 | QuoteSvr | `ficc.price.view.open` | `PriceViewOpenHandler` | 登记行情条件并取得当前价格簿 |
-| H52 | QuoteSvr | `ficc.price.view.extend` | `PriceViewExtendHandler` | 滚动扩大行情加载范围 |
-| H53 | QuoteSvr | `ficc.price.view.close` | `PriceViewCloseHandler` | 关闭行情view |
-| H54 | QuoteSvr | `ficc.price.dictionary.query` | `PriceDictionaryHandler` | 读取行情字典与可用筛选字段 |
+| 编号 | 服务 | topic | Handler | 用途 | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| H01 | QuoteSvr | `ficc.quote.create` | `QuoteCreateHandler` | 创建／批量创建报价 | 已注册 |
+| H02 | QuoteSvr | `ficc.quote.confirm` | `QuoteConfirmHandler` | 确认报价并允许同时修正 | 已注册 |
+| H03 | QuoteSvr | `ficc.quote.update` | `QuoteUpdateHandler` | 修改报价 | 已注册 |
+| H04 | QuoteSvr | `ficc.quote.refer` | `QuoteReferHandler` | 撤销报价 | 已注册 |
+| H05 | QuoteSvr | `ficc.quote.unrefer` | `QuoteUnreferHandler` | 恢复报价 | 已注册 |
+| H06 | QuoteSvr | `ficc.quote.delete` | `QuoteDeleteHandler` | 删除报价 | 已注册 |
+| H07 | QuoteSvr | `ficc.quote.clone` | `QuoteCloneHandler` | 克隆报价 | 已注册 |
+| H08 | QuoteSvr | `ficc.quote.get` | `QuoteGetHandler` | 读取单条报价 | 已注册 |
+| H09 | QuoteSvr | `ficc.quote.query` | `QuoteQueryHandler` | 当前报价搜索 | 已注册 |
+| H10 | QuoteSvr | `ficc.quote.history.query` | `QuoteHistoryQueryHandler` | 单条报价变更历史 | 已注册 |
+| H11 | QuoteSvr | `ficc.quote.history.search` | `QuoteHistorySearchHandler` | 跨日期历史报价搜索 | 已注册 |
+| H12 | QuoteSvr | `ficc.quote.sourceMessage.query` | `QuoteSourceMessageQueryHandler` | 来源原文及候选关联查询 | 已注册 |
+| H13 | QuoteSvr | `ficc.price.query` | `PriceQueryHandler` | 单券／多券行情查询 | 已注册 |
+| H14 | QuoteSvr | `ficc.quote.dictionary.query` | `QuoteDictionaryQueryHandler` | 业务字典与可用筛选字段 | 已注册 |
+| H15 | QuoteSvr | `ficc.quote.stream.open` | `QuoteStreamOpenHandler` | 取得当前连接的私有推送topic | 已注册 |
+| H16 | QuoteSvr | `ficc.quote.view.open` | `QuoteViewOpenHandler` | 登记条件并查询初始列表 | 已注册 |
+| H17 | QuoteSvr | `ficc.quote.view.extend` | `QuoteViewExtendHandler` | 滚动扩大已加载范围 | 已注册 |
+| H18 | QuoteSvr | `ficc.quote.view.close` | `QuoteViewCloseHandler` | 关闭实时面板 | 已注册 |
+| H19 | QuoteSvr | `ficc.watchlist.query` | `WatchlistQueryHandler` | 读取个人关注分组 | 已注册 |
+| H20 | QuoteSvr | `ficc.watchlist.save` | `WatchlistSaveHandler` | 保存关注分组及全部成员 | 已注册 |
+| H21 | QuoteSvr | `ficc.watchlist.delete` | `WatchlistDeleteHandler` | 删除关注分组 | 已注册 |
+| H22 | QuoteSvr | `ficc.filterGroup.query` | `FilterGroupQueryHandler` | 读取个人筛选分组 | 已注册 |
+| H23 | QuoteSvr | `ficc.filterGroup.save` | `FilterGroupSaveHandler` | 保存筛选组及全部条件 | 已注册 |
+| H24 | QuoteSvr | `ficc.filterGroup.delete` | `FilterGroupDeleteHandler` | 删除筛选分组 | 已注册 |
+| H25 | NotificationSvr | `ficc.notification.stream.open` | `NotificationStreamOpenHandler` | 取得当前连接的私有推送topic | 已注册 |
+| H26 | NotificationSvr | `ficc.notification.view.open` | `NotificationViewOpenHandler` | 登记条件并查询初始列表 | 已注册 |
+| H27 | NotificationSvr | `ficc.notification.view.extend` | `NotificationViewExtendHandler` | 滚动扩大已加载范围 | 已注册 |
+| H28 | NotificationSvr | `ficc.notification.view.close` | `NotificationViewCloseHandler` | 关闭实时面板 | 已注册 |
+| H29 | NotificationSvr | `ficc.notification.query` | `NotificationQueryHandler` | 读取当前通知 | 已注册 |
+| H30 | NotificationSvr | `ficc.notification.read` | `NotificationReadHandler` | 标记已读／未读 | 已注册 |
+| H31 | NotificationSvr | `ficc.notification.preference.get` | `NotificationPreferenceGetHandler` | 读取个人提醒开关 | 已注册 |
+| H32 | NotificationSvr | `ficc.notification.preference.save` | `NotificationPreferenceSaveHandler` | 保存个人提醒开关 | 已注册 |
+| H33 | NotificationSvr | `ficc.notification.filterGroup.query` | `NotificationFilterGroupQueryHandler` | 读取个人筛选分组 | 已注册 |
+| H34 | NotificationSvr | `ficc.notification.filterGroup.save` | `NotificationFilterGroupSaveHandler` | 保存筛选组及全部条件 | 已注册 |
+| H35 | NotificationSvr | `ficc.notification.filterGroup.delete` | `NotificationFilterGroupDeleteHandler` | 删除筛选分组 | 已注册 |
+| H36 | SearchSvr | `ficc.search.query` | `SearchQueryHandler` | 内部DSL查询 | 待实现 |
+| H37 | SearchSvr | `ficc.search.attributes.get` | `SearchAttributesGetHandler` | 取得完整搜索属性 | 待实现 |
+| H38 | SearchSvr | `ficc.search.fields.query` | `SearchFieldsQueryHandler` | 读取模型的筛选字段目录 | 待实现 |
+| H39 | SearchSvr | `ficc.search.status.get` | `SearchStatusGetHandler` | 查询索引及持久化处理位置 | 待实现 |
+| H40 | ParseSvr | `ficc.quote.recognize` | `QuoteRecognizeHandler` | 自然语言识别为候选报价 | 待实现 |
+| H41 | QuoteSvr | `ficc.quote.intake.apply` | `QuoteIntakeApplyHandler` | QT／IDEAL统一来源接入 | 已注册 |
+| H42 | QuoteSvr | `ficc.base.get` | `BaseGetHandler` | 按ID批量读取统一基础资料 | 已注册 |
+| H43 | QuoteSvr | `ficc.base.query` | `BaseQueryHandler` | 基础资料输入联想与查找 | 已注册 |
+| H44 | QuoteSvr | `ficc.quote.state.query` | `QuoteStateQueryHandler` | 显式读取内部初始化记录 | 已注册 |
+| H45 | QuoteSvr | `ficc.quote.event.query` | `QuoteEventQueryHandler` | 按位置补取内部事件 | 已注册 |
+| H46 | NotificationSvr | `ficc.notification.state.query` | `NotificationStateQueryHandler` | 显式读取内部初始化记录 | 已注册 |
+| H47 | NotificationSvr | `ficc.notification.event.query` | `NotificationEventQueryHandler` | 按位置补取内部事件 | 已注册 |
+| H48 | BaseSvr适配模块 | `ficc.base.state.query` | `StateQueryHandler` | 显式读取内部初始化记录 | 待实现 |
+| H49 | BaseSvr适配模块 | `ficc.base.event.query` | `EventReplayQueryHandler` | 按位置补取内部事件 | 待实现 |
+| H50 | QuoteSvr | `ficc.price.stream.open` | `PriceStreamOpenHandler` | 取得独立的行情推送topic | 已注册 |
+| H51 | QuoteSvr | `ficc.price.view.open` | `PriceViewOpenHandler` | 登记行情条件并取得当前价格簿 | 已注册 |
+| H52 | QuoteSvr | `ficc.price.view.extend` | `PriceViewExtendHandler` | 滚动扩大行情加载范围 | 已注册 |
+| H53 | QuoteSvr | `ficc.price.view.close` | `PriceViewCloseHandler` | 关闭行情view | 已注册 |
+| H54 | QuoteSvr | `ficc.price.dictionary.query` | `PriceDictionaryQueryHandler` | 读取行情字典与可用筛选字段 | 已注册 |
+
+| H55 | QuoteSvr | `ficc.quote.internal.state.query` | `QuoteInternalStateQueryHandler` | 服务间报价状态初始化／恢复 | 已注册，仅内部 |
+| H56 | QuoteSvr | `ficc.price.internal.snapshot.query` | `PriceInternalSnapshotQueryHandler` | 服务间完整行情初始化／恢复 | 已注册，仅内部 |
 
 | 编号 | 服务 | 订阅topic | 模式及组件 |
 | --- | --- | --- | --- |
 | S01 | QuoteSvr | `ficc.quote.report.<sessionId>` | 普通subscribe；QuoteReportPublisher |
 | S02 | NotificationSvr | `ficc.notification.report.<sessionId>` | 普通subscribe；NotificationReportPublisher |
-| S03 | QuoteSvr | `ficc.price.book.<securityId>` | subscribeWithImage；PriceSnapshotHandler |
+| S03 | QuoteSvr | `ficc.price.book.<securityId>` | subscribeWithImage；PriceBookSnapshotHandler |
 | S04 | QuoteSvr | `ficc.quote.events` | 普通subscribe；QuoteEventPublisher |
 | S05 | NotificationSvr | `ficc.notification.events` | 普通subscribe；NotificationEventPublisher |
 | S06 | BaseSvr适配模块 | `ficc.base.events` | 普通subscribe；ReferenceEventPublisher |
 | S07 | SearchSvr | `ficc.search.attributes.events` | 普通subscribe；SearchAttributesPublisher |
-| S08 | QuoteSvr | `ficc.price.report.<sessionId>` | subscribeWithImage；PriceReportHandler |
-| S09 | QuoteSvr | `ficc.price.snapshots` | subscribeWithImage；PriceFeedHandler |
+| S08 | QuoteSvr | `ficc.price.report.<sessionId>` | subscribeWithImage；PriceReportSnapshotHandler |
+| S09 | QuoteSvr | `ficc.price.snapshots` | subscribeWithImage；PriceFeedSnapshotHandler |
 
 只有Price频道带业务image；其余频道是纯发布。Topic的ACL、路由及Publisher绑定仍需配置，但不为纯发布topic注册不存在的ContentHandler.snapshot。
 
@@ -746,7 +774,7 @@ filter可空；status和ownerScope为可选查询约束，ownerScope=MINE或VISI
 
 ### H10 单条报价变更历史
 
-服务：`QuoteSvr`；topic：`ficc.quote.history.query`；handler：`QuoteHistoryHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.quote.history.query`；handler：`QuoteHistoryQueryHandler.handle`。
 
 quoteId必填，limit/cursor用于滚动；按revision升序。用于报价日志，区别于跨日期历史行情搜索。完整before/after按原始事实保存；本例为CREATE记录。
 
@@ -1032,9 +1060,9 @@ securityIds必填，最多100券；mode必填BEST/DEPTH/FULL；DEPTH必须有dep
 
 ### H14 业务字典与可用筛选字段
 
-服务：`QuoteSvr`；topic：`ficc.quote.dictionary.query`；handler：`QuoteDictionaryHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.quote.dictionary.query`；handler：`QuoteDictionaryQueryHandler.handle`。
 
-names可选，缺省返回本版全部业务字典；此接口只返回Quote字典及筛选字段；Price使用ficc.price.dictionary.query。动态筛选字段目录由业务服务在SearchSvr目录基础上按权限裁剪。尚未支持的值标注enabled=false，不能只存在于文档。
+names可选，缺省返回本版全部业务字典；此接口返回Quote字典及filterFields，Price使用ficc.price.dictionary.query。当前字段目录来自共享FilterEngine，不调用尚未实现的SearchSvr。以下字典应答仅展示dictionaries，完整返回还包含filterFields；字段scope及operators以实际接口为准。
 
 请求：
 
@@ -1621,9 +1649,9 @@ filterGroupId、expectedRevision必填；同时移除子组及条件，不修改
   "Msg": "成功",
   "requestId": "R-050",
   "Data": {
-    "sessionId": "PS-001",
+    "sessionId": "S-001",
     "streamId": "PE-001",
-    "pushTopic": "ficc.price.report.PS-001"
+    "pushTopic": "ficc.price.report.S-001"
   }
 }
 ```
@@ -1814,7 +1842,7 @@ viewId必填。仅关闭本Price频道的view，已关闭重复请求返回成�
 
 ### H54 读取行情字典与可用筛选字段
 
-服务：`QuoteSvr`；topic：`ficc.price.dictionary.query`；handler：`PriceDictionaryHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.price.dictionary.query`；handler：`PriceDictionaryQueryHandler.handle`。
 
 names可选，缺省返回当前已实现且该用户可用的行情字典和filterFields；不使用dataset选择Quote模型。filterFields必须标明条件作用层级：SECURITY债券、ENTRY单条行情、BOOK价格簿。本例只展示已定义字段；跨侧价差/偏离等未定稿字段不得以enabled=true返回。
 
@@ -1985,7 +2013,7 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
 
 服务：`NotificationSvr`；topic：`ficc.notification.view.extend`；handler：`NotificationViewExtendHandler.handle`。
 
-viewId、limit必填；limit是新的总加载条数，必须大于当前值。服务重新返回该view在边界sequence上的完整已加载列表。这是显式查询应答，不是通知订阅image。不修改筛选；改变条件先close旧view，再以新viewId open。
+viewId、limit必填；limit是新的总加载条数，必须大于当前值，当前Notification实现上限为1000。服务重新返回该view在边界sequence上的完整已加载列表。这是显式查询应答，不是通知订阅image。不修改筛选；改变条件先close旧view，再以新viewId open。
 
 请求：
 
@@ -2238,7 +2266,7 @@ expectedRevision及四个boolean必填，完整替换；成功后重评当前提
 
 ### H33 读取个人筛选分组
 
-服务：`NotificationSvr`；topic：`ficc.notification.filterGroup.query`；handler：`FilterGroupQueryHandler.handle`。
+服务：`NotificationSvr`；topic：`ficc.notification.filterGroup.query`；handler：`NotificationFilterGroupQueryHandler.handle`。
 
 market/scope/filterGroupId可选；返回组、子组及条件，不返回固定命中债券成员。
 
@@ -2295,7 +2323,7 @@ market/scope/filterGroupId可选；返回组、子组及条件，不返回固定
 
 ### H34 保存筛选组及全部条件
 
-服务：`NotificationSvr`；topic：`ficc.notification.filterGroup.save`；handler：`FilterGroupSaveHandler.handle`。
+服务：`NotificationSvr`；topic：`ficc.notification.filterGroup.save`；handler：`NotificationFilterGroupSaveHandler.handle`。
 
 新建不传filterGroupId、expectedRevision；更新必填。name、market、scope、subgroups必填；整组替换并校验字段及操作。通知分组仅筛选通知列表，不改变四类提醒的生成条件。
 
@@ -2365,7 +2393,7 @@ market/scope/filterGroupId可选；返回组、子组及条件，不返回固定
 
 ### H35 删除筛选分组
 
-服务：`NotificationSvr`；topic：`ficc.notification.filterGroup.delete`；handler：`FilterGroupDeleteHandler.handle`。
+服务：`NotificationSvr`；topic：`ficc.notification.filterGroup.delete`；handler：`NotificationFilterGroupDeleteHandler.handle`。
 
 filterGroupId、expectedRevision必填；同时移除子组及条件，不修改已保存Quote。引用已删除组的view失效并明确提示，不放宽查询。
 
@@ -2395,7 +2423,7 @@ filterGroupId、expectedRevision必填；同时移除子组及条件，不修改
 
 ## 8．内部搜索、资料、解析与接入接口
 
-### H36 内部DSL查询
+### H36 内部DSL查询（待实现）
 
 服务：`SearchSvr`；topic：`ficc.search.query`；handler：`SearchQueryHandler.handle`。
 
@@ -2497,7 +2525,7 @@ filterGroupId、expectedRevision必填；同时移除子组及条件，不修改
 }
 ```
 
-### H37 取得完整搜索属性
+### H37 取得完整搜索属性（待实现）
 
 服务：`SearchSvr`；topic：`ficc.search.attributes.get`；handler：`SearchAttributesGetHandler.handle`。
 
@@ -2543,7 +2571,7 @@ securityIds必填；minAttributeVersion可选。返回按券补齐的当前债�
 }
 ```
 
-### H38 读取模型的筛选字段目录
+### H38 读取模型的筛选字段目录（待实现）
 
 服务：`SearchSvr`；topic：`ficc.search.fields.query`；handler：`SearchFieldsQueryHandler.handle`。
 
@@ -2597,7 +2625,7 @@ collection必填；返回field/type/operators及枚举或单位。前端通过�
 }
 ```
 
-### H39 查询索引及持久化处理位置
+### H39 查询索引及持久化处理位置（待实现）
 
 服务：`SearchSvr`；topic：`ficc.search.status.get`；handler：`SearchStatusGetHandler.handle`。
 
@@ -2645,7 +2673,7 @@ collection必填；返回field/type/operators及枚举或单位。前端通过�
 }
 ```
 
-### H40 自然语言识别为候选报价
+### H40 自然语言识别为候选报价（待实现）
 
 服务：`ParseSvr`；topic：`ficc.quote.recognize`；handler：`QuoteRecognizeHandler.handle`。
 
@@ -2694,7 +2722,7 @@ text必填，默认最大20000字符；sourceMessageId与context可选。只返�
 
 ### H41 QT／IDEAL统一来源接入
 
-服务：`QuoteSvr`；topic：`ficc.quote.intake.apply`；handler：`QuoteIntakeHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.quote.intake.apply`；handler：`QuoteIntakeApplyHandler.handle`。
 
 仅对应intake服务可调用；sourceType、externalMessageId、sourceTime、text和quotes必填。按(sourceType,externalMessageId)去重原文，按(sourceType,externalQuoteId)关联Quote；首次创建PENDING_CONFIRM。现有人工确认报价与来源更新冲突见评审R4，不允许直接覆盖。sourceUserId须经服务器映射到ownerUserId，映射失败逐项报错。
 
@@ -2752,88 +2780,93 @@ text必填，默认最大20000字符；sourceMessageId与context可选。只返�
 }
 ```
 
-### H42 按ID批量读取统一基础资料
+### H42 按ID批量读取统一基础资料与CRM记录
 
-服务：`BaseSvr适配模块`；topic：`ficc.base.get`；handler：`ReferenceGetHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.base.get`；handler：`BaseGetHandler.handle`；服务键：`SERVER.QuoteSvr`。
 
-kind及ids必填；kind=SECURITY/ISSUER/INSTITUTION/CONTACT/DAILY_VALUATION。DAILY_VALUATION的ids为securityId，valuationSource可选，返回各来源最新可用日记录；其他kind的ids是对应统一主键。该逻辑接口由BaseSvrClient封装；不要求新建BaseSvr进程。
+kind及ids必填。kind支持SECURITY、ISSUER、DAILY_VALUATION、INSTITUTION、CONTACT；所有ID均为字符串。SECURITY按精确securityId读取，适合报价列表补充债券名称等资料；不要在登录阶段使用全市场模糊搜索。DAILY_VALUATION按securityId读取当前适配器中的最新日估值，当前未实现请求参数valuationSource筛选。
 
-请求：
-
-```json
-{
-  "requestId": "R-042",
-  "kind": "SECURITY",
-  "ids": [
-    "250001.IB"
-  ]
-}
-```
-
-应答：
+债券资料示例（records仅列常用字段，实际字段取决于适配器）：
 
 ```json
-{
-  "Code": "0000",
-  "Msg": "成功",
-  "requestId": "R-042",
-  "Data": {
-    "records": [
-      {
-        "securityId": "250001.IB",
-        "securityName": "示例国债",
-        "issuerId": "IS-001",
-        "bondRating": "AAA"
-      }
-    ],
-    "missingIds": [],
-    "referenceVersion": "18"
-  }
-}
+{"requestId":"R-042","kind":"SECURITY","ids":["250001.IB"]}
 ```
-
-### H43 基础资料输入联想与查找
-
-服务：`BaseSvr适配模块`；topic：`ficc.base.query`；handler：`ReferenceQueryHandler.handle`。
-
-kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可选；CONTACT可增加institutionId。查询按用户/服务权限执行，适配层不保证当前未知的联系人供应商已存在。
-
-请求：
 
 ```json
-{
-  "requestId": "R-043",
-  "kind": "SECURITY",
-  "text": "250001",
-  "limit": 20
-}
+{"Code":"0000","Msg":"成功","requestId":"R-042","Data":{"records":[{"securityId":"250001.IB","securityName":"示例国债","issuerId":"IS-001","bondRating":"AAA"}],"missingIds":[],"referenceVersion":"STC-reference-version"}}
 ```
 
-应答：
+CRM按ID回填示例：
 
 ```json
-{
-  "Code": "0000",
-  "Msg": "成功",
-  "requestId": "R-043",
-  "Data": {
-    "records": [
-      {
-        "securityId": "250001.IB",
-        "securityName": "示例国债",
-        "issuerId": "IS-001",
-        "bondRating": "AAA"
-      }
-    ],
-    "nextCursor": null,
-    "referenceVersion": "18"
-  }
-}
+{"requestId":"R-042-C","kind":"CONTACT","ids":["C-001","C-MISSING"]}
 ```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"R-042-C","Data":{"records":[{"contactId":"C-001","contactName":"张三","positionName":"交易员","institutionIds":["I-001"],"institutionId":"I-001"}],"missingIds":["C-MISSING"]}}
+```
+
+INSTITUTION／CONTACT每次最多200个ID；CRM结果只有records和missingIds，不返回referenceVersion。联系人可能关联多个机构：institutionIds为全部当前有效机构，只有恰好一个关联时institutionId才有值，否则为null；不能把多机构联系人自动归到第一个机构。INSTITUTION返回institutionId、institutionName、institutionShortName。记录顺序不保证与ids一致，客户端按ID关联。示例ID与姓名仅说明结构，调用时替换为目标CRM真实值。
+
+### H43 基础资料联想与CRM包含搜索
+
+服务：`QuoteSvr`；topic：`ficc.base.query`；handler：`BaseQueryHandler.handle`；服务键：`SERVER.QuoteSvr`。
+
+kind必填；text可省略，默认空字符串。SECURITY查询由基础资料适配器执行，可能因搜索时间预算超限返回1009；已知完整securityId时优先H42。SECURITY／ISSUER查询返回records、totalCount、nextCursor；续取使用requestId和cursor，不能套用CRM的offset协议。
+
+```json
+{"requestId":"R-043-B","kind":"SECURITY","text":"250001","limit":20}
+```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"R-043-B","Data":{"records":[{"securityId":"250001.IB","securityName":"示例国债"}],"totalCount":1,"nextCursor":null}}
+```
+
+CRM查询使用以下规则：
+
+- kind=INSTITUTION／CONTACT；text执行不区分大小写的包含搜索，不是仅前缀匹配，当前没有matchMode参数。空text用于浏览列表。
+- 机构搜索匹配ID、全称、简称及全称／简称拼音；联系人搜索匹配ID、姓名、CFETS交易员ID和姓名。
+- CONTACT可传institutionId限定当前关联机构；省略时跨机构搜索。更换机构或搜索文本后offset重新置0。
+- offset默认0，范围0—1000000；limit默认200，范围1—200，界面建议一次50条。
+- 返回records、hasMore、nextOffset；不返回totalCount、nextCursor或referenceVersion。有下一批时保留条件并传nextOffset，否则停止加载。这是实时目录查询，不保证跨请求数据库快照一致。
+
+搜索机构：
+
+```json
+{"requestId":"R-043-I","kind":"INSTITUTION","text":"银行","offset":0,"limit":50}
+```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"R-043-I","Data":{"records":[{"institutionId":"I-001","institutionName":"示例银行股份有限公司","institutionShortName":"示例银行"}],"hasMore":false,"nextOffset":null}}
+```
+
+搜索所选机构的联系人：
+
+```json
+{"requestId":"R-043-C","kind":"CONTACT","institutionId":"I-001","text":"张","offset":0,"limit":50}
+```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"R-043-C","Data":{"records":[{"contactId":"C-001","contactName":"张三","positionName":"交易员","institutionIds":["I-001"],"institutionId":"I-001"}],"hasMore":false,"nextOffset":null}}
+```
+
+待确认报价可以只保存institutionName／contactName。用户通过上述搜索选择机构、联系人后，在H02传匹配ID；服务校验关联并填写CRM标准名称，不自动按模糊名称选择ID。已填写的名称在确认前必须匹配ID。
+
+```json
+{"requestId":"R-CONFIRM-CRM","quotes":[{"quoteId":"Q-001","expectedRevision":"1","institutionId":"I-001","contactId":"C-001"}]}
+```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"R-CONFIRM-CRM","Data":{"results":[{"quoteId":"Q-001","revision":"2","Code":"0000","Msg":"成功"}]}}
+```
+
+上述确认示例假设报价其他必填字段已录入。CRM不增加独立订阅topic，确认后的报价变化仍通过ficc.quote.report发送。
+
+PostgreSQL模式读取独立CRM数据库的crm_org、crm_contact、crm_contact_org_rel。当前仅返回deleted=false记录，机构关联要求is_current=true且关联和机构均为deleted=false；尚未按owner_user_ids、部门或status增加权限过滤。CRM分支不依赖债券基础资料缓存已就绪；crm.mode=empty返回空目录，postgresql模式初始化或查询失败必须在服务日志中体现。
 
 ### H44 显式读取内部初始化记录
 
-服务：`QuoteSvr`；topic：`ficc.quote.state.query`；handler：`StateQueryHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.quote.state.query`；handler：`QuoteStateQueryHandler.handle`。
 
 仅内部消费者。首次请求cursor=null，由本次请求建立一致读取边界epoch/sequence；后续只用返回的nextCursor续取该边界的记录。无stateToken，不依赖订阅image；这是单独的数据加载请求，不改变事件订阅语义。done=true才完成初始化。游标过期返回1007并重新开始；块中未出现的集合不代表删除其他块记录。
 
@@ -2907,7 +2940,7 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
 
 ### H45 按位置补取内部事件
 
-服务：`QuoteSvr`；topic：`ficc.quote.event.query`；handler：`EventReplayQueryHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.quote.event.query`；handler：`QuoteEventQueryHandler.handle`。
 
 仅内部消费者；epoch、afterSequence必填，limit可选，返回严格大于该位置的事件。无缺口保留区间才返回0000，否则1007并重新调用对应state.query初始化。seenSequence是可用尾位置；空数组不代表可以跳过任何缺失位置。
 
@@ -2941,7 +2974,7 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
 
 ### H46 显式读取内部初始化记录
 
-服务：`NotificationSvr`；topic：`ficc.notification.state.query`；handler：`StateQueryHandler.handle`。
+服务：`NotificationSvr`；topic：`ficc.notification.state.query`；handler：`NotificationStateQueryHandler.handle`。
 
 仅内部消费者。首次请求cursor=null，由本次请求建立一致读取边界epoch/sequence；后续只用返回的nextCursor续取该边界的记录。无stateToken，不依赖订阅image；这是单独的数据加载请求，不改变事件订阅语义。done=true才完成初始化。游标过期返回1007并重新开始；块中未出现的集合不代表删除其他块记录。
 
@@ -3000,7 +3033,7 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
 
 ### H47 按位置补取内部事件
 
-服务：`NotificationSvr`；topic：`ficc.notification.event.query`；handler：`EventReplayQueryHandler.handle`。
+服务：`NotificationSvr`；topic：`ficc.notification.event.query`；handler：`NotificationEventQueryHandler.handle`。
 
 仅内部消费者；epoch、afterSequence必填，limit可选，返回严格大于该位置的事件。无缺口保留区间才返回0000，否则1007并重新调用对应state.query初始化。seenSequence是可用尾位置；空数组不代表可以跳过任何缺失位置。
 
@@ -3032,7 +3065,7 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
 }
 ```
 
-### H48 显式读取内部初始化记录
+### H48 显式读取内部初始化记录（待实现）
 
 服务：`BaseSvr适配模块`；topic：`ficc.base.state.query`；handler：`StateQueryHandler.handle`。
 
@@ -3076,7 +3109,7 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
 }
 ```
 
-### H49 按位置补取内部事件
+### H49 按位置补取内部事件（待实现）
 
 服务：`BaseSvr适配模块`；topic：`ficc.base.event.query`；handler：`EventReplayQueryHandler.handle`。
 
@@ -3109,6 +3142,36 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
   }
 }
 ```
+
+### H55 服务间报价状态初始化／恢复
+
+服务：`QuoteSvr`；topic：`ficc.quote.internal.state.query`；handler：`QuoteInternalStateQueryHandler.handle`。
+
+NotificationSvr通过QuoteSvrClient和STC服务发现直接调用，不执行业务用户登录。仅接受requestId、limit、cursor。limit默认200、最大1000；后续请求只需新requestId和nextCursor。返回结构与H44一致，分页固定同一epoch／sequence，records包含quotes、watchlists、filterGroups；done=true表示读取完毕。
+
+```json
+{"requestId":"NS-STATE-1","limit":1000}
+```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"NS-STATE-1","Data":{"epoch":"EP-001","sequence":"0","records":{"quotes":[],"watchlists":[],"filterGroups":[]},"totalCount":0,"nextCursor":null,"done":true}}
+```
+
+### H56 服务间完整行情初始化／恢复
+
+服务：`QuoteSvr`；topic：`ficc.price.internal.snapshot.query`；handler：`PriceInternalSnapshotQueryHandler.handle`。
+
+只接受requestId；返回当前完整内部行情SNAPSHOT，结构与S09一致，使用独立行情streamId／sequence，不提供cursor。下面以无报价状态说明外层结构，有报价时prices为S09的PriceResult数组。
+
+```json
+{"requestId":"NS-PRICE-1"}
+```
+
+```json
+{"Code":"0000","Msg":"成功","requestId":"NS-PRICE-1","Data":{"Code":"0000","Msg":"成功","kind":"SNAPSHOT","streamId":"MDE-001","sequence":"0","quotePosition":{"epoch":"EP-001","sequence":"0"},"prices":[]}}
+```
+
+H55／H56只读，但当前实现跳过用户SID解析，依赖可信服务网络边界，不是已完成的服务身份认证。前端GW明确禁止调用；部署必须限制服务端口访问。H44／H45与H46／H47仍校验内部角色，不能当作普通前端接口或无登录调用的替代。NotificationSvr当前使用H55／H56恢复，不要求配置identity.serviceUsername。
 
 ## 9．订阅及发布接口
 
@@ -3246,7 +3309,7 @@ kind、text必填，kind为SECURITY/ISSUER/INSTITUTION/CONTACT；limit/cursor可
 
 ### S03 `ficc.price.book.<securityId>`
 
-发布服务：QuoteSvr；`PriceSnapshotHandler.snapshot`提供初始image，后续由业务事件处理器发布。
+发布服务：QuoteSvr；`PriceBookSnapshotHandler.snapshot`提供初始image，后续由业务事件处理器发布。
 
 STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC渠道的STC适配服务；前端有权限及条件过滤时走price.query/view，不直接订阅此原始topic。示例实际topic为ficc.price.book.250001.IB。每次NoMDEntries均完整替换该券前值，空簿必须发布空数组。此兼容流不承担可靠事件日志用途；丢失后重新subscribeWithImage，不能凭MDPriceLevel推断消息连续性。
 
@@ -3405,7 +3468,7 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
 }
 ```
 
-### S06 `ficc.base.events`
+### S06 `ficc.base.events`（待实现）
 
 发布服务：BaseSvr适配模块；发布组件：`ReferenceEventPublisher`，普通subscribe，无业务snapshot Handler。
 
@@ -3438,7 +3501,7 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
 }
 ```
 
-### S07 `ficc.search.attributes.events`
+### S07 `ficc.search.attributes.events`（待实现）
 
 发布服务：SearchSvr；发布组件：`SearchAttributesPublisher`，普通subscribe，无业务snapshot Handler。
 
@@ -3462,7 +3525,7 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
 
 ### S08 `ficc.price.report.<sessionId>`
 
-发布服务：QuoteSvr；`PriceReportHandler.snapshot`提供Price初始image；`PriceReportPublisher`发布后续整券刷新。此频道只允许PriceStreamBatch DTO，不允许QuoteStreamBatch、quotes或报价操作reports。
+发布服务：QuoteSvr；`PriceReportSnapshotHandler.snapshot`提供Price初始image；`PriceReportPublisher`发布后续整券刷新。此频道只允许PriceStreamBatch DTO，不允许QuoteStreamBatch、quotes或报价操作reports。
 
 通过subscribeWithImage建立订阅。首次尚未open任何view时返回views=[]、books=[]；以下展示已有view重订阅时的当前快照。每条books以viewId＋securityId为键，表示该view条件下该券的完整PriceResult；同券不同条件的结果不混在一起。行情缓存、序列、重连和退订与Quote频道独立。
 
@@ -3589,7 +3652,7 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
 
 ### S09 `ficc.price.snapshots`
 
-发布服务：QuoteSvr；`PriceFeedHandler.snapshot`提供内部全渠道当前行情，`PriceFeedPublisher`发布后续整券快照。仅SearchSvr、NotificationSvr等受信服务使用；前端无权限直接订阅。
+发布服务：QuoteSvr；`PriceFeedSnapshotHandler.snapshot`提供内部全渠道当前行情，`PriceFeedPublisher`发布后续整券快照。仅SearchSvr、NotificationSvr等受信服务使用；前端无权限直接订阅。
 
 使用subscribeWithImage；prices为完整PriceResult数组，不含Quote事实事件。初始image结束后以其券集合替换旧行情集合；之后按securityId替换变化券，空NoMDEntries必须清空该券。quotePosition表示整个行情状态已处理到的报价事实事件位置，供跨频道关联；它不是行情sequence，报价与行情两个位置不互相比较数值大小。QuoteSvr须按确定顺序处理报价事件并保持该水位真实，计算未完成时不能宣称已追平。
 
@@ -3710,7 +3773,7 @@ sequenceDiagram
     C->>Q: ficc.quote.stream.open（request/reply）
     Q-->>C: quote pushTopic、streamId
     C->>Q: DPS subscribe(quote pushTopic)
-    Q-->>C: HEARTBEAT（无已有报价）
+    Note over C: 缓冲本流推送；HEARTBEAT不含已有报价
     C->>Q: ficc.quote.view.open(filter, viewId, limit)
     Note over Q: 在边界S登记条件并读取报价列表
     Q-->>C: QuoteViewReply(quotes, view, sequence=S)
@@ -3718,7 +3781,7 @@ sequenceDiagram
     C->>Q: ficc.quote.view.extend / close
 ```
 
-普通subscribe调用返回不代表已收到服务数据。stream.open开始为该路由周期发布HEARTBEAT，客户端收到同streamId的首个心跳后才建立view；不把它当作报价snapshot。未订阅、未就绪或断线时仍可提交报价操作，通过应答及quote.get确认结果。建议5秒心跳、15秒无消息进入恢复，这些是FICC配置提案，非DPS已有保证。
+先建立DPS订阅并开始缓冲，再调用view.open；当前服务不要求等待首个HEARTBEAT才建立view。HEARTBEAT用于检查流存活及序号，不是报价snapshot，也不能替代订阅成功确认。报价操作应答与quote.get可用于核实结果；断线后先恢复连接。心跳周期及超时判断以部署配置和客户端实现为准。
 
 客户端发view.open/extend前按viewId缓冲消息。查询与登记必须在同一边界S完成，不能先查询再无边界地开始推送。SearchSvr落后时应追平或用保留的报价事件补齐；不能让初始结果和后续事件中间出现空档。
 
@@ -3727,7 +3790,7 @@ sequenceDiagram
 - QuoteStreamBatch仅包含quotes、reports、views及可选settingsChanged。每批quoteId只出现一次；多个QuoteView引用同一对象。不能出现books或MarketDataSnapshotFullRefresh。
 - UPDATE先替换完整Quote对象，再更新view成员。removeIds先执行；随后按place顺序，若id已存在先移除，再插入index位置。index从0开始，最终列表必须等于服务端维护的已加载范围。客户端不重新排序。
 - view.open/extend应答只替换目标view的列表，以sequence=S为对象读取边界；较新的>S对象不能被旧应答覆盖。按序接续该view缓冲的>S变化；应答不倒退整个Quote流位置。
-- 每个Quote流有独立streamId和严格递增sequence；相同代次重复序号丢弃。缺号或换代次时停止应用不连续变化，重新取得quote.stream.open及有效心跳，关闭仍存在的旧view，以新viewId逐个open重读列表。不存在的旧view可幂等关闭；不能用subscribeWithImage恢复Quote。
+- 每个Quote流有独立streamId和严格递增sequence；相同代次重复序号丢弃。缺号或换代次时停止应用不连续变化，重新调用quote.stream.open并确认订阅有效，关闭仍存在的旧view，以新viewId逐个open重读列表。不存在的旧view可幂等关闭；不能用subscribeWithImage恢复Quote。
 - 恢复时只保留本地未提交编辑和请求关联，旧服务器缓存暂不作为最新状态显示。已经提交但结果不明的操作按原requestId重试，或quote.get/history.query核实；重新查询列表不保证重放错过的操作报告。
 - 某Quote退出一个view不代表事实被删除，也不代表可以清掉其他view仍引用的对象。DELETED报告可用于操作反馈；当前有效列表移除该记录。没有view或编辑引用时才回收缓存。
 - 关闭后的viewId在该领域连接内不复用；忽略其在途成员变化。改变条件采用新viewId，避免旧查询覆盖新结果。服务重启不要求恢复临时view，持久化分组仍保留。
@@ -3764,10 +3827,14 @@ Price流独立sequence，不与Quote sequence合并；连接缺号重订阅Price
 
 ### 10.4 内部事件与价格数据分别恢复
 
+**当前NotificationSvr路径**：普通订阅ficc.quote.events和ficc.price.snapshots并缓冲；用H55读完报价状态，再用H56读取完整价格快照，然后接续缓冲事件。断线、缺号或缓冲溢出时重新执行这两个读取，不调用用户登录，也不通过H45补事件。实现见NotificationResource.restore／tick。
+
+以下表格同时保留后续SearchSvr的事件补取设计；SearchSvr及基础资料事件流尚未实现，不应把该恢复方案当成当前NotificationSvr调用链。
+
 | 频道 | 数据 | 初始化／恢复 | 消费者 |
 | --- | --- | --- | --- |
-| ficc.quote.events | QUOTE、WATCHLIST、FILTER_GROUP事件；绝无MARKET_ENTRY | 普通subscribe；quote.state.query显式加载，quote.event.query补事件 | SearchSvr、NotificationSvr |
-| ficc.price.snapshots | PriceResult当前整券快照；独立行情流 | subscribeWithImage；缺号重新获取行情image，无报价历史重放语义 | SearchSvr、NotificationSvr |
+| ficc.quote.events | QUOTE、WATCHLIST、FILTER_GROUP事件；绝无MARKET_ENTRY | NotificationSvr用H55加载；规划SearchSvr用H44／H45 | NotificationSvr；规划SearchSvr |
+| ficc.price.snapshots | PriceResult当前整券快照；独立行情流 | NotificationSvr普通订阅并用H56恢复；S09也提供image入口 | NotificationSvr；规划SearchSvr |
 | ficc.notification.events | NOTIFICATION、PREFERENCE、FILTER_GROUP事件 | 普通subscribe；notification.state.query、notification.event.query | SearchSvr |
 | ficc.base.events | SECURITY、ISSUER、INSTITUTION、CONTACT、DAILY_VALUATION事件 | 普通subscribe；base.state.query、base.event.query | SearchSvr及授权资料缓存 |
 
@@ -3791,11 +3858,11 @@ Watchlist/FilterGroup变更用settingsChanged通知该用户的在线频道；�
 
 NotificationPreference仅走Notification频道，变化发送完整preference；初始/重连通过preference.get读取，并按revision防止旧应答覆盖已收到的新值。NotificationView普通订阅和显式列表加载沿用Quote的流程，但使用独立DTO、topic及sequence。
 
-各领域的view.close只释放对应view。所有view关闭后是否保留Quote操作报告订阅由客户端决定；注销必须分别释放Quote、Price、Notification的订阅与临时流。断线临时流使用可配置TTL清理，不能仅凭无view立即停掉仍需报价操作报告的流。退订适配的源码问题见第2.1节，未完成前不得宣称客户端资源已正确释放。
+各领域的view.close只释放对应view。所有view关闭后是否保留Quote操作报告订阅由客户端决定；注销时客户端应分别关闭view并退订Quote、Price、Notification。当前领域实现没有可配置TTL回收承诺，断线遗留流的自动清理仍需完善；不能仅凭无view立即停掉仍需报价操作报告的流。退订适配的源码问题见第2.1节。
 
 ## 11．字段补充、校验和错误例子
 
-### 11.1 最小DSL
+### 11.1 最小DSL（SearchSvr待实现设计）
 
 SearchSvr where支持$and/$or，字段操作$eq/$in/$gt/$gte/$lt/$lte/$exists。客户端EQ/IN等由业务服务转换；BETWEEN转换为同一字段的闭区间$gte和$lte，不能因为跨条件拍平而变成上下界OR。区间条件本身是一个谓词，同字段多个完整谓词之间OR。空where表示授权范围内全部。
 
@@ -3809,8 +3876,8 @@ SearchSvr where支持$and/$or，字段操作$eq/$in/$gt/$gte/$lt/$lte/$exists。
 
 ### 11.2 请求字段通则
 
-- 每项示例请求所示业务字段按该接口说明判定必填/可选；不接受未列出的写入字段。查询续取只需requestId、cursor，不重复传条件。
-- Quote可编辑字段为securityId、institutionId、contactId、side、quoteType、yieldType、price、quantity、quantityUnit、currency、tradeDate、settlType、五个标记及remark；来源信息及审计字段由服务端维护。
+- 每项示例请求所示业务字段按该接口说明判定必填/可选；不接受未列出的写入字段。cursor查询续取只需requestId、cursor，不重复传条件；CRM搜索使用offset，续取时必须保留kind、text和institutionId等条件。
+- Quote可编辑字段为securityId、institutionId、institutionName、contactId、contactName、side、quoteType、yieldType、price、quantity、quantityUnit、currency、tradeDate、settlType、五个标记及remark；来源信息及审计字段由服务端维护。
 - 分组查询返回userId、revision、createTime、updateTime；示例省略的时间字段由服务端实际生成。成员及子组displayOrder缺省按请求数组顺序生成；新子ID由服务端生成，更新保留已有ID。
 - Reference.get输出records按kind使用对应模型；记录顺序不保证与ids相同，按ID关联。资料缺失在missingIds返回；不是业务不存在的Quote，也不应映射成价格0。
 - DAILY_VALUATION至少包含valuationId、securityId、valuationDate、valuationSource、dataVendor、valuationBasis以及可用yield/cleanPrice/fullPrice。valuationSource提案CHINABOND/CSI，dataVendor提案SUMSCOPE/DM；两者互不替代。
@@ -3829,21 +3896,22 @@ SearchSvr where支持$and/$or，字段操作$eq/$in/$gt/$gte/$lt/$lte/$exists。
 
 无权限时不返回当前报价版本或字段值。requestId相同的批量重试返回原完整results；只重试失败项时使用新的requestId。
 
-### 11.4 建议初始限额
+### 11.4 当前限额与未实现的部署建议
 
-| 项目 | 建议默认／上限 | 超限行为 |
+| 项目 | 当前默认／上限或明确标注的建议 | 超限行为 |
 | --- | --- | --- |
 | 批量报价写入 | 100条 | 1008；不拆成不可见的多批事务 |
 | 一次性query | 默认200、最大1000条 | 使用nextCursor续取 |
 | price.query | 最大100券 | 显式缩小securityIds |
 | view初始加载 | 默认200，单次最多1000行 | 后续view.extend扩大前缀 |
-| view加载总量 | 单view最多10000行，按部署配置调整 | 1008并保留当前view；用户可缩小条件 |
-| 单连接view数 | 20 | 1008 |
-| state/event批量 | 默认500、最大1000 | 按cursor或sequence继续 |
-| 消息字节上限／慢消费者 | 部署必须配置；建议先1 MiB业务消息 | 超限拒绝或显式RESET_REQUIRED，不能静默截断同价报价 |
+| view加载总量 | Quote／Price单view最多10000行；Notification最多1000行 | 1008并保留当前view；用户可缩小条件 |
+| 同会话、同领域的view数 | 20；Quote／Price／Notification分别计数 | 1008 |
+| 已实现state/event批量 | 默认200、最大1000 | 按cursor或sequence继续 |
+| CRM查询／按ID读取 | 查询默认200、最大200；get最多200个ID | 查询以offset续取；get拆批 |
+| 消息字节上限／慢消费者 | 尚未形成统一字节限额契约；1 MiB仅为待验证建议 | 需完善显式拒绝或恢复机制，当前不承诺统一执行 |
 | requestId记录保留 | 建议至少一个交易日并覆盖客户端重试窗口 | 窗口外先查询状态，不能声称无限幂等 |
 
-以上仅配置建议，未通过性能测试。恢复快照需按记录大小控制块容量；某单券完整行情超出消息上限时需在开发前确定DPS分片方案，不能切掉同价成员。行情模式FULL的压力应逐步验证。
+表中数值限额来自当前实现，不能据此推断响应时间；字节限制及幂等保留期仍为设计建议。恢复快照需按记录大小控制块容量；某单券完整行情超出消息上限时需在开发前确定DPS分片方案，不能切掉同价成员。行情模式FULL的压力应逐步验证。
 
 ## 12．既有STC接入及Handler注册
 
@@ -3852,12 +3920,12 @@ SearchSvr where支持$and/$or，字段操作$eq/$in/$gt/$gte/$lt/$lte/$exists。
 | 依赖 | 复用点 | 本版边界 |
 | --- | --- | --- |
 | LoginSvr | LoginSvrClient.get(sid)，SYS.ATS.LOGIN登录/登出/更新 | 不新建FICC登录、密码、会话主库；实际登录handler沿用STC部署 |
-| CalSvr | CalSvrClient.calBond，stc.broker.calbond请求/应答，stc.cal.clear失效通知 | QuoteSvr行情模块调用；输出收益率/净价/全价，清理通知刷新计算缓存 |
+| CalSvr | CalSvrClient.calBond，stc.broker.calbond请求/应答，stc.cal.clear失效通知 | 待接入；当前不能据此承诺净价／全价自动换算及计算缓存失效处理 |
 | STC BaseSvr | 现有BaseSvr2Client、stc.base.info.query等 | FICC BaseSvrClient对外返回统一模型；新ficc.base.*为适配入口，不宣称现有BaseSvr已支持 |
 | STC MarketSvr | 既有外部行情订阅路径 | 继续由GW/现有适配接入，不自动纳入FICC最优比较 |
 | QT／IDEAL | intake内部读取供应商消息 | 统一转为quote.intake.apply；不是前端订阅topic |
 
-基础资料逻辑服务在配置中绑定到适配模块实际所在服务键；可以是既有BaseSvr部署的扩展，也可以是独立适配进程。调用者依赖BaseSvrClient，不硬编码供应商名。机构/联系人供应商及权限映射尚未确认时，相应查询返回NOT_READY，不用债券发行人表替代客盘机构。
+当前ficc.base.get/query注册在QuoteSvr。债券使用STC基础资料适配器，复用BaseSvrClient／BaseSvr2Client路径；CRM可选empty、simulator或postgresql模式，通过独立连接查询机构／联系人，不用债券发行人代替CRM机构。配置和启动日志见[STC适配说明](../iteration1/docs/stc-adapters.zh-CN.md)。
 
 本规范不新增前端创建通知、修改行情条目、写SearchSvr任意集合、执行成交或管理STC用户的接口。SearchSvr数据写入来自受信发布者的领域事件及独立行情快照；其消费入口是订阅回调，不是另一个暴露给前端的save handler。
 
@@ -3866,26 +3934,36 @@ SearchSvr where支持$and/$or，字段操作$eq/$in/$gt/$gte/$lt/$lte/$exists。
 ```ini
 [CedaServerResouce]
 serverKey=SERVER.QuoteSvr
-handlerList=QuoteGetHandler,QuoteViewOpenHandler,PriceViewOpenHandler,PriceSnapshotHandler,PriceReportHandler,PriceFeedHandler
+handlerList=QuoteGetHandler,QuoteViewOpenHandler,PriceViewOpenHandler,PriceBookSnapshotHandler,PriceReportSnapshotHandler,PriceFeedSnapshotHandler
 handler.QuoteGetHandler.topic=ficc.quote.get
 handler.QuoteGetHandler.class=ficc.quote.handler.QuoteGetHandler
 handler.QuoteViewOpenHandler.topic=ficc.quote.view.open
 handler.QuoteViewOpenHandler.class=ficc.quote.handler.QuoteViewOpenHandler
 handler.PriceViewOpenHandler.topic=ficc.price.view.open
-handler.PriceViewOpenHandler.class=ficc.price.handler.PriceViewOpenHandler
-handler.PriceSnapshotHandler.topic=ficc.price.book.**
-handler.PriceSnapshotHandler.class=ficc.price.handler.PriceSnapshotHandler
-handler.PriceReportHandler.topic=ficc.price.report.*
-handler.PriceReportHandler.class=ficc.price.handler.PriceReportHandler
-handler.PriceFeedHandler.topic=ficc.price.snapshots
-handler.PriceFeedHandler.class=ficc.price.handler.PriceFeedHandler
+handler.PriceViewOpenHandler.class=ficc.quote.handler.PriceViewOpenHandler
+handler.PriceBookSnapshotHandler.topic=ficc.price.book.**
+handler.PriceBookSnapshotHandler.class=ficc.quote.handler.PriceBookSnapshotHandler
+handler.PriceReportSnapshotHandler.topic=ficc.price.report.**
+handler.PriceReportSnapshotHandler.class=ficc.quote.handler.PriceReportSnapshotHandler
+handler.PriceFeedSnapshotHandler.topic=ficc.price.snapshots
+handler.PriceFeedSnapshotHandler.class=ficc.quote.handler.PriceFeedSnapshotHandler
 ```
 
-这是注册形式示例，不是完整可启动配置。第4节列54个请求Handler与9个订阅topic；其中只有3个Price订阅入口提供业务snapshot Handler，其余6个由领域Publisher发布。纯发布topic仍需要正确的DPS路由及ACL配置，但不为QuoteEventPublisher或QuoteReportPublisher注册虚构的snapshot方法。
+这是注册形式示例，不是完整可启动配置。第4节列56个请求接口（49个已注册、7个待实现）与9个订阅topic（7个已有实现、2个待实现）；3个Price订阅入口提供业务snapshot Handler，其余为纯发布设计。纯发布topic仍需要正确的DPS路由及ACL配置，但不为QuoteEventPublisher或QuoteReportPublisher注册虚构的snapshot方法。
 
 普通Quote订阅与Price带image订阅、鉴权、连接关联及实际退订必须在目标STC/GW适配中分别验证。价格与报价的topic前缀互不覆盖；ficc.price.book.**不匹配ficc.price.query请求。
 
 ### 12.3 源码依据
+
+本次实现核对：
+
+- [QuoteSvr注册](../iteration1/cczq-app-salestrading-quotesvr/control/QuoteSvr/resourceCfg.ini)、[NotificationSvr注册](../iteration1/cczq-app-salestrading-notificationsvr/control/NotificationSvr/resourceCfg.ini)：实际topic与Handler名称。
+- [QuoteService](../iteration1/cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/QuoteService.java)、[ViewService](../iteration1/cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/ViewService.java)：请求、会话流、view及序号。
+- [PostgresCrmClient](../iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/PostgresCrmClient.java)：CRM匹配字段、关联及offset分页。
+- [NotificationResource](../iteration1/cczq-app-salestrading-notificationsvr/src/main/java/ficc/notification/NotificationResource.java)、[QuoteSvrClient](../iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/QuoteSvrClient.java)：服务间订阅与恢复。
+- [FiccSecurityCheck](../iteration1/gateway/src/ficc/gateway/FiccSecurityCheck.java)：GW私有topic授权与内部接口拦截。
+
+既有STC设计依据：
 
 - [ContentHandler](D:/workspace/GitHub/ats-app-ym-foundation/src/main/java/ats/app/ym/ceda/server/ContentHandler.java:60)：有内容进入handle，无内容进入snapshot。
 - [InnerSvr QueryOrderHandler](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/QueryOrderHandler.java:16)：Code/Msg式请求应答。
@@ -3906,20 +3984,20 @@ STC源码证明通信形式、订单/行情分离及可复用模型，不证明�
 | 编号 | 需确认内容 | 影响接口／可先实现的部分 |
 | --- | --- | --- |
 | R1 | 历史报价按每日终态还是任意时点记录检索 | history.search及历史库入库规则；不影响单Quote的history.query |
-| R2 | 确认时价格/报量是否可空、CalSvr计算输出的精度及失败处理 | confirm、price.query和入簿资格；DTO可空，不能把示例数值当最终必填规则 |
+| R2 | 确认时价格/报量是否可空、CalSvr计算输出的精度及失败处理 | 当前确认要求price／quantity等必要字段；CalSvr精度及失败处理仍待实现，不应将草稿可空等同于确认可空 |
 | R3 | 明+0/明+1及远期的日期基准、存储字段、合法代码 | confirm/unrefer/历史显示；先实现已确认的T+0/T+1 |
 | R4 | QT/IDEAL对已人工确认报价的更新、撤销和恢复优先级；外部用户映射 | intake.apply；待确认报价NEW/UPDATE可先实现，其余显式拒绝并保留原文 |
-| R5 | 角色对报价、客盘机构/联系人、内部归属的可见及操作权限；基础资料来源完整映射 | 所有查询/订阅/操作；先做统一鉴权接口，不能先开放全部再补权限 |
+| R5 | 角色对报价、客盘机构/联系人、内部归属的可见及操作权限；基础资料来源完整映射 | 报价已有身份及归属校验；CRM当前仅按软删除／有效关联过滤，正式部署需确认其目录可见范围 |
 | R6 | FICC渠道及单位映射；单券/多券image的分块、开始/结束及超限恢复 | S03/S08/S09；当前单券例子不能证明大规模初始化可用 |
 | R7 | 未报价债券视图契约缺失 | 当前PriceView只列有匹配条目的债券，需基于完整债券池补充未报价查询及后续变化；不能用空NoMDEntries代替全券池搜索 |
 | R8 | Bid/Ofr、估值偏离、跨侧价差条件的字段及计算层级未完整定义 | PriceFilter须明确SECURITY/ENTRY/BOOK作用域、先后顺序和空值口径；未定义字段不得返回enabled=true |
 | R9 | 模糊报价的模型、录入、查询及事件接口未完成 | 不能把quoteType=UNKNOWN或price=null当作已经实现该功能 |
-| R10 | 目标C#客户端/GW普通订阅、行情image、ACL、连接身份及实际退订 | Java源码已确认模式；接入适配未验证，不能假设与目标客户端封装自动兼容 |
+| R10 | 目标C#客户端/GW普通订阅、行情image、ACL、连接身份及实际退订 | Java源码已确认模式；本机已有联调，目标STC环境仍需逐项验收，不能由本机结果替代 |
 
 通知规则还需确认退出后再次进入时是否沿用notificationId和readTime；当前API允许服务端明确发布REMOVE后再UPSERT，不让客户端自行猜测。
 
-本稿新增的技术约定一并评审：Code/Msg/Data封装、分组及偏好revision、actorService系统审计字段、source最小模型、view前缀加载、Price面板整券替换、独立内部价格快照频道与quotePosition、内部epoch/sequence日志、初始限额。它们是为实现补齐的提案，不声称均已由此前产品讨论确认。
+本稿新增的技术约定一并评审：Code/Msg/Data封装、分组及偏好revision、actorService系统审计字段、source最小模型、view前缀加载、Price面板整券替换、独立内部价格快照频道与quotePosition、内部epoch/sequence日志、初始限额。其中多数已有实现；actorService系统审计字段、SearchSvr恢复及消息字节限制仍不能作为已实现能力使用。
 
 第4.1节页面映射覆盖已定义的当前报价和有报价行情主流程，不宣称上述缺口已解决。建议先评审模型与topic边界，再确定缺口契约；不能仅凭JSON可解析就批准整页开发。
 
-建议实施顺序：通用DTO/鉴权/幂等 → Quote事实及审计 → 本地价格簿及STC适配 → 当前查询与view订阅 → 分组与ParseSvr → 内部恢复与SearchSvr → NotificationSvr → 历史搜索及供应商接入。每一步仍需有基本异常与恢复验证；本次仅写规范，未启动服务、编译或运行性能测试。
+后续重点为目标STC环境联调、CRM权限范围、CalSvr与完整供应商接入、SearchSvr和ParseSvr。当前实现与剩余提案以本稿状态标记区分；本次文档核对未启动服务或运行压力测试。

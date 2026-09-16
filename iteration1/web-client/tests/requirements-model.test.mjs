@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput } from '../src/requirements-model.js';
+import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput, historyRow } from '../src/requirements-model.js';
 
 test('copied original scripts and styles retain their source hashes', async () => {
     const root = new URL('../requirements/', import.meta.url);
@@ -44,4 +44,35 @@ test('editable original columns map to QuoteSvr fields with strict yield precisi
     assert.equal(input.contactName, null);
     assert.throws(() => quoteInput({ ...draft, p: '2.50001' }), /四位/);
     assert.throws(() => quoteInput({ ...draft, pt: '净价' }), /尚未接入/);
+});
+
+test('price actions use the referenced quote revision, never the book revision', () => {
+    const rows = priceRows({ securityId: 'B', bookRevision: '800',
+        quoteRefs: { E1: { quoteId: 'Q1', quoteRevision: '3' }, E2: { quoteId: 'Q2', quoteRevision: '7' } },
+        marketData: { NoMDEntries: [
+            { MDEntryID: 'E1', MDEntryType: '0', MDEntryPx: '2.5', UserID: 'u' },
+            { MDEntryID: 'E2', MDEntryType: '1', MDEntryPx: '2.4', UserID: 'v' }
+        ] }
+    }, {}, 'u');
+    assert.equal(rows[0].version, '3');
+    assert.equal(rows[1].version, '7');
+    assert.equal(rows[1].canManage, false);
+    const best = bestRow(rows);
+    assert.equal(best.bidQuoteId, 'Q1');
+    assert.equal(best.ofrQuoteId, 'Q2');
+    assert.equal(best.sourceQuoteId, '');
+});
+
+test('historical daily rows retain distinct dates, status, counterparty and source', () => {
+    const quote = { quoteId: 'Q1', side: '2', ownerUserId: 'u', status: 'REFERRED', quoteType: '2',
+        revision: '9', price: '101.2', quantity: '50', updateTime: '2026-09-15T10:20:30+08:00',
+        source: { type: 'QT' }, contactName: '张三', institutionName: '机构甲', remark: '保留备注' };
+    const row = historyRow({ tradeDate: '2026-09-15', quote, reference: { securityName: '债券甲' } }, 'u');
+    assert.equal(row.eventId, '2026-09-15:Q1');
+    assert.equal(row.t.split(' ')[0], '2026-09-15');
+    assert.equal(row.status, 'revoked');
+    assert.equal(row.mode, 'QT');
+    assert.equal(row.trader, '张三');
+    assert.equal(row.priceType, '净价');
+    assert.equal(row.note, '保留备注');
 });
