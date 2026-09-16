@@ -1,6 +1,10 @@
+param([string]$ExecutablePath)
 $ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
-$exe=Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe'
+if (!$ExecutablePath) {
+    $ExecutablePath = Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe'
+}
+$exe = (Resolve-Path -LiteralPath $ExecutablePath).Path
 $testArgs='--autotest "'+$taskRoot+'/runtime/csharp-gateway-smoke.json"'
 $p=Start-Process -FilePath $exe -ArgumentList $testArgs -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/csharp-gateway-smoke.log" -RedirectStandardError "$taskRoot/runtime/csharp-gateway-smoke.err"
 $null=$p.Handle

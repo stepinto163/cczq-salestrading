@@ -33,6 +33,7 @@ import java.util.function.BiConsumer;
 
 /** Owns notification business state; STC resources own outbound connections. */
 public final class NotificationResource extends ResourceAdapter {
+    private static final org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(NotificationResource.class);
     private static final int MAX_PENDING_EVENTS = 128;
 
     private final BlockingQueue<SourceEvent> incoming = new ArrayBlockingQueue<>(MAX_PENDING_EVENTS);
@@ -219,6 +220,7 @@ public final class NotificationResource extends ResourceAdapter {
         } catch (ApiException error) {
             return ApiResponse.failure(null, error);
         } catch (Exception error) {
+            LOGGER.error("Notification dispatch failed: topic=" + topic, error);
             return unavailable("Notification source/session lookup unavailable");
         }
     }

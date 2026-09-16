@@ -27,7 +27,8 @@ public final class AdapterFactory {
         try {
             return ComponentLog.initialize(configuration, "IDENTITY", selectedMode, implementation,
                     hostsSimulator && "simulator".equals(selectedMode) ? "local"
-                            : configuration.getProperty("identity.serverKey", "SERVER.LoginSvr"),
+                            : configuration.getProperty("identity.serverKey",
+                                    "stc".equals(selectedMode) ? "SERVER.LoginSvr" : "SERVER.QuoteSvr"),
                     () -> createIdentity(configuration, network, hostsSimulator));
         } catch (RuntimeException error) {
             throw error;
@@ -43,7 +44,7 @@ public final class AdapterFactory {
         if (hostsSimulator) {
             return new LocalLoginSimulator();
         }
-        return new SimulatorLoginSvrClient(network, configuration.getProperty("identity.serverKey", "SERVER.LoginSvr"),
+        return new SimulatorLoginSvrClient(network, configuration.getProperty("identity.serverKey", "SERVER.QuoteSvr"),
                 Long.parseLong(configuration.getProperty("identity.requestTimeoutMillis", "3000")));
     }
 

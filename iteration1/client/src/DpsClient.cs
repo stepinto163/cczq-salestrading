@@ -14,6 +14,11 @@ namespace Ficc.SalesTrading {
         public string LogDirectory=>MessageLog.DirectoryPath;
         public event Action<string,JObject> Message;
         public event Action<string> Trace;
+        public bool LogHeartbeats {
+            get => logHeartbeats;
+            set => logHeartbeats = value;
+        }
+        volatile bool logHeartbeats;
         internal event Action<JObject> RequestMeasured;
         public DpsClient(){api.IsGzip=false;api.ReconnectFlag=false;api.Eventlistener=this;}
         public void Connect(string user, int port = 18600, string host = "127.0.0.1", string password = "trader1") {
@@ -103,7 +108,7 @@ namespace Ficc.SalesTrading {
         public void Subscribe(string topic,bool image,string serverName=null){
             serverName=serverName??ServerFor(topic);
             if(listeners.ContainsKey(topic))throw new InvalidOperationException("Already subscribed: "+topic);
-            var l=new Listener((t,json)=>{RecordRaw("RECEIVE","PUSH",t,json);try{var o=JObject.Parse(json);Trace?.Invoke("PUSH "+t+" "+o.ToString(Formatting.None));Message?.Invoke(t,o);}catch(Exception e){Error(t,e);Trace?.Invoke("Message error: "+e.Message);}});
+            var l = new Listener(ReceivePush);
             Record("SEND","SUBSCRIBE",topic,new JObject{["snapshot"]=image,["serverName"]=image?serverName:null});
             bool ok;try{ok=image?api.subscribe(serverName,topic,l):api.subscribe(topic,l);}catch(Exception e){Error(topic,e);throw;}
             Record("LOCAL","SDK_SUBSCRIBE_RESULT",topic,new JObject{["acceptedBySdk"]=ok});
@@ -119,6 +124,27 @@ namespace Ficc.SalesTrading {
                 throw new Exception("DPS subscription rejected: "+(string)ack?["Msg"]);
             }
             listeners.Add(topic,l);
+        }
+        internal void ReceivePush(string topic, string json) {
+            JObject message;
+            try {
+                message = JObject.Parse(json);
+            } catch (Exception error) {
+                RecordRaw("RECEIVE", "PUSH", topic, json);
+                Error(topic, error);
+                Trace?.Invoke("Message error: " + error.Message);
+                return;
+            }
+            if ((string)message["kind"] != "HEARTBEAT" || LogHeartbeats) {
+                Record("RECEIVE", "PUSH", topic, message);
+                Trace?.Invoke("PUSH " + topic + " " + message.ToString(Formatting.None));
+            }
+            try {
+                Message?.Invoke(topic, message);
+            } catch (Exception error) {
+                Error(topic, error);
+                Trace?.Invoke("Message error: " + error.Message);
+            }
         }
         public void Unsubscribe(string topic){if(listeners.TryGetValue(topic,out var l)){Record("SEND","UNSUBSCRIBE",topic,new JObject());api.unSubscribe(topic,l);listeners.Remove(topic);Record("LOCAL","SDK_UNSUBSCRIBE_COMPLETE",topic,new JObject());}}
         public override void onEvent(int status){Record("LOCAL","CONNECTION_EVENT",null,new JObject{["status"]=status});Trace?.Invoke("DPS connection event "+status);}

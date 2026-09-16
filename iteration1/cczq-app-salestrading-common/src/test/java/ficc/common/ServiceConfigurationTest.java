@@ -14,37 +14,49 @@ final class ServiceConfigurationTest {
     Path directory;
 
     @Test
-    void oneFileContainsDatabaseAndAllAdapterSettingsWithoutLoggingSecrets() throws Exception {
+    void blankAdapterValueOverridesInheritedSubsetAndReportsActualSourcesWithoutSecrets() throws Exception {
         Path database = directory.resolve("database.properties");
         Path adapter = directory.resolve("adapters.properties");
-        Files.writeString(database, "db.password=PRIVATE-DB-PASSWORD\nidentity.mode=stc\nbase.mode=stc\ncrm.mode=postgresql\ncrm.password=PRIVATE-CRM\n");
-        Files.writeString(adapter, "crm.mode=empty\n");
+        Files.writeString(database, "db.password=PRIVATE-DB-PASSWORD\nbase.securityIds=250001.IB\n");
+        Files.writeString(adapter, "identity.mode=stc\nbase.mode=stc\nbase.securityIds=\nidentity.password=PRIVATE-LOGIN\n");
         List<String> logs = new ArrayList<>();
-        Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), "", logs::add);
-        assertEquals("postgresql", configuration.getProperty("crm.mode"));
-        assertEquals("stc", configuration.getProperty("identity.mode"));
+        Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), adapter.toString(), logs::add);
+        assertEquals("", configuration.getProperty("base.securityIds"));
         String output = String.join("\n", logs);
         assertTrue(output.contains("base.loadMode=stc-client-on-demand"));
-        assertTrue(output.contains("crm.mode=postgresql"));
-        assertTrue(output.contains(database.toAbsolutePath().toString()));
-        assertFalse(output.contains(adapter.toAbsolutePath().toString()));
+        assertTrue(output.contains("securityIdsCount=0"));
+        assertTrue(output.contains(adapter.toAbsolutePath().toString()));
         assertTrue(output.contains("diagnostics=stc-base-config-v2"));
         assertTrue(output.contains("loadedFrom="));
         assertFalse(output.contains("PRIVATE-DB-PASSWORD"));
-        assertFalse(output.contains("PRIVATE-CRM"));
+        assertFalse(output.contains("PRIVATE-LOGIN"));
     }
 
     @Test
-    void oldOverrideIsRejectedWithAnActionableErrorAndMissingFileThrows() throws Exception {
+    void adapterOverridesDuplicateKeysAndMissingConfiguredAdapterFails() throws Exception {
+        Path database = directory.resolve("database.properties");
+        Path adapter = directory.resolve("adapters.properties");
+        Files.writeString(database, "db.user=quote_user\nidentity.mode=simulator\ncrm.mode=postgresql\n");
+        Files.writeString(adapter, "identity.mode=stc\ncrm.mode=empty\n");
+        Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), adapter.toString(), message -> {});
+        assertEquals("quote_user", configuration.getProperty("db.user"));
+        assertEquals("stc", configuration.getProperty("identity.mode"));
+        assertEquals("empty", configuration.getProperty("crm.mode"));
+        assertThrows(java.io.IOException.class, () -> ServiceConfiguration.load("QuoteSvr",
+                database.toString(), directory.resolve("missing.properties").toString(), message -> {}));
+    }
+
+    @Test
+    void absentAdapterOrCommentedSettingKeepsInheritedSubsetVisible() throws Exception {
         Path database = directory.resolve("database.properties");
         Path adapter = directory.resolve("adapters.properties");
         Files.writeString(database, "base.mode=stc\nbase.securityIds=250001.IB\n");
         Files.writeString(adapter, "# base.securityIds=\n");
-        var failure = assertThrows(java.io.IOException.class, () ->
-                ServiceConfiguration.load("QuoteSvr", database.toString(), adapter.toString(), message -> {}));
-        assertTrue(failure.getMessage().contains("adapter.properties is no longer supported"));
-        assertTrue(failure.getMessage().contains(database.toAbsolutePath().toString()));
-        assertThrows(java.io.IOException.class, () -> ServiceConfiguration.load("QuoteSvr",
-                directory.resolve("missing.properties").toString(), "", message -> {}));
+        for (String adapterFile : List.of("", adapter.toString())) {
+            List<String> logs = new ArrayList<>();
+            Properties configuration = ServiceConfiguration.load("QuoteSvr", database.toString(), adapterFile, logs::add);
+            assertEquals("250001.IB", configuration.getProperty("base.securityIds"));
+            assertTrue(String.join("\n", logs).contains("base.loadMode=stc-client-on-demand, crm.mode=simulator, securityIdsCount=1"));
+        }
     }
 }

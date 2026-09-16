@@ -543,6 +543,71 @@
   },
   {
     "serverName": "QuoteSvr",
+    "topic": "ficc.base.query",
+    "description": "CRM：搜索机构（名称/简称/拼音/ID包含匹配；offset翻页）",
+    "request": {
+      "kind": "INSTITUTION",
+      "text": "",
+      "offset": 0,
+      "limit": 50
+    }
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.base.query",
+    "description": "CRM：查询所选机构联系人（先搜索机构取得institutionId）",
+    "request": {
+      "kind": "CONTACT",
+      "institutionId": "${institutionId}",
+      "text": "",
+      "offset": 0,
+      "limit": 50
+    }
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.base.query",
+    "description": "CRM：跨机构搜索联系人（姓名/ID/CFETS交易员信息包含匹配）",
+    "request": {
+      "kind": "CONTACT",
+      "text": "",
+      "offset": 0,
+      "limit": 50
+    }
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.base.get",
+    "description": "CRM：按机构ID批量读取（字符串ID，返回missingIds）",
+    "request": {
+      "kind": "INSTITUTION",
+      "ids": ["${institutionId}"]
+    }
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.base.get",
+    "description": "CRM：按联系人ID批量读取（返回当前所属institutionIds）",
+    "request": {
+      "kind": "CONTACT",
+      "ids": ["${contactId}"]
+    }
+  },
+  {
+    "serverName": "QuoteSvr",
+    "topic": "ficc.quote.confirm",
+    "description": "CRM：匹配机构和联系人后确认报价（写操作，先核对变量）",
+    "request": {
+      "quotes": [{
+        "quoteId": "${quoteId}",
+        "expectedRevision": "${revision}",
+        "institutionId": "${institutionId}",
+        "contactId": "${contactId}"
+      }]
+    }
+  },
+  {
+    "serverName": "QuoteSvr",
     "topic": "ficc.quote.state.query",
     "description": "显式读取内部初始化记录",
     "request": {

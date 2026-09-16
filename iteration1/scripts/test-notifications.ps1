@@ -1,6 +1,10 @@
+param([string]$ExecutablePath)
 $ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
-$exe=Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe'
+if (!$ExecutablePath) {
+    $ExecutablePath = Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe'
+}
+$exe = (Resolve-Path -LiteralPath $ExecutablePath).Path
 $arguments='--autotest-notifications "'+$taskRoot+'/runtime/notification-smoke.json"'
 $p=Start-Process -FilePath $exe -ArgumentList $arguments -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/notification-smoke.log" -RedirectStandardError "$taskRoot/runtime/notification-smoke.err"
 $null=$p.Handle

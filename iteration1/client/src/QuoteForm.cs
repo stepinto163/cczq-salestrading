@@ -28,6 +28,7 @@ namespace Ficc.SalesTrading {
         readonly TextBox quantity=new TextBox{Text="1000",Width=80};
         readonly CounterpartyEditor counterpartyEditor=new CounterpartyEditor();
         readonly TextBox log=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,Dock=DockStyle.Fill};
+        readonly CheckBox logHeartbeats = new CheckBox { Text = "记录 HEARTBEAT", AutoSize = true };
         readonly TextBox detail=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,Dock=DockStyle.Fill,WordWrap=false};
         readonly Label state=new Label{Text="尚未连接 · 经本机 GW 18600",AutoSize=true,Padding=new Padding(6)};
         readonly List<Button> actions=new List<Button>();
@@ -69,7 +70,17 @@ namespace Ficc.SalesTrading {
             grid.Columns["quoteId"].DisplayIndex=8;grid.Columns["revision"].DisplayIndex=7;
             quoteLayout.Controls.Add(grid,0,4);
             var quoteBoard=new TabPage("报价管理");quoteBoard.Controls.Add(quoteLayout);boards.TabPages.Add(quoteBoard);InitializePriceBoard();InitializeNotificationBoard();
-            var details=new TabPage("操作结果 / 历史 / 行情");details.Controls.Add(detail);var messages=new TabPage("DPS 消息（最近 200 条；完整记录见文件）");messages.Controls.Add(log);messages.Controls.Add(new TextBox{Dock=DockStyle.Top,ReadOnly=true,Text=client.LogDirectory});tabs.TabPages.AddRange(new[]{details,messages});InitializeAutoTestTab();
+            var details=new TabPage("操作结果 / 历史 / 行情");details.Controls.Add(detail);
+            var messages = new TabPage("DPS 消息（最近 200 条；完整记录见文件）");
+            var messageOptions = Bar();
+            messageOptions.Dock = DockStyle.Top;
+            messageOptions.Height = 36;
+            messageOptions.Controls.Add(logHeartbeats);
+            messageOptions.Controls.Add(new TextBox { ReadOnly = true, Width = 650, Text = client.LogDirectory });
+            logHeartbeats.CheckedChanged += (sender, args) => client.LogHeartbeats = logHeartbeats.Checked;
+            messages.Controls.Add(log);
+            messages.Controls.Add(messageOptions);
+            tabs.TabPages.AddRange(new[]{details,messages});InitializeAutoTestTab();
             var toolsBar=Bar();toolsBar.Dock=DockStyle.Top;toolsBar.Height=40;
             AddButton(toolsBar, "自动测试", RunSelectedAutoTests);
             AddButton(toolsBar, "多用户场景（本机模拟）", async () => {
@@ -176,7 +187,37 @@ namespace Ficc.SalesTrading {
         JObject Selected()=>grid.CurrentCell!=null&&grid.CurrentCell.RowIndex<rows.Count?rows[grid.CurrentCell.RowIndex]:null;
         JObject Input(){var input=new JObject{["securityId"]=security.Text,["side"]=side.Text,["quoteType"]="1",["yieldType"]=security.Text=="102500002.IB"?"2":"1",["price"]=price.Text,["quantity"]=quantity.Text,["settlType"]=settlement.Text,["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd")};foreach(var field in counterpartyEditor.Fields().Properties())input[field.Name]=field.Value.DeepClone();return input;}
         async Task Create(int count){var qs=new JArray();for(int i=0;i<count;i++){var q=Input();q["clientQuoteId"]="UI-"+Guid.NewGuid().ToString("N");qs.Add(q);}detail.Text=(await Request("ficc.quote.create",new JObject{["quotes"]=qs})).ToString();}
-        async Task Command(string op){if(op=="create"){await Create(1);return;}var selected=Selected();if(selected==null)throw new Exception("请先选中一条报价。");var q=op=="update"?Input():new JObject();if(op=="confirm"){var fields=counterpartyEditor.Fields();if(CounterpartyEditor.NeedsMatching(fields)){fields=counterpartyEditor.ConfirmSelection(this);if(fields==null)return;counterpartyEditor.LoadFields(fields);}foreach(var field in fields.Properties())q[field.Name]=field.Value.DeepClone();}q["expectedRevision"]=selected["revision"].DeepClone();if(op=="clone"){q["sourceQuoteId"]=selected["quoteId"].DeepClone();q["clientQuoteId"]="UI-"+Guid.NewGuid().ToString("N");}else q["quoteId"]=selected["quoteId"].DeepClone();detail.Text=(await Request("ficc.quote."+op,new JObject{["quotes"]=new JArray(q)})).ToString();}
+        async Task Command(string op) {
+            if (op == "create") {
+                await Create(1);
+                return;
+            }
+            var selected = Selected();
+            if (selected == null) throw new Exception("请先选中一条报价。");
+            var request = op == "update" ? Input() : new JObject();
+            if (op == "confirm") {
+                var fields = counterpartyEditor.Fields();
+                if (CounterpartyEditor.NeedsMatching(fields)) {
+                    if (automatedUi) {
+                        throw new InvalidOperationException("自动测试的对手名称尚未匹配 ID，不能打开人工确认窗口。");
+                    }
+                    fields = counterpartyEditor.ConfirmSelection(this);
+                    if (fields == null) return;
+                    counterpartyEditor.LoadFields(fields);
+                }
+                foreach (var field in fields.Properties()) {
+                    request[field.Name] = field.Value.DeepClone();
+                }
+            }
+            request["expectedRevision"] = selected["revision"].DeepClone();
+            if (op == "clone") {
+                request["sourceQuoteId"] = selected["quoteId"].DeepClone();
+                request["clientQuoteId"] = "UI-" + Guid.NewGuid().ToString("N");
+            } else {
+                request["quoteId"] = selected["quoteId"].DeepClone();
+            }
+            detail.Text = (await Request("ficc.quote." + op, new JObject { ["quotes"] = new JArray(request) })).ToString();
+        }
         async Task History(){var q=Selected();if(q==null)throw new Exception("请先选中报价。");detail.Text=(await Request("ficc.quote.history.query",new JObject{["quoteId"]=q["quoteId"].DeepClone(),["limit"]=100})).ToString();}
         async Task PriceBook(){detail.Text=(await Request("ficc.price.query",new JObject{["securityIds"]=new JArray(security.Text),["mode"]="FULL"})).ToString();}
         Task OpenApiDebugger() {

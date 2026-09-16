@@ -16,6 +16,7 @@ namespace Ficc.SalesTrading {
             await Connect();await check(connected&&grid.VirtualMode&&entryGrid.VirtualMode,"UI connects with virtual grids enabled");
             security.SelectedIndex=0;side.SelectedIndex=0;settlement.SelectedIndex=0;price.Text="2.5000";quantity.Text="1000";
             priceMode.SelectedIndex=1;await OpenPriceView();
+            counterpartyEditor.LoadFields(new JObject());
             await Create(1);string id=(string)JObject.Parse(detail.Text)["results"][0]["quoteId"];
             await AwaitQuote(id,"PENDING_CONFIRM");await check(SelectQuote(id),"new quote push inserts a selectable row");
             await Command("confirm");await AwaitQuote(id,"ACTIVE");await check(SelectQuote(id),"confirmation push updates the same UI row");

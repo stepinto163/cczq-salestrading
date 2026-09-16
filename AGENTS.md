@@ -22,8 +22,6 @@ Treat performance experiments conservatively:
 
 # Startup and failure logging
 
-- Keep service configuration simple: one properties file selected by `quote.properties` contains database and adapter settings. Do not introduce hidden override files or precedence rules.
-
 - Every important component must log initialization with a consistent format: service, component, state, mode, implementation, target and elapsed time.
 - Important startup messages must be visible at INFO in both the console and the startup log file. They must not depend on enabling DPS payload DEBUG logging.
 - Configuration or initialization failures must log ERROR with the exception stack and propagate the failure. Do not swallow the exception, silently fall back to a simulator or report successful startup.

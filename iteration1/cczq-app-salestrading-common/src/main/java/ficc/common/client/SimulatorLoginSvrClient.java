@@ -6,16 +6,11 @@ import sc.app.stc.net.NetClientWrapper;
 
 /** Adapter for the existing local LoginSvr simulator hosted by QuoteSvr. */
 public final class SimulatorLoginSvrClient implements LoginSessionClient {
-    private final NetClientWrapper network;
-    private final String serverKey;
-    private final long requestTimeoutMillis;
+    private final NetClientTransport transport;
 
     public SimulatorLoginSvrClient(NetClientWrapper network, String serverKey,
                                   long requestTimeoutMillis) {
-        this.network = network;
-        this.serverKey = serverKey;
-        this.requestTimeoutMillis = requestTimeoutMillis;
-        network.init(serverKey);
+        transport = new NetClientTransport(network, serverKey, requestTimeoutMillis);
     }
 
     @Override
@@ -27,12 +22,6 @@ public final class SimulatorLoginSvrClient implements LoginSessionClient {
     }
 
     private JSONObject request(JSONObject request) throws Exception {
-        String content = network.requestSync(serverKey, null, "SYS.ATS.LOGIN",
-                JsonUtils.toJson(request), requestTimeoutMillis);
-        JSONObject reply = JsonUtils.parseObject(content);
-        if (reply == null) {
-            throw new IllegalStateException("Simulator LoginSvr unavailable");
-        }
-        return reply;
+        return transport.request("SYS.ATS.LOGIN", null, request);
     }
 }

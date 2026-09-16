@@ -27,17 +27,30 @@ namespace Ficc.SalesTrading {
         JObject lastReply;
         public ApiDebugForm(){
             Text="FICC DPS API 调试器";Width=1400;Height=880;MinimumSize=new Size(1000,650);StartPosition=FormStartPosition.CenterScreen;Font=new Font("Microsoft YaHei UI",9F);
-            var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=5};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,38));layout.RowStyles.Add(new RowStyle(SizeType.Percent,55));layout.RowStyles.Add(new RowStyle(SizeType.Percent,45));Controls.Add(layout);
+            var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=5};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,38));layout.RowStyles.Add(new RowStyle(SizeType.Percent,40));layout.RowStyles.Add(new RowStyle(SizeType.Percent,60));Controls.Add(layout);
             var login=Bar();login.Controls.AddRange(new Control[]{Label("GW"),host,port,Label("账户"),user,Label("密码"),password,connect,status});Button(login,"断开",Disconnect);layout.Controls.Add(login,0,0);connect.Click+=async(s,e)=>await Guard(Connect);
             var address=Bar();server.Width=150;address.Controls.AddRange(new Control[]{Label("服务"),server,Label("接口模板"),presets,Label("topic"),topic});layout.Controls.Add(address,0,1);
             var commands=Bar();commands.Controls.Add(send);commands.Controls.Add(newId);Button(commands,"格式化 JSON",()=>{request.Text=JObject.Parse(request.Text).ToString();return Task.CompletedTask;});Button(commands,"保存请求",SaveRequest);Button(commands,"载入请求",LoadRequest);commands.Controls.Add(Label("模板中的 ${变量} 在发送时替换；请求和回复分别显示。"));layout.Controls.Add(commands,0,2);send.Click+=async(s,e)=>await Guard(Send);
             var pair=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1};pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));pair.Controls.Add(Group("请求 JSON",request),0,0);pair.Controls.Add(Group("回复 JSON",response),1,0);layout.Controls.Add(pair,0,3);request.Text="{}";
-            var tabs=new TabControl{Dock=DockStyle.Fill};var sub=new TabPage("订阅 / 发布");sub.Controls.Add(messageList);sub.Controls.Add(subscriptionList);messageList.Dock=DockStyle.Fill;InitializeSubscriptionPanel(sub);
-            var push=new TabPage("推送内容");push.Controls.Add(pushBody);messageList.SelectedIndexChanged+=(s,e)=>{int i=messageList.SelectedIndex;if(i>=0&&i<messages.Count)pushBody.Text=messages[i].ToString();};
-            var vars=new TabPage("变量");variables.Text=new JObject{["quoteId"]="",["revision"]="1",["viewId"]="DBG-"+Guid.NewGuid().ToString("N"),["clientQuoteId"]="DBG-"+Guid.NewGuid().ToString("N"),["sourceMessageId"]="",["watchlistId"]="",["filterGroupId"]="",["notificationId"]="",["epoch"]=""}.ToString();vars.Controls.Add(variables);
+            var tabs = new TabControl { Dock = DockStyle.Fill };
+            var sub = new TabPage("订阅 / 发布");
+            var subscriptionMessages = new SplitContainer { Dock = DockStyle.Fill, Width = 1000, SplitterDistance = 330 };
+            messageList.Dock = DockStyle.Fill;
+            messageList.HorizontalScrollbar = true;
+            subscriptionMessages.Panel1.Controls.Add(Group("收到的消息（最近 200 条）", messageList));
+            pushBody.MaxLength = 0;
+            subscriptionMessages.Panel2.Controls.Add(Group("完整推送消息（可复制）", pushBody));
+            sub.Controls.Add(subscriptionMessages);
+            sub.Controls.Add(subscriptionList);
+            InitializeSubscriptionPanel(sub);
+            messageList.SelectedIndexChanged += (sender, args) => {
+                int index = messageList.SelectedIndex;
+                if (index >= 0 && index < messages.Count) pushBody.Text = messages[index].ToString();
+            };
+            var vars=new TabPage("变量");variables.Text=new JObject{["quoteId"]="",["revision"]="1",["viewId"]="DBG-"+Guid.NewGuid().ToString("N"),["clientQuoteId"]="DBG-"+Guid.NewGuid().ToString("N"),["sourceMessageId"]="",["watchlistId"]="",["filterGroupId"]="",["notificationId"]="",["epoch"]="",["institutionId"]="",["contactId"]=""}.ToString();vars.Controls.Add(variables);
             var past=new TabPage("请求历史（最近 100 条）");past.Controls.Add(historyList);historyList.Dock=DockStyle.Fill;historyList.SelectedIndexChanged+=(s,e)=>{int i=historyList.SelectedIndex;if(i<0||i>=history.Count)return;var record=history[i];server.Text=(string)record["serverName"];topic.Text=(string)record["topic"];request.Text=record["request"].ToString();response.Text=record["reply"].ToString();};
             var logs=new TabPage("消息日志");logs.Controls.Add(trace);var logBar=Bar();logBar.Dock=DockStyle.Top;logBar.Height=38;Button(logBar,"打开完整日志",()=>{Directory.CreateDirectory(MessageLog.DirectoryPath);Process.Start(new ProcessStartInfo("explorer.exe","\""+MessageLog.DirectoryPath+"\""){UseShellExecute=true});return Task.CompletedTask;});logBar.Controls.Add(new TextBox{ReadOnly=true,Width=950,Text=MessageLog.DirectoryPath});logs.Controls.Add(logBar);
-            tabs.TabPages.AddRange(new[]{sub,push,vars,past,logs});layout.Controls.Add(tabs,0,4);
+            tabs.TabPages.AddRange(new[]{sub,vars,past,logs});layout.Controls.Add(tabs,0,4);
             string catalogPath=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"requests.json");if(File.Exists(catalogPath))foreach(JObject item in JArray.Parse(File.ReadAllText(catalogPath)))catalog.Add(item);
             foreach(var item in catalog)presets.Items.Add((string)item["topic"]+" · "+(string)item["description"]);
             presets.SelectedIndexChanged+=(s,e)=>{if(presets.SelectedIndex<0)return;var preset=catalog[presets.SelectedIndex];server.Text=(string)preset["serverName"];topic.Text=(string)preset["topic"];request.Text=preset["request"].ToString();};
@@ -55,9 +68,25 @@ namespace Ficc.SalesTrading {
         async Task Connect(){
             if(connected)throw new Exception("请先断开现有连接。");client?.Dispose();connect.Enabled=false;var current=new DpsClient();client=current;
             current.Trace+=line=>Ui(()=>{if(trace.Lines.Length>=200)trace.Lines=trace.Lines.Skip(1).ToArray();trace.AppendText(line+Environment.NewLine);});
-            current.Message+=(t,m)=>Ui(()=>{if(client!=current)return;if(messages.Count>=200){messages.RemoveAt(0);messageList.Items.RemoveAt(0);}messages.Add(new JObject{["time"]=DateTimeOffset.Now.ToString("o"),["topic"]=t,["message"]=m});messageList.Items.Add(DateTime.Now.ToString("HH:mm:ss.fff")+" "+(string)m["kind"]+" "+t);messageList.SelectedIndex=messages.Count-1;});
+            current.Message += (messageTopic, message) => Ui(() => {
+                if (client == current) ShowSubscriptionMessage(messageTopic, message);
+            });
             string account=user.Text,address=host.Text,secret=password.Text;int p=(int)port.Value;
             try{await Task.Run(()=>current.Connect(account,p,address,secret));connected=true;status.Text="已连接 "+address+":"+p;}finally{connect.Enabled=true;}
+        }
+        void ShowSubscriptionMessage(string messageTopic, JObject message) {
+            bool followLatest = messageList.SelectedIndex < 0 || messageList.SelectedIndex == messages.Count - 1;
+            if (messages.Count >= 200) {
+                messages.RemoveAt(0);
+                messageList.Items.RemoveAt(0);
+            }
+            messages.Add(new JObject {
+                ["time"] = DateTimeOffset.Now.ToString("o"),
+                ["topic"] = messageTopic,
+                ["message"] = message
+            });
+            messageList.Items.Add(DateTime.Now.ToString("HH:mm:ss.fff") + " " + (string)message["kind"] + " " + messageTopic);
+            if (followLatest) messageList.SelectedIndex = messages.Count - 1;
         }
         Task Disconnect(){client?.Dispose();client=null;connected=false;subscriptionList.Items.Clear();SelectSubscriptionTopic();status.Text="已断开";return Task.CompletedTask;}
         JToken Resolve(JToken value,JObject vars){
@@ -77,7 +106,7 @@ namespace Ficc.SalesTrading {
             }finally{send.Enabled=true;}
         }
         static void CaptureVariables(JToken token,JObject vars){
-            if(token is JObject obj){foreach(string key in new[]{"quoteId","revision","viewId","sourceMessageId","watchlistId","filterGroupId","notificationId","epoch"})if(obj[key]!=null&&obj[key].Type!=JTokenType.Null)vars[key]=obj[key].DeepClone();foreach(var property in obj.Properties())if(property.Value is JObject||property.Value is JArray)CaptureVariables(property.Value,vars);}
+            if(token is JObject obj){foreach(string key in new[]{"quoteId","revision","viewId","sourceMessageId","watchlistId","filterGroupId","notificationId","epoch","institutionId","contactId"})if(obj[key]!=null&&obj[key].Type!=JTokenType.Null)vars[key]=obj[key].DeepClone();foreach(var property in obj.Properties())if(property.Value is JObject||property.Value is JArray)CaptureVariables(property.Value,vars);}
             else if(token is JArray array&&array.Count>0)CaptureVariables(array[0],vars);
         }
         async Task Subscribe() {
@@ -98,6 +127,29 @@ namespace Ficc.SalesTrading {
         Task SaveRequest(){using(var dialog=new SaveFileDialog{Filter="DPS request (*.json)|*.json",FileName="dps-request.json"})if(dialog.ShowDialog(this)==DialogResult.OK)File.WriteAllText(dialog.FileName,new JObject{["serverName"]=server.Text,["topic"]=topic.Text,["request"]=JObject.Parse(request.Text),["variables"]=JObject.Parse(variables.Text)}.ToString());return Task.CompletedTask;}
         Task LoadRequest(){using(var dialog=new OpenFileDialog{Filter="DPS request (*.json)|*.json"})if(dialog.ShowDialog(this)==DialogResult.OK){var record=JObject.Parse(File.ReadAllText(dialog.FileName));server.Text=(string)record["serverName"];topic.Text=(string)record["topic"];request.Text=record["request"].ToString();if(record["variables"]!=null)variables.Text=record["variables"].ToString();}return Task.CompletedTask;}
         internal async Task SelfTest(string output){
+            using (var probe = new DpsClient()) {
+                int delivered = 0;
+                int printed = 0;
+                string probeTopic = "test.heartbeat." + Guid.NewGuid().ToString("N");
+                probe.Message += (name, message) => delivered++;
+                probe.Trace += line => printed++;
+                probe.ReceivePush(probeTopic, "{\"kind\":\"HEARTBEAT\",\"sequence\":1}");
+                if (delivered != 1 || printed != 0) throw new Exception("Default heartbeat suppression changed delivery");
+                probe.LogHeartbeats = true;
+                probe.ReceivePush(probeTopic, "{\"kind\":\"HEARTBEAT\",\"sequence\":2}");
+                probe.LogHeartbeats = false;
+                probe.ReceivePush(probeTopic, "{\"kind\":\"HEARTBEAT\",\"sequence\":3}");
+                probe.ReceivePush(probeTopic, "{\"kind\":\"UPDATE\",\"sequence\":4}");
+                if (delivered != 4 || printed != 2) throw new Exception("Heartbeat toggle suppressed a business message");
+                using (var logStream = new FileStream(MessageLog.CurrentFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(logStream)) {
+                    var recorded = reader.ReadToEnd().Split('\n').Where(line => line.Contains(probeTopic)).Select(JObject.Parse).ToList();
+                    if (recorded.Count != 2 || (int)recorded[0]["body"]["sequence"] != 2 || (int)recorded[1]["body"]["sequence"] != 4) {
+                        throw new Exception("Heartbeat file log did not follow the option");
+                    }
+                }
+            }
+            Console.WriteLine("PASS heartbeat option controls UI/file logging without suppressing delivery");
             if (visibleSubscriptionTopics.Count != 5 || visibleSubscriptionTopics.Any(item => (string)item["serverName"] != "QuoteSvr")) throw new Exception("Quote subscription catalog mismatch");
             server.Text = "NotificationSvr";
             if (visibleSubscriptionTopics.Count != 2 || visibleSubscriptionTopics.Any(item => (string)item["serverName"] != "NotificationSvr")) throw new Exception("Notification subscription catalog mismatch");
@@ -126,8 +178,37 @@ namespace Ficc.SalesTrading {
                     throw new Exception("Expected GW rejection: " + deniedTopic);
                 }
             }
+            foreach (var lookup in new[] {
+                new[] { "ficc.base.query", "INSTITUTION" },
+                new[] { "ficc.base.query", "CONTACT" },
+                new[] { "ficc.base.get", "INSTITUTION" },
+                new[] { "ficc.base.get", "CONTACT" }
+            }) {
+                presets.SelectedIndex = catalog.FindIndex(item => (string)item["topic"] == lookup[0]
+                    && (string)item["request"]?["kind"] == lookup[1]);
+                if (presets.SelectedIndex < 0) throw new Exception("Missing CRM request template");
+                await Send();
+                if ((string)lastReply["Code"] != "0000" || !(lastReply["Data"]?["records"] is JArray records) || records.Count == 0) {
+                    throw new Exception("CRM template failed: " + lookup[0] + " / " + lookup[1]);
+                }
+            }
+            if (string.IsNullOrEmpty((string)JObject.Parse(variables.Text)["institutionId"])
+                || string.IsNullOrEmpty((string)JObject.Parse(variables.Text)["contactId"])) {
+                throw new Exception("CRM reply IDs were not captured as variables");
+            }
+            Console.WriteLine("PASS CRM institution/contact search and ID lookup templates through GW");
+            var fullMessage = new JObject { ["kind"] = "TEST", ["text"] = new string('x', 40000) + "完整消息末尾" };
+            ShowSubscriptionMessage("test.full-message", fullMessage);
+            messageList.SelectedIndex = messages.Count - 1;
+            if (!pushBody.Visible || !JToken.DeepEquals(JObject.Parse(pushBody.Text)["message"], fullMessage)) {
+                throw new Exception("Full subscription payload is hidden or truncated");
+            }
+            Console.WriteLine("PASS full subscription JSON is visible in the subscription tab, including messages over 32 KB");
+            ShowSubscriptionMessage("test.readable-message", new JObject {
+                ["kind"] = "UPDATE", ["quotes"] = new JArray(new JObject { ["quoteId"] = "TEST-Q-1", ["securityId"] = "250001.IB", ["price"] = "2.5000" })
+            });
             using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Path.ChangeExtension(output,"png"),ImageFormat.Png);}
-            File.WriteAllText(output,new JObject{["result"]="PASS",["requests"]=3,["quotesCreated"]=0,["templateCount"]=catalog.Count,["subscriptionTopicCount"]=subscriptionCatalog.Count,["serverFilteredCatalog"]=true,["wildcardAndInternalTopicsRejected"]=true,["nativePriceSnapshot"]=true,["messageLogDirectory"]=MessageLog.DirectoryPath}.ToString());
+            File.WriteAllText(output,new JObject{["result"]="PASS",["heartbeatLoggingOption"]=true,["fullPayloadVisible"]=true,["crmTemplates"]=true,["requests"]=history.Count,["quotesCreated"]=0,["templateCount"]=catalog.Count,["subscriptionTopicCount"]=subscriptionCatalog.Count,["serverFilteredCatalog"]=true,["wildcardAndInternalTopicsRejected"]=true,["nativePriceSnapshot"]=true,["messageLogDirectory"]=MessageLog.DirectoryPath}.ToString());
         }
     }
 }

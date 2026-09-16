@@ -50,14 +50,14 @@
 ## 2．内网配置步骤
 
 1. 内网使用 `mvn -f iteration1/pom_stc.xml clean verify` 构建，部署 `target-stc` 中的服务包，参阅 [STC 构建说明](maven-stc.zh-CN.md)。本机兼容版本使用 `target-maven`，不要混用。
-2. 将 [内网适配配置模板](../config/adapters.integration.example.properties) 所需的 `identity.*`、`base.*`、`crm.*` 写入与 `db.*` 相同的部署配置文件，例如 `D:/services/salestrading/quotesvr.local.properties`；同名配置只保留一份。不再另建覆盖文件。
+2. 复制 [内网适配配置模板](../config/adapters.integration.example.properties) 为部署机本地文件，例如 `D:/services/salestrading/adapters.local.properties`。不再配置债券白名单；按需配置字典覆盖及用户权限。
 3. 在 QuoteSvr、NotificationSvr 各自 `control/<服务名>/resourceCfg.ini` 中设置：
 
 ```ini
-quote.properties=D:/services/salestrading/quotesvr.local.properties
+adapter.properties=D:/services/salestrading/adapters.local.properties
 ```
 
-每个服务只读取 `quote.properties` 指定的一份 UTF-8 文件，数据库和各适配器设置全部放在其中。两个服务可以指向同一文件。路径相对进程工作目录解析，部署时建议用绝对路径。旧部署先迁入所需配置，再删除 `resourceCfg.ini` 的 `adapter.properties` 项；若仍配置旧覆盖文件，启动明确报错，避免静默改变登录或数据来源模式。
+数据库配置仍由 `quote.properties` 指向；先加载它，再用适配文件覆盖同名配置。路径相对进程工作目录解析，部署时建议用绝对路径。配置文件按 UTF-8 读取。
 
 4. 将 [服务消费者配置](../config/stc-consumers.example.ini) 合并到相应服务的 `ATSConfig.ini`，配置内网 ZooKeeper。调用方以服务键寻址，不能把模板的 `127.0.0.1:1` 当成服务监听地址。真实 provider 名称须与内网注册信息一致。
 5. GW 的 `SERVER.LoginSvr.ServiceName` 从本机模拟使用的 `QuoteSvr` 改为真实 `LoginSvr`；NotificationSvr 的同项也改为真实服务。GW 仍独立运行，使用其原有登录流程。

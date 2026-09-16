@@ -66,6 +66,7 @@ namespace Ficc.SalesTrading {
         sealed class Scenario {
             readonly string output,runId=Guid.NewGuid().ToString("N");
             readonly Dictionary<string,ScenarioClient> clients=new Dictionary<string,ScenarioClient>();
+            readonly Dictionary<string, JObject> counterparties = new Dictionary<string, JObject>();
             readonly QuoteFixture[] fixtures={
                 new QuoteFixture{Alias="A1",Owner="trader1",Bond="250001.IB",Side="1",Yield="2.5000"},
                 new QuoteFixture{Alias="A2",Owner="trader1",Bond="250002.IB",Side="1",Yield="2.7000"},
@@ -86,6 +87,21 @@ namespace Ficc.SalesTrading {
             public int Run(){
                 try{
                     foreach(string user in new[]{"trader1","trader2"})clients[user]=new ScenarioClient(user);
+                    foreach (var client in clients.Values) {
+                        var records = (JArray)client.Client.Data("ficc.base.query", new JObject {
+                            ["kind"] = "CONTACT", ["limit"] = 20
+                        })["records"];
+                        var contact = records.OfType<JObject>().FirstOrDefault(record =>
+                            !string.IsNullOrEmpty((string)record["institutionId"]) ||
+                            (record["institutionIds"] as JArray)?.Count > 0);
+                        if (contact == null) {
+                            throw new InvalidOperationException("No linked CRM contact available for " + client.User);
+                        }
+                        counterparties[client.User] = new JObject {
+                            ["institutionId"] = (string)contact["institutionId"] ?? (string)contact["institutionIds"][0],
+                            ["contactId"] = (string)contact["contactId"]
+                        };
+                    }
                     // Refuse conflicting live fixtures instead of changing existing user data.
                     foreach(var client in clients.Values){var found=(JArray)client.Client.Data("ficc.quote.query",new JObject{["ownerScope"]="VISIBLE",["status"]=new JArray("ACTIVE","PENDING_CONFIRM","REFERRED"),["filter"]=Filter(),["limit"]=10})["quotes"];Check(found.Count==0,"preflight "+client.User+": no existing live quotes in test filter");client.Open();}
                     Step("01 Create A1,A2,B1,B2 as pending",()=>{foreach(var quote in fixtures)Create(quote);},"","");
@@ -116,9 +132,26 @@ namespace Ficc.SalesTrading {
                 Console.WriteLine("RESULT "+report["result"]+"; "+checks+" checks; "+fixtures.Count(quote=>quote.Id!=null)+" quotes; "+output);
                 return (string)report["result"]=="PASS"?0:1;
             }
-            void Create(QuoteFixture quote){
-                var input=new JObject{["clientQuoteId"]=runId+"-"+quote.Alias,["securityId"]=quote.Bond,["side"]=quote.Side,["quoteType"]="1",["yieldType"]="1",["price"]=quote.Yield,["quantity"]=TestQuantity,["settlType"]="1",["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd"),["institutionId"]=quote.Owner=="trader1"?"I-001":"I-002",["contactId"]=quote.Owner=="trader1"?"C-001":"C-002"};
-                var result=clients[quote.Owner].Client.Data("ficc.quote.create",new JObject{["quotes"]=new JArray(input)})["results"][0];Check((string)result["Code"]=="0000","create "+quote.Alias);quote.Id=(string)result["quoteId"];Save();
+            void Create(QuoteFixture quote) {
+                var input = new JObject {
+                    ["clientQuoteId"] = runId + "-" + quote.Alias,
+                    ["securityId"] = quote.Bond,
+                    ["side"] = quote.Side,
+                    ["quoteType"] = "1",
+                    ["yieldType"] = "1",
+                    ["price"] = quote.Yield,
+                    ["quantity"] = TestQuantity,
+                    ["settlType"] = "1",
+                    ["tradeDate"] = DateTime.Now.ToString("yyyy-MM-dd"),
+                    ["institutionId"] = counterparties[quote.Owner]["institutionId"].DeepClone(),
+                    ["contactId"] = counterparties[quote.Owner]["contactId"].DeepClone()
+                };
+                var result = clients[quote.Owner].Client.Data("ficc.quote.create", new JObject {
+                    ["quotes"] = new JArray(input)
+                })["results"][0];
+                Check((string)result["Code"] == "0000", "create " + quote.Alias + ": " + (string)result["Msg"]);
+                quote.Id = (string)result["quoteId"];
+                Save();
             }
             void Write(string alias,string operation,JObject fields=null,string caller=null,string expectedCode="0000",string requestId=null){
                 var quote=Quote(alias);var input=fields==null?new JObject():(JObject)fields.DeepClone();input["quoteId"]=quote.Id;if(input["expectedRevision"]==null)input["expectedRevision"]=quote.Revision.ToString();
