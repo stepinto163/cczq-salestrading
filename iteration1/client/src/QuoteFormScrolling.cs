@@ -9,18 +9,20 @@ using Newtonsoft.Json.Linq;
 
 namespace Ficc.SalesTrading {
     public sealed partial class QuoteForm {
-        const int MaximumLoadedQuotes = 10000;
+        const int MaximumScrollingTestQuotes = 10000;
         readonly SemaphoreSlim quoteViewGate = new SemaphoreSlim(1, 1);
         int quoteBatchSize = 200;
         int quoteViewLimit;
-        bool extendingQuotes;
+        int quotePageNumber = 1;
+        bool quoteRefillPending;
+        bool loadingQuotePage;
         bool renderingQuotes;
         bool quoteViewStale;
         bool quoteBufferOverflow;
         string quoteLoadError;
         // Used only by the bounded functional test; normal calls go through DPS/GW.
         Func<string, JObject, Task<JObject>> quoteViewRequestOverride;
-        Action<JObject> quoteExtensionMeasured;
+        Action<JObject> quotePageMeasured;
 
         void InitializeQuoteScrolling(Control filterBar) {
             grid.Scroll += async (sender, args) => {
@@ -28,8 +30,9 @@ namespace Ficc.SalesTrading {
                     await LoadQuotesNearBottom();
                 }
             };
-            grid.CurrentCellChanged += async (sender, args) => await LoadQuotesNearBottom();
-            AddButton(filterBar, "加载更多 / 重试", () => ExtendQuoteView());
+            AddButton(filterBar, "上一批", () => QueryQuotePage(quotePageNumber - 1));
+            AddButton(filterBar, "返回最新", () => QueryQuotePage(1));
+            AddButton(filterBar, "下一批", () => NextQuotePage());
         }
 
         Task<JObject> RequestQuoteView(string requestTopic, JObject request) {
@@ -39,14 +42,14 @@ namespace Ficc.SalesTrading {
         }
 
         async Task LoadQuotesNearBottom() {
-            if (renderingQuotes || opening || busy || extendingQuotes || !connected || quoteViewStale) return;
-            if (rows.Count == 0 || rows.Count >= lastFilterTotalCount || quoteViewLimit >= MaximumLoadedQuotes) return;
+            if (renderingQuotes || opening || busy || loadingQuotePage || !connected || quoteViewStale) return;
+            if (rows.Count == 0 || (long)quotePageNumber * quoteBatchSize >= lastFilterTotalCount) return;
             int first = grid.FirstDisplayedScrollingRowIndex;
             if (first < 0) return;
             int lastVisible = first + grid.DisplayedRowCount(false);
             int threshold = Math.Min(40, Math.Max(1, quoteBatchSize / 4));
             if (lastVisible < rows.Count - threshold) return;
-            await ExtendQuoteView();
+            await NextQuotePage();
         }
 
         async Task OpenView() {
@@ -70,7 +73,7 @@ namespace Ficc.SalesTrading {
                 filterPhase?.Invoke("open.start");
                 JObject reply = await RequestQuoteView("ficc.quote.view.open", new JObject {
                     ["viewId"] = viewId, ["ownerScope"] = "MINE", ["status"] = statuses,
-                    ["limit"] = quoteBatchSize, ["filter"] = Filter()
+                    ["pageSize"] = quoteBatchSize, ["filter"] = Filter()
                 });
                 filterPhase?.Invoke("open.end");
                 ApplyQuoteViewReply(reply, false);
@@ -84,37 +87,41 @@ namespace Ficc.SalesTrading {
             }
         }
 
-        async Task ExtendQuoteView() {
-            if (!connected || viewId == null || opening || extendingQuotes || quoteViewStale) return;
-            if (rows.Count >= lastFilterTotalCount || quoteViewLimit >= MaximumLoadedQuotes) return;
+        Task NextQuotePage() {
+            return QueryQuotePage(quotePageNumber + 1);
+        }
+
+        async Task QueryQuotePage(int pageNumber) {
+            if (!connected || viewId == null || opening || loadingQuotePage || quoteViewStale) return;
+            if (pageNumber < 1 || (pageNumber > quotePageNumber && (long)(pageNumber - 1) * quoteBatchSize >= lastFilterTotalCount)) return;
             // Do not queue requests behind a filter change, or issue one request per wheel event.
             if (!await quoteViewGate.WaitAsync(0)) return;
-            extendingQuotes = true;
+            loadingQuotePage = true;
             opening = true;
             pending.Clear();
             quoteBufferOverflow = false;
             quoteLoadError = null;
             UpdateQuoteLoadState();
             try {
-                int limit = Math.Min(MaximumLoadedQuotes, quoteViewLimit + quoteBatchSize);
+                int limit = quoteBatchSize;
                 var watch = Stopwatch.StartNew();
-                JObject reply = await RequestQuoteView("ficc.quote.view.extend", new JObject {
-                    ["viewId"] = viewId, ["limit"] = limit
+                JObject reply = await RequestQuoteView("ficc.quote.view.query", new JObject {
+                    ["viewId"] = viewId, ["pageNumber"] = pageNumber, ["pageSize"] = quoteBatchSize
                 });
                 double requestMs = watch.Elapsed.TotalMilliseconds;
-                ApplyQuoteViewReply(reply, true);
-                quoteExtensionMeasured?.Invoke(new JObject {
+                ApplyQuoteViewReply(reply, pageNumber == quotePageNumber);
+                quotePageMeasured?.Invoke(new JObject {
                     ["limit"] = limit, ["loadedRows"] = rows.Count, ["requestMs"] = requestMs,
                     ["applyMs"] = watch.Elapsed.TotalMilliseconds - requestMs,
                     ["totalMs"] = watch.Elapsed.TotalMilliseconds
                 });
             } catch (Exception error) {
-                // A timeout may have advanced the server limit; resynchronize instead of blindly retrying.
+                // Preserve the displayed page and require resynchronization after a failed query.
                 quoteViewStale = true;
                 quoteLoadError = "加载失败，请点击筛选重新同步：" + error.Message;
                 Log("QUOTE_SCROLL " + error.Message);
             } finally {
-                extendingQuotes = false;
+                loadingQuotePage = false;
                 FinishQuoteViewRequest();
                 quoteViewGate.Release();
             }
@@ -131,7 +138,8 @@ namespace Ficc.SalesTrading {
             ids.Clear();
             foreach (JObject quote in (JArray)reply["quotes"]) cache[(string)quote["quoteId"]] = quote;
             foreach (JToken id in (JArray)reply["view"]["ids"]) ids.Add((string)id);
-            quoteViewLimit = (int)reply["view"]["limit"];
+            quoteViewLimit = (int)reply["view"]["pageSize"];
+            quotePageNumber = (int)reply["view"]["pageNumber"];
             lastFilterTotalCount = (int)reply["view"]["totalCount"];
             sequence = (long)reply["sequence"];
             RenderQuoteRows(selected, anchor, first);
@@ -163,24 +171,20 @@ namespace Ficc.SalesTrading {
             }
             sequence = next;
             if ((string)message["kind"] == "HEARTBEAT") return;
-            foreach (JObject quote in (JArray)message["quotes"] ?? new JArray()) cache[(string)quote["quoteId"]] = quote;
-            foreach (JObject view in (JArray)message["views"] ?? new JArray()) {
-                if ((string)view["viewId"] != viewId) continue;
-                foreach (JToken id in (JArray)view["removeIds"] ?? new JArray()) ids.Remove((string)id);
-                foreach (JObject placement in (JArray)view["place"] ?? new JArray()) {
-                    string id = (string)placement["id"];
-                    ids.Remove(id);
-                    ids.Insert(Math.Min((int)placement["index"], ids.Count), id);
-                }
-                lastFilterTotalCount = (int?)view["totalCount"] ?? lastFilterTotalCount;
-            }
-            var visible = new HashSet<string>(ids);
-            foreach (string id in cache.Keys.Where(id => !visible.Contains(id)).ToArray()) cache.Remove(id);
-            if (ids.Any(id => !cache.ContainsKey(id))) {
+            bool refill;
+            try {
+                refill = ClientViewPage.Apply(message, viewId, "quotes", "quoteId",
+                    quotePageNumber, quoteBatchSize, ids, cache);
+            } catch (Exception error) {
                 quoteViewStale = true;
+                quoteLoadError = error.Message;
                 UpdateQuoteLoadState();
                 return;
             }
+            foreach (JObject view in (JArray)message["views"] ?? new JArray()) {
+                if ((string)view["viewId"] == viewId) lastFilterTotalCount = (int)view["totalCount"];
+            }
+            if (refill) ScheduleQuoteRefill();
             Render();
         }
 
@@ -207,11 +211,28 @@ namespace Ficc.SalesTrading {
             }
         }
 
+        async void ScheduleQuoteRefill() {
+            if (quoteRefillPending) return;
+            quoteRefillPending = true;
+            string requestedView = viewId;
+            try {
+                await Task.Delay(40);
+                while (!IsDisposed && (opening || loadingQuotePage)) await Task.Delay(20);
+                quoteRefillPending = false;
+                if (!IsDisposed && viewId == requestedView && quotePageNumber == 1 && !quoteViewStale) {
+                    await QueryQuotePage(1);
+                }
+            } finally {
+                quoteRefillPending = false;
+            }
+        }
+
         void UpdateQuoteLoadState() {
-            string suffix = extendingQuotes ? " · 正在加载更多" : "";
+            string suffix = loadingQuotePage ? " · 正在加载更多" : "";
             if (quoteViewStale) suffix = " · " + (quoteLoadError ?? "更新不连续，请点击筛选重新同步");
-            else if (quoteViewLimit >= MaximumLoadedQuotes && rows.Count < lastFilterTotalCount) suffix = " · 已达当前接口 10,000 条上限，请缩小筛选范围";
-            state.Text = "已连接 GW · 已加载 " + rows.Count + " / " + lastFilterTotalCount + " 条 · 序号 " + sequence + suffix;
+
+            state.Text = "已连接 GW · 本批 " + rows.Count + " 条 / 匹配 " + lastFilterTotalCount
+                + " 条 · 第 " + quotePageNumber + " 批 · 序号 " + sequence + suffix;
         }
     }
 }

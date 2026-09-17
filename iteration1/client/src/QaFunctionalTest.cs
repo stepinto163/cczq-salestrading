@@ -145,7 +145,7 @@ namespace Ficc.SalesTrading {
                 priceTopic = OpenStream("price", true);
                 notificationTopic = OpenStream("notification", false);
                 foreach (string domain in new[] { "quote", "price", "notification" }) {
-                    var view = new JObject { ["viewId"] = runId + "-" + domain, ["filter"] = Filter(), ["limit"] = 20 };
+                    var view = new JObject { ["viewId"] = runId + "-" + domain, ["filter"] = Filter(), ["pageSize"] = 20 };
                     if (domain == "quote") {
                         view["ownerScope"] = "MINE";
                         view["status"] = new JArray("ACTIVE");

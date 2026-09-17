@@ -13,6 +13,31 @@ let pendingRender = false;
 let operationBusy = false;
 let signedIn = false;
 const quoteDetails = new Map();
+const browsingProjections = new Map();
+const originalMarketSort = sortMarketRows;
+sortMarketRows = rows => {
+    const view = rows?.some(row => row.alertId) ? notificationView
+        : rows?.some(row => D.liveQuotes?.includes(row)) ? quoteView : priceView;
+    return view?.browsing ? [...rows] : originalMarketSort(rows);
+};
+const originalTodaySort = sortTodayQuoteRows;
+sortTodayQuoteRows = rows => quoteView?.browsing ? [...rows] : originalTodaySort(rows);
+
+function stabilizeProjection(key, view, identity) {
+    const previous = browsingProjections.get(key);
+    if (view.browsing && previous?.generation === view.generation) {
+        const current = new Map(D[key].map(row => [identity(row), row]));
+        D[key] = previous.rows.map(row => current.get(identity(row)) || { ...row, browsingUnavailable: true });
+    }
+    browsingProjections.set(key, { generation: view.generation, rows: D[key] });
+}
+
+function quoteUnavailableInBrowsing(id) {
+    if (quoteView.unavailableIds.has(id)) return true;
+    return [...browsingProjections.values()].some(projection => projection.rows.some(row =>
+        (row.quoteId === id || row.bidQuoteId === id || row.ofrQuoteId === id)
+        && (row.browsingUnavailable || priceView.unavailableIds.has(row.c))));
+}
 let historyRequestVersion = 0;
 let historyQueryKey = '';
 let historyCursor = null;
@@ -37,6 +62,7 @@ function scheduleUpdate() {
 }
 
 function refreshDisplay() {
+    installViewScrolling();
     loadVisibleSecurities();
     quoteView.rows().forEach(quote => crm.seed(quote));
     for (const quote of quoteView.rows()) {
@@ -61,14 +87,126 @@ function refreshDisplay() {
     };
     D.quoteStateLoaded = true;
     rebuildBoardProjections();
+    stabilizeProjection('liveQuotes', quoteView, row => row.quoteId);
+    for (const key of ['boardCreditAll', 'boardCreditBest', 'boardRateAll', 'boardRateBest']) {
+        stabilizeProjection(key, priceView, row => row.quoteId || row.c);
+    }
+    stabilizeProjection('boardAlert', notificationView, row => `${row.alertId}:${row.alertType}`);
     syncMgmtToday();
     renderAll();
     renderInstQuoteRows('all');
     updatePendingQuoteStats();
     updateBadges();
+    for (const node of document.querySelectorAll('[data-quote-id]')) {
+        const id = node.dataset.quoteId;
+        const unavailable = quoteUnavailableInBrowsing(id);
+        if (!unavailable) continue;
+        const row = node.closest('tr') || node;
+        row.style.opacity = '0.45';
+        row.title = '已失效或不再匹配，请返回实时后操作';
+        row.setAttribute('aria-disabled', 'true');
+    }
     notifyNewAlerts(previousAlerts);
     const stale = [quoteView, priceView, notificationView].some(view => view.stale);
     element('pendingSyncState').textContent = stale ? '同步中断，请点击行情刷新或重新登录' : 'GW 实时同步正常';
+}
+
+function installViewScrolling() {
+    const panels = [
+        ['#quoteTableWrap', quoteView],
+        ['#mgmtTodayWrap', quoteView],
+        ['#st-board-credit-all .tbl-wrap', priceView],
+        ['#st-board-credit-best .tbl-wrap', priceView],
+        ['#st-board-rate-all .tbl-wrap', priceView],
+        ['#st-board-rate-best .tbl-wrap', priceView],
+        ['#st-board-alert .tbl-wrap', notificationView]
+    ];
+    for (const [selector, view] of panels) {
+        const wrapper = document.querySelector(selector);
+        if (!wrapper || !view) continue;
+        if (!wrapper.dataset.pagingInstalled) {
+            wrapper.dataset.pagingInstalled = 'true';
+            const controls = document.createElement('div');
+            controls.className = 'ficc-view-navigation';
+            controls.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 8px;flex-shrink:0';
+            let pending = false;
+            let lastScrollTop = wrapper.scrollTop;
+            let nextNavigationTime = 0;
+            const currentView = () => selector.includes('board-alert') ? notificationView
+                : selector.includes('board-') ? priceView : quoteView;
+            const navigate = async direction => {
+                const active = currentView();
+                if (!signedIn || pending || active.opening || (active.stale && direction !== 0)
+                    || (direction !== 0 && Date.now() < nextNavigationTime)) return;
+                const page = direction === 0 ? 1 : active.pageNumber + direction;
+                if (page < 1 || (direction > 0 && (page - 1) * active.pageSize >= active.totalCount)) return;
+                pending = true;
+                status.textContent = '正在加载…';
+                wrapper.setAttribute('aria-busy', 'true');
+                try {
+                    if (direction === 0) await active.resumeLive();
+                    else await active.queryPage(page);
+                    // Wait for the existing table renderer before positioning the new window.
+                    await new Promise(resolve => requestAnimationFrame(resolve));
+                    wrapper.scrollTop = direction < 0 ? wrapper.scrollHeight : 0;
+                    lastScrollTop = wrapper.scrollTop;
+                } catch (error) {
+                    showToast('error', error.message);
+                } finally {
+                    pending = false;
+                    nextNavigationTime = Date.now() + 250;
+                    wrapper.setAttribute('aria-busy', 'false');
+                    status.textContent = scrollStatus(currentView());
+                }
+            };
+            const latest = document.createElement('button');
+            latest.textContent = '返回最新';
+            latest.addEventListener('click', () => navigate(0));
+            controls.appendChild(latest);
+            const status = document.createElement('span');
+            status.className = 'ficc-view-page-state';
+            status.setAttribute('aria-live', 'polite');
+            controls.appendChild(status);
+            wrapper.before(controls);
+            wrapper.tabIndex = wrapper.tabIndex < 0 ? 0 : wrapper.tabIndex;
+            wrapper.addEventListener('scroll', () => {
+                const top = wrapper.scrollTop;
+                const direction = Math.sign(top - lastScrollTop);
+                lastScrollTop = top;
+                if (pending || wrapper.scrollHeight <= wrapper.clientHeight) return;
+                if (direction !== 0 && top > 0) currentView().beginBrowsing();
+                if (direction > 0 && top + wrapper.clientHeight >= wrapper.scrollHeight - 2) navigate(1);
+                if (direction < 0 && top <= 0) navigate(-1);
+            }, { passive: true });
+            wrapper.addEventListener('wheel', event => {
+                if (!pending && event.deltaY > 0) currentView().beginBrowsing();
+                if (event.deltaY > 0 && wrapper.scrollTop + wrapper.clientHeight >= wrapper.scrollHeight - 2) navigate(1);
+                if (event.deltaY < 0 && wrapper.scrollTop <= 0) navigate(-1);
+            }, { passive: true });
+            wrapper.addEventListener('keydown', event => {
+                if (event.target !== wrapper) return;
+                if (!pending && ['ArrowDown', 'PageDown'].includes(event.key)) currentView().beginBrowsing();
+                if (['ArrowDown', 'PageDown'].includes(event.key)
+                    && wrapper.scrollTop + wrapper.clientHeight >= wrapper.scrollHeight - 2) navigate(1);
+                if (['ArrowUp', 'PageUp'].includes(event.key) && wrapper.scrollTop <= 0) navigate(-1);
+            });
+        }
+        const status = wrapper.previousElementSibling?.querySelector('.ficc-view-page-state');
+        const button = wrapper.previousElementSibling?.querySelector('button');
+        if (button) {
+            button.textContent = view.stale ? '重新同步' : view.changedIds.size
+                ? `有 ${view.changedIds.size} 条变更` : view.browsing ? '浏览中 · 返回实时' : '实时更新中';
+            button.disabled = view.opening || (!view.browsing && !view.stale);
+        }
+        if (status && wrapper.getAttribute('aria-busy') !== 'true') status.textContent = scrollStatus(view);
+    }
+}
+
+function scrollStatus(view) {
+    if (view.stale) return '同步中断，请刷新';
+    if (!view.totalCount) return '暂无匹配记录';
+    const atEnd = view.pageNumber * view.pageSize >= view.totalCount;
+    return `匹配 ${view.totalCount} 条 · ${atEnd ? '已到末尾' : '向下滚动加载'}${view.pageNumber > 1 ? ' · 向上滚动可返回' : ''}`;
 }
 
 async function loadSecurities(ids) {
@@ -153,6 +291,9 @@ async function readQuote(quoteId) {
 }
 
 async function command(action, quoteId, fields = {}, expectedQuote) {
+    if (quoteUnavailableInBrowsing(quoteId)) {
+        throw new Error('该记录已失效或不再匹配，请返回实时后操作');
+    }
     // A price book is not a quote revision, and a displayed quote need not be in the small QuoteView cache.
     const quote = expectedQuote || await readQuote(quoteId);
     const reply = await quoteView.call(action, { quotes: [{ quoteId, expectedRevision: quote.revision, ...fields }] });
@@ -214,9 +355,9 @@ doLogin = async function () {
         quoteView = new QuoteClient(gateway, callbacks);
         priceView = new PriceClient(gateway, callbacks);
         notificationView = new NotificationClient(gateway, callbacks);
-        await quoteView.initialize({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], limit: 50 });
-        await priceView.initialize({ mode: 'FULL', limit: 20 });
-        await notificationView.initialize({ limit: 50 });
+        await quoteView.initialize({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], pageSize: 50 });
+        await priceView.initialize({ mode: 'FULL', pageSize: 20 });
+        await notificationView.initialize({ pageSize: 50 });
         const preference = await notificationView.preferences();
         D.alertSettings = { favorite: preference.watchlistEnabled, filterGroup: preference.filterGroupEnabled, priceMatch: preference.counterQuoteEnabled, bestQuote: preference.myBestEnabled };
         authToken = 'GW-SESSION'; // Legacy UI login predicate; actual session stays inside GwClient.

@@ -39,7 +39,7 @@ namespace Ficc.SalesTrading {
                 OpenView("full","price",new JObject{["mode"]="FULL"});OpenView("best","price",new JObject{["mode"]="BEST"});
             }
             void OpenView(string id,string domain,JObject request){
-                request["viewId"]=id;request["filter"]=Filter();request["limit"]=10;
+                request["viewId"]=id;request["filter"]=Filter();request["pageSize"]=10;
                 var reply=Client.Data("ficc."+domain+".view.open",request);positions[domain]=(long)reply["sequence"];
                 var view=new ViewState();Views[id]=view;view.Ids.AddRange(((JArray)reply["view"]["ids"]).Select(value=>(string)value));
                 foreach(JObject record in (JArray)reply[domain=="quote"?"quotes":"books"])view.Records[(string)record[domain=="quote"?"quoteId":"securityId"]]=record;
@@ -54,8 +54,8 @@ namespace Ficc.SalesTrading {
                     positions[domain]=sequence;
                     foreach(JObject delta in (JArray)message["views"]??new JArray()){
                         string id=(string)delta["viewId"];if(!Views.TryGetValue(id,out var view))continue;
-                        foreach(var removed in (JArray)delta["removeIds"]??new JArray())view.Ids.Remove((string)removed);
-                        foreach(JObject place in (JArray)delta["place"]??new JArray()){string recordId=(string)place["id"];view.Ids.Remove(recordId);view.Ids.Insert((int)place["index"],recordId);}
+                        ClientViewPage.Apply(message, (string)delta["viewId"], domain == "quote" ? "quotes" : "books",
+                            domain == "quote" ? "quoteId" : "securityId", 1, 10, view.Ids, view.Records);
                     }
                     if(domain=="quote")foreach(JObject quote in (JArray)message["quotes"]??new JArray())foreach(string id in new[]{"mine","visible"})Views[id].Records[(string)quote["quoteId"]]=quote;
                     if(domain=="price")foreach(JObject book in (JArray)message["books"]??new JArray())if(Views.TryGetValue((string)book["viewId"],out var view))view.Records[(string)book["securityId"]]=book;

@@ -15,8 +15,8 @@ def generate_report(directory):
              f"- 进程峰值工作集：{report.get('peakWorkingSetMB', '—')} MB",
              f"- 测试 schema 已清理：{summary.get('schemaRemoved', False)}", "",
              "程序驱动网格纵向滚动，使用真实 GW / QuoteSvr 和隔离数据库。不是鼠标设备输入延迟或直播更新压力测试。",
-             "单个客户端、静态数据；每次只增加 200 条；不自动增加下一轮的数据规模。", "",
-             "## 扩展请求", "", "| 加载行数 | 请求耗时 ms | 应用数据 ms | 合计 ms |",
+             "单个客户端、静态数据；每次查询一页，替换当前页缓存；不自动增加下一轮的数据规模。", "",
+             "## 分页请求", "", "| 本页行数 | 请求耗时 ms | 应用数据 ms | 合计 ms |",
              "|---:|---:|---:|---:|"]
     for sample in report.get("extensions", []):
         lines.append(f"| {sample['loadedRows']} | {sample['requestMs']:.2f} | {sample['applyMs']:.2f} | {sample['totalMs']:.2f} |")

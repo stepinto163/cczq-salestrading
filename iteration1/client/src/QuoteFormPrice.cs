@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
@@ -24,11 +25,29 @@ namespace Ficc.SalesTrading {
         readonly List<JObject> pendingPrices=new List<JObject>();
         string priceTopic,priceStreamId,priceViewId,selectedPriceSecurity;long priceSequence;bool openingPrice,renderingPrices;
 
+        readonly SemaphoreSlim priceViewGate = new SemaphoreSlim(1, 1);
+        bool priceBufferOverflow;
+        int pricePageNumber = 1;
+        int pricePageSize = 20;
+        int priceTotalCount;
+        bool priceRefillPending;
+        bool priceViewStale;
+
         void InitializePriceBoard(){
             var bar=Bar();bar.Height=38;bar.Dock=DockStyle.Top;priceBond.Width=125;
             bar.Controls.AddRange(new Control[]{Label("债券"),priceBond,priceMode,priceDepth,priceSettlement});
             AddButton(bar,"应用筛选",OpenPriceView);bar.Controls.Add(priceState);
             AddButton(bar,"清除分组",async()=>{selectedPriceGroup=null;priceGroupState.Text="未应用分组";await OpenPriceView();});bar.Controls.Add(priceGroupState);
+            AddButton(bar, "上一批", () => QueryPricePage(pricePageNumber - 1));
+            AddButton(bar, "下一批", () => QueryPricePage(pricePageNumber + 1));
+            AddButton(bar, "返回最新", () => QueryPricePage(1));
+            bondGrid.Scroll += async (sender, args) => {
+                if (args.ScrollOrientation == ScrollOrientation.VerticalScroll && !renderingPrices
+                    && bondGrid.FirstDisplayedScrollingRowIndex >= 0
+                    && bondGrid.FirstDisplayedScrollingRowIndex + bondGrid.DisplayedRowCount(false) >= priceIds.Count) {
+                    await QueryPricePage(pricePageNumber + 1);
+                }
+            };
             priceMode.SelectedIndexChanged+=(s,e)=>priceDepth.Enabled=priceMode.SelectedIndex==2;
             ConfigurePriceGrid(bondGrid);ConfigurePriceGrid(entryGrid);
             bondGrid.Columns.Add(Column("securityId","债券代码",110));bondGrid.Columns.Add(Column("securityName","名称",100));
@@ -52,34 +71,154 @@ namespace Ficc.SalesTrading {
         }
         static DataGridViewTextBoxColumn Column(string name,string title,int width)=>new DataGridViewTextBoxColumn{Name=name,HeaderText=title,Width=width,SortMode=DataGridViewColumnSortMode.NotSortable};
         static void ConfigurePriceGrid(DataGridView view){view.Dock=DockStyle.Fill;view.VirtualMode=true;view.ReadOnly=true;view.AllowUserToAddRows=false;view.AllowUserToDeleteRows=false;view.RowHeadersVisible=false;view.MultiSelect=false;view.SelectionMode=DataGridViewSelectionMode.FullRowSelect;view.AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.None;}
-        async Task OpenPriceView(){
-            if(!connected)throw new Exception("请先连接 GW。");openingPrice=true;pendingPrices.Clear();
-            try{
-                if(priceTopic==null){var stream=await Request("ficc.price.stream.open",new JObject());priceStreamId=(string)stream["streamId"];priceTopic=(string)stream["pushTopic"];await Task.Run(()=>client.Subscribe(priceTopic,true));}
-                if(priceViewId!=null)await Request("ficc.price.view.close",new JObject{["viewId"]=priceViewId});
-                priceViewId="PV-"+Guid.NewGuid().ToString("N");
-                var conditions=new JArray();if(priceBond.SelectedIndex>0)conditions.Add(new JObject{["field"]="securityId",["operator"]="EQ",["value"]=priceBond.Text});
-                if(priceSettlement.SelectedIndex>0)conditions.Add(new JObject{["field"]="settlType",["operator"]="EQ",["value"]=priceSettlement.SelectedIndex.ToString()});
-                var request=new JObject{["viewId"]=priceViewId,["mode"]=new[]{"BEST","FULL","DEPTH"}[priceMode.SelectedIndex],["limit"]=20,["filter"]=new JObject{["conditions"]=conditions}};
-                if(selectedPriceGroup!=null){var filter=(JObject)request["filter"];filter["market"]=selectedPriceGroup["market"].DeepClone();string key=selectedPriceGroup["watchlistId"]!=null?"watchlistId":"filterGroupId";filter[key+"s"]=new JArray(selectedPriceGroup[key].DeepClone());}
-                if(priceMode.SelectedIndex==2)request["depth"]=(int)priceDepth.Value;
-                var result=await Request("ficc.price.view.open",request);priceSequence=(long)result["sequence"];
-                priceBooks.Clear();priceIds.Clear();foreach(JObject book in (JArray)result["books"])priceBooks[(string)book["securityId"]]=book;
-                foreach(var id in (JArray)result["view"]["ids"])priceIds.Add((string)id);RenderPrices();
-            }finally{openingPrice=false;var buffered=pendingPrices.ToArray();pendingPrices.Clear();foreach(var message in buffered)ReceivePrice(message);}
-        }
-        void ReceivePrice(JObject message){
-            if((string)message["streamId"]!=priceStreamId)return;
-            if(openingPrice){if(pendingPrices.Count<200)pendingPrices.Add(message);else priceState.Text="行情需要重新同步，请应用筛选";return;}
-            long next=(long?)message["sequence"]??priceSequence;if(next<=priceSequence)return;
-            if(next!=priceSequence+1||(string)message["kind"]=="RESET_REQUIRED"){priceState.Text="行情需要重新同步，请应用筛选";return;}
-            priceSequence=next;if((string)message["kind"]=="HEARTBEAT")return;
-            foreach(JObject book in (JArray)message["books"]??new JArray())if((string)book["viewId"]==priceViewId)priceBooks[(string)book["securityId"]]=book;
-            foreach(JObject view in (JArray)message["views"]??new JArray())if((string)view["viewId"]==priceViewId){
-                foreach(var id in (JArray)view["removeIds"]??new JArray())priceIds.Remove((string)id);
-                foreach(JObject place in (JArray)view["place"]??new JArray()){string id=(string)place["id"];priceIds.Remove(id);priceIds.Insert(Math.Min((int)place["index"],priceIds.Count),id);}
+        async Task OpenPriceView() {
+            if (!connected) throw new Exception("请先连接 GW。");
+            await priceViewGate.WaitAsync();
+            openingPrice = true;
+            pendingPrices.Clear();
+            priceBufferOverflow = false;
+            try {
+                if (priceTopic == null) {
+                    var stream = await Request("ficc.price.stream.open", new JObject());
+                    priceStreamId = (string)stream["streamId"];
+                    priceTopic = (string)stream["pushTopic"];
+                    await Task.Run(() => client.Subscribe(priceTopic, true));
+                }
+                if (priceViewId != null) {
+                    await Request("ficc.price.view.close", new JObject { ["viewId"] = priceViewId });
+                }
+                priceViewId = "PV-" + Guid.NewGuid().ToString("N");
+                var conditions = new JArray();
+                if (priceBond.SelectedIndex > 0) {
+                    conditions.Add(new JObject { ["field"] = "securityId", ["operator"] = "EQ", ["value"] = priceBond.Text });
+                }
+                if (priceSettlement.SelectedIndex > 0) {
+                    conditions.Add(new JObject { ["field"] = "settlType", ["operator"] = "EQ", ["value"] = priceSettlement.SelectedIndex.ToString() });
+                }
+                var request = new JObject {
+                    ["viewId"] = priceViewId,
+                    ["mode"] = new[] { "BEST", "FULL", "DEPTH" }[priceMode.SelectedIndex],
+                    ["pageSize"] = pricePageSize,
+                    ["filter"] = new JObject { ["conditions"] = conditions }
+                };
+                if (selectedPriceGroup != null) {
+                    var filter = (JObject)request["filter"];
+                    filter["market"] = selectedPriceGroup["market"].DeepClone();
+                    string key = selectedPriceGroup["watchlistId"] != null ? "watchlistId" : "filterGroupId";
+                    filter[key + "s"] = new JArray(selectedPriceGroup[key].DeepClone());
+                }
+                if (priceMode.SelectedIndex == 2) request["depth"] = (int)priceDepth.Value;
+                var result = await Request("ficc.price.view.open", request);
+                InstallPricePage(result);
+                priceViewStale = false;
+            } catch {
+                priceViewStale = true;
+                throw;
+            } finally {
+                FinishPriceRequest();
+                priceViewGate.Release();
             }
-            foreach(string id in priceBooks.Keys.Where(id=>!priceIds.Contains(id)).ToArray())priceBooks.Remove(id);RenderPrices();
+        }
+
+        void InstallPricePage(JObject result) {
+            if ((string)result["streamId"] != priceStreamId || (string)result["view"]["viewId"] != priceViewId) {
+                throw new InvalidOperationException("Price view reply mismatch");
+            }
+            priceSequence = (long)result["sequence"];
+            pricePageNumber = (int)result["view"]["pageNumber"];
+            priceTotalCount = (int)result["view"]["totalCount"];
+            priceBooks.Clear();
+            priceIds.Clear();
+            foreach (JObject book in (JArray)result["books"]) priceBooks[(string)book["securityId"]] = book;
+            foreach (string id in ((JArray)result["view"]["ids"]).Values<string>()) priceIds.Add(id);
+            RenderPrices();
+        }
+
+        void FinishPriceRequest() {
+            openingPrice = false;
+            if (priceBufferOverflow) priceViewStale = true;
+            var buffered = pendingPrices.ToArray();
+            pendingPrices.Clear();
+            foreach (JObject message in buffered) ReceivePrice(message);
+        }
+
+        async Task QueryPricePage(int pageNumber) {
+            if (!connected || openingPrice || priceViewId == null || priceViewStale || pageNumber < 1) return;
+            if (pageNumber > pricePageNumber && (long)(pageNumber - 1) * pricePageSize >= priceTotalCount) return;
+            if (!await priceViewGate.WaitAsync(0)) return;
+            openingPrice = true;
+            priceBufferOverflow = false;
+            pendingPrices.Clear();
+            try {
+                var result = await Request("ficc.price.view.query", new JObject {
+                    ["viewId"] = priceViewId, ["pageNumber"] = pageNumber, ["pageSize"] = pricePageSize
+                });
+                InstallPricePage(result);
+            } catch (Exception error) {
+                priceViewStale = true;
+                priceState.Text = error.Message;
+                Log("PRICE_PAGE " + error.Message);
+            } finally {
+                FinishPriceRequest();
+                priceViewGate.Release();
+            }
+        }
+
+        async void SchedulePriceRefill() {
+            if (priceRefillPending) return;
+            priceRefillPending = true;
+            string requestedView = priceViewId;
+            try {
+                await Task.Delay(40);
+                while (!IsDisposed && openingPrice) await Task.Delay(20);
+                priceRefillPending = false;
+                if (!IsDisposed && requestedView == priceViewId && pricePageNumber == 1) await QueryPricePage(1);
+            } finally {
+                priceRefillPending = false;
+            }
+        }
+
+        void ReceivePrice(JObject message) {
+            if ((string)message["streamId"] != priceStreamId) return;
+            if (openingPrice) {
+                if (pendingPrices.Count < 200) pendingPrices.Add(message);
+                else priceBufferOverflow = true;
+                return;
+            }
+            if (priceViewStale) return;
+            long next = (long?)message["sequence"] ?? priceSequence;
+            if ((string)message["kind"] == "SNAPSHOT") {
+                if (next < priceSequence) return;
+                JObject view = ((JArray)message["views"]).OfType<JObject>()
+                    .FirstOrDefault(value => (string)value["viewId"] == priceViewId);
+                if (view == null) return;
+                InstallPricePage(new JObject {
+                    ["streamId"] = priceStreamId, ["sequence"] = next, ["view"] = view.DeepClone(),
+                    ["books"] = new JArray(((JArray)message["books"]).OfType<JObject>()
+                        .Where(book => (string)book["viewId"] == priceViewId).Select(book => book.DeepClone()))
+                });
+                return;
+            }
+            if (next <= priceSequence) return;
+            if (next != priceSequence + 1 || (string)message["kind"] == "RESET_REQUIRED") {
+                priceViewStale = true;
+                priceState.Text = "Refresh required: price sequence gap";
+                return;
+            }
+            priceSequence = next;
+            if ((string)message["kind"] == "HEARTBEAT") return;
+            try {
+                if (ClientViewPage.Apply(message, priceViewId, "books", "securityId",
+                    pricePageNumber, pricePageSize, priceIds, priceBooks)) SchedulePriceRefill();
+                foreach (JObject view in (JArray)message["views"] ?? new JArray()) {
+                    if ((string)view["viewId"] == priceViewId) priceTotalCount = (int)view["totalCount"];
+                }
+                RenderPrices();
+            } catch (Exception error) {
+                priceViewStale = true;
+                priceState.Text = error.Message;
+                Log("PRICE_UPDATE " + error.Message);
+            }
         }
         void RenderPrices(){
             renderingPrices=true;

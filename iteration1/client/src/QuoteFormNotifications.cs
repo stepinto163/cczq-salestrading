@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
 
@@ -22,11 +23,29 @@ namespace Ficc.SalesTrading {
         string notificationTopic,notificationStreamId,notificationViewId,readRetryPath;long notificationSequence;
         bool openingNotifications,loadingPreference,readingNotifications,suppressEnterMark;JObject notificationPreference;Form toast;
 
+        readonly SemaphoreSlim notificationViewGate = new SemaphoreSlim(1, 1);
+        bool notificationBufferOverflow;
+        int notificationPageNumber = 1;
+        const int NotificationPageSize = 200;
+        int notificationTotalCount;
+        bool notificationRefillPending;
+        bool notificationViewStale;
+
         void InitializeNotificationBoard(){
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=3,ColumnCount=1};layout.RowStyles.Add(new RowStyle(SizeType.Absolute,34));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,38));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));
             var switches=Bar();string[] keys={"watchlistEnabled","filterGroupEnabled","counterQuoteEnabled","myBestEnabled"};string[] names={"关注债券","筛选分组","对价提醒","我的最优报价"};
             for(int i=0;i<keys.Length;i++){var box=new CheckBox{Text=names[i],AutoSize=true,Checked=true,Padding=new Padding(4)};preferenceChecks.Add(keys[i],box);box.CheckedChanged+=async(s,e)=>{if(!loadingPreference&&notificationPreference!=null)await SaveNotificationPreference();};switches.Controls.Add(box);}
             var controls=Bar();controls.Controls.Add(readFilter);AddButton(controls,"刷新提醒",OpenNotificationView);AddButton(controls,"标为已读",()=>MarkSelectedNotification(true));AddButton(controls,"标为未读",()=>MarkSelectedNotification(false));AddButton(controls,"查看相关报价",ShowNotificationQuotes);AddButton(controls,"关注录入栏债券",SaveReminderWatchlist);AddButton(controls,"添加 AAA 筛选组",SaveReminderFilter);
+            AddButton(controls, "上一批", () => QueryNotificationPage(notificationPageNumber - 1));
+            AddButton(controls, "下一批", () => QueryNotificationPage(notificationPageNumber + 1));
+            AddButton(controls, "返回最新", () => QueryNotificationPage(1));
+            notificationGrid.Scroll += async (sender, args) => {
+                if (args.ScrollOrientation == ScrollOrientation.VerticalScroll
+                    && notificationGrid.FirstDisplayedScrollingRowIndex >= 0
+                    && notificationGrid.FirstDisplayedScrollingRowIndex + notificationGrid.DisplayedRowCount(false) >= notificationIds.Count) {
+                    await QueryNotificationPage(notificationPageNumber + 1);
+                }
+            };
             ConfigurePriceGrid(notificationGrid);notificationGrid.Columns.Add(Column("security","债券代码",110));notificationGrid.Columns.Add(Column("reasons","提醒类型",220));notificationGrid.Columns.Add(Column("content","说明",350));notificationGrid.Columns.Add(Column("read","已读",60));notificationGrid.Columns.Add(Column("time","更新时间",220));
             notificationGrid.CellValueNeeded+=(s,e)=>{if(e.RowIndex>=notificationIds.Count)return;var n=notificationCache[notificationIds[e.RowIndex]];switch(e.ColumnIndex){case 0:e.Value=(string)n["securityId"];break;case 1:e.Value=string.Join("、",((JArray)n["reasons"]).Select(r=>ReasonName((string)r["type"])));break;case 2:e.Value=(string)n["content"];break;case 3:e.Value=NotificationUnread(n)?"未读":"已读";break;case 4:e.Value=(string)n["updateTime"];break;}};
             notificationGrid.CellDoubleClick+=async(s,e)=>{if(e.RowIndex>=0)try{await ShowNotificationQuotes();}catch(Exception error){detail.Text=error.Message;}};
@@ -49,23 +68,126 @@ namespace Ficc.SalesTrading {
             foreach(var box in preferenceChecks.Values)box.Enabled=false;
             try{ApplyPreference((JObject)(await Request("ficc.notification.preference.save",request))["preference"]);}catch(Exception e){ApplyPreference(notificationPreference);detail.Text=e.Message;Log("提醒设置保存失败："+e.Message);}finally{foreach(var box in preferenceChecks.Values)box.Enabled=true;}
         }
-        async Task OpenNotificationView(){
-            if(notificationTopic==null)throw new Exception("请先连接 GW。");openingNotifications=true;pendingNotifications.Clear();
-            try{
-                if(notificationViewId!=null)await Request("ficc.notification.view.close",new JObject{["viewId"]=notificationViewId});
-                notificationViewId="NV-"+Guid.NewGuid().ToString("N");var reply=await Request("ficc.notification.view.open",new JObject{["viewId"]=notificationViewId,["readState"]=new[]{"ALL","UNREAD","READ"}[readFilter.SelectedIndex],["limit"]=200});notificationSequence=(long)reply["sequence"];
-                notificationIds.Clear();notificationCache.Clear();foreach(JObject n in (JArray)reply["notifications"])notificationCache[(string)n["notificationId"]]=n;foreach(var id in (JArray)reply["view"]["ids"])notificationIds.Add((string)id);RenderNotifications();
-            }finally{openingNotifications=false;var buffered=pendingNotifications.ToArray();pendingNotifications.Clear();foreach(var n in buffered)ReceiveNotification(n);}
+        async Task OpenNotificationView() {
+            if (notificationTopic == null) throw new InvalidOperationException("Connect to GW first");
+            await notificationViewGate.WaitAsync();
+            openingNotifications = true;
+            notificationBufferOverflow = false;
+            pendingNotifications.Clear();
+            try {
+                if (notificationViewId != null) {
+                    await Request("ficc.notification.view.close", new JObject { ["viewId"] = notificationViewId });
+                }
+                notificationViewId = "NV-" + Guid.NewGuid().ToString("N");
+                JObject reply = await Request("ficc.notification.view.open", new JObject {
+                    ["viewId"] = notificationViewId,
+                    ["readState"] = new[] { "ALL", "UNREAD", "READ" }[readFilter.SelectedIndex],
+                    ["pageSize"] = NotificationPageSize
+                });
+                notificationSequence = (long)reply["sequence"];
+                notificationPageNumber = (int)reply["view"]["pageNumber"];
+                notificationTotalCount = (int)reply["view"]["totalCount"];
+                notificationIds.Clear();
+                notificationCache.Clear();
+                foreach (JObject row in (JArray)reply["notifications"]) notificationCache[(string)row["notificationId"]] = row;
+                foreach (string id in ((JArray)reply["view"]["ids"]).Values<string>()) notificationIds.Add(id);
+                notificationViewStale = false;
+                RenderNotifications();
+            } catch {
+                notificationViewStale = true;
+                throw;
+            } finally {
+                FinishNotificationRequest();
+                notificationViewGate.Release();
+            }
         }
-        void ReceiveNotification(JObject message){
-            if((string)message["streamId"]!=notificationStreamId)return;if(openingNotifications){if(pendingNotifications.Count<200)pendingNotifications.Add(message);return;}
-            long next=(long?)message["sequence"]??notificationSequence;if(next<=notificationSequence)return;if(next!=notificationSequence+1||(string)message["kind"]=="RESET_REQUIRED"){notificationBoard.Text="报价提醒（需刷新）";return;}notificationSequence=next;
-            if(message["preference"] is JObject preference)ApplyPreference(preference);if((string)message["kind"]=="HEARTBEAT")return;
-            foreach(JObject n in (JArray)message["notifications"]??new JArray())notificationCache[(string)n["notificationId"]]=n;
-            foreach(JObject view in (JArray)message["views"]??new JArray())if((string)view["viewId"]==notificationViewId){foreach(var id in (JArray)view["removeIds"]??new JArray())notificationIds.Remove((string)id);foreach(JObject place in (JArray)view["place"]??new JArray()){string id=(string)place["id"];notificationIds.Remove(id);notificationIds.Insert(Math.Min((int)place["index"],notificationIds.Count),id);}}
-            foreach(string id in notificationCache.Keys.Where(id=>!notificationIds.Contains(id)).ToArray())notificationCache.Remove(id);RenderNotifications();
-            var fresh=notificationIds.Select(id=>notificationCache[id]).Where(n=>NotificationUnread(n)&&shownAlerts.Add((string)n["alertKey"]??(string)n["notificationId"])).Take(3).ToArray();
-            if(fresh.Length>0&&boards.SelectedTab!=notificationBoard&&!automatedUi)ShowNotificationToast(fresh);
+
+        void FinishNotificationRequest() {
+            openingNotifications = false;
+            if (notificationBufferOverflow) notificationViewStale = true;
+            var buffered = pendingNotifications.ToArray();
+            pendingNotifications.Clear();
+            foreach (JObject message in buffered) ReceiveNotification(message);
+        }
+
+        async Task QueryNotificationPage(int pageNumber) {
+            if (!connected || openingNotifications || notificationViewId == null || notificationViewStale || pageNumber < 1) return;
+            if (pageNumber > notificationPageNumber && (long)(pageNumber - 1) * NotificationPageSize >= notificationTotalCount) return;
+            if (!await notificationViewGate.WaitAsync(0)) return;
+            openingNotifications = true;
+            notificationBufferOverflow = false;
+            pendingNotifications.Clear();
+            try {
+                JObject reply = await Request("ficc.notification.view.query", new JObject {
+                    ["viewId"] = notificationViewId, ["pageNumber"] = pageNumber, ["pageSize"] = NotificationPageSize
+                });
+                if ((string)reply["streamId"] != notificationStreamId || (string)reply["view"]["viewId"] != notificationViewId) {
+                    throw new InvalidOperationException("Notification view reply mismatch");
+                }
+                notificationSequence = (long)reply["sequence"];
+                notificationPageNumber = (int)reply["view"]["pageNumber"];
+                notificationTotalCount = (int)reply["view"]["totalCount"];
+                notificationIds.Clear();
+                notificationCache.Clear();
+                foreach (JObject row in (JArray)reply["notifications"]) notificationCache[(string)row["notificationId"]] = row;
+                foreach (string id in ((JArray)reply["view"]["ids"]).Values<string>()) notificationIds.Add(id);
+                RenderNotifications();
+            } catch (Exception error) {
+                notificationViewStale = true;
+                Log("NOTIFICATION_PAGE " + error.Message);
+            } finally {
+                FinishNotificationRequest();
+                notificationViewGate.Release();
+            }
+        }
+
+        async void ScheduleNotificationRefill() {
+            if (notificationRefillPending) return;
+            notificationRefillPending = true;
+            string requestedView = notificationViewId;
+            try {
+                await Task.Delay(40);
+                while (!IsDisposed && openingNotifications) await Task.Delay(20);
+                notificationRefillPending = false;
+                if (!IsDisposed && requestedView == notificationViewId && notificationPageNumber == 1) await QueryNotificationPage(1);
+            } finally {
+                notificationRefillPending = false;
+            }
+        }
+
+        void ReceiveNotification(JObject message) {
+            if ((string)message["streamId"] != notificationStreamId) return;
+            if (openingNotifications) {
+                if (pendingNotifications.Count < 200) pendingNotifications.Add(message);
+                else notificationBufferOverflow = true;
+                return;
+            }
+            if (notificationViewStale) return;
+            long next = (long?)message["sequence"] ?? notificationSequence;
+            if (next <= notificationSequence) return;
+            if (next != notificationSequence + 1 || (string)message["kind"] == "RESET_REQUIRED") {
+                notificationViewStale = true;
+                notificationBoard.Text = "Notifications: refresh required";
+                return;
+            }
+            notificationSequence = next;
+            if (message["preference"] is JObject preference) ApplyPreference(preference);
+            if ((string)message["kind"] == "HEARTBEAT") return;
+            try {
+                if (ClientViewPage.Apply(message, notificationViewId, "notifications", "notificationId",
+                    notificationPageNumber, NotificationPageSize, notificationIds, notificationCache)) ScheduleNotificationRefill();
+                foreach (JObject view in (JArray)message["views"] ?? new JArray()) {
+                    if ((string)view["viewId"] == notificationViewId) notificationTotalCount = (int)view["totalCount"];
+                }
+                RenderNotifications();
+                var fresh = notificationIds.Select(id => notificationCache[id])
+                    .Where(row => NotificationUnread(row) && shownAlerts.Add((string)row["alertKey"] ?? (string)row["notificationId"]))
+                    .Take(3).ToArray();
+                if (fresh.Length > 0 && boards.SelectedTab != notificationBoard && !automatedUi) ShowNotificationToast(fresh);
+            } catch (Exception error) {
+                notificationViewStale = true;
+                Log("NOTIFICATION_UPDATE " + error.Message);
+            }
         }
         void RenderNotifications(){notificationGrid.RowCount=notificationIds.Count;notificationGrid.Invalidate();int unread=notificationIds.Count(id=>NotificationUnread(notificationCache[id]));notificationBoard.Text="报价提醒"+(unread>0?"（"+unread+" 未读）":"");}
         string SelectedNotificationId(){int index=notificationGrid.CurrentCell?.RowIndex??-1;return index>=0&&index<notificationIds.Count?notificationIds[index]:null;}

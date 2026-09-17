@@ -1,8 +1,12 @@
 # FICC服务API规范（实现对照与评审稿）
 
-日期：2026-09-16。本文对照当前仓库的服务注册、请求处理及客户端调用修订；“已注册”表示已有处理入口，不代表全部产品需求或所有部署环境均已验收。
+日期：2026-09-17。本文对照当前仓库的服务注册、请求处理及客户端调用修订；“已注册”表示已有处理入口，不代表全部产品需求或所有部署环境均已验收。
 
 本次更新：补齐CRM机构／联系人搜索、确认时关联ID、内部同步接口；说明viewId、streamId与pushTopic关系；修正Handler名称、会话鉴权及当前限额。Quote、Price、Notification继续使用独立模型与推送频道。
+
+2026-09-17已实现：Quote、Price、Notification三类view统一采用按页查询替代累计extend，推送改为upsertIds／removeIds，由客户端排列第一页。H16/H17、H26/H27、H51/H52、S01/S02/S08及第10节已同步服务、C#客户端、Web客户端和API调试目录。旧view.extend不再注册，旧limit请求及place消费者需同步升级。三类view共享交互规则，模型、topic、缓存和sequence保持独立。体验说明见[产品说明](quote-board-browsing-ux.zh-CN.md)。
+
+实现边界：本轮客户端只保留当前一页，提供滚动换批及上一批／下一批／返回最新入口，不累积全部记录。服务保留过滤匹配指纹以识别进入和退出，仍会重新计算匹配数据；本轮没有完成事件定向索引优化，也没有进行50,000条压力测试，不据此承诺查询延迟。
 
 当前运行服务为QuoteSvr与NotificationSvr。H36—H40、H48—H49及S06—S07是待实现设计；当前搜索在业务服务内完成，不能向部署环境直接调用这些规划中的topic。接口目录明确标出状态，后文保留其设计供评审。
 
@@ -95,7 +99,7 @@ BaseApi.unSubscribeWithImage("SERVER.QuoteSvr", "QuoteSvr", pricePushTopic, pric
 
 | 字段 | 谁产生 | 作用 |
 | --- | --- | --- |
-| viewId | 客户端 | 标识一个面板及其过滤条件；open、extend、close和推送中的成员变化均用它定位面板 |
+| viewId | 客户端 | 标识一个面板及其过滤条件；三类view均用各自领域的open、query、close定位面板 |
 | streamId | 服务端 | 标识当前领域推送流；结合sequence检查重复、缺号及流是否已重建 |
 | pushTopic | 服务端返回 | DPS实际订阅地址；客户端向该地址subscribe接收消息 |
 
@@ -112,7 +116,7 @@ BaseApi.unSubscribeWithImage("SERVER.QuoteSvr", "QuoteSvr", pricePushTopic, pric
       └─ viewId: PV-BEST      最优行情
 ```
 
-调用示例：先quote.stream.open取得streamId和pushTopic，订阅pushTopic，然后分别quote.view.open两次，传V-MINE和V-BANK及各自条件。服务在同一报价流内发送变化；views中的viewId指明哪个面板增删或移动了哪些报价。同一批中被多个面板引用的报价内容只需发送一份。客户端缓存报价对象，面板各自保存有序quoteId列表。
+调用示例：先quote.stream.open取得streamId和pushTopic，订阅pushTopic，然后分别quote.view.open两次，传V-MINE和V-BANK及各自条件。Quote新设计中，views指明各面板应插入或更新、移除哪些报价，不发送行位置。同一批中被多个面板引用的报价内容只需发送一份。客户端缓存报价对象，各面板维护自己的显示列表。
 
 同一有效流内重复stream.open返回现有流，不自动建立新view。更换过滤条件时关闭旧view，并以新viewId打开；关闭的viewId在当前流内不复用。重新连接／服务重启后重新调用stream.open，检查返回streamId并按恢复流程重建视图，不假定旧流仍有效。HEARTBEAT也参与流序号处理；客户端关闭心跳显示或日志仅影响可见日志，不应停止接收和处理心跳。
 
@@ -168,7 +172,7 @@ QuoteHistory为eventId、quoteId、revision、action、operatorUserId、operatio
 
 每券PriceBook保存该券全部有效MarketDataEntry的买卖侧集合，每条行情条目关联一条Quote。报价入簿、移出及修改由QuoteSvr内部完成；价格簿处理位置与quoteRevision不同。首版按收益率比较，含权债用行权收益率；Bid升序、Ofr降序，同价按Quote.updateTime降序和quoteId升序。
 
-行情返回PriceResult：`securityId、bookRevision、marketData、quoteRefs`。marketData为共享MarketDataSnapshotFullRefresh；quoteRefs是按MDEntryID关联quoteId及quoteRevision的FICC包装字段，不塞入STC Info1等扩展字段。STC直连行情topic只发送marketData，FICC查询和面板流发送完整PriceResult。
+行情返回PriceResult：`securityId、bookRevision、updateTime、marketData、quoteRefs`；updateTime作为面板列表排序依据，定义见3.3。marketData为共享MarketDataSnapshotFullRefresh；quoteRefs按MDEntryID关联quoteId及quoteRevision，不塞入STC Info1等扩展字段。STC直连行情topic只发送marketData；内部S09及独立price.query也可携带该新增时间字段，但不参与面板分页。
 
 | 行情字段 | 本稿约定 |
 | --- | --- |
@@ -192,9 +196,21 @@ mode=BEST取各侧第一价格档；DEPTH需depth正整数；FULL不按档数截
 
 QuoteFilter与PriceFilter是独立DTO，共享已定义的基础条件类型与过滤库；不存在带dataset判别的通用前端请求。客户端filter使用结构化业务条件：`market、conditions、watchlistIds、filterGroupIds`。conditions每项为field/operator/value；同字段OR、跨字段AND；不同已选filterGroup取并集，再与临时条件及关注债券成员范围相交。空选中列表表示未启用该类限制；显式选中的空关注分组匹配空集。FilterSubgroup仅为编辑器组织结构，查询前拍平。
 
-query为一次性查询：首请求带filter、limit，后续只带cursor。cursor绑定用户权限、查询条件、数据及基础资料快照；过期1007，不拼接两个时点结果。历史日期范围使用[fromDate,toDate]，不建立订阅。返回nextCursor=null表示结束。此游标用于滚动续取，不提供页码或客户端排序参数。
+quote.query、quote.history.search等一次性查询仍使用filter、limit及后续cursor。cursor绑定用户权限、查询条件、数据及基础资料快照；过期1007，不拼接两个时点结果。历史日期范围使用[fromDate,toDate]，不建立订阅。返回nextCursor=null表示结束。它们与下述绑定实时view的quote.view.query不同。
 
-QuoteView为报价记录列表，PriceView为按券组织的行情列表，分别使用对应业务前缀。view为实时面板：默认加载匹配结果前200条，view.extend扩大已加载前缀。服务端保存完整匹配集合并更新已加载范围；插入、移出或移动需补齐边界，不能只推新命中的报价而遗漏被挤出的行。Quote固定updateTime降序；通知按updateTime降序；价格面板债券行按最新报价时间降序，券内按价格簿规则。
+QuoteView新设计：open登记过滤条件并返回第一页，view.query按pageNumber、pageSize返回指定的一页，不创建新订阅、不返回累计前缀。后端查询按`updateTime DESC, quoteId ASC`排序；客户端用相同规则维护第一页，更新后插入或替换并裁剪至pageSize。第一页已加载报价因删除或退出条件被移除时，合并请求一次第一页补位。后续页只更新已有行及移除，不实时插入、重排或补位；滚动由前端触发下一页查询，不必显示页码。
+
+后端维护筛选订阅并推送匹配变化，不持续维护客户端行位置或替换行。普通修改须更新updateTime且不回写为更早值；时间纠正、基础资料批量变化等无法用本地少量记录判断边界的情况重新查询。不同页查询对应各自当前时点，跨页可能重复或跳过记录，不作为完整导出遍历。
+
+PriceView和NotificationView采用相同的open／分页query、upsertIds／removeIds、第一页本地排序及补位、后续页稳定阅读规则。每个view查询默认pageSize=200，上限1000，pageNumber从1开始；查询不创建新订阅，前端对同一view串行请求并按requestId关联。totalCount始终表示完整过滤结果数，不是当前页条数。
+
+| 领域 | 每行标识 | 数据数组 | 查询及第一页排序 |
+| --- | --- | --- | --- |
+| Quote | quoteId | quotes | updateTime降序、quoteId升序 |
+| Price | securityId（缓存键为viewId＋securityId） | books | books.updateTime降序、securityId升序 |
+| Notification | notificationId | notifications | updateTime降序、notificationId升序 |
+
+PriceResult顶层`updateTime`表示该view过滤后参与价格簿构建的有效报价中最大的updateTime；BEST/DEPTH取档前计算，查询及推送必须给出相同依据，不能从截断后的NoMDEntries推导。删除最新报价可能使该值下降；第一页收到已加载行排序时间下降时重新查询，因为本地没有下一候选。空簿无此值时为null，并以removeIds移出列表。券内档位及MDPriceLevel仍由后端按价格簿规则生成，不属于前端列表排序。
 
 ### 3.4 分组、通知及资料
 
@@ -229,8 +245,8 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 | H13 | QuoteSvr | `ficc.price.query` | `PriceQueryHandler` | 单券／多券行情查询 | 已注册 |
 | H14 | QuoteSvr | `ficc.quote.dictionary.query` | `QuoteDictionaryQueryHandler` | 业务字典与可用筛选字段 | 已注册 |
 | H15 | QuoteSvr | `ficc.quote.stream.open` | `QuoteStreamOpenHandler` | 取得当前连接的私有推送topic | 已注册 |
-| H16 | QuoteSvr | `ficc.quote.view.open` | `QuoteViewOpenHandler` | 登记条件并查询初始列表 | 已注册 |
-| H17 | QuoteSvr | `ficc.quote.view.extend` | `QuoteViewExtendHandler` | 滚动扩大已加载范围 | 已注册 |
+| H16 | QuoteSvr | `ficc.quote.view.open` | `QuoteViewOpenHandler` | 登记条件并查询第一页 | 已注册 |
+| H17 | QuoteSvr | `ficc.quote.view.query` | `QuoteViewQueryHandler` | 查询指定页／第一页补位 | 已注册 |
 | H18 | QuoteSvr | `ficc.quote.view.close` | `QuoteViewCloseHandler` | 关闭实时面板 | 已注册 |
 | H19 | QuoteSvr | `ficc.watchlist.query` | `WatchlistQueryHandler` | 读取个人关注分组 | 已注册 |
 | H20 | QuoteSvr | `ficc.watchlist.save` | `WatchlistSaveHandler` | 保存关注分组及全部成员 | 已注册 |
@@ -239,8 +255,8 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 | H23 | QuoteSvr | `ficc.filterGroup.save` | `FilterGroupSaveHandler` | 保存筛选组及全部条件 | 已注册 |
 | H24 | QuoteSvr | `ficc.filterGroup.delete` | `FilterGroupDeleteHandler` | 删除筛选分组 | 已注册 |
 | H25 | NotificationSvr | `ficc.notification.stream.open` | `NotificationStreamOpenHandler` | 取得当前连接的私有推送topic | 已注册 |
-| H26 | NotificationSvr | `ficc.notification.view.open` | `NotificationViewOpenHandler` | 登记条件并查询初始列表 | 已注册 |
-| H27 | NotificationSvr | `ficc.notification.view.extend` | `NotificationViewExtendHandler` | 滚动扩大已加载范围 | 已注册 |
+| H26 | NotificationSvr | `ficc.notification.view.open` | `NotificationViewOpenHandler` | 登记条件并查询第一页 | 已注册 |
+| H27 | NotificationSvr | `ficc.notification.view.query` | `NotificationViewQueryHandler` | 查询指定页／第一页补位 | 已注册 |
 | H28 | NotificationSvr | `ficc.notification.view.close` | `NotificationViewCloseHandler` | 关闭实时面板 | 已注册 |
 | H29 | NotificationSvr | `ficc.notification.query` | `NotificationQueryHandler` | 读取当前通知 | 已注册 |
 | H30 | NotificationSvr | `ficc.notification.read` | `NotificationReadHandler` | 标记已读／未读 | 已注册 |
@@ -264,8 +280,8 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 | H48 | BaseSvr适配模块 | `ficc.base.state.query` | `StateQueryHandler` | 显式读取内部初始化记录 | 待实现 |
 | H49 | BaseSvr适配模块 | `ficc.base.event.query` | `EventReplayQueryHandler` | 按位置补取内部事件 | 待实现 |
 | H50 | QuoteSvr | `ficc.price.stream.open` | `PriceStreamOpenHandler` | 取得独立的行情推送topic | 已注册 |
-| H51 | QuoteSvr | `ficc.price.view.open` | `PriceViewOpenHandler` | 登记行情条件并取得当前价格簿 | 已注册 |
-| H52 | QuoteSvr | `ficc.price.view.extend` | `PriceViewExtendHandler` | 滚动扩大行情加载范围 | 已注册 |
+| H51 | QuoteSvr | `ficc.price.view.open` | `PriceViewOpenHandler` | 登记行情条件并取得第一页价格簿 | 已注册 |
+| H52 | QuoteSvr | `ficc.price.view.query` | `PriceViewQueryHandler` | 查询指定行情页／第一页补位 | 已注册 |
 | H53 | QuoteSvr | `ficc.price.view.close` | `PriceViewCloseHandler` | 关闭行情view | 已注册 |
 | H54 | QuoteSvr | `ficc.price.dictionary.query` | `PriceDictionaryQueryHandler` | 读取行情字典与可用筛选字段 | 已注册 |
 
@@ -274,14 +290,14 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 
 | 编号 | 服务 | 订阅topic | 模式及组件 |
 | --- | --- | --- | --- |
-| S01 | QuoteSvr | `ficc.quote.report.<sessionId>` | 普通subscribe；QuoteReportPublisher |
-| S02 | NotificationSvr | `ficc.notification.report.<sessionId>` | 普通subscribe；NotificationReportPublisher |
+| S01 | QuoteSvr | `ficc.quote.report.<sessionId>` | 普通subscribe；QuoteReportPublisher；upsertIds协议已实现 |
+| S02 | NotificationSvr | `ficc.notification.report.<sessionId>` | 普通subscribe；NotificationReportPublisher；upsertIds协议已实现 |
 | S03 | QuoteSvr | `ficc.price.book.<securityId>` | subscribeWithImage；PriceBookSnapshotHandler |
 | S04 | QuoteSvr | `ficc.quote.events` | 普通subscribe；QuoteEventPublisher |
 | S05 | NotificationSvr | `ficc.notification.events` | 普通subscribe；NotificationEventPublisher |
 | S06 | BaseSvr适配模块 | `ficc.base.events` | 普通subscribe；ReferenceEventPublisher |
 | S07 | SearchSvr | `ficc.search.attributes.events` | 普通subscribe；SearchAttributesPublisher |
-| S08 | QuoteSvr | `ficc.price.report.<sessionId>` | subscribeWithImage；PriceReportSnapshotHandler |
+| S08 | QuoteSvr | `ficc.price.report.<sessionId>` | subscribeWithImage；PriceReportSnapshotHandler；分页及upsertIds协议已实现 |
 | S09 | QuoteSvr | `ficc.price.snapshots` | subscribeWithImage；PriceFeedSnapshotHandler |
 
 只有Price频道带业务image；其余频道是纯发布。Topic的ACL、路由及Publisher绑定仍需配置，但不为纯发布topic注册不存在的ContentHandler.snapshot。
@@ -292,12 +308,14 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 | --- | --- | --- |
 | 行情中心：信用全部／利率全部 | price.stream.open → DPS带image订阅 → price.view.open，market=CREDIT/RATE、mode=FULL | PriceViewReply／PriceStreamBatch；ficc.price.report.<sessionId> |
 | 行情中心：信用最优／利率最优 | 同上，mode=BEST | 同券Bid/Ofr价格簿，保留最优档全部并列报价 |
-| 行情中心：滚动／改变条件／离开 | price.view.extend／close后新ID open／price.view.close | 只操作PriceView，limit按债券行计数 |
+| 行情中心：滚动／补位／改变条件／离开 | price.view.query／第一页query补位／close后新ID open／price.view.close | 只操作PriceView，pageSize按债券行计数 |
 | 报价管理：当前报价 | quote.stream.open → DPS普通订阅 → quote.view.open | QuoteViewReply／QuoteStreamBatch；ficc.quote.report.<sessionId> |
+| 报价管理：滚动／第一页补位 | quote.view.query(viewId, pageNumber, pageSize) | 单页结果；复用原view和Quote订阅 |
 | 报价管理：历史报价 | quote.history.search，后续cursor续取 | 一次性查询，无订阅 |
 | 行情中心：字段、关注债券、筛选组 | price.dictionary.query、watchlist.query、filterGroup.query | 分组保存仍由QuoteSvr管理；不因此混合Quote/Price数据通道 |
 | 行情中心：债券详情／报价操作 | base.get/query；quote.get/create/confirm/update/refer | 报价操作应答及报告走Quote协议；行情变化另外走Price协议 |
 | 行情中心：报价提醒 | notification.stream.open → 普通订阅 → notification.view.open；read及preference.get/save | 独立Notification频道 |
+| 提醒列表：滚动／第一页补位 | notification.view.query(viewId, pageNumber, pageSize) | 单页notifications，复用原订阅 |
 
 正文topic均带ficc前缀。行情中心只浏览行情时无需开Quote流；从行情中心发起报价操作时，请求使用Quote接口，若需实时操作报告再建立Quote订阅。报价写入不以Quote订阅存在为前提。前端不直接调用SearchSvr，也不订阅内部quote.events或price.snapshots。
 
@@ -1160,7 +1178,7 @@ names可选，缺省返回本版全部业务字典；此接口返回Quote字典�
 
 服务：`QuoteSvr`；topic：`ficc.quote.view.open`；handler：`QuoteViewOpenHandler.handle`。
 
-viewId由客户端生成且在本领域连接内永不复用；filter、limit可选。status及ownerScope与quote.query一致；禁止dataset、mode、depth及行情模型字段。 本领域report订阅就绪后调用。服务登记条件并通过本次应答返回初始列表及边界sequence；这不是订阅image。按第10节缓冲应答前到达的变化。
+以下为已实现的新协议。viewId由客户端生成且在本领域连接内永不复用；filter、pageSize可选，pageSize默认200、范围1—1000。open固定返回第1页，不接收limit。status及ownerScope与quote.query一致；禁止dataset、mode、depth及行情模型字段。本领域report订阅就绪后调用。服务登记条件并返回第一页及边界sequence；这不是订阅image。按第10节缓冲应答前到达的变化。
 
 请求：
 
@@ -1171,7 +1189,7 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
   "filter": {
     "conditions": []
   },
-  "limit": 200
+  "pageSize": 200
 }
 ```
 
@@ -1187,7 +1205,8 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
     "sequence": "10",
     "view": {
       "viewId": "V-001",
-      "limit": 200,
+      "pageNumber": 1,
+      "pageSize": 200,
       "totalCount": 1,
       "ids": [
         "Q-001"
@@ -1235,11 +1254,15 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
 }
 ```
 
-### H17 滚动扩大已加载范围
+### H17 查询报价view的指定页（已实现）
 
-服务：`QuoteSvr`；topic：`ficc.quote.view.extend`；handler：`QuoteViewExtendHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.quote.view.query`；handler：`QuoteViewQueryHandler.handle`。
 
-viewId、limit必填；limit是新的总加载条数，必须大于当前值。服务重新返回该view在边界sequence上的完整已加载列表。这是显式查询应答，不是报价订阅快照。不修改筛选；改变条件先close旧view，再以新viewId open。
+viewId、pageNumber、pageSize必填；pageNumber为从1开始的正整数，pageSize范围1—1000。服务复用view登记的条件和当前用户权限，按`offset=(pageNumber-1)*pageSize`查询，返回该时点指定页及sequence，不返回此前各页。超出结果范围时返回空ids／quotes和实际totalCount。
+
+滚动时请求目标页；第一页因实时移除出现缺口时请求pageNumber=1。每个view同一时间只允许一个在途页查询，前端按requestId关联应答并忽略过期请求；快速滚动合并到最新目标页。此接口不创建新view或订阅，不修改筛选。改变条件先close旧view，再以新viewId open。H09 quote.query仍是独立的一次性搜索，不替代本接口。
+
+迁移说明：`ficc.quote.view.extend`已移除，由本接口替代；旧客户端与服务必须同时升级。示例查询第2页，每页200条，共201条，故只返回1条。
 
 请求：
 
@@ -1247,7 +1270,8 @@ viewId、limit必填；limit是新的总加载条数，必须大于当前值。�
 {
   "requestId": "R-017",
   "viewId": "V-001",
-  "limit": 400
+  "pageNumber": 2,
+  "pageSize": 200
 }
 ```
 
@@ -1263,16 +1287,17 @@ viewId、limit必填；limit是新的总加载条数，必须大于当前值。�
     "sequence": "15",
     "view": {
       "viewId": "V-001",
-      "limit": 400,
-      "totalCount": 1,
+      "pageNumber": 2,
+      "pageSize": 200,
+      "totalCount": 201,
       "ids": [
-        "Q-001"
+        "Q-201"
       ]
     },
     "quotes": [
       {
-        "quoteId": "Q-001",
-        "clientQuoteId": "CQ-001",
+        "quoteId": "Q-201",
+        "clientQuoteId": "CQ-201",
         "sourceMessageId": null,
         "source": {
           "type": "MANUAL"
@@ -1660,7 +1685,7 @@ filterGroupId、expectedRevision必填；同时移除子组及条件，不修改
 
 服务：`QuoteSvr`；topic：`ficc.price.view.open`；handler：`PriceViewOpenHandler.handle`。
 
-viewId、mode必填；filter和limit可选。mode取BEST/FULL/DEPTH，DEPTH必须有正整数depth，其他mode禁止depth。不接受dataset、Quote状态或ownerScope参数。limit按债券行计数；权限与清算等已支持的条目条件先过滤，再按价格档计算。返回独立PriceViewReply；禁止quotes/reports字段。跨侧价差等未完成的过滤语义见R8。
+以下为已实现的新协议。viewId、mode必填；filter和pageSize可选，pageSize默认200、范围1—1000，open返回第一页，不接收limit。mode取BEST/FULL/DEPTH，DEPTH必须有正整数depth，其他mode禁止depth。不接受dataset、Quote状态或ownerScope参数。pageSize按债券行计数；权限与清算等条目条件先过滤，再按价格档计算。返回独立PriceViewReply；禁止quotes/reports字段。跨侧价差等未完成的过滤语义见R8。
 
 请求：
 
@@ -1675,7 +1700,7 @@ viewId、mode必填；filter和limit可选。mode取BEST/FULL/DEPTH，DEPTH必�
     "filterGroupIds": []
   },
   "mode": "BEST",
-  "limit": 200
+  "pageSize": 200
 }
 ```
 
@@ -1691,11 +1716,12 @@ viewId、mode必填；filter和limit可选。mode取BEST/FULL/DEPTH，DEPTH必�
     "sequence": "10",
     "view": {
       "viewId": "PV-001",
-      "limit": 200,
       "totalCount": 1,
       "ids": [
         "250001.IB"
-      ]
+      ],
+      "pageSize": 200,
+      "pageNumber": 1
     },
     "books": [
       {
@@ -1730,18 +1756,19 @@ viewId、mode必填；filter和limit可选。mode取BEST/FULL/DEPTH，DEPTH必�
             "quoteId": "Q-001",
             "quoteRevision": "2"
           }
-        }
+        },
+        "updateTime": "2026-09-14T09:01:00+08:00"
       }
     ]
   }
 }
 ```
 
-### H52 滚动扩大行情加载范围
+### H52 查询行情view的指定页（已实现）
 
-服务：`QuoteSvr`；topic：`ficc.price.view.extend`；handler：`PriceViewExtendHandler.handle`。
+服务：`QuoteSvr`；topic：`ficc.price.view.query`；handler：`PriceViewQueryHandler.handle`。
 
-viewId、limit必填；limit为新的债券行总数，必须大于原值。返回该时点完整已加载债券列表及每券快照；首版会重发已加载部分，不称为仅追加增量。mode/depth及filter保持不变；改条件使用新viewId重新open。
+viewId、pageNumber、pageSize必填，校验及查询边界与H17相同；复用mode/depth/filter及原订阅，不重新登记条件。每次只返回指定页的债券及各自完整价格簿，不重发此前各页。客户端按books.updateTime排序第一页；页内补位请求pageNumber=1。改条件使用新viewId重新open。此接口替代旧price.view.extend，已注册。示例查询第2页，每页200条，共201条。
 
 请求：
 
@@ -1749,7 +1776,8 @@ viewId、limit必填；limit为新的债券行总数，必须大于原值。返�
 {
   "requestId": "R-052",
   "viewId": "PV-001",
-  "limit": 400
+  "pageSize": 200,
+  "pageNumber": 2
 }
 ```
 
@@ -1765,11 +1793,12 @@ viewId、limit必填；limit为新的债券行总数，必须大于原值。返�
     "sequence": "12",
     "view": {
       "viewId": "PV-001",
-      "limit": 400,
-      "totalCount": 1,
+      "totalCount": 201,
       "ids": [
         "250001.IB"
-      ]
+      ],
+      "pageSize": 200,
+      "pageNumber": 2
     },
     "books": [
       {
@@ -1804,7 +1833,8 @@ viewId、limit必填；limit为新的债券行总数，必须大于原值。返�
             "quoteId": "Q-001",
             "quoteRevision": "2"
           }
-        }
+        },
+        "updateTime": "2026-09-14T09:01:00+08:00"
       }
     ]
   }
@@ -1949,7 +1979,7 @@ names可选，缺省返回当前已实现且该用户可用的行情字典和fil
 
 服务：`NotificationSvr`；topic：`ficc.notification.view.open`；handler：`NotificationViewOpenHandler.handle`。
 
-viewId由客户端生成且在本领域连接内永不复用；filter、limit可选。可传readState=ALL/READ/UNREAD；禁止dataset和行情参数。 本领域report订阅就绪后调用。服务登记条件并通过本次应答返回初始列表及边界sequence；这不是订阅image。按第10节缓冲应答前到达的变化。
+以下为已实现的新协议。viewId由客户端生成且在本领域连接内永不复用；filter、pageSize可选，pageSize默认200、范围1—1000，open返回第一页，不接收limit。可传readState=ALL/READ/UNREAD；禁止dataset和行情参数。本领域report订阅就绪后调用，登记条件并返回第一页及边界sequence；这不是订阅image。按第10节缓冲应答前到达的变化。
 
 请求：
 
@@ -1960,7 +1990,7 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
   "filter": {
     "conditions": []
   },
-  "limit": 200
+  "pageSize": 200
 }
 ```
 
@@ -1972,15 +2002,16 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
   "Msg": "成功",
   "requestId": "R-026",
   "Data": {
-    "streamId": "E-001",
+    "streamId": "NE-001",
     "sequence": "10",
     "view": {
       "viewId": "V-001",
-      "limit": 200,
       "totalCount": 1,
       "ids": [
         "N-001"
-      ]
+      ],
+      "pageSize": 200,
+      "pageNumber": 1
     },
     "notifications": [
       {
@@ -2009,11 +2040,11 @@ viewId由客户端生成且在本领域连接内永不复用；filter、limit可
 }
 ```
 
-### H27 滚动扩大已加载范围
+### H27 查询通知view的指定页（已实现）
 
-服务：`NotificationSvr`；topic：`ficc.notification.view.extend`；handler：`NotificationViewExtendHandler.handle`。
+服务：`NotificationSvr`；topic：`ficc.notification.view.query`；handler：`NotificationViewQueryHandler.handle`。
 
-viewId、limit必填；limit是新的总加载条数，必须大于当前值，当前Notification实现上限为1000。服务重新返回该view在边界sequence上的完整已加载列表。这是显式查询应答，不是通知订阅image。不修改筛选；改变条件先close旧view，再以新viewId open。
+viewId、pageNumber、pageSize必填，校验及查询边界与H17相同；复用filter/readState及原订阅。只返回该用户指定页的notifications及sequence，不重发此前各页。第一页移除后用pageNumber=1补位；改条件先close旧view，再用新viewId open。此接口替代旧notification.view.extend，已注册。新设计每次最多1000条，不把旧累计1000条限制当作全部可浏览结果上限。示例查询第2页，每页200条，共201条。
 
 请求：
 
@@ -2021,7 +2052,8 @@ viewId、limit必填；limit是新的总加载条数，必须大于当前值，�
 {
   "requestId": "R-027",
   "viewId": "V-001",
-  "limit": 400
+  "pageSize": 200,
+  "pageNumber": 2
 }
 ```
 
@@ -2033,15 +2065,16 @@ viewId、limit必填；limit是新的总加载条数，必须大于当前值，�
   "Msg": "成功",
   "requestId": "R-027",
   "Data": {
-    "streamId": "E-001",
+    "streamId": "NE-001",
     "sequence": "15",
     "view": {
       "viewId": "V-001",
-      "limit": 400,
-      "totalCount": 1,
+      "totalCount": 201,
       "ids": [
         "N-001"
-      ]
+      ],
+      "pageSize": 200,
+      "pageNumber": 2
     },
     "notifications": [
       {
@@ -3179,7 +3212,11 @@ H55／H56只读，但当前实现跳过用户SID解析，依赖可信服务网�
 
 发布服务：QuoteSvr；发布组件：`QuoteReportPublisher`，普通subscribe，无业务snapshot Handler。
 
-仅绑定用户与连接可订阅；只承载报价操作报告及QuoteView变化，绝不包含PriceResult、books或marketData。初始报价由quote.view.open或quote.query应答提供。quotes是本批完整报价对象并集，每个quoteId只发送一次；views引用quoteId。成功操作可以报告不在任何view内的报价，以clientQuoteId关联本地编辑行。失败操作通过请求应答返回，不冒充成功事件。
+仅绑定用户与连接可订阅；只承载报价操作报告及QuoteView变化，绝不包含PriceResult、books或marketData。初始及翻页报价由quote.view.open/query应答提供；quote.query仍可独立搜索。quotes是本批完整报价对象并集，每个quoteId只发送一次；reports记录操作结果、操作人、时间、requestId和revision，不是字段差异。当前实现仅向报价所有者附带操作报告。失败操作通过请求应答返回，不冒充成功事件。
+
+以下views格式为已实现的新协议：`upsertIds`为该view匹配的新建／更新报价ID，`removeIds`为删除或从匹配变为不匹配的ID；不发送place/index。upsertIds引用的完整报价必须在本批quotes中提供，同一view两个ID集合不能重叠。totalCount是该view全部匹配结果数，不是当前页行数。更新前不匹配、更新后匹配则upsert；前后都匹配也upsert；从匹配变为不匹配则remove。不能只过滤更新后的数据而漏发退出通知。
+
+推送覆盖view过滤范围内的相关变化，不以当前页排名截断。是否显示在第一页由客户端排序决定；后续页忽略未加载ID的upsert，仅更新已加载行。报价因为本地裁剪退出第一页，不是removeIds语义。即使某报价不属于当前view，quotes也可能因其他view或操作报告包含它，客户端须按views处理成员关系。
 
 发布示例：
 
@@ -3245,18 +3282,15 @@ H55／H56只读，但当前实现跳过用户SID解析，依赖可信服务网�
       "viewId": "V-001",
       "totalCount": 1,
       "removeIds": [],
-      "place": [
-        {
-          "id": "Q-001",
-          "index": 0
-        }
-      ]
+      "upsertIds": ["Q-001"]
     }
   ]
 }
 ```
 
 ### S02 `ficc.notification.report.<sessionId>`
+
+以下views示例采用已实现的upsertIds／removeIds，不含place/index。upsertIds引用本批完整notifications中的notificationId；removeIds表示该view不再匹配，不能据此推断通知全局删除。第一页按updateTime降序、notificationId升序排列并裁剪，移除已加载行后查询第一页补位；后续页只更新或移除已有行。匹配前后比较、总数及查询缓冲规则与Quote相同，使用独立Notification序列。
 
 发布服务：NotificationSvr；发布组件：`NotificationReportPublisher`，普通subscribe，无业务snapshot Handler。
 
@@ -3301,7 +3335,7 @@ H55／H56只读，但当前实现跳过用户SID解析，依赖可信服务网�
       "removeIds": [
         "N-001"
       ],
-      "place": []
+      "upsertIds": []
     }
   ]
 }
@@ -3527,7 +3561,9 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
 
 发布服务：QuoteSvr；`PriceReportSnapshotHandler.snapshot`提供Price初始image；`PriceReportPublisher`发布后续整券刷新。此频道只允许PriceStreamBatch DTO，不允许QuoteStreamBatch、quotes或报价操作reports。
 
-通过subscribeWithImage建立订阅。首次尚未open任何view时返回views=[]、books=[]；以下展示已有view重订阅时的当前快照。每条books以viewId＋securityId为键，表示该view条件下该券的完整PriceResult；同券不同条件的结果不混在一起。行情缓存、序列、重连和退订与Quote频道独立。
+通过subscribeWithImage建立订阅。首次尚未open任何view时返回views=[]、books=[]；以下为已实现的新协议，展示已有view重订阅时的单页快照。服务仅记住各view最后一次成功查询的pageNumber/pageSize，重订阅时重新查询该页，不恢复累计前缀，也不持续维护行位置。客户端丢弃旧相邻页缓存；若用户已选择其他页，再调用price.view.query。每条books以viewId＋securityId为键，表示该view条件下该券的完整PriceResult；同券不同条件的结果不混在一起。
+
+UPDATE使用upsertIds／removeIds，不含place/index。upsertIds引用本批该view下的完整books；成员变化以securityId为单位，不能将单条报价退出等同于整券退出。books.updateTime用于债券行排序，券内价格档及MDPriceLevel保持后端生成。行情缓存、序列、重连和退订与Quote频道独立。
 
 初始image／重订阅快照：
 
@@ -3571,17 +3607,19 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
           "quoteId": "Q-001",
           "quoteRevision": "2"
         }
-      }
+      },
+      "updateTime": "2026-09-14T09:01:00+08:00"
     }
   ],
   "views": [
     {
       "viewId": "PV-001",
-      "limit": 200,
       "totalCount": 1,
       "ids": [
         "250001.IB"
-      ]
+      ],
+      "pageSize": 200,
+      "pageNumber": 1
     }
   ]
 }
@@ -3629,7 +3667,8 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
           "quoteId": "Q-001",
           "quoteRevision": "3"
         }
-      }
+      },
+      "updateTime": "2026-09-14T09:03:00+08:00"
     }
   ],
   "views": [
@@ -3637,18 +3676,15 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
       "viewId": "PV-001",
       "totalCount": 1,
       "removeIds": [],
-      "place": [
-        {
-          "id": "250001.IB",
-          "index": 0
-        }
+      "upsertIds": [
+        "250001.IB"
       ]
     }
   ]
 }
 ```
 
-空簿用NoMDEntries=[]清除原条目；券退出筛选或已加载范围时由views.removeIds移除。无其他view引用后回收对应缓存。多Price面板的不同过滤结果暂不承诺跨面板去重；不影响Quote频道的同批报价去重。
+空簿用NoMDEntries=[]清除原条目；券退出筛选时由views.removeIds移除，本地因pageSize裁剪不属于服务端移除。无其他引用后回收对应缓存。多Price面板的不同过滤结果暂不承诺跨面板去重；不影响Quote频道的同批报价去重。
 
 ### S09 `ficc.price.snapshots`
 
@@ -3766,6 +3802,8 @@ STC兼容的原始整券行情topic，仅开放给被授权读取该完整FICC�
 
 ### 10.1 Quote频道：普通订阅与显式查询
 
+本节及10.2为已实现的分页及客户端排序协议，取代旧版extend／place流程。
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -3774,22 +3812,27 @@ sequenceDiagram
     Q-->>C: quote pushTopic、streamId
     C->>Q: DPS subscribe(quote pushTopic)
     Note over C: 缓冲本流推送；HEARTBEAT不含已有报价
-    C->>Q: ficc.quote.view.open(filter, viewId, limit)
+    C->>Q: ficc.quote.view.open(filter, viewId, pageSize)
     Note over Q: 在边界S登记条件并读取报价列表
     Q-->>C: QuoteViewReply(quotes, view, sequence=S)
     Q-->>C: QuoteStreamBatch(quote changes, sequence>S)
-    C->>Q: ficc.quote.view.extend / close
+    C->>Q: ficc.quote.view.query(viewId, pageNumber, pageSize)
+    Q-->>C: 指定页quotes、ids、totalCount、sequence
+    Note over C: 第一页本地排序；后续页保留阅读顺序
+    C->>Q: ficc.quote.view.close
 ```
 
 先建立DPS订阅并开始缓冲，再调用view.open；当前服务不要求等待首个HEARTBEAT才建立view。HEARTBEAT用于检查流存活及序号，不是报价snapshot，也不能替代订阅成功确认。报价操作应答与quote.get可用于核实结果；断线后先恢复连接。心跳周期及超时判断以部署配置和客户端实现为准。
 
-客户端发view.open/extend前按viewId缓冲消息。查询与登记必须在同一边界S完成，不能先查询再无边界地开始推送。SearchSvr落后时应追平或用保留的报价事件补齐；不能让初始结果和后续事件中间出现空档。
+客户端发Quote view.open/query前按viewId缓冲消息。首次查询与登记必须在同一边界S完成，不能先查询再无边界地开始推送；后续页查询复用订阅，并返回本次读取边界。SearchSvr落后时应追平或用保留的报价事件补齐；不能让查询结果和后续事件中间出现空档。
 
 ### 10.2 QuoteView变化与恢复
 
 - QuoteStreamBatch仅包含quotes、reports、views及可选settingsChanged。每批quoteId只出现一次；多个QuoteView引用同一对象。不能出现books或MarketDataSnapshotFullRefresh。
-- UPDATE先替换完整Quote对象，再更新view成员。removeIds先执行；随后按place顺序，若id已存在先移除，再插入index位置。index从0开始，最终列表必须等于服务端维护的已加载范围。客户端不重新排序。
-- view.open/extend应答只替换目标view的列表，以sequence=S为对象读取边界；较新的>S对象不能被旧应答覆盖。按序接续该view缓冲的>S变化；应答不倒退整个Quote流位置。
+- UPDATE先按revision接收完整Quote对象，同revision显示字段刷新按流序列处理；再对目标view执行removeIds和upsertIds。第一页按quoteId插入或替换，按`updateTime DESC, quoteId ASC`排序，只保留pageSize条。后端不发送位置，也不因挤出第一页而发removeIds。
+- 第一页因removeIds移除已加载行时，合并调用view.query(pageNumber=1)补位；移除未加载ID不触发。查询本身不足pageSize直接接受，不循环补位。查询期间再次发生移除，接续缓冲后检查是否仍需补位。普通更新或新报价插入后裁剪尾行，不触发补位查询。
+- 后续页只更新已经加载的upsertIds，保持阅读顺序；忽略未加载的upsertIds。removeIds仍移除对应行，但不自动补位。翻页、刷新或返回第一页时重新查询，接受跨页重复或遗漏的取舍。
+- view.open/query应答只替换目标页的列表，以sequence=S为读取边界；较新的>S对象不能被旧应答覆盖。按序接续该view缓冲的>S变化；应答不倒退整个Quote流位置。每个view串行查询，以requestId防止旧应答覆盖较新的页选择或筛选。
 - 每个Quote流有独立streamId和严格递增sequence；相同代次重复序号丢弃。缺号或换代次时停止应用不连续变化，重新调用quote.stream.open并确认订阅有效，关闭仍存在的旧view，以新viewId逐个open重读列表。不存在的旧view可幂等关闭；不能用subscribeWithImage恢复Quote。
 - 恢复时只保留本地未提交编辑和请求关联，旧服务器缓存暂不作为最新状态显示。已经提交但结果不明的操作按原requestId重试，或quote.get/history.query核实；重新查询列表不保证重放错过的操作报告。
 - 某Quote退出一个view不代表事实被删除，也不代表可以清掉其他view仍引用的对象。DELETED报告可用于操作反馈；当前有效列表移除该记录。没有view或编辑引用时才回收缓存。
@@ -3811,17 +3854,19 @@ sequenceDiagram
     P-->>C: price pushTopic、独立streamId
     C->>P: DPS subscribeWithImage(price pushTopic)
     P-->>C: Price SNAPSHOT（首次无view时为空）
-    C->>P: ficc.price.view.open(filter, mode, viewId, limit)
+    C->>P: ficc.price.view.open(filter, mode, viewId, pageSize)
     P-->>C: PriceViewReply(books, view, sequence=S)
     P-->>C: PriceStreamBatch(变化券的完整快照, sequence>S)
-    C->>P: ficc.price.view.extend / close
+    C->>P: ficc.price.view.query(viewId, pageNumber, pageSize)
+    P-->>C: 指定页books、ids、totalCount、sequence
+    C->>P: ficc.price.view.close
 ```
 
-PriceView每行是一只债券，ids为securityId；books以viewId＋securityId为键。limit是债券行数，mode/depth决定每券价格档：FULL全部、BEST每侧最佳档、DEPTH每侧N个不同价格档；同价档成员不能按条数截掉。
+PriceView每行是一只债券，ids为securityId；books以viewId＋securityId为键。pageSize是债券行数，mode/depth决定每券价格档：FULL全部、BEST每侧最佳档、DEPTH每侧N个不同价格档；同价档成员不能按条数截掉。
 
 PriceViewReply只含Price领域数据；PriceStreamBatch也不含quotes、QuoteReport或报价操作确认。价格条目使用STC MarketDataSnapshotFullRefresh/GNoMDEntries，quoteRefs用于关联Quote身份及版本，不把Quote事实DTO嵌入行情。不同view的过滤结果可以不同，独立缓存；内部可共享计算与条目对象，但线上契约分开。
 
-Price UPDATE携带变化券的完整簿，客户端替换该view下该券前值；视图成员增删和位置仍按removeIds/place处理。Price SNAPSHOT替换本Price频道全部view及其books；重新安装后只接续边界之后连续更新。image与在途发布交错时先缓冲；view.open/extend同样使用回复边界衔接，不覆盖其他view或较新数据。
+Price UPDATE携带变化券的完整簿，客户端替换该view下该券前值；按removeIds／upsertIds维护列表。第一页按books.updateTime降序、securityId升序排列并裁剪，移除已加载行或其排序时间下降时合并query补位；后续页只更新和移除已有行，不插入、不重排、不补位。Price SNAPSHOT替换本Price频道各view最后查询页及其books，不恢复旧相邻页缓存；重新安装后只接续边界之后连续更新。image与在途发布交错时先缓冲；view.open/query同样使用回复边界衔接，不覆盖其他view或较新数据。
 
 Price流独立sequence，不与Quote sequence合并；连接缺号重订阅Price image即可。服务重启后image若views=[]，客户端按本地行情条件重新price.view.open。Price流也周期发布独立HEARTBEAT以发现尾部缺口，心跳不改变任何价格簿。空NoMDEntries表示清空该券；券离开当前筛选范围另由view成员移除。完整image分块规则未完成时，不允许截断后宣称恢复成功，见R6。
 
@@ -3856,7 +3901,7 @@ Watchlist/FilterGroup变更用settingsChanged通知该用户的在线频道；�
 {"Code":"0000","Msg":"成功","kind":"UPDATE","streamId":"PE-001","sequence":"13","books":[],"views":[],"settingsChanged":[{"type":"WATCHLIST","action":"UPSERT","id":"W-001","revision":"2"}]}
 ```
 
-NotificationPreference仅走Notification频道，变化发送完整preference；初始/重连通过preference.get读取，并按revision防止旧应答覆盖已收到的新值。NotificationView普通订阅和显式列表加载沿用Quote的流程，但使用独立DTO、topic及sequence。
+NotificationPreference仅走Notification频道，变化发送完整preference；初始/重连通过preference.get读取，并按revision防止旧应答覆盖已收到的新值。NotificationView普通订阅和显式分页加载沿用Quote的流程，调用notification.view.open/query，不使用image；列表以notificationId为键，按updateTime降序、notificationId升序排列第一页。读通知导致退出UNREAD时remove并按需补位；ALL列表中仍匹配则upsert。断线或缺号后重建通知view并查询，使用独立DTO、topic及sequence，不能用Quote流的边界去重。
 
 各领域的view.close只释放对应view。所有view关闭后是否保留Quote操作报告订阅由客户端决定；注销时客户端应分别关闭view并退订Quote、Price、Notification。当前领域实现没有可配置TTL回收承诺，断线遗留流的自动清理仍需完善；不能仅凭无view立即停掉仍需报价操作报告的流。退订适配的源码问题见第2.1节。
 
@@ -3903,15 +3948,15 @@ SearchSvr where支持$and/$or，字段操作$eq/$in/$gt/$gte/$lt/$lte/$exists。
 | 批量报价写入 | 100条 | 1008；不拆成不可见的多批事务 |
 | 一次性query | 默认200、最大1000条 | 使用nextCursor续取 |
 | price.query | 最大100券 | 显式缩小securityIds |
-| view初始加载 | 默认200，单次最多1000行 | 后续view.extend扩大前缀 |
-| view加载总量 | Quote／Price单view最多10000行；Notification最多1000行 | 1008并保留当前view；用户可缩小条件 |
+| 三类view初始及分页查询 | pageSize默认200、最大1000；pageNumber从1开始 | 每次只返回一页；pageSize超限报1008，非法页码报1001，超出结果范围返回空页 |
+| view客户端缓存 | 当前一页；Quote／Price旧累计10000、Notification旧累计1000不再限制浏览总量 | 翻页替换缓存，不加载累计前缀 |
 | 同会话、同领域的view数 | 20；Quote／Price／Notification分别计数 | 1008 |
 | 已实现state/event批量 | 默认200、最大1000 | 按cursor或sequence继续 |
 | CRM查询／按ID读取 | 查询默认200、最大200；get最多200个ID | 查询以offset续取；get拆批 |
 | 消息字节上限／慢消费者 | 尚未形成统一字节限额契约；1 MiB仅为待验证建议 | 需完善显式拒绝或恢复机制，当前不承诺统一执行 |
 | requestId记录保留 | 建议至少一个交易日并覆盖客户端重试窗口 | 窗口外先查询状态，不能声称无限幂等 |
 
-表中数值限额来自当前实现，不能据此推断响应时间；字节限制及幂等保留期仍为设计建议。恢复快照需按记录大小控制块容量；某单券完整行情超出消息上限时需在开发前确定DPS分片方案，不能切掉同价成员。行情模式FULL的压力应逐步验证。
+除明确标注的部署建议外，表中限额来自当前实现。不能据此推断响应时间；字节限制及幂等保留期仍为设计建议。恢复快照需按记录大小控制块容量；某单券完整行情超出消息上限时需在开发前确定DPS分片方案，不能切掉同价成员。行情模式FULL的压力应逐步验证。
 
 ## 12．既有STC接入及Handler注册
 

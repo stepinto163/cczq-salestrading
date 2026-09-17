@@ -27,7 +27,7 @@ public final class BusinessSmoke {
             JSONObject stream=call("ficc.quote.stream.open",JsonUtils.object());svc.views.authorize(sid,"U-001",stream.getString("pushTopic"));
             check(svc.views.image(stream.getString("pushTopic"),sid).isEmpty(),"quote subscription has no snapshot");
             JSONObject filter=JsonUtils.object("conditions",JsonUtils.array(JsonUtils.object("field","securityId","operator","EQ","value","250001.IB")));
-            call("ficc.quote.view.open",JsonUtils.object("viewId",prefix,"ownerScope","MINE","status",JsonUtils.array("ACTIVE"),"filter",filter,"limit",20));
+            call("ficc.quote.view.open",JsonUtils.object("viewId",prefix,"ownerScope","MINE","status",JsonUtils.array("ACTIVE"),"filter",filter,"pageSize",20));
             for(JSONObject q:created.toJavaList(JSONObject.class))check("0000".equals(action("confirm",q.getString("quoteId")).getString("Code")),"confirm activates quote");
             check(depthSize()==3,"depth two includes every quote at two price levels");
             InternalSyncChecks.verify(svc, 4);

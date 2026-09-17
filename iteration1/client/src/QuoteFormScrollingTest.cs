@@ -22,66 +22,70 @@ namespace Ficc.SalesTrading {
             streamId = "SCROLL-TEST";
             topic = "test.quote";
             int requests = 0;
-            long serverSequence = 0;
             TaskCompletionSource<bool> release = null;
             var fixture = Enumerable.Range(0, 65).Select(index => new JObject {
                 ["quoteId"] = "SCROLL-" + index, ["securityId"] = "250001.IB", ["side"] = "1",
-                ["price"] = "2.5000", ["quantity"] = "1", ["settlType"] = "1", ["revision"] = "1"
+                ["price"] = "2.5000", ["quantity"] = "1", ["settlType"] = "1", ["revision"] = "1",
+                ["updateTime"] = DateTimeOffset.UtcNow.AddSeconds(-index).ToString("o")
             }).ToArray();
             quoteViewRequestOverride = async (requestTopic, request) => {
                 if (requestTopic.EndsWith("close")) return new JObject();
-                if (requestTopic.EndsWith("extend")) {
+                if (requestTopic.EndsWith("query")) {
                     requests++;
                     if (release != null) await release.Task;
                 }
-                int limit = (int)request["limit"];
+                int page = (int?)request["pageNumber"] ?? 1;
+                int size = (int)request["pageSize"];
+                var records = fixture.Skip((page - 1) * size).Take(size).ToArray();
                 return new JObject {
-                    ["streamId"] = streamId, ["sequence"] = serverSequence,
-                    ["quotes"] = new JArray(fixture.Take(limit).Select(row => row.DeepClone())),
-                    ["view"] = new JObject { ["viewId"] = request["viewId"], ["limit"] = limit,
-                        ["totalCount"] = fixture.Length, ["ids"] = new JArray(fixture.Take(limit).Select(row => (string)row["quoteId"])) }
+                    ["streamId"] = streamId, ["sequence"] = 0,
+                    ["quotes"] = new JArray(records.Select(row => row.DeepClone())),
+                    ["view"] = new JObject { ["viewId"] = request["viewId"], ["pageNumber"] = page,
+                        ["pageSize"] = size, ["totalCount"] = fixture.Length,
+                        ["ids"] = new JArray(records.Select(row => (string)row["quoteId"])) }
                 };
             };
             await OpenView();
-            check(rows.Count == 20 && grid.VirtualMode, "Initial 20 rows use virtual mode");
-            renderingQuotes = true;
-            grid.CurrentCell = grid[0, 5];
-            grid.FirstDisplayedScrollingRowIndex = 4;
-            renderingQuotes = false;
-            string selected = (string)Selected()["quoteId"];
-            string anchor = (string)rows[grid.FirstDisplayedScrollingRowIndex]["quoteId"];
+            check(rows.Count == 20 && grid.VirtualMode, "Initial page uses virtual mode");
             release = new TaskCompletionSource<bool>();
-            Task extension = ExtendQuoteView();
-            await ExtendQuoteView();
-            check(requests == 1, "Overlapping extension requests are coalesced");
-            serverSequence = 1;
-            fixture[5]["price"] = "2.6000";
-            ReceiveQuote(new JObject { ["streamId"] = streamId, ["sequence"] = 1,
-                ["quotes"] = new JArray(fixture[5].DeepClone()) });
+            Task query = NextQuotePage();
+            await NextQuotePage();
+            check(requests == 1, "Overlapping requests are coalesced");
             release.SetResult(true);
-            await extension;
+            await query;
             release = null;
-            check(rows.Count == 40 && ids.Distinct().Count() == 40, "Extension applies the expanded result without duplicates");
-            check((string)Selected()["quoteId"] == selected && (string)rows[grid.FirstDisplayedScrollingRowIndex]["quoteId"] == anchor, "Selection and visible anchor remain stable");
-            check((string)cache["SCROLL-5"]["price"] == "2.6000" && sequence == 1, "Push overlapping the reply baseline remains consistent");
-            grid.FirstDisplayedScrollingRowIndex = 35;
-            await Task.Delay(50);
-            check(requests == 2 && rows.Count == 60, "Actual grid Scroll event requests the next batch");
-            await ExtendQuoteView();
-            check(rows.Count == 65, "Final partial batch loads remaining rows");
-            await ExtendQuoteView();
-            check(requests == 3, "End of data issues no additional request");
-            release = new TaskCompletionSource<bool>();
-            await OpenView();
-            Task pendingExtension = ExtendQuoteView();
-            Task changedFilter = OpenView();
-            release.SetResult(true);
-            await pendingExtension;
-            await changedFilter;
-            check(rows.Count == 20, "Filter change is serialized after an outstanding extension and resets the cache");
+            check(rows.Count == 20 && quotePageNumber == 2 && ids[0] == "SCROLL-20", "Next page replaces rather than accumulates rows");
+            grid.FirstDisplayedScrollingRowIndex = 19;
+            await Task.Delay(60);
+            check(quotePageNumber == 3 && rows.Count == 20, "Actual grid scroll requests one next page");
+            await NextQuotePage();
+            check(rows.Count == 5 && quotePageNumber == 4, "Final partial page");
+            int before = requests;
+            await NextQuotePage();
+            check(requests == before, "End of data issues no request");
+            await QueryQuotePage(1);
+            check(rows.Count == 20 && quotePageNumber == 1, "Return to latest re-queries page one");
+            foreach (string collection in new[] { "quotes", "books", "notifications" }) {
+                string key = collection == "quotes" ? "quoteId" : collection == "books" ? "securityId" : "notificationId";
+                var localIds = new List<string> { "A", "B" };
+                var localRows = new Dictionary<string, JObject> {
+                    ["A"] = new JObject { [key] = "A", ["updateTime"] = "2026-09-17T10:00:02Z" },
+                    ["B"] = new JObject { [key] = "B", ["updateTime"] = "2026-09-17T10:00:01Z" }
+                };
+                var update = new JObject {
+                    [collection] = new JArray(new JObject { [key] = "J", ["viewId"] = "V", ["updateTime"] = "2026-09-17T10:00:03Z" }),
+                    ["views"] = new JArray(new JObject { ["viewId"] = "V", ["upsertIds"] = new JArray("J"), ["removeIds"] = new JArray() })
+                };
+                check(!ClientViewPage.Apply(update, "V", collection, key, 1, 2, localIds, localRows)
+                    && localIds.SequenceEqual(new[] { "J", "A" }), collection + ": insert, sort and trim locally");
+                update["views"][0]["upsertIds"] = new JArray();
+                update["views"][0]["removeIds"] = new JArray("J");
+                check(ClientViewPage.Apply(update, "V", collection, key, 1, 2, localIds, localRows), collection + ": first-page removal needs refill");
+                check(!ClientViewPage.Apply(update, "V", collection, key, 2, 2, localIds, localRows), collection + ": later page does not refill");
+            }
             quoteViewRequestOverride = (requestTopic, request) => throw new TimeoutException("Simulated timeout");
-            await ExtendQuoteView();
-            check(quoteViewStale && rows.Count == 20, "Failed extension preserves rows and requires resynchronization");
+            await NextQuotePage();
+            check(quoteViewStale && rows.Count == 20, "Failed query preserves rows and requires resynchronization");
             File.WriteAllText(resultFile, new JObject { ["result"] = "PASS", ["checks"] = checks,
                 ["fixtureQuotes"] = fixture.Length, ["serverWrites"] = 0 }.ToString());
         }
@@ -90,7 +94,7 @@ namespace Ficc.SalesTrading {
             JObject configuration = JObject.Parse(File.ReadAllText(configurationFile));
             int count = (int)configuration["quoteCount"];
             int port = (int)configuration["gatewayPort"];
-            if (port != 18700 || count < 1 || count > MaximumLoadedQuotes) throw new Exception("滚动测试仅允许独立 GW 18700 和最多 10,000 条。");
+            if (port != 18700 || count < 1 || count > MaximumScrollingTestQuotes) throw new Exception("滚动测试仅允许独立 GW 18700 和最多 10,000 条。");
             string resultFile = (string)configuration["resultFile"];
             string heartbeatFile = (string)configuration["heartbeatFile"];
             var samples = new List<JObject>();
@@ -115,7 +119,7 @@ namespace Ficc.SalesTrading {
             };
             Action<JObject> measure = request => requests.Enqueue(request);
             client.RequestMeasured += measure;
-            quoteExtensionMeasured = sample => extensions.Add(sample);
+            quotePageMeasured = sample => extensions.Add(sample);
             heartbeat.Start();
             File.WriteAllText(heartbeatFile, DateTime.UtcNow.ToString("o"));
             try {
@@ -134,7 +138,7 @@ namespace Ficc.SalesTrading {
                 for (int step = 0; step < 600; step++) {
                     int first = grid.FirstDisplayedScrollingRowIndex;
                     int visible = Math.Max(1, grid.DisplayedRowCount(false));
-                    bool complete = rows.Count == count && first + visible >= rows.Count;
+                    bool complete = (long)quotePageNumber * quoteBatchSize >= count && first + visible >= rows.Count;
                     if (complete) break;
                     var watch = Stopwatch.StartNew();
                     int next = Math.Min(rows.Count - 1, first + Math.Max(1, visible / 2));
@@ -145,19 +149,20 @@ namespace Ficc.SalesTrading {
                         ["scrollToPaintMs"] = scrollToPaint, ["gridPaintMs"] = grid.LastPaintMilliseconds,
                         ["workingSetMB"] = Process.GetCurrentProcess().WorkingSet64 / (1024.0 * 1024.0) };
                     samples.Add(sample);
-                    while (extendingQuotes && watch.ElapsedMilliseconds < 1500) await Task.Delay(20);
-                    if (quoteViewStale || extendingQuotes || scrollToPaint > 500 || maximumUiGap > 1000) throw new Exception("加载或 UI 响应超过保护阈值，停止加压。");
+                    while (loadingQuotePage && watch.ElapsedMilliseconds < 1500) await Task.Delay(20);
+                    if (quoteViewStale || loadingQuotePage || scrollToPaint > 500 || maximumUiGap > 1000) throw new Exception("加载或 UI 响应超过保护阈值，停止加压。");
                     if (scrollingClock.Elapsed.TotalSeconds > 35) throw new Exception("本轮滚动达到 35 秒上限，停止加压。");
-                    if ((string)Selected()?["quoteId"] != selected) throw new Exception("滚动意外改变选中报价。");
+                    if (quotePageNumber == 1 && (string)Selected()?["quoteId"] != selected) throw new Exception("滚动意外改变选中报价。");
                     if (ids.Distinct().Count() != rows.Count) throw new Exception("滚动出现重复记录。");
                     report["samples"] = new JArray(samples);
                     File.WriteAllText(resultFile, report.ToString());
                     await Task.Delay(50);
                 }
-                if (rows.Count != count || grid.FirstDisplayedScrollingRowIndex + grid.DisplayedRowCount(false) < count) throw new Exception("未完成滚动到末尾。");
+                if ((long)quotePageNumber * quoteBatchSize < count || grid.FirstDisplayedScrollingRowIndex + grid.DisplayedRowCount(false) < rows.Count) throw new Exception("未完成滚动到末尾。");
                 report["result"] = "COMPLETED";
                 report["loadedRows"] = rows.Count;
-                report["selectionPreserved"] = true;
+                report["selectionPreservedWithinPage"] = true;
+                report["pageNumber"] = quotePageNumber;
                 report["scrollP95Ms"] = Percentile(samples, "scrollToPaintMs", 0.95);
                 report["scrollMaxMs"] = samples.Max(sample => (double)sample["scrollToPaintMs"]);
             } catch (Exception error) {
@@ -168,7 +173,7 @@ namespace Ficc.SalesTrading {
                 heartbeat.Stop();
                 heartbeat.Dispose();
                 client.RequestMeasured -= measure;
-                quoteExtensionMeasured = null;
+                quotePageMeasured = null;
                 report["samples"] = new JArray(samples);
                 report["requests"] = new JArray(requests);
                 report["maximumUiTimerGapMs"] = maximumUiGap;

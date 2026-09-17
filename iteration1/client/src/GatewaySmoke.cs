@@ -21,7 +21,7 @@ namespace Ficc.SalesTrading {
                 client.Message+=(t,m)=>{if(t==qt)quoteEvents.TryAdd(m);else if(t.StartsWith("ficc.price.report."))prices.TryAdd(m);};
                 client.Subscribe(qt,false);
                 Check(!quoteEvents.TryTake(out var unused,150),"quote subscription does not send snapshot");
-                var view=client.Data("ficc.quote.view.open",new JObject{["viewId"]="C-"+Guid.NewGuid().ToString("N"),["status"]=new JArray("ACTIVE"),["ownerScope"]="MINE",["limit"]=20});Check(view["quotes"] is JArray,"quote view request returns initial records");
+                var view=client.Data("ficc.quote.view.open",new JObject{["viewId"]="C-"+Guid.NewGuid().ToString("N"),["status"]=new JArray("ACTIVE"),["ownerScope"]="MINE",["pageSize"]=20});Check(view["quotes"] is JArray,"quote view request returns initial records");
                 var ps=client.Data("ficc.price.stream.open",new JObject());client.Subscribe((string)ps["pushTopic"],true);Check(Event(prices,"SNAPSHOT")["books"] is JArray,"price subscription supplies separate snapshot");
                 var input=new JObject{["clientQuoteId"]="C#-"+Guid.NewGuid().ToString("N"),["securityId"]="250001.IB",["side"]="1",["quoteType"]="1",["yieldType"]="1",["price"]="2.5000",["quantity"]="1000",["settlType"]="1",["tradeDate"]=DateTime.Now.ToString("yyyy-MM-dd")};
                 var created=client.Data("ficc.quote.create",new JObject{["quotes"]=new JArray(input)});var r=created["results"][0];Check((string)r["Code"]=="0000","create persisted via C# -> GW -> QuoteSvr");string id=(string)r["quoteId"];Event(quoteEvents,"UPDATE");
@@ -33,10 +33,10 @@ namespace Ficc.SalesTrading {
                 Check(client.Data("ficc.quote.dictionary.query",new JObject())["dictionaries"]["side"] is JArray,"quote dictionary");
                 Check(client.Data("ficc.price.dictionary.query",new JObject())["dictionaries"]["mode"] is JArray,"price dictionary");
                 string qv=(string)view["view"]["viewId"];
-                Check((int)client.Data("ficc.quote.view.extend",new JObject{["viewId"]=qv,["limit"]=21})["view"]["limit"]==21,"extend quote view for scrolling");
+                Check((int)client.Data("ficc.quote.view.query",new JObject{["viewId"]=qv,["pageNumber"]=1,["pageSize"]=21})["view"]["pageSize"]==21,"query one quote page for scrolling");
                 string pv="P-"+Guid.NewGuid().ToString("N");
-                Check(client.Data("ficc.price.view.open",new JObject{["viewId"]=pv,["mode"]="DEPTH",["depth"]=2,["limit"]=2})["books"] is JArray,"separate price view open");
-                Check((int)client.Data("ficc.price.view.extend",new JObject{["viewId"]=pv,["limit"]=3})["view"]["limit"]==3,"extend price view");
+                Check(client.Data("ficc.price.view.open",new JObject{["viewId"]=pv,["mode"]="DEPTH",["depth"]=2,["pageSize"]=2})["books"] is JArray,"separate price view open");
+                Check((int)client.Data("ficc.price.view.query",new JObject{["viewId"]=pv,["pageNumber"]=1,["pageSize"]=3})["view"]["pageSize"]==3,"query one price page");
                 var queried=client.Data("ficc.quote.query",new JObject{["filter"]=new JObject{["conditions"]=new JArray(new JObject{["field"]="securityId",["operator"]="EQ",["value"]="250001.IB"})}});Check(((JArray)queried["quotes"]).Count>0,"local SearchSvrClient finds confirmed quote");
                 var book=client.Data("ficc.price.query",new JObject{["securityIds"]=new JArray("250001.IB"),["mode"]="BEST"});Check(book["prices"][0]["marketData"]["NoMDEntries"] is JArray,"independent price query/model");
                 action("refer");action("unrefer");action("refer");action("delete");

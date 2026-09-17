@@ -32,9 +32,9 @@ async function login(user) {
     const client = { transport, quotes: new QuoteClient(transport), prices: new PriceClient(transport), notifications: new NotificationClient(transport) };
     clients.push(client);
     await transport.connect(user, 'trader1');
-    await client.quotes.initialize({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], limit: 50 });
-    await client.prices.initialize({ mode: 'FULL', limit: 20 });
-    await client.notifications.initialize({ limit: 50 });
+    await client.quotes.initialize({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], pageSize: 50 });
+    await client.prices.initialize({ mode: 'FULL', pageSize: 20 });
+    await client.notifications.initialize({ pageSize: 50 });
     check(`${user}: authenticated and opened separate domain views`, !client.quotes.stale && !client.prices.stale && !client.notifications.stale);
     return client;
 }
@@ -71,14 +71,41 @@ try {
     await first.notifications.markRead(notification.notificationId);
     await waitFor('read status arrives by notification push', () => Boolean(first.notifications.records.get(notification.notificationId)?.readTime));
     check('market shows multiple securities', first.prices.ids.includes('250001.IB') && first.prices.ids.includes('250002.IB'));
-    await first.prices.open({ mode: 'FULL', limit: 20, filter: { conditions: [{ field: 'securityId', operator: 'EQ', value: '250001.IB' }] } });
+    await first.prices.open({ mode: 'FULL', pageSize: 20, filter: { conditions: [{ field: 'securityId', operator: 'EQ', value: '250001.IB' }] } });
     check('server filter selects one security', first.prices.ids.length === 1 && first.prices.ids[0] === '250001.IB');
-    await first.prices.open({ mode: 'FULL', limit: 20 });
+    await first.prices.open({ mode: 'FULL', pageSize: 20 });
     check('clearing filter restores multiple securities', first.prices.ids.includes('250002.IB'));
     await first.quotes.action('refer', first.quotes.records.get(firstId));
     await waitFor('refer removes market entry for both users', () => !containsPrice(first, firstId) && !containsPrice(second, firstId) && first.quotes.records.get(firstId)?.status === 'REFERRED');
     await first.quotes.action('unrefer', first.quotes.records.get(firstId));
     await waitFor('unrefer restores same quote ID', () => containsPrice(first, firstId) && first.quotes.records.get(firstId)?.status === 'ACTIVE');
+    for (const view of [first.quotes, first.prices, first.notifications]) {
+        const originalQuery = { ...view.query };
+        await view.open({ ...originalQuery, pageSize: 1 });
+        const firstIds = [...view.ids];
+        const total = view.totalCount;
+        await view.queryPage(2);
+        check(`${view.domain}: second page returns one batch, not a prefix`, view.pageNumber === 2
+            && view.ids.length === Math.min(1, Math.max(0, total - 1))
+            && !view.ids.some(id => firstIds.includes(id)));
+        await view.queryPage(2147483647);
+        check(`${view.domain}: out-of-range page is empty without integer overflow`, view.ids.length === 0 && view.totalCount === total);
+        await assert.rejects(view.call('view.query', { viewId: view.viewId, pageNumber: 0, pageSize: 1 }), /1001/);
+        await assert.rejects(view.call('view.query', { viewId: view.viewId, pageNumber: 1, pageSize: 1001 }), /1008/);
+        await view.open(originalQuery);
+    }
+    const urgentFilter = { conditions: [{ field: 'urgent', operator: 'EQ', value: true }] };
+    await first.quotes.open({ ownerScope: 'MINE', status: ['ACTIVE'], pageSize: 2, filter: urgentFilter });
+    await first.prices.open({ mode: 'BEST', pageSize: 2, filter: urgentFilter });
+    for (const urgent of [true, false]) {
+        const quote = (await first.quotes.call('get', { quoteId: firstId })).quote;
+        const result = await first.quotes.call('update', { quotes: [{ quoteId: firstId, expectedRevision: quote.revision, urgent }] });
+        check(`update urgent=${urgent} succeeds`, result.results[0].Code === '0000');
+        await waitFor(`quote enters/leaves matching scope: ${urgent}`, () => first.quotes.ids.includes(firstId) === urgent);
+        await waitFor(`price enters/leaves matching scope: ${urgent}`, () => containsPrice(first, firstId) === urgent);
+    }
+    await first.quotes.open({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], pageSize: 50 });
+    await first.prices.open({ mode: 'FULL', pageSize: 20 });
     check('all six views remain synchronized', clients.every(client => [client.quotes, client.prices, client.notifications].every(view => !view.stale)));
     report.passed = true;
 } catch (error) {
@@ -90,7 +117,7 @@ try {
     for (const item of report.createdQuoteIds) {
         const client = clients[item.user === 'trader1' ? 0 : 1];
         try {
-            if (client.quotes.stale) await client.quotes.open();
+            await client.quotes.open({ ownerScope: 'MINE', status: ['PENDING_CONFIRM', 'ACTIVE', 'REFERRED'], pageSize: 50 });
             let quote = client.quotes.records.get(item.quoteId);
             if (quote?.status === 'ACTIVE') {
                 await client.quotes.action('refer', quote);

@@ -25,8 +25,8 @@ namespace Ficc.SalesTrading {
                 string[] keys={"watchlistEnabled","filterGroupEnabled","counterQuoteEnabled","myBestEnabled"};
                 var all=new JObject();foreach(string k in keys)all[k]=true;Pref(mine,all);Check(true,"notification preferences saved through independent service");
                 string topic=(string)Call(mine,"stream.open",new JObject())["pushTopic"];var pushes=new ConcurrentQueue<JObject>();mine.Message+=(t,m)=>{if(t==topic&&pushes.Count<64)pushes.Enqueue(m);};mine.Subscribe(topic,false);
-                string view="NV-"+Guid.NewGuid().ToString("N");Check(Call(mine,"view.open",new JObject{["viewId"]=view,["limit"]=20})["notifications"] is JArray,"notification view returns initial query records");
-                Check((int)Call(mine,"view.extend",new JObject{["viewId"]=view,["limit"]=21})["view"]["limit"]==21,"notification scrolling extension");
+                string view="NV-"+Guid.NewGuid().ToString("N");Check(Call(mine,"view.open",new JObject{["viewId"]=view,["pageSize"]=20})["notifications"] is JArray,"notification view returns initial query records");
+                Check((int)Call(mine,"view.query",new JObject{["viewId"]=view,["pageNumber"]=1,["pageSize"]=21})["view"]["pageSize"]==21,"notification page query");
                 var watch=mine.Data("ficc.watchlist.save",new JObject{["name"]="提醒测试关注组",["market"]="RATE",["scope"]="MARKET",["securities"]=new JArray(new JObject{["securityId"]="250002.IB"})})["watchlist"];
                 var filter=mine.Data("ficc.filterGroup.save",new JObject{["name"]="提醒测试筛选组",["market"]="RATE",["scope"]="MARKET",["subgroups"]=new JArray(new JObject{["conditions"]=new JArray(new JObject{["field"]="securityId",["operator"]="EQ",["value"]="250002.IB"})})})["filterGroup"];
                 string bid=Create(mine,"1","2.5000","1");

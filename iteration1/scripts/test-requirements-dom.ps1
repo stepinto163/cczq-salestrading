@@ -1,8 +1,11 @@
+param([switch]$ScrollOnly)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $testPath = Join-Path $taskRoot 'web-client/tests/requirements-dom.mjs'
 $nodePath = (Get-Command node).Source
-$process = Start-Process -FilePath $nodePath -ArgumentList "--max-old-space-size=160 `"$testPath`"" -WorkingDirectory $taskRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/requirements-dom.log" -RedirectStandardError "$taskRoot/runtime/requirements-dom.err"
+$testArguments = "--max-old-space-size=160 `"$testPath`""
+if ($ScrollOnly) { $testArguments += ' --scroll-only' }
+$process = Start-Process -FilePath $nodePath -ArgumentList $testArguments -WorkingDirectory $taskRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/requirements-dom.log" -RedirectStandardError "$taskRoot/runtime/requirements-dom.err"
 $processHandle = $process.Handle
 if (-not $process.WaitForExit(35000)) {
     Stop-Process -Id $process.Id -Force

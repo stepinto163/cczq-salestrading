@@ -20,7 +20,7 @@ final class NotificationService {
     BiConsumer<String,JSONObject> publish=(t,m)->{};
     String quoteEpoch,priceStream;long quoteSequence,priceSequence,lastSequence;boolean ready;
     static class NotifyStream {String user,sid,id;long sequence;Map<String,NotifyView> views=new LinkedHashMap<>();Set<String> used=new HashSet<>();}
-    static class NotifyView {String id;JSONObject request;int limit;List<String> ids=new ArrayList<>();Map<String,JSONObject> loaded=new LinkedHashMap<>();}
+    static class NotifyView {String id;JSONObject request;final ViewPage page = new ViewPage();List<String> ids=new ArrayList<>();Map<String,JSONObject> loaded=new LinkedHashMap<>();}
     record Page(String user,String sid,String topic,String field,List<JSONObject> rows,int offset,int limit,long expires,JSONObject extra){}
     NotificationService(JdbcStore store) throws Exception {
         this(store, new ReferenceData(), new AccessPolicy(new Properties()));
@@ -164,7 +164,7 @@ final class NotificationService {
                 case "query"->page(user,sid,topic,"notifications",select(user,request),request,JsonUtils.object());
                 case "stream.open"->{NotifyStream s=stream(user,sid);yield JsonUtils.object("sessionId",sid,"streamId",s.id,"pushTopic","ficc.notification.report."+sid);}
                 case "view.open"->openView(user,sid,request);
-                case "view.extend"->extendView(user,sid,request);
+                case "view.query"->queryViewPage(user,sid,request);
                 case "view.close"->{NotifyStream s=stream(user,sid);String id=RequestValidator.requireString(request,"viewId");s.views.remove(id);yield JsonUtils.object("viewId",id,"closed",true);}
                 case "filterGroup.query"->JsonUtils.object("filterGroups",groups.values().stream().filter(g->user.equals(g.getString("userId"))).toList());
                 case "filterGroup.save","filterGroup.delete"->saveGroup(user,topic,request,op.endsWith("delete"));
@@ -289,21 +289,85 @@ final class NotificationService {
 
     NotifyStream stream(String user,String sid){return streams.computeIfAbsent(sid,k->{NotifyStream s=new NotifyStream();s.user=user;s.sid=sid;s.id=IdGenerator.newId("NE-");return s;});}
     int limit(JSONObject r){int n=r.getIntValue("limit",200);if(n<1||n>1000)throw ApiException.forField("1008","RESOURCE_LIMIT","limit must be 1..1000",null);return n;}
-    Object openView(String user,String sid,JSONObject r){RequestValidator.allowOnlyFields(r,"requestId","viewId","readState","filter","limit");NotifyStream s=stream(user,sid);String id=RequestValidator.requireString(r,"viewId");if(s.used.contains(id)||s.views.size()>=20)throw ApiException.forField("1008","RESOURCE_LIMIT","View exists or limit reached",null);NotifyView v=new NotifyView();v.id=id;v.request=JsonUtils.deepCopy(r);v.limit=limit(r);refresh(s,v);s.used.add(id);s.views.put(id,v);return viewResult(s,v);}
-    Object extendView(String user,String sid,JSONObject r){NotifyStream s=stream(user,sid);NotifyView v=s.views.get(RequestValidator.requireString(r,"viewId"));if(v==null)throw ApiException.forField("1002","NOT_FOUND","View not found",null);int n=limit(r);if(n<=v.limit)throw ApiException.forField("1001","VALIDATION_FAILED","limit must increase",null);v.limit=n;refresh(s,v);return viewResult(s,v);}
-    void refresh(NotifyStream s,NotifyView v){v.loaded=new LinkedHashMap<>();for(JSONObject n:select(s.user,v.request).stream().limit(v.limit).toList())v.loaded.put(n.getString("notificationId"),n);v.ids=new ArrayList<>(v.loaded.keySet());}
-    JSONObject viewResult(NotifyStream s,NotifyView v){return JsonUtils.object("streamId",s.id,"sequence",Long.toString(s.sequence),"view",JsonUtils.object("viewId",v.id,"limit",v.limit,"totalCount",select(s.user,v.request).size(),"ids",v.ids),"notifications",new ArrayList<>(v.loaded.values()));}
-    void pushViews(JSONObject preference){for(NotifyStream s:streams.values()){
-        JSONArray views=new JSONArray();Map<String,JSONObject> changed=new LinkedHashMap<>();
-        for(NotifyView v:s.views.values())try{
-            List<String> old=v.ids;Map<String,JSONObject> prev=v.loaded;refresh(s,v);List<String> removed=old.stream().filter(id->!v.loaded.containsKey(id)).toList();List<String> working=new ArrayList<>(old);working.removeAll(removed);JSONArray place=new JSONArray();
-            for(int i=0;i<v.ids.size();i++){String id=v.ids.get(i);if(i>=working.size()||!id.equals(working.get(i))){working.remove(id);working.add(i,id);place.add(JsonUtils.object("id",id,"index",i));}if(!JsonUtils.canonicalHash(v.loaded.get(id)).equals(JsonUtils.canonicalHash(prev.get(id))))changed.put(id,v.loaded.get(id));}
-            views.add(JsonUtils.object("viewId",v.id,"totalCount",select(s.user,v.request).size(),"removeIds",removed,"place",place));
-        }catch(ApiException e){publish.accept("ficc.notification.report."+s.sid,JsonUtils.object("Code","1007","kind","RESET_REQUIRED","streamId",s.id,"sequence",Long.toString(++s.sequence)));}
-        if(views.isEmpty()&&(preference==null||!s.user.equals(preference.getString("userId"))))continue;
-        JSONObject out=JsonUtils.object("Code","0000","Msg","成功","kind","UPDATE","streamId",s.id,"sequence",Long.toString(++s.sequence),"notifications",new ArrayList<>(changed.values()),"views",views);
-        if(preference!=null&&s.user.equals(preference.getString("userId")))out.put("preference",preference);publish.accept("ficc.notification.report."+s.sid,out);
-    }}
+    Object openView(String user, String sid, JSONObject request) {
+        RequestValidator.allowOnlyFields(request, "requestId", "viewId", "readState", "filter", "pageSize");
+        NotifyStream stream = stream(user, sid);
+        String id = RequestValidator.requireString(request, "viewId");
+        if (stream.used.contains(id) || stream.views.size() >= 20) {
+            throw ApiException.forField("1008", "RESOURCE_LIMIT", "View exists or limit reached", null);
+        }
+        NotifyView view = new NotifyView();
+        view.id = id;
+        view.request = JsonUtils.deepCopy(request);
+        view.page.configure(request, true);
+        refresh(stream, view);
+        stream.used.add(id);
+        stream.views.put(id, view);
+        return viewResult(stream, view);
+    }
+
+    Object queryViewPage(String user, String sid, JSONObject request) {
+        RequestValidator.allowOnlyFields(request, "requestId", "viewId", "pageNumber", "pageSize");
+        NotifyStream stream = stream(user, sid);
+        NotifyView view = stream.views.get(RequestValidator.requireString(request, "viewId"));
+        if (view == null) {
+            throw ApiException.forField("1002", "NOT_FOUND", "View not found", null);
+        }
+        view.page.configure(request, false);
+        refresh(stream, view);
+        return viewResult(stream, view);
+    }
+
+    void refresh(NotifyStream stream, NotifyView view) {
+        List<JSONObject> rows = select(stream.user, view.request);
+        view.page.initialize(rows, "notificationId");
+        view.loaded = new LinkedHashMap<>();
+        for (JSONObject row : view.page.rows(rows)) {
+            view.loaded.put(row.getString("notificationId"), row);
+        }
+        view.ids = new ArrayList<>(view.loaded.keySet());
+    }
+
+    JSONObject viewResult(NotifyStream stream, NotifyView view) {
+        return JsonUtils.object("streamId", stream.id, "sequence", Long.toString(stream.sequence),
+                "view", JsonUtils.object("viewId", view.id, "pageNumber", view.page.pageNumber,
+                        "pageSize", view.page.pageSize, "totalCount", select(stream.user, view.request).size(),
+                        "ids", new ArrayList<>(view.ids)), "notifications", new ArrayList<>(view.loaded.values()));
+    }
+
+    void pushViews(JSONObject preference) {
+        for (NotifyStream stream : streams.values()) {
+            JSONArray views = new JSONArray();
+            Map<String, JSONObject> changedRows = new LinkedHashMap<>();
+            for (NotifyView view : stream.views.values()) {
+                try {
+                    JSONObject delta = view.page.changes(view.id, select(stream.user, view.request),
+                            "notificationId", changedRows);
+                    view.loaded.clear();
+                    view.ids.clear();
+                    if (!delta.getJSONArray("upsertIds").isEmpty()
+                            || !delta.getJSONArray("removeIds").isEmpty()) {
+                        views.add(delta);
+                    }
+                } catch (ApiException error) {
+                    publish.accept("ficc.notification.report." + stream.sid,
+                            JsonUtils.object("Code", "1007", "kind", "RESET_REQUIRED",
+                                    "streamId", stream.id, "sequence", Long.toString(++stream.sequence)));
+                }
+            }
+            boolean ownPreference = preference != null && stream.user.equals(preference.getString("userId"));
+            if (views.isEmpty() && !ownPreference) {
+                continue;
+            }
+            JSONObject message = JsonUtils.object("Code", "0000", "Msg", "Success", "kind", "UPDATE",
+                    "streamId", stream.id, "sequence", Long.toString(++stream.sequence),
+                    "notifications", new ArrayList<>(changedRows.values()), "views", views);
+            if (ownPreference) {
+                message.put("preference", preference);
+            }
+            publish.accept("ficc.notification.report." + stream.sid, message);
+        }
+    }
     synchronized void heartbeat(){for(NotifyStream s:streams.values())publish.accept("ficc.notification.report."+s.sid,JsonUtils.object("Code","0000","kind","HEARTBEAT","streamId",s.id,"sequence",Long.toString(++s.sequence)));}
     Object page(String user,String sid,String topic,String field,List<JSONObject> rows,JSONObject r,JSONObject extra){return pageResult(new Page(user,sid,topic,field,rows.stream().map(JsonUtils::deepCopy).toList(),0,limit(r),System.currentTimeMillis()+120000,extra));}
     Object pageResult(Page p){int end=Math.min(p.rows.size(),p.offset+p.limit);JSONObject result=JsonUtils.deepCopy(p.extra);result.put(p.field,p.rows.subList(p.offset,end));String cursor=null;if(end<p.rows.size()){pages.entrySet().removeIf(e->e.getValue().expires<System.currentTimeMillis());if(pages.size()>=64)throw ApiException.forField("1008","RESOURCE_LIMIT","Too many cursors",null);cursor=IdGenerator.newId("NC-");pages.put(cursor,new Page(p.user,p.sid,p.topic,p.field,p.rows,end,p.limit,p.expires,p.extra));}result.put("nextCursor",cursor);result.put("totalCount",p.rows.size());if(p.topic.endsWith("state.query"))finishState(result);return result;}

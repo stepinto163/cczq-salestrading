@@ -1,6 +1,7 @@
+param([string]$ExecutablePath)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
-$executable = Join-Path $taskRoot 'runtime/scroll-client/Ficc.SalesTradingClient.exe'
+$executable = if ($ExecutablePath) { (Resolve-Path -LiteralPath $ExecutablePath).Path } else { Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe' }
 $resultFile = Join-Path $taskRoot 'runtime/scrolling-smoke.json'
 $process = Start-Process -FilePath $executable -ArgumentList "--autotest-scroll `"$resultFile`"" -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/scrolling-smoke.log" -RedirectStandardError "$taskRoot/runtime/scrolling-smoke.err"
 $processHandle = $process.Handle

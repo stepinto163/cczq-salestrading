@@ -232,16 +232,17 @@
       "filter": {
         "conditions": []
       },
-      "limit": 200
+      "pageSize": 200
     }
   },
   {
     "serverName": "QuoteSvr",
-    "topic": "ficc.quote.view.extend",
-    "description": "滚动扩大已加载范围",
+    "topic": "ficc.quote.view.query",
+    "description": "Query one page; reuse the view filter and subscription",
     "request": {
       "viewId": "${viewId}",
-      "limit": 400
+      "pageNumber": 2,
+      "pageSize": 200
     }
   },
   {
@@ -348,16 +349,17 @@
         "filterGroupIds": []
       },
       "mode": "BEST",
-      "limit": 200
+      "pageSize": 200
     }
   },
   {
     "serverName": "QuoteSvr",
-    "topic": "ficc.price.view.extend",
-    "description": "滚动扩大行情加载范围",
+    "topic": "ficc.price.view.query",
+    "description": "Query one page; reuse the view filter and subscription",
     "request": {
       "viewId": "${viewId}",
-      "limit": 400
+      "pageNumber": 2,
+      "pageSize": 200
     }
   },
   {
@@ -389,16 +391,17 @@
       "filter": {
         "conditions": []
       },
-      "limit": 200
+      "pageSize": 200
     }
   },
   {
     "serverName": "NotificationSvr",
-    "topic": "ficc.notification.view.extend",
-    "description": "滚动扩大已加载范围",
+    "topic": "ficc.notification.view.query",
+    "description": "Query one page; reuse the view filter and subscription",
     "request": {
       "viewId": "${viewId}",
-      "limit": 400
+      "pageNumber": 2,
+      "pageSize": 200
     }
   },
   {
@@ -581,7 +584,9 @@
     "description": "CRM：按机构ID批量读取（字符串ID，返回missingIds）",
     "request": {
       "kind": "INSTITUTION",
-      "ids": ["${institutionId}"]
+      "ids": [
+        "${institutionId}"
+      ]
     }
   },
   {
@@ -590,7 +595,9 @@
     "description": "CRM：按联系人ID批量读取（返回当前所属institutionIds）",
     "request": {
       "kind": "CONTACT",
-      "ids": ["${contactId}"]
+      "ids": [
+        "${contactId}"
+      ]
     }
   },
   {
@@ -598,12 +605,14 @@
     "topic": "ficc.quote.confirm",
     "description": "CRM：匹配机构和联系人后确认报价（写操作，先核对变量）",
     "request": {
-      "quotes": [{
-        "quoteId": "${quoteId}",
-        "expectedRevision": "${revision}",
-        "institutionId": "${institutionId}",
-        "contactId": "${contactId}"
-      }]
+      "quotes": [
+        {
+          "quoteId": "${quoteId}",
+          "expectedRevision": "${revision}",
+          "institutionId": "${institutionId}",
+          "contactId": "${contactId}"
+        }
+      ]
     }
   },
   {

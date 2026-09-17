@@ -48,7 +48,7 @@ final class QuoteService {
         for(String d:List.of("quote","price")){
             handlers.put("ficc."+d+".stream.open",c->views.openStream(c,d));
             handlers.put("ficc."+d+".view.open",c->views.openView(c,d));
-            handlers.put("ficc."+d+".view.extend",c->views.extend(c,d));
+            handlers.put("ficc."+d+".view.query",c->views.queryPage(c,d));
             handlers.put("ficc."+d+".view.close",c->views.close(c,d));
         }
         for(String kind:List.of("watchlist","filterGroup")){
