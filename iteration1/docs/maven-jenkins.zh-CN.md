@@ -9,7 +9,8 @@
 | `cczq-app-salestrading-common` | 共享业务库 JAR |
 | `cczq-app-salestrading-quotesvr` | QuoteSvr JAR、部署 ZIP |
 | `cczq-app-salestrading-notificationsvr` | NotificationSvr JAR、部署 ZIP |
-| `gateway` | `cczq-app-salestrading-gw` 扩展 JAR、包含既有 GW 的部署 ZIP |
+
+标准网关使用 `GW/` 分发包，不参与 Maven reactor。
 
 版本当前统一为 `0.1.0-SNAPSHOT`。C# 平台与 API 调试器继续使用 .NET 构建，不属于 Java Maven reactor。
 
@@ -37,7 +38,7 @@ mvn -B -ntp -pl cczq-app-salestrading-quotesvr -am clean verify
 
 当前示例依赖本地构建过的 STC/DPS 兼容版本，部分基础类来自旧产品 JAR。不能直接把原版 Maven 坐标替换进来，也不能依赖某台电脑上的绝对路径。
 
-本轮将现有 **123 个 JAR** 原样登记为 `cczq.salestrading.compat` 下的普通 Maven 依赖，版本含 SHA-256 摘要。清单见 [foundation-artifacts.json](../build/foundation-artifacts.json)。[stc-foundation-runtime.pom.xml](../build/stc-foundation-runtime.pom.xml) 按已验证的顺序声明 122 个服务基础依赖；GW 额外先加载其自身兼容 JAR。每个导入 JAR 使用明确的 POM，不继承其内嵌旧 POM 的额外依赖。
+本轮将现有 **122 个 JAR** 原样登记为 `cczq.salestrading.compat` 下的普通 Maven 依赖，版本含 SHA-256 摘要。清单见 [foundation-artifacts.json](../build/foundation-artifacts.json)。[stc-foundation-runtime.pom.xml](../build/stc-foundation-runtime.pom.xml) 按已验证的顺序声明 122 个服务基础依赖；标准 GW 使用自身 javalib，不使用这套兼容依赖。每个导入 JAR 使用明确的 POM，不继承其内嵌旧 POM 的额外依赖。
 
 这是一份冻结的兼容依赖集合，保留了当前运行环境中旧库与补丁库的覆盖关系。本轮没有清理全部旧依赖，也没有把所有 STC 原始仓库改成新的 Maven 工程。后续基础库正式发布后，再单独收敛依赖及坐标。源代码及补丁记录见 [基础库兼容说明](foundation-compatibility.zh-CN.md)。
 

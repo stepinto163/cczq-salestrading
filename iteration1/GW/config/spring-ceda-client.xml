@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+
+    <bean id="proxy" class="com.gateway.invoke.ceda.CedaProxy"
+        init-method="init">
+        <!-- 本部署仅接入销售交易 DPS，不启用 MCP/API-key 入口。 -->
+        <property name="topicManager" ref="topicManager" />
+        <property name="notifyProxy" ref="notify" />
+        <property name="tcpConnector" ref="tcpConnector" />
+        <property name="SessionService" value="LoginSvr" />
+        <property name="RequestService" value="LoginSvr,QuoteSvr,NotificationSvr" />
+        <property name="Subscribes">
+            <map>
+                <entry key="LoginSvr" value="SYS.ATS.LOGIN" />
+                <entry key="QuoteSvr" value="ficc.quote.report.**|ficc.price.report.**" />
+                <entry key="NotificationSvr" value="ficc.notification.report.**" />
+            </map>
+        </property>
+<!--        <property name="nodeFilePath" value="./config/nodes/"/>-->
+<!--        <property name="proxyNodes" value="" />-->
+<!--        <property name="usePublicNode" value="False" />-->
+    </bean>
+</beans>

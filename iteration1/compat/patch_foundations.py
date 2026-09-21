@@ -87,17 +87,6 @@ public interface IMessageByte {
         edit('sc/app/stc/net/NetClientWrapper.java',lambda text:replace_once(text,
             'cedaClientWrapper.requestAsync(serverName, message, messageListener);',
             'cedaClientWrapper.requestAsyn(serverName, message, messageListener);'))
-    if stage=='gw':
-        # Both revisions encode identical {topic,content} envelopes; only Java return type differs.
-        for relative in ('com/gateway/invoke/ceda/CedaApi.java','com/gateway/notify/NotifyProxy.java'):
-            def notify_map(text):
-                text=text.replace('import com.gateway.connector.tcp.body.NotifyBody;','')
-                text=text.replace('com.gateway.connector.tcp.body.NotifyBody notifyBody','java.util.Map<String,String> notifyBody')
-                text=text.replace('NotifyBody notifyBody','java.util.Map<String,String> notifyBody')
-                text=text.replace('notifyBody.getContent()', 'notifyBody.get("content")')
-                text=text.replace('notifyBody.content', 'notifyBody.get("content")')
-                return text
-            edit(relative,notify_map)
     diffs=[]
     for relative,(before,after) in edits.items():
         diffs.extend(difflib.unified_diff(before.splitlines(True),after.splitlines(True),fromfile='a/src/main/java/'+relative,tofile='b/src/main/java/'+relative))

@@ -1,8 +1,13 @@
+param([switch]$StandardGw)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $testPath = Join-Path $taskRoot 'web-client/tests/integration.mjs'
 $nodePath = (Get-Command node).Source
-$process = Start-Process -FilePath $nodePath -ArgumentList "--max-old-space-size=128 `"$testPath`"" -WorkingDirectory $taskRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/web-functional.log" -RedirectStandardError "$taskRoot/runtime/web-functional.err"
+$testArguments = "--max-old-space-size=128 `"$testPath`""
+if ($StandardGw) {
+    $testArguments += ' --standard-gw'
+}
+$process = Start-Process -FilePath $nodePath -ArgumentList $testArguments -WorkingDirectory $taskRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/web-functional.log" -RedirectStandardError "$taskRoot/runtime/web-functional.err"
 $processHandle = $process.Handle
 # External watchdog: two clients, two quotes, no load generation.
 if (-not $process.WaitForExit(75000)) {

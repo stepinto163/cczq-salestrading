@@ -28,7 +28,7 @@ Java 模块现已提供 [Maven 父 POM](pom.xml) 和 [Jenkinsfile](Jenkinsfile)�
 | [cczq-app-salestrading-quotesvr](cczq-app-salestrading-quotesvr/README.zh-CN.md) | 报价生命周期、查询、行情；独立 Handler/Stream/control | `ficc.quote` |
 | [cczq-app-salestrading-notificationsvr](cczq-app-salestrading-notificationsvr/README.zh-CN.md) | 提醒规则、查询、偏好、已读；独立 Handler/Stream/control | `ficc.notification` |
 
-两个业务服务分别依赖 common，不互相加载对方的业务 JAR。每个模块的产物为 `target/<模块名>.jar`；启动脚本显式组装各自的 classpath。此次调整项目目录和产物名，既有 `ficc.*` DPS topic、`QuoteSvr`/`NotificationSvr` 路由名及数据库保持兼容。`gateway/` 是复用的 STC GW，继续作为外部接入进程。
+两个业务服务分别依赖 common，不互相加载对方的业务 JAR。每个模块的产物为 `target/<模块名>.jar`；启动脚本显式组装各自的 classpath。此次调整项目目录和产物名，既有 `ficc.*` DPS topic、`QuoteSvr`/`NotificationSvr` 路由名及数据库保持兼容。`GW/` 使用标准 STC GW 分发包，不包含 FICC 自定义类，不参与 Maven 构建。
 
 ```text
 cczq-app-salestrading-quotesvr/

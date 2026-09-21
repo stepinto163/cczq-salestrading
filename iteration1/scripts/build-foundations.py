@@ -41,6 +41,8 @@ def main():
                 ('com.alibaba.csp','sentinel-core','1.8.0')]:
         public_jar(*dep)
     stage=sys.argv[1] if len(sys.argv)>1 else 'dps-api-java'
+    if stage == 'gw':
+        raise ValueError('Use the standard GW distribution; gateway compilation is not supported')
     original=REPOS/stage/'src/main/java'
     src=BUILD/stage/'src'
     # Prevent obsolete source/classes surviving a branch switch. Delete only generated paths.
@@ -67,7 +69,7 @@ def main():
         content=path.read_text(encoding='utf-8').replace('dbPool.init(dbpoolDefault);','dbPool.init(dbpoolDefault, dbpoolCfg);')
         path.write_text(content,encoding='utf-8')
     out=BUILD/stage/'classes';out.mkdir(parents=True,exist_ok=True)
-    jars=sorted((p for p in LIB.glob('*.jar') if p.name not in {stage+'-local.jar','gw-local.jar'}),key=lambda p: (0 if p.name.endswith('-local.jar') or p.name.startswith(('druid-1.2','hutool-all-5','xstream-1.4','javax.annotation-api-')) else 1,p.name))
+    jars=sorted((p for p in LIB.glob('*.jar') if p.name not in {stage+'-local.jar'}),key=lambda p: (0 if p.name.endswith('-local.jar') or p.name.startswith(('druid-1.2','hutool-all-5','xstream-1.4','javax.annotation-api-')) else 1,p.name))
     cp=';'.join(str(p) for p in jars)
     sources=list(src.rglob('*.java'))
     if stage=='sc-app-stc':

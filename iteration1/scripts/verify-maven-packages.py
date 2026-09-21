@@ -15,27 +15,22 @@ def digest(data):
 def main():
     manifest = json.loads((ROOT / "build/foundation-artifacts.json").read_text(encoding="utf-8"))
     artifacts = manifest["artifacts"]
-    foundation = [artifact for artifact in artifacts if artifact["file"] != "gw-local.jar"]
-    gateway = next(artifact for artifact in artifacts if artifact["file"] == "gw-local.jar")
+    foundation = artifacts
     reports = []
     for module, artifact_id, main_class in [
         ("cczq-app-salestrading-quotesvr", "cczq-app-salestrading-quotesvr", "ficc.quote.Main"),
         ("cczq-app-salestrading-notificationsvr", "cczq-app-salestrading-notificationsvr",
          "ficc.notification.NotificationMain"),
-        ("gateway", "cczq-app-salestrading-gw", "GW"),
     ]:
         target = ROOT / module / "target-maven"
         packages = list(target.glob("*-dist.zip"))
         assert len(packages) == 1, "Expected one package: " + module
         expected = {}
-        if module == "gateway":
-            runtime = [gateway] + foundation
-        else:
-            common_jars = list((ROOT / "cczq-app-salestrading-common/target-maven").glob("*.jar"))
-            assert len(common_jars) == 1
-            common = common_jars[0]
-            expected["lib/" + common.name] = digest(common.read_bytes())
-            runtime = foundation
+        common_jars = list((ROOT / "cczq-app-salestrading-common/target-maven").glob("*.jar"))
+        assert len(common_jars) == 1
+        common = common_jars[0]
+        expected["lib/" + common.name] = digest(common.read_bytes())
+        runtime = foundation
         for artifact in runtime:
             filename = artifact["artifactId"] + "-" + artifact["version"] + ".jar"
             expected["lib/" + filename] = artifact["sha256"]
@@ -55,14 +50,9 @@ def main():
                 attributes = dict(line.split(": ", 1) for line in text.splitlines() if ": " in line)
                 assert attributes["Main-Class"] == main_class
                 assert attributes["Class-Path"].split() == list(expected), "Classpath order changed"
-                if module != "gateway":
-                    assert main_class.replace(".", "/") + ".class" in executable.namelist()
+                assert main_class.replace(".", "/") + ".class" in executable.namelist()
             for filename, checksum in expected.items():
                 assert digest(package.read(root + filename)) == checksum, "Changed JAR: " + filename
-            if module == "gateway":
-                gateway_name = "lib/" + gateway["artifactId"] + "-" + gateway["version"] + ".jar"
-                with zipfile.ZipFile(io.BytesIO(package.read(root + gateway_name))) as library:
-                    assert "GW.class" in library.namelist()
         reports.append({"module": module, "result": "PASS", "runtimeJars": len(expected)})
     report = {"result": "PASS", "packages": reports, "servicesStarted": 0, "quotesCreated": 0}
     report_path = ROOT / "runtime/maven-package-check.json"

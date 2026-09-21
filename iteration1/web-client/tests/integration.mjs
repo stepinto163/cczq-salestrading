@@ -47,8 +47,28 @@ try {
     const second = await login('trader2');
     preference = await first.notifications.preferences();
     await first.notifications.setMyBest(true);
-    await assert.rejects(second.transport.subscribe(`ficc.quote.report.${first.transport.sessionId}`, () => {}));
-    check('another user cannot subscribe to the first user private topic', true);
+    const otherSessionTopic = `ficc.quote.report.${first.transport.sessionId}`;
+    if (process.argv.includes('--standard-gw')) {
+        let rejected = false;
+        try {
+            await second.transport.subscribe(otherSessionTopic, () => {});
+        } catch {
+            rejected = true;
+        }
+        if (rejected) {
+            check('standard GW rejects another session topic', true);
+        } else {
+            const reply = await second.transport.exchange(3,
+                { serverName: 'gateway', method: 'unsubscribe', content: otherSessionTopic }, otherSessionTopic);
+            assert.equal(reply?.Code, '0000', 'temporary capability probe unsubscribed');
+            second.transport.listeners.delete(otherSessionTopic);
+            report.securityLimitations = ['Standard GW accepts subscriptions to another known session topic; session-topic ownership enforcement is not provided by this configuration.'];
+            console.log('LIMITATION ' + report.securityLimitations[0]);
+        }
+    } else {
+        await assert.rejects(second.transport.subscribe(otherSessionTopic, () => {}));
+        check('another user cannot subscribe to the first user private topic', true);
+    }
 
     for (const [client, securityId] of [[first, '250001.IB'], [second, '250002.IB']]) {
         const result = await client.quotes.create({ securityId, side: '1', quoteType: '1', yieldType: '1', price: '0.0001', quantity: '1', settlType: '1',

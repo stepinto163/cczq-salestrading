@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
@@ -39,8 +40,19 @@ namespace Ficc.SalesTrading {
             return refill && pageNumber == 1;
         }
 
-        static DateTimeOffset Time(JObject row) {
-            return DateTimeOffset.TryParse((string)row["updateTime"], out DateTimeOffset value)
+        private static DateTimeOffset Time(JObject row)
+        {
+            JToken timestamp = row["updateTime"];
+            if (timestamp is JValue date && timestamp.Type == JTokenType.Date)
+            {
+                if (date.Value is DateTimeOffset offset)
+                {
+                    return offset;
+                }
+                return new DateTimeOffset((DateTime)date.Value);
+            }
+            return DateTimeOffset.TryParse((string)timestamp, CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out DateTimeOffset value)
                 ? value : DateTimeOffset.MinValue;
         }
     }

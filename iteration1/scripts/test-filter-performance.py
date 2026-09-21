@@ -234,8 +234,8 @@ def main():
         quote_directory = directory / "quotesvr"
         gateway_directory = directory / "gateway"
         shutil.copytree(ROOT / "cczq-app-salestrading-quotesvr/control", quote_directory / "control")
-        shutil.copytree(ROOT / "gateway/control", gateway_directory / "control")
-        shutil.copytree(ROOT / "gateway/config", gateway_directory / "config")
+        shutil.copytree(ROOT / "GW/control", gateway_directory / "control")
+        shutil.copytree(ROOT / "GW/config", gateway_directory / "config")
         for service_directory in (quote_directory, gateway_directory):
             config = properties(service_directory / "control/ATSConfig.ini")
             config = {key: value for key, value in config.items() if not key.startswith("REGISTER.")}
@@ -257,22 +257,18 @@ def main():
         values = properties(resource)
         values["quote.properties"] = database_file.as_posix()
         write_properties(resource, values)
-        spring = gateway_directory / "config/spring-config.xml"
-        content = spring.read_text(encoding="utf-8").replace('value="18600"', 'value="18700"')
-        content = content.replace('value="18601"', 'value="18701"')
-        content = content.replace("LoginSvr,QuoteSvr,NotificationSvr", "LoginSvr,QuoteSvr")
-        content = content.replace('<entry key="NotificationSvr" value="ficc.notification.report.**"/>', "")
-        content = content.replace('class="com.gateway.invoke.ceda.CedaProxy"',
-                                  'class="ficc.gateway.MeasuredCedaProxy"')
-        content = content.replace('class="com.gateway.connector.tcp.TcpConnector"',
-                                  'class="ficc.gateway.MeasuredTcpConnector"')
-        spring.write_text(content, encoding="utf-8")
+        for spring in (gateway_directory / "config").glob("*.xml"):
+            content = spring.read_text(encoding="utf-8").replace('value="18600"', 'value="18700"')
+            content = content.replace('value="18601"', 'value="18701"')
+            content = content.replace("LoginSvr,QuoteSvr,NotificationSvr", "LoginSvr,QuoteSvr")
+            content = content.replace('<entry key="NotificationSvr" value="ficc.notification.report.**" />', "")
+            spring.write_text(content, encoding="utf-8")
         foundation = subprocess.check_output([
             "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
             str(ROOT / "scripts/foundation-classpath.ps1")], text=True, timeout=10).strip()
         quote_jar = ROOT / "cczq-app-salestrading-quotesvr/target-maven/cczq-app-salestrading-quotesvr-0.1.0-SNAPSHOT.jar"
         common_jar = ROOT / "cczq-app-salestrading-common/target-maven/cczq-app-salestrading-common-0.1.0-SNAPSHOT.jar"
-        gateway_jar = ROOT / "gateway/target-maven/cczq-app-salestrading-gw-0.1.0-SNAPSHOT.jar"
+        gateway_jar = ROOT / "GW/javalib/gw-0.1.1-SNAPSHOT.jar"
         if not all(path.is_file() for path in (quote_jar, common_jar, gateway_jar)):
             raise RuntimeError("Run the Maven build first")
         summary["build"] = build_metadata([quote_jar, common_jar, gateway_jar, arguments.client.resolve()])
@@ -287,8 +283,7 @@ def main():
         gateway_process = watchdog.start("gateway", [
             java, "-Xms32m", "-Xmx160m", "-XX:ActiveProcessorCount=2", "-Dfile.encoding=UTF-8",
             "-Dficc.performance.trace=" + str(not arguments.functional_smoke).lower(),
-            "-cp", str(gateway_jar) + ";" + str(ROOT / "runtime/foundation-build/lib/gw-local.jar")
-            + ";" + foundation, "GW"], gateway_directory, dict(os.environ, ATS_ROOT=str(gateway_directory)))
+            "-cp", str(ROOT / "GW/javalib/*"), "GW"], gateway_directory, dict(os.environ, ATS_ROOT=str(gateway_directory)))
         start = time.monotonic()
         while True:
             watchdog.health()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -35,6 +36,8 @@ namespace Ficc.FrontendLearning
             Width = 150
         };
         private JObject displayedQuote;
+        private readonly List<Button> quoteActionButtons = new List<Button>();
+        private readonly Label quoteState = new Label { AutoSize = true, Padding = new Padding(0, 6, 0, 0) };
         private bool busy;
         private bool connected;
         private JObject customFilter;
@@ -43,6 +46,12 @@ namespace Ficc.FrontendLearning
         [STAThread]
         public static void Main(string[] args)
         {
+            if (args.Contains("--lifecycle-check"))
+            {
+                Application.EnableVisualStyles();
+                Environment.ExitCode = LifecycleCheck.Run();
+                return;
+            }
             if (args.Contains("--filter-picker-check"))
             {
                 Application.EnableVisualStyles();
@@ -116,8 +125,11 @@ namespace Ficc.FrontendLearning
             foreach (var item in new[] { "confirm:确认", "update:修改收益率", "refer:撤销", "unrefer:恢复", "delete:删除" })
             {
                 var parts = item.Split(':');
-                Button(actions, parts[1], () => OperateQuote(parts[0]));
+                quoteActionButtons.Add(Button(actions, parts[1], () => OperateQuote(parts[0])));
             }
+            actions.Controls.Add(quoteState);
+            quoteId.TextChanged += (sender, args) => RefreshQuoteActions();
+            RefreshQuoteActions();
             Button(actions, "变更历史", async () => WriteLog((await api.History(quoteId.Text)).ToString()));
             Add(actions, "搜索名称", search, "机构ID", institutionId, "联系人ID", contactId);
             Button(actions, "搜索机构", async () => WriteLog((await api.SearchInstitutions(search.Text)).ToString()));
@@ -182,9 +194,14 @@ namespace Ficc.FrontendLearning
             grid.Columns.Add("security", "债券");
             grid.Columns.Add("status", "状态/类型");
             grid.Columns.Add("time", "更新时间");
+            foreach (DataGridViewColumn column in grid.Columns)
+            {
+                // 视图固定按更新时间倒序；不能叠加 DataGridView 的列头排序。
+                column.SortMode = DataGridViewColumnSortMode.NotSortable;
+            }
             grid.CellDoubleClick += async (sender, args) =>
             {
-                if (args.RowIndex < 0) return;
+                if (busy || args.RowIndex < 0) return;
                 var row = (JObject)grid.Rows[args.RowIndex].Tag;
                 WriteLog(row.ToString());
                 if (row["notificationId"] != null) notificationId.Text = (string)row["notificationId"];
@@ -237,14 +254,47 @@ namespace Ficc.FrontendLearning
 
         private async Task ReadQuote()
         {
-            displayedQuote = await api.Get(quoteId.Text);
+            string requestedQuoteId = quoteId.Text.Trim();
+            if (requestedQuoteId.Length == 0)
+            {
+                throw new InvalidOperationException("请填写报价ID，或双击报价列表中的一条报价。");
+            }
+            var loadedQuote = await api.Get(requestedQuoteId);
+            if (quoteId.Text.Trim() != requestedQuoteId)
+            {
+                WriteLog("读取期间报价ID已改变，本次结果未应用。请读取当前报价ID。");
+                return;
+            }
+            if ((string)loadedQuote?["quoteId"] != requestedQuoteId || loadedQuote["revision"] == null)
+            {
+                throw new InvalidOperationException("读取结果缺少匹配的报价ID或revision，不能执行报价操作。");
+            }
+            displayedQuote = loadedQuote;
             price.Text = (string)displayedQuote["price"];
             WriteLog(displayedQuote.ToString());
+            RefreshQuoteActions();
+        }
+
+        private void RefreshQuoteActions()
+        {
+            string enteredQuoteId = quoteId.Text.Trim();
+            bool quoteLoaded = enteredQuoteId.Length > 0
+                && (string)displayedQuote?["quoteId"] == enteredQuoteId
+                && displayedQuote["revision"] != null;
+            foreach (var button in quoteActionButtons)
+            {
+                button.Enabled = connected && !busy && quoteLoaded;
+            }
+            quoteState.Text = enteredQuoteId.Length == 0
+                ? "请创建报价，或输入报价ID后读取报价/版本"
+                : quoteLoaded
+                    ? "已读取报价，版本：" + (string)displayedQuote["revision"]
+                    : "请先点击“读取报价/版本”，再执行操作";
         }
 
         private async Task OperateQuote(string operation)
         {
-            if ((string)displayedQuote?["quoteId"] != quoteId.Text)
+            if ((string)displayedQuote?["quoteId"] != quoteId.Text.Trim())
                 throw new InvalidOperationException("报价ID已改变，请先读取报价。");
             var fields = new JObject();
             if (operation == "update") fields["price"] = price.Text;
@@ -274,20 +324,26 @@ namespace Ficc.FrontendLearning
         {
             if (busy) return;
             busy = true;
+            RefreshQuoteActions();
             try
             {
                 if (needsLogin && !connected) throw new InvalidOperationException("请先登录。");
                 await action();
             }
             catch (Exception error) { WriteLog("ERROR " + error); }
-            finally { busy = false; }
+            finally
+            {
+                busy = false;
+                RefreshQuoteActions();
+            }
         }
 
-        private void Button(FlowLayoutPanel panel, string text, Func<Task> action, bool needsLogin = true)
+        private Button Button(FlowLayoutPanel panel, string text, Func<Task> action, bool needsLogin = true)
         {
             var button = new Button { Text = text, AutoSize = true };
             button.Click += async (sender, args) => await Run(action, needsLogin);
             panel.Controls.Add(button);
+            return button;
         }
 
         private void OnUi(Action action)

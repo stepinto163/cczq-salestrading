@@ -30,7 +30,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart
 powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart-all.ps1 -WhatIf
 ```
 
-脚本复用现有start/stop脚本及当前control、properties配置，不切换STC／模拟模式，不修改数据库或重建数据，不重编业务服务。GW启动脚本仍会编译已有网关扩展。适用于现有本机构建目录；Maven产物尚未部署到该目录、仅在IntelliJ启动的远程QA环境不能直接视为同一部署。API调试器不自动重开。失败时停止后续启动并指出日志位置，已启动的服务保留供排查。
+脚本复用现有start/stop脚本及当前control、properties配置，不切换STC／模拟模式，不修改数据库或重建数据，不重编业务服务。GW启动脚本使用 `iteration1/GW` 中的标准运行库，不编译任何网关或扩展代码，详见 [标准GW配置](../GW/README.zh-CN.md)。适用于现有本机构建目录；Maven产物尚未部署到该目录、仅在IntelliJ启动的远程QA环境不能直接视为同一部署。API调试器不自动重开。失败时停止后续启动并指出日志位置，已启动的服务保留供排查。
 
 ### 分步启动
 

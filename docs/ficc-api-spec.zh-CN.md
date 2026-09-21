@@ -69,7 +69,7 @@ BaseApi.unSubscribeWithImage("SERVER.QuoteSvr", "QuoteSvr", pricePushTopic, pric
 
 用户身份从GW/DPS上下文中的SID解析，再通过STC身份适配取得userid。客户端请求不能自行声明operatorUserId；普通创建的ownerUserId取当前用户。登录账号和密码由用户输入，服务间同步不配置业务用户密码。STC的DefaultUser快捷登录可能返回成功但没有有效SID，不能用于这些业务接口；应使用已注册业务账号。内部同步的独立信任边界见H55／H56。
 
-当前实现中，stream.open返回的sessionId及私有topic后缀使用当前GW/DPS登录SID；客户端直接使用返回的pushTopic，不自行拼接。GW只允许订阅当前SID的quote.report、price.report、notification.report三个精确topic，拒绝他人topic、通配订阅和内部频道。DPS底层支持通配符，不等于当前GW授权允许使用。重新登录后应按新SID重新建立订阅。
+当前实现中，stream.open返回的sessionId及私有topic后缀使用当前GW/DPS登录SID；客户端直接使用返回的pushTopic，不自行拼接。当前已切换为无自定义类的标准GW，保留登录及服务端业务权限检查，但网关不校验订阅topic与当前SID的归属；不得将topic带SID视为已实现权限隔离。该限制与内部频道的网关访问控制需由标准网关或服务端统一完善，详见标准GW说明。重新登录后应按新SID重新建立订阅。
 
 | Code | error.type | 含义及调用方行为 |
 | --- | --- | --- |
@@ -4008,7 +4008,7 @@ handler.PriceFeedSnapshotHandler.class=ficc.quote.handler.PriceFeedSnapshotHandl
 - [QuoteService](../iteration1/cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/QuoteService.java)、[ViewService](../iteration1/cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/ViewService.java)：请求、会话流、view及序号。
 - [PostgresCrmClient](../iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/PostgresCrmClient.java)：CRM匹配字段、关联及offset分页。
 - [NotificationResource](../iteration1/cczq-app-salestrading-notificationsvr/src/main/java/ficc/notification/NotificationResource.java)、[QuoteSvrClient](../iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/QuoteSvrClient.java)：服务间订阅与恢复。
-- [FiccSecurityCheck](../iteration1/gateway/src/ficc/gateway/FiccSecurityCheck.java)：GW私有topic授权与内部接口拦截。
+- [标准GW配置与权限边界](../iteration1/GW/README.zh-CN.md)：标准网关接入，不包含FICC自定义类。
 
 既有STC设计依据：
 

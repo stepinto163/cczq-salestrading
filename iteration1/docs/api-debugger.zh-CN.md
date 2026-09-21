@@ -60,9 +60,9 @@ API 调试器在 **订阅 / 发布** 的订阅、退订按钮旁提供 **显示 
 
 DPS 的 TopicUtils 支持按点分段的 `*` 和 `**` 匹配；例如 `ficc.price.report.*`、`ficc.price.book.**`。债券代码 `250001.IB` 含点，因此不能用一个 `*` 代表整个 securityId。QuoteSvr 内部行情快照代码明确支持 `ficc.price.book.**`。
 
-但当前项目的 `FiccSecurityCheck` 仅放行本会话的三种精确 report 地址，通配地址与内部地址均返回 `1003`，包括内部账户经此 GW 订阅的情况。因此：**底层支持通配，但当前调试器连接的 FICC GW 不允许用户使用通配订阅**。本轮不调整访问权限。输入框保留手工输入能力，连接其他 GW 时以该 GW 的策略为准。
+当前使用标准 GW，不再包含自定义会话主题检查。底层通配订阅能力由标准 GW 提供；本配置不验证订阅主题后缀与当前 sessionId 的归属。用户应使用 stream.open 返回的 pushTopic，生产会话隔离仍需标准网关/服务端统一实现，详见 `GW/README.zh-CN.md`。
 
-依据：`dps-api-java/.../utils/TopicUtils.java`、QuoteSvr `ViewService.java`、NotificationSvr `NotificationService.java`、`gateway/src/ficc/gateway/FiccSecurityCheck.java`。
+依据：`dps-api-java/.../utils/TopicUtils.java`、QuoteSvr `ViewService.java`、NotificationSvr `NotificationService.java`；标准 GW 的权限能力以 `GW/README.zh-CN.md` 为准。
 
 ## 日志及构建
 

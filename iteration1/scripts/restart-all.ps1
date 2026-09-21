@@ -93,13 +93,13 @@ foreach ($requiredPath in @(
     (Join-Path $taskRoot 'cczq-app-salestrading-quotesvr/target/cczq-app-salestrading-quotesvr.jar'),
     (Join-Path $taskRoot 'cczq-app-salestrading-notificationsvr/target/cczq-app-salestrading-notificationsvr.jar'),
     (Join-Path $taskRoot 'cczq-app-salestrading-common/target/cczq-app-salestrading-common.jar'),
-    (Join-Path $taskRoot 'runtime/foundation-build/lib/gw-local.jar')
+    (Join-Path $taskRoot 'GW/javalib/gw-0.1.1-SNAPSHOT.jar')
 )) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Required file missing: $requiredPath. Build/setup this deployment first."
     }
 }
-foreach ($command in @('java', 'javac', 'node')) {
+foreach ($command in @('java', 'node')) {
     Get-Command $command -ErrorAction Stop | Out-Null
 }
 
