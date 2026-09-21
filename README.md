@@ -15,6 +15,7 @@
 | [iteration1/client](iteration1/client) | C# WinForms 平台与有界功能自动测试 |
 | [iteration1/web-client](iteration1/web-client/README.zh-CN.md) | Web 联调平台首轮：GW 登录、报价生命周期、行情与提醒 |
 | [iteration1/api-debugger](iteration1/api-debugger) | DPS 请求与订阅调试工具 |
+| [examples/csharp-frontend](examples/csharp-frontend/README.zh-CN.md) | 自包含 C# 学习示例：报价生命周期、完整条件编辑、订阅与分页；附可运行 bin 目录 |
 | [iteration1/sql](iteration1/sql) | PostgreSQL 初始化及旧 schema 迁移脚本 |
 
 QuoteSvr 与 NotificationSvr 共用 PostgreSQL 的 `ficc_salestrading` schema。默认使用模拟数据；登录、基础数据可切换至真实 STC 服务，CRM 支持空实现及外部适配 JAR。配置与联调边界见 [STC / CRM 适配指南](iteration1/docs/stc-adapters.zh-CN.md)。
