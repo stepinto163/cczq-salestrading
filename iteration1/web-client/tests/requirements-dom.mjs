@@ -8,6 +8,7 @@ import { GwClient } from '../src/gw-client.js';
 import { QuoteClient, PriceClient, NotificationClient } from '../src/business-clients.js';
 import * as mapping from '../src/requirements-model.js';
 import { CrmClient } from '../src/crm-client.js';
+import { installFilterEditor } from '../src/filter-editor.js';
 
 const root = new URL('../', import.meta.url);
 const html = await readFile(new URL('index.html', root), 'utf8');
@@ -42,7 +43,11 @@ class ExactSecurityGwClient extends GwClient {
         return super.request(server, topic, payload);
     }
 }
-Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient: ExactSecurityGwClient, QuoteClient: TrackedQuoteClient, PriceClient, NotificationClient, CrmClient, ...mapping });
+Object.assign(dom.window, { fetch, Response, TextEncoder, TextDecoder, GwClient: ExactSecurityGwClient, QuoteClient: TrackedQuoteClient, PriceClient, NotificationClient, CrmClient,
+    installFilterEditor: (panel, fields, apply, error) => {
+        // The production module uses the browser document; tests provide the same DOM explicitly.
+        return installFilterEditor(panel, fields, apply, error);
+    }, ...mapping });
 let createdId;
 let failed;
 const watchdog = setTimeout(() => {
@@ -70,13 +75,55 @@ try {
     }
     dom.window.document.getElementById('loginUser').value = 'trader1';
     dom.window.document.getElementById('loginPass').value = 'trader1';
+    const originalFilterPanel = dom.window.document.getElementById('filters-merged-mgmt');
+    const originalFilterNodes = [...originalFilterPanel.querySelectorAll('.filter-section,.filter-group,.filter-tag,input,select')];
     await dom.window.doLogin();
     check('original login uses GW', dom.window.document.getElementById('app').style.display === 'flex');
     check('login does not depend on a broad bond search', !securityRequests.some(request => request.topic === 'ficc.base.query'));
     check('original quote tables and right panel exist', Boolean(dom.window.document.getElementById('quoteTableWrap') && dom.window.document.getElementById('instQuoteBody')));
+    check('product filters include liquidity, credit, clauses and region',
+        ['liquidityGrade', 'issuerRating', 'optionType', 'region', 'couponRate', 'bidPrice'].every(field =>
+            dom.window.document.querySelector(`#filters-merged-mgmt [data-ficc-filter-field="${field}"]`)));
+    check('original product filter layout and controls are preserved',
+        originalFilterNodes.every(node => originalFilterPanel.contains(node))
+        && !originalFilterPanel.querySelector('form'));
+    const excludedLabels = new Set(['关注债券', '筛选分组']);
+    for (const panelId of ['filters-credit', 'filters-rate', 'filters-merged', 'filters-merged-mgmt']) {
+        const panel = dom.window.document.getElementById(panelId);
+        const missing = [...panel.querySelectorAll('.filter-group,.filter-grid-item')]
+            .filter(group => !excludedLabels.has(group.querySelector('.filter-label')?.textContent.trim())
+                && !group.dataset.ficcFilterField);
+        check(panelId + ': every attribute control has an API field', missing.length === 0);
+    }
     check('quote, price and notification paging controls are attached',
         dom.window.document.querySelectorAll('.ficc-view-navigation').length === 7);
     const quoteClient = quoteClients[0];
+    const filterPanel = dom.window.document.getElementById('filters-merged-mgmt');
+    const issuerInput = filterPanel.querySelector('[data-ficc-filter-field="issuerName"] input');
+    issuerInput.value = 'filter-functional-no-match';
+    await filterPanel.ficcFilterBinding.submit();
+    check('product filter submits conditions to the quote view',
+        quoteClient.query.filter.conditions.some(condition => condition.field === 'issuerName'
+            && condition.value === 'filter-functional-no-match') && quoteClient.ids.length === 0);
+    issuerInput.value = '';
+    await filterPanel.ficcFilterBinding.submit();
+    const liquidityTag = filterPanel.querySelector('[data-ficc-filter-field="liquidityGrade"] .filter-tag');
+    liquidityTag.click();
+    await filterPanel.ficcFilterBinding.pending;
+    await waitFor('original liquidity tag sends its selected condition through DPS', () =>
+        quoteClient.query.filter.conditions.some(condition => condition.field === 'liquidityGrade'
+            && condition.value === liquidityTag.textContent.trim()));
+    const priceInputs = filterPanel.querySelectorAll('[data-ficc-filter-field="bidPrice"] input');
+    priceInputs[0].value = '2.0';
+    priceInputs[1].value = '3.0';
+    await filterPanel.ficcFilterBinding.submit();
+    check('original price range combines with the selected liquidity condition',
+        quoteClient.query.filter.conditions.some(condition => condition.field === 'bidPrice'
+            && condition.operator === 'BETWEEN' && condition.value.join(',') === '2,3')
+        && quoteClient.query.filter.conditions.some(condition => condition.field === 'liquidityGrade'));
+    filterPanel.querySelector('[data-filter-clear]').click();
+    await filterPanel.ficcFilterBinding.pending;
+    await waitFor('original clear button resets the server filter', () => quoteClient.query.filter.conditions.length === 0);
     const queryPage = quoteClient.queryPage.bind(quoteClient);
     const resumeLive = quoteClient.resumeLive.bind(quoteClient);
     quoteClient.beginBrowsing();

@@ -159,7 +159,7 @@ clone是复制输入生成新Quote，不是恢复旧ID。confirm可在同一条�
 | quoteType | 1收益率，2净价，3全价 |
 | yieldType | 1到期，2行权；quoteType不为1时必须为null |
 | quantityUnit / currency | WAN（万单位面值）／CNY |
-| settlType | 当前实现仅支持1=T+0、2=T+1；明+0／明+1及远期留待扩展 |
+| settlType | 按 STC SettlTypeEnum：1=T+0、2=T+1、3=T+2、4=T+3、5=T+4、9=T+5、10=T+6，之后至16=T+12；非远期为1/2，远期为其余上述代码。明+0／明+1尚无独立输入语义 |
 | source.type（本稿建议） | MANUAL、QT、IDEAL；source含externalQuoteId、externalRevision和sourceTime |
 
 价格和数量使用十进制字符串；收益率为百分数且输入最多4位小数，超过直接拒绝。时间用带时区ISO 8601，日期YYYY-MM-DD。当前确认／恢复有效报价时，securityId、side、quoteType、price、quantity、tradeDate、settlType必填，收益率报价还需yieldType；quantity必须大于0。CalSvr换算及其他精度规则仍待完善。未知正式报价类型不能静默转成收益率。
@@ -188,7 +188,7 @@ QuoteHistory为eventId、quoteId、revision、action、operatorUserId、operatio
 | MDEntryDate / MDEntryTime | 报价updateTime在业务时区拆为yyyyMMdd和HH:mm:ss.SSS |
 | MDPriceLevel | STC兼容输出仍用每侧条目顺序号；不同价格档先在服务端算完，再按depth截取全部成员 |
 
-mode=BEST取各侧第一价格档；DEPTH需depth正整数；FULL不按档数截断。先过滤再分档，不按quote条数截断同价档。无清算条件时混合T+0/T+1/远期；具体远期输入字典不在本稿臆造。
+mode=BEST取各侧第一价格档；DEPTH需depth正整数；FULL不按档数截断。先过滤再分档，不按quote条数截断同价档。无清算条件时混合T+0/T+1/远期；具体清算代码见第3节字典及运行时dictionary.query。
 
 最优排行所需计算值尚未就绪时，price.query/view.open返回1009，不默默使用错误排序。对价提醒需要无价格依赖的同券反向报价关系，QuoteSvr内部事件流仍提供完整有效Quote成员；不能因价格计算未完成漏掉它们。计算异常处理的最终业务口径仍列入评审项。
 
@@ -1081,6 +1081,8 @@ securityIds必填，最多100券；mode必填BEST/DEPTH/FULL；DEPTH必须有dep
 服务：`QuoteSvr`；topic：`ficc.quote.dictionary.query`；handler：`QuoteDictionaryQueryHandler.handle`。
 
 names可选，缺省返回本版全部业务字典；此接口返回Quote字典及filterFields，Price使用ficc.price.dictionary.query。当前字段目录来自共享FilterEngine，不调用尚未实现的SearchSvr。以下字典应答仅展示dictionaries，完整返回还包含filterFields；字段scope及operators以实际接口为准。
+
+2026-09-21：字段目录扩充为79项，覆盖报价、债券、流动性、信用、条款和区域；增加字符串CONTAINS与数组型属性匹配。目录增加label/group/examples/includesSimulatedData，客户端不应硬编码旧字段白名单。完整字段、单位、模拟数据开关及组合示例见[完整属性筛选接口](product-filter-contract.zh-CN.md)。查询、历史筛选与订阅采用同一条件语义；未知属性不会自动视为“否”或“其他”。
 
 请求：
 

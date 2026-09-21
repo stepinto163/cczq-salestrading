@@ -15,6 +15,18 @@ public final class StcBaseMapper {
 
     public StcBaseMapper(Properties configuration) {
         this.configuration = configuration;
+        for (String key : configuration.stringPropertyNames()) {
+            if (!key.startsWith("base.filter.") || key.equals("base.filter.simulateMissing")) continue;
+            String field = key.substring("base.filter.".length());
+            if (!ficc.common.FilterFields.DEFINITIONS.containsKey(field)
+                    || !configuration.getProperty(key).matches("(bond|issuer|valuation)\\.[A-Za-z0-9_]+")) {
+                throw new IllegalArgumentException("Invalid reference filter mapping: " + key);
+            }
+        }
+        String simulateMissing = configuration.getProperty("base.filter.simulateMissing", "false");
+        if (!Set.of("true", "false").contains(simulateMissing)) {
+            throw new IllegalArgumentException("base.filter.simulateMissing must be true or false");
+        }
     }
 
     public JSONObject security(String securityId, JSONObject bond, JSONObject issuer, JSONObject valuation, String version) {
@@ -39,7 +51,7 @@ public final class StcBaseMapper {
             throw new IllegalArgumentException("Unmapped STC Option_Type: " + option);
         }
         String issuerType = configuration.getProperty("base.issuerType." + text(issuer, "issuer_type"));
-        return JsonUtils.object(
+        JSONObject result = JsonUtils.object(
                 "securityId", securityId, "securityName", text(bond, "Short_Name"), "market", market,
                 "bondSubtype", text(bond, "Bond_Subtype"), "stcGoodsType", goodsType,
                 "issuerId", text(bond, "Issuer_Code"), "issuerType", issuerType,
@@ -50,7 +62,54 @@ public final class StcBaseMapper {
                 "optionType", option, "maturityDate", date(text(bond, "Maturity_Date")),
                 "referenceVersion", version, "dataVendor", "SUMSCOPE",
                 "valuationYield", text(valuation, "valuation_yield"),
-                "valuationDate", date(text(valuation, "valuation_date")));
+                "valuationDate", date(text(valuation, "valuation_date")),
+                "valuationBasis", switch (String.valueOf(text(valuation, "bondTypeFlag"))) {
+                    case "1" -> "EXERCISE";
+                    case "2" -> "MATURITY";
+                    default -> null;
+                });
+        result.putAll(JsonUtils.object(
+                "issuerName", text(issuer, "issuer_name"), "listedMarket", text(bond, "Listed_Market"),
+                "city", text(issuer, "city"), "regionCode", text(issuer, "province_code"),
+                "industry", text(issuer, "sw_sector"), "ownershipType", text(issuer, "org_type"),
+                "couponRate", text(bond, "Coupon_Rate_Current"), "couponType", text(bond, "Coupon_Type"),
+                "couponFrequency", text(bond, "Coupon_Frequency"),
+                "valuationCleanPrice", text(valuation, "valuation_net_price"),
+                "rateIndex", text(bond, "FRN_Index_ID"), "issueYear", text(bond, "Issue_Year"),
+                "isMunicipal", flag(text(bond, "Is_Municipal")),
+                "isMortgage", flag(text(bond, "Is_Mortgage")),
+                "isCrossMarket", flag(text(bond, "Is_Cross_Mkt"))));
+        // Explicit vendor mappings allow additional fields without changing business filtering.
+        // Example: base.filter.liquidityGrade=bond.<verified vendor column>
+        for (String field : ficc.common.FilterFields.DEFINITIONS.keySet()) {
+            String mapping = configuration.getProperty("base.filter." + field);
+            if (mapping == null) continue;
+            String[] parts = mapping.split("\\.", 2);
+            if (parts.length != 2) throw new IllegalArgumentException("Invalid base.filter mapping: " + field);
+            JSONObject source = switch (parts[0]) {
+                case "bond" -> bond;
+                case "issuer" -> issuer;
+                case "valuation" -> valuation;
+                default -> throw new IllegalArgumentException("Unknown base.filter source: " + field);
+            };
+            Object value = source == null ? null : source.get(parts[1]);
+            if (ficc.common.FilterFields.BOOLEANS.contains(field)) value = flag(value == null ? null : value.toString());
+            result.put(field, value);
+        }
+        BondFilterAttributes.normalize(result);
+        if (Boolean.parseBoolean(configuration.getProperty("base.filter.simulateMissing", "false"))) {
+            ficc.common.FilterSampleData.fillMissing(result);
+        }
+        return result;
+    }
+
+    private static Boolean flag(String value) {
+        if (value == null || value.isBlank()) return null;
+        return switch (value.toUpperCase(java.util.Locale.ROOT)) {
+            case "Y", "YES", "TRUE", "1" -> true;
+            case "N", "NO", "FALSE", "0" -> false;
+            default -> null;
+        };
     }
 
     public static String securityId(JSONObject bond) {

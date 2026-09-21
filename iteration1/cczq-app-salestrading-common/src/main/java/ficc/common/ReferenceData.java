@@ -32,6 +32,28 @@ public final class ReferenceData implements AutoCloseable {
         return base.version();
     }
 
+    public com.alibaba.fastjson2.JSONArray filterCatalog() {
+        com.alibaba.fastjson2.JSONArray fields = FilterFields.catalog();
+        for (Object item : fields) {
+            JSONObject field = (JSONObject)item;
+            String name = field.getString("field");
+            java.util.Set<String> values = new java.util.TreeSet<>();
+            boolean simulated = false;
+            for (JSONObject security : securities().values()) {
+                Object value = security.get(name);
+                if (values.size() < 100 && value != null) {
+                    if (value instanceof java.util.Collection<?> list) list.forEach(entry -> values.add(entry.toString()));
+                    else values.add(value.toString());
+                }
+                JSONObject sources = security.getJSONObject("filterDataSources");
+                simulated |= sources != null && "SIMULATOR".equals(sources.getString(name));
+            }
+            field.put("examples", values);
+            field.put("includesSimulatedData", simulated);
+        }
+        return fields;
+    }
+
     public JSONObject require(String id) {
         JSONObject security = base.security(id);
         if (security == null) {
@@ -47,6 +69,32 @@ public final class ReferenceData implements AutoCloseable {
         String securityId = quote.getString("securityId");
         if (securityId != null) {
             result.putAll(require(securityId));
+        }
+        boolean bid = "1".equals(quote.getString("side"));
+        StringBuilder searchText = new StringBuilder();
+        for (String field : List.of("securityId", "securityName", "issuerName", "institutionName", "contactName", "ownerId", "ownerDisplayName")) {
+            if (result.get(field) != null) {
+                searchText.append(result.getString(field)).append(' ');
+            }
+        }
+        result.put("searchText", searchText.toString());
+        result.put(bid ? "bidPrice" : "offerPrice", quote.get("price"));
+        result.put(bid ? "bidQuantity" : "offerQuantity", quote.get("quantity"));
+        // Only compare yields with the same maturity/exercise basis; unknown basis stays absent.
+        if ("1".equals(quote.getString("quoteType")) && result.get("valuationYield") != null
+                && quote.get("price") != null && result.get("valuationBasis") != null
+                && ("2".equals(quote.getString("yieldType"))
+                    ? "EXERCISE".equals(result.getString("valuationBasis"))
+                    : "MATURITY".equals(result.getString("valuationBasis")))) {
+            java.math.BigDecimal spread = quote.getBigDecimal("price")
+                    .subtract(result.getBigDecimal("valuationYield")).multiply(java.math.BigDecimal.valueOf(100));
+            result.put(bid ? "bidValuationSpread" : "offerValuationSpread", bid ? spread : spread.negate());
+        }
+        // Clean-price differences have price units; never mix them into the BP fields.
+        if ("2".equals(quote.getString("quoteType")) && result.get("valuationCleanPrice") != null
+                && quote.get("price") != null) {
+            java.math.BigDecimal spread = quote.getBigDecimal("price").subtract(result.getBigDecimal("valuationCleanPrice"));
+            result.put(bid ? "bidCleanPriceSpread" : "offerCleanPriceSpread", bid ? spread : spread.negate());
         }
         return result;
     }

@@ -1,3 +1,4 @@
+import { installFilterEditor } from './filter-editor.js';
 import { GwClient } from './gw-client.js';
 import { QuoteClient, PriceClient, NotificationClient } from './business-clients.js';
 import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput, historyRow } from './requirements-model.js';
@@ -43,6 +44,8 @@ let historyQueryKey = '';
 let historyCursor = null;
 let historyTotal = 0;
 let historyLoading = false;
+let historyFilter = { conditions: [] };
+const marketFilters = new Map();
 const gateway = new GwClient('ws://127.0.0.1:18601/gateway', {
     onDisconnect: () => doLogout(true)
 });
@@ -365,6 +368,7 @@ doLogin = async function () {
         enterApplication({ username, accountId: login.userId || login.userid, name: username, role: 'trader' });
         element('loginPass').value = '';
         D.marketGroupReadOnly = true;
+        await installProductFilters();
         refreshDisplay();
         showToast('success', '已连接 GW；原界面联调版，每批最多 5 条');
     } catch (error) {
@@ -381,6 +385,8 @@ element('loginBtn').onclick = doLogin;
 
 doLogout = function (expired) {
     quoteDetails.clear();
+    marketFilters.clear();
+    historyFilter = { conditions: [] };
     historyRequestVersion++;
     historyQueryKey = '';
     historyCursor = null;
@@ -580,7 +586,7 @@ async function loadHistory(append = false) {
         showToast('error', '请选择有效日期区间，开始日期不能晚于结束日期');
         return;
     }
-    const queryKey = `${fromDate}/${toDate}`;
+    const queryKey = `${fromDate}/${toDate}/${JSON.stringify(historyFilter)}`;
     if (append && (!historyCursor || historyQueryKey !== queryKey)) return;
     if (append && D.mgmtHistory.length >= 1000) {
         showToast('info', '当前界面最多加载1000条历史记录，请缩小日期范围');
@@ -593,7 +599,7 @@ async function loadHistory(append = false) {
     element('historyMoreBtn').disabled = true;
     element('mgmtHistoryStatusbar').textContent = '正在查询历史报价…';
     try {
-        const request = append ? { cursor: historyCursor } : { fromDate, toDate, limit: 200 };
+        const request = append ? { cursor: historyCursor } : { fromDate, toDate, limit: 200, filter: historyFilter };
         const data = await quoteView.call('history.search', request);
         if (!signedIn || version !== historyRequestVersion) return;
         for (const item of data.rows) {
@@ -779,12 +785,35 @@ element('loginOverlay').classList.remove('hidden');
 element('loginUser').value = 'trader1';
 element('loginPass').value = '';
 window.ficcMessageLog = () => gateway.logs;
-for (const panel of document.querySelectorAll('[id^="filters-"]')) {
-    panel.title = '复杂条件筛选将在后续接入；本轮可使用对价板债券搜索';
-    panel.addEventListener('click', event => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        showToast('info', panel.title);
-    }, true);
-    panel.querySelectorAll('input,select,button').forEach(control => control.disabled = true);
+async function installProductFilters() {
+    const { filterFields } = await quoteView.call('dictionary.query', {});
+    for (const [id, domain, market] of [
+        ['filters-credit', 'price', 'CREDIT'], ['filters-rate', 'price', 'RATE'],
+        ['filters-merged', 'notification', null], ['filters-merged-mgmt', 'quote', null]
+    ]) {
+        const panel = element(id);
+        if (!panel) continue;
+        installFilterEditor(panel, filterFields, async filter => {
+            if (market) {
+                filter.market = market;
+                marketFilters.set(market, filter);
+            }
+            if (domain === 'quote') {
+                historyFilter = filter;
+                historyQueryKey = '';
+            }
+            const view = domain === 'price' ? priceView : domain === 'quote' ? quoteView : notificationView;
+            await view.open({ ...view.query, filter });
+            if (domain === 'quote' && document.querySelector('#st-mgmt-history.active')) await loadHistory();
+            refreshDisplay();
+        }, message => showToast('error', message));
+    }
 }
+
+document.addEventListener('click', event => {
+    const key = event.target.closest('[data-st]')?.dataset.st;
+    if (!signedIn || !['board-credit-all', 'board-credit-best', 'board-rate-all', 'board-rate-best'].includes(key)) return;
+    const market = key.includes('credit') ? 'CREDIT' : 'RATE';
+    const filter = marketFilters.get(market) || { market, conditions: [] };
+    priceView.open({ ...priceView.query, filter }).catch(error => showToast('error', error.message));
+});

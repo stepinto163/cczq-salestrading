@@ -41,6 +41,7 @@ namespace Ficc.SalesTrading {
             AddButton(bar, "上一批", () => QueryPricePage(pricePageNumber - 1));
             AddButton(bar, "下一批", () => QueryPricePage(pricePageNumber + 1));
             AddButton(bar, "返回最新", () => QueryPricePage(1));
+            AddButton(bar, "完整条件", () => EditProductFilter("price"));
             bondGrid.Scroll += async (sender, args) => {
                 if (args.ScrollOrientation == ScrollOrientation.VerticalScroll && !renderingPrices
                     && bondGrid.FirstDisplayedScrollingRowIndex >= 0
@@ -88,7 +89,7 @@ namespace Ficc.SalesTrading {
                     await Request("ficc.price.view.close", new JObject { ["viewId"] = priceViewId });
                 }
                 priceViewId = "PV-" + Guid.NewGuid().ToString("N");
-                var conditions = new JArray();
+                var conditions = (JArray)priceConditions["conditions"].DeepClone();
                 if (priceBond.SelectedIndex > 0) {
                     conditions.Add(new JObject { ["field"] = "securityId", ["operator"] = "EQ", ["value"] = priceBond.Text });
                 }

@@ -42,4 +42,22 @@ final class FilterEngineTest {
     private static JSONObject condition(String field, String operator, Object value) {
         return JsonUtils.object("field", field, "operator", operator, "value", value);
     }
+
+    @Test
+    void supportsCreditClausesLiquidityAndMissingValues() {
+        JSONObject filter = JsonUtils.object("conditions", JsonUtils.array(
+                condition("liquidityGrade", "IN", JsonUtils.array("S", "A")),
+                condition("isSubordinated", "EQ", false),
+                condition("industry", "CONTAINS", "金融"),
+                condition("couponRate", "BETWEEN", JsonUtils.array("2", "4")),
+                condition("hotTags", "IN", JsonUtils.array("绿色债", "城投"))));
+        FilterEngine.validate(filter);
+        JSONObject row = JsonUtils.object("liquidityGrade", "A", "isSubordinated", false,
+                "industry", "银行金融", "couponRate", "3.0000", "hotTags", JsonUtils.array("绿色债"));
+        assertTrue(FilterEngine.match(row, filter));
+        row.remove("isSubordinated");
+        assertFalse(FilterEngine.match(row, filter));
+        assertThrows(ApiException.class, () -> FilterEngine.validate(JsonUtils.object("conditions", JsonUtils.array(
+                condition("couponRate", "BETWEEN", JsonUtils.array("4", "2"))))));
+    }
 }

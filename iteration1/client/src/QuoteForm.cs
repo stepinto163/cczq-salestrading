@@ -158,17 +158,26 @@ namespace Ficc.SalesTrading {
                 return reply;
             });
         }
-        JObject Filter() {
-            if (performanceFilter != null) {
+        JObject Filter()
+        {
+            if (performanceFilter != null)
+            {
                 return (JObject)performanceFilter.DeepClone();
             }
-            var filter = new JObject();
-            if (rating.SelectedIndex > 0) {
-                filter["conditions"] = new JArray(new JObject {
+            var filter = (JObject)quoteConditions.DeepClone();
+            if (rating.SelectedIndex > 0)
+            {
+                var conditions = filter["conditions"] as JArray ?? new JArray();
+                foreach (var condition in conditions.Where(item => (string)item["field"] == "bondRating").ToList())
+                {
+                    condition.Remove();
+                }
+                conditions.Add(new JObject {
                     ["field"] = "bondRating",
                     ["operator"] = "EQ",
                     ["value"] = rating.Text
                 });
+                filter["conditions"] = conditions;
             }
             return filter;
         }

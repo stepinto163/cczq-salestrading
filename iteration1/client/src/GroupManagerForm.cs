@@ -53,7 +53,7 @@ namespace Ficc.SalesTrading {
             else{
                 conditionGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="subgroup",HeaderText="子组序号",Width=75,SortMode=DataGridViewColumnSortMode.NotSortable});
                 conditionGrid.Columns.Add(new DataGridViewComboBoxColumn{Name="field",HeaderText="筛选字段",Width=180,DisplayMember="Value",ValueMember="Key",FlatStyle=FlatStyle.Flat,SortMode=DataGridViewColumnSortMode.NotSortable});
-                conditionGrid.Columns.Add(new DataGridViewComboBoxColumn{Name="operator",HeaderText="条件",Width=140,FlatStyle=FlatStyle.Flat,DisplayMember="Value",ValueMember="Key",DataSource=new[]{Pair("EQ","等于"),Pair("IN","包含任一"),Pair("GT","大于"),Pair("GTE","大于等于"),Pair("LT","小于"),Pair("LTE","小于等于"),Pair("BETWEEN","范围（含边界）"),Pair("EXISTS","是否有值")},SortMode=DataGridViewColumnSortMode.NotSortable});
+                conditionGrid.Columns.Add(new DataGridViewComboBoxColumn{Name="operator",HeaderText="条件",Width=140,FlatStyle=FlatStyle.Flat,DisplayMember="Value",ValueMember="Key",DataSource=new[]{Pair("CONTAINS","\u5305\u542b\u6587\u672c"),Pair("EQ","等于"),Pair("IN","包含任一"),Pair("GT","大于"),Pair("GTE","大于等于"),Pair("LT","小于"),Pair("LTE","小于等于"),Pair("BETWEEN","范围（含边界）"),Pair("EXISTS","是否有值")},SortMode=DataGridViewColumnSortMode.NotSortable});
                 conditionGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="value",HeaderText="条件值",Width=220,SortMode=DataGridViewColumnSortMode.NotSortable});
                 conditionGrid.DataError+=(s,e)=>{e.ThrowException=false;feedback.Text="条件值不在当前字典中，请重新选择。";};
                 conditionGrid.CurrentCellDirtyStateChanged+=(s,e)=>{if(conditionGrid.IsCurrentCellDirty)conditionGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);};
@@ -87,7 +87,7 @@ namespace Ficc.SalesTrading {
         async Task LoadData(){
             var reference=await request("ficc.base.query",new JObject{["kind"]="SECURITY",["limit"]=100});securities.Clear();securities.AddRange(((JArray)reference["records"]).OfType<JObject>());
             var dictionary=await request("ficc.price.dictionary.query",new JObject());fieldCatalog.Clear();foreach(JObject field in (JArray)dictionary["filterFields"])fieldCatalog[(string)field["field"]]=field;
-            if(groupKind=="filterGroup")((DataGridViewComboBoxColumn)conditionGrid.Columns["field"]).DataSource=fieldCatalog.Keys.Select(key=>Pair(key,FieldLabels.TryGetValue(key,out var label)?label:key)).ToArray();
+            if(groupKind=="filterGroup")((DataGridViewComboBoxColumn)conditionGrid.Columns["field"]).DataSource=fieldCatalog.Keys.Select(key=>Pair(key,(string)fieldCatalog[key]["label"] ?? (FieldLabels.TryGetValue(key,out var label)?label:key))).ToArray();
             await RefreshGroups();
         }
         async Task RefreshGroups(string selectId=null){
@@ -150,7 +150,7 @@ namespace Ficc.SalesTrading {
             Func<string,JToken> parse=value=>{
                 value=value.Trim();if(value.Length==0)throw new Exception("条件值不能为空");
                 if(numeric){if(!decimal.TryParse(value,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out var number))throw new Exception("请输入有效数值，使用小数点");return new JValue(number.ToString(CultureInfo.InvariantCulture));}
-                if(new[]{"urgent","recommended","whole","oco","packing"}.Contains(field)){if(!bool.TryParse(value,out bool flag))throw new Exception("标签值请填写 true 或 false");return new JValue(flag);}
+                if(new[]{"urgent","recommended","whole","oco","packing","hasExerciseOption","isMunicipal","isCrossMarket","isMortgage","isPerpetual","isSubordinated"}.Contains(field)){if(!bool.TryParse(value,out bool flag))throw new Exception("标签值请填写 true 或 false");return new JValue(flag);}
                 return new JValue(value);
             };
             if(operation=="IN"||operation=="BETWEEN"){

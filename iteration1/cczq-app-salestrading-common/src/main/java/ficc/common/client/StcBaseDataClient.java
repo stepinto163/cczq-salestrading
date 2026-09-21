@@ -38,6 +38,9 @@ public final class StcBaseDataClient implements BaseDataClient {
     StcBaseDataClient(Source source, Properties configuration) {
         this.source = source;
         mapper = new StcBaseMapper(configuration);
+        if (Boolean.parseBoolean(configuration.getProperty("base.filter.simulateMissing", "false"))) {
+            LOGGER.info("BaseSvr filter fields: missing vendor attributes use SIMULATOR values; filterDataSources marks each field");
+        }
         if (!configuration.getProperty("base.securityIds", "").isBlank()) {
             LOGGER.warn("base.securityIds is obsolete and ignored; STC bond lookup is unrestricted");
         }

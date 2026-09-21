@@ -37,6 +37,7 @@ namespace Ficc.SalesTrading {
             for(int i=0;i<keys.Length;i++){var box=new CheckBox{Text=names[i],AutoSize=true,Checked=true,Padding=new Padding(4)};preferenceChecks.Add(keys[i],box);box.CheckedChanged+=async(s,e)=>{if(!loadingPreference&&notificationPreference!=null)await SaveNotificationPreference();};switches.Controls.Add(box);}
             var controls=Bar();controls.Controls.Add(readFilter);AddButton(controls,"刷新提醒",OpenNotificationView);AddButton(controls,"标为已读",()=>MarkSelectedNotification(true));AddButton(controls,"标为未读",()=>MarkSelectedNotification(false));AddButton(controls,"查看相关报价",ShowNotificationQuotes);AddButton(controls,"关注录入栏债券",SaveReminderWatchlist);AddButton(controls,"添加 AAA 筛选组",SaveReminderFilter);
             AddButton(controls, "上一批", () => QueryNotificationPage(notificationPageNumber - 1));
+            AddButton(controls, "完整条件", () => EditProductFilter("notification"));
             AddButton(controls, "下一批", () => QueryNotificationPage(notificationPageNumber + 1));
             AddButton(controls, "返回最新", () => QueryNotificationPage(1));
             notificationGrid.Scroll += async (sender, args) => {
@@ -82,7 +83,8 @@ namespace Ficc.SalesTrading {
                 JObject reply = await Request("ficc.notification.view.open", new JObject {
                     ["viewId"] = notificationViewId,
                     ["readState"] = new[] { "ALL", "UNREAD", "READ" }[readFilter.SelectedIndex],
-                    ["pageSize"] = NotificationPageSize
+                    ["pageSize"] = NotificationPageSize,
+                    ["filter"] = notificationConditions.DeepClone()
                 });
                 notificationSequence = (long)reply["sequence"];
                 notificationPageNumber = (int)reply["view"]["pageNumber"];

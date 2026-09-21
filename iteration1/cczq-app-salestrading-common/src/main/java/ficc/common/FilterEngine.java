@@ -1,46 +1,117 @@
 package ficc.common;
 
-import com.alibaba.fastjson2.*;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-/** Shared condition implementation; Quote and Price endpoints still have distinct contracts. */
+/** Same-field alternatives are OR; different fields are AND. Ranges use one BETWEEN. */
 public final class FilterEngine {
-    public static final Set<String> FIELDS=Set.of("securityId","securityName","issuerId","issuerType","bondRating","issuerRating","region","remainingYears","side","quoteType","yieldType","price","quantity","settlType","urgent","recommended","whole","oco","packing");
-    public static final Set<String> NUMBERS=Set.of("price","quantity","remainingYears");
-    public static final Set<String> OPS=Set.of("EQ","IN","GT","GTE","LT","LTE","BETWEEN","EXISTS");
-    public static void validate(JSONObject f){
-        if(f==null)return;
-        RequestValidator.allowOnlyFields(f,"market","conditions","watchlistIds","filterGroupIds");
-        if(f.containsKey("market")&&!Set.of("RATE","CREDIT").contains(f.getString("market")))throw ApiException.forField("1001","VALIDATION_FAILED","Invalid market","market");
-        for(JSONObject c:conditions(f)){
-            RequestValidator.allowOnlyFields(c,"field","operator","value","conditionId","displayOrder");
-            String field=RequestValidator.requireString(c,"field"),op=RequestValidator.requireString(c,"operator");
-            if(!FIELDS.contains(field)||!OPS.contains(op))throw ApiException.forField("1001","VALIDATION_FAILED","Unknown filter field/operator",field);
-            Object value=c.get("value");
-            if(!NUMBERS.contains(field)&&!Set.of("EQ","IN","EXISTS").contains(op))throw ApiException.forField("1001","VALIDATION_FAILED","Operator is not supported for this field",field);
-            if(op.equals("EXISTS")&&!(value instanceof Boolean))throw ApiException.forField("1001","VALIDATION_FAILED","EXISTS requires boolean value",field);
-            if((op.equals("IN")||op.equals("BETWEEN"))&&!(value instanceof List<?>))throw ApiException.forField("1001","VALIDATION_FAILED","Array value required",field);
-            if(op.equals("BETWEEN")&&((List<?>)value).size()!=2)throw ApiException.forField("1001","VALIDATION_FAILED","BETWEEN requires two bounds",field);
-            if(NUMBERS.contains(field)&&!op.equals("EXISTS"))try{if(value instanceof List<?> l){for(Object v:l)new BigDecimal(v.toString());}else new BigDecimal(value.toString());}catch(Exception e){throw ApiException.forField("1001","VALIDATION_FAILED","Invalid decimal condition",field);}
+    public static final Set<String> FIELDS = FilterFields.DEFINITIONS.keySet();
+    public static final Set<String> NUMBERS = FilterFields.NUMBERS;
+    public static final Set<String> OPS = Set.of("EQ", "IN", "GT", "GTE", "LT", "LTE", "BETWEEN", "EXISTS", "CONTAINS");
+
+    public static void validate(JSONObject filter) {
+        if (filter == null) return;
+        RequestValidator.allowOnlyFields(filter, "market", "conditions", "watchlistIds", "filterGroupIds");
+        if (filter.containsKey("market") && !Set.of("RATE", "CREDIT").contains(filter.getString("market")))
+            fail("market", "Invalid market");
+        for (JSONObject condition : conditions(filter)) {
+            RequestValidator.allowOnlyFields(condition, "field", "operator", "value", "conditionId", "displayOrder");
+            String field = RequestValidator.requireString(condition, "field");
+            String operator = RequestValidator.requireString(condition, "operator");
+            JSONObject definition = FilterFields.DEFINITIONS.get(field);
+            if (definition == null || !definition.getJSONArray("operators").contains(operator))
+                fail(field, "Unknown field or unsupported operator");
+            Object value = condition.get("value");
+            if (value == null) fail(field, "Filter value required");
+            if (operator.equals("EXISTS") || FilterFields.BOOLEANS.contains(field)) {
+                if (!(value instanceof Boolean)) fail(field, "Boolean value required");
+                continue;
+            }
+            boolean array = operator.equals("IN") || operator.equals("BETWEEN");
+            if (array != (value instanceof List<?>)) fail(field, "Invalid scalar/array filter value");
+            if (array && ((List<?>)value).isEmpty()) fail(field, "Empty filter values");
+            if (operator.equals("BETWEEN") && ((List<?>)value).size() != 2) fail(field, "BETWEEN requires two bounds");
+            List<?> values = array ? (List<?>)value : List.of(value);
+            for (Object item : values) {
+                if (item == null || item.toString().isBlank() || item instanceof Map<?, ?> || item instanceof Collection<?>)
+                    fail(field, "Scalar filter values required");
+                if (NUMBERS.contains(field)) {
+                    try { new BigDecimal(item.toString()); }
+                    catch (NumberFormatException error) { fail(field, "Invalid decimal condition"); }
+                }
+            }
+            if (operator.equals("BETWEEN") && compare(field, values.get(0), values.get(1)) > 0)
+                fail(field, "Range lower bound exceeds upper bound");
         }
     }
-    public static List<JSONObject> conditions(JSONObject f){JSONArray a=f==null?null:f.getJSONArray("conditions");return a==null?List.of():a.toJavaList(JSONObject.class);}
-    public static boolean match(JSONObject row,JSONObject f){
-        if(f==null)return true;
-        if(f.getString("market")!=null&&!Objects.equals(f.getString("market"),row.getString("market")))return false;
-        Map<String,Boolean> groups=new HashMap<>();
-        for(JSONObject c:conditions(f))groups.merge(c.getString("field"),test(row,c),Boolean::logicalOr);
-        return groups.values().stream().allMatch(Boolean::booleanValue);
+
+    private static void fail(String field, String message) {
+        throw ApiException.forField("1001", "VALIDATION_FAILED", message, field);
     }
-    public static boolean test(JSONObject row,JSONObject c){
-        String field=c.getString("field"),op=c.getString("operator");Object got=row.get(field),v=c.get("value");
-        if(op.equals("EXISTS"))return (got!=null)==Boolean.parseBoolean(String.valueOf(v));
-        if(got==null)return op.equals("EQ")&&v==null;
-        if(op.equals("IN"))return ((List<?>)v).stream().anyMatch(x->compare(field,got,x)==0);
-        if(op.equals("BETWEEN")){List<?> l=(List<?>)v;return compare(field,got,l.get(0))>=0&&compare(field,got,l.get(1))<=0;}
-        int cmp=compare(field,got,v);return switch(op){case "EQ"->cmp==0;case "GT"->cmp>0;case "GTE"->cmp>=0;case "LT"->cmp<0;case "LTE"->cmp<=0;default->false;};
+
+    public static List<JSONObject> conditions(JSONObject filter) {
+        JSONArray conditions = filter == null ? null : filter.getJSONArray("conditions");
+        return conditions == null ? List.of() : conditions.toJavaList(JSONObject.class);
     }
-    public static int compare(String field,Object a,Object b){if(b==null)return 1;return NUMBERS.contains(field)?new BigDecimal(a.toString()).compareTo(new BigDecimal(b.toString())):a.toString().compareTo(b.toString());}
-    public static JSONArray catalog(boolean price){JSONArray a=new JSONArray();for(String f:new TreeSet<>(FIELDS))a.add(JsonUtils.object("field",f,"type",NUMBERS.contains(f)?"decimal":"string","operators",NUMBERS.contains(f)?JsonUtils.array("EQ","IN","GT","GTE","LT","LTE","BETWEEN","EXISTS"):JsonUtils.array("EQ","IN","EXISTS"),"scope",Set.of("securityId","securityName","issuerId","issuerType","bondRating","issuerRating","region","remainingYears").contains(f)?"SECURITY":"ENTRY","enabled",true));return a;}
+
+    public static boolean match(JSONObject row, JSONObject filter) {
+        if (filter == null) return true;
+        if (filter.getString("market") != null && !Objects.equals(filter.getString("market"), row.getString("market")))
+            return false;
+        Map<String, Boolean> matches = new HashMap<>();
+        for (JSONObject condition : conditions(filter))
+            matches.merge(condition.getString("field"), test(row, condition), Boolean::logicalOr);
+        return matches.values().stream().allMatch(Boolean::booleanValue);
+    }
+
+    public static boolean test(JSONObject row, JSONObject condition) {
+        String field = condition.getString("field");
+        String operator = condition.getString("operator");
+        Object actual = row.get(field);
+        Object expected = condition.get("value");
+        boolean present = actual != null && !actual.toString().isBlank();
+        if (operator.equals("EXISTS")) return present == Boolean.TRUE.equals(expected);
+        if (!present) return false;
+        if (actual instanceof Collection<?> values)
+            return values.stream().filter(Objects::nonNull).anyMatch(value -> scalarMatch(field, operator, value, expected));
+        return scalarMatch(field, operator, actual, expected);
+    }
+
+    private static boolean scalarMatch(String field, String operator, Object actual, Object expected) {
+        if (operator.equals("CONTAINS"))
+            return actual.toString().toLowerCase(Locale.ROOT).contains(expected.toString().toLowerCase(Locale.ROOT));
+        if (operator.equals("IN"))
+            return ((List<?>)expected).stream().anyMatch(value -> compare(field, actual, value) == 0);
+        if (operator.equals("BETWEEN")) {
+            List<?> range = (List<?>)expected;
+            return compare(field, actual, range.get(0)) >= 0 && compare(field, actual, range.get(1)) <= 0;
+        }
+        int comparison = compare(field, actual, expected);
+        return switch (operator) {
+            case "EQ" -> comparison == 0;
+            case "GT" -> comparison > 0;
+            case "GTE" -> comparison >= 0;
+            case "LT" -> comparison < 0;
+            case "LTE" -> comparison <= 0;
+            default -> false;
+        };
+    }
+
+    public static int compare(String field, Object left, Object right) {
+        return NUMBERS.contains(field)
+                ? new BigDecimal(left.toString()).compareTo(new BigDecimal(right.toString()))
+                : left.toString().compareTo(right.toString());
+    }
+
+    public static JSONArray catalog(boolean price) {
+        return FilterFields.catalog();
+    }
 }

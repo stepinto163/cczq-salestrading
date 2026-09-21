@@ -25,6 +25,7 @@ namespace Ficc.SalesTrading {
         Action<JObject> quotePageMeasured;
 
         void InitializeQuoteScrolling(Control filterBar) {
+            AddButton(filterBar, "完整条件", () => EditProductFilter("quote"));
             grid.Scroll += async (sender, args) => {
                 if (args.ScrollOrientation == ScrollOrientation.VerticalScroll) {
                     await LoadQuotesNearBottom();

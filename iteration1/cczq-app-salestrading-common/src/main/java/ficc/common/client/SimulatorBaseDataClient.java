@@ -16,6 +16,7 @@ public final class SimulatorBaseDataClient implements BaseDataClient {
         add("250002.IB", "示例政策银行债", "RATE", "POLICY_BANK", "AAA", "北京", false);
         add("102500001.IB", "示例企业债", "CREDIT", "CORPORATE", "AA+", "上海", false);
         add("102500002.IB", "示例含权企业债", "CREDIT", "CORPORATE", "AAA", "广东", true);
+        securities.values().forEach(ficc.common.FilterSampleData::fillMissing);
     }
 
     private void add(String id, String name, String market, String issuerType, String rating,
