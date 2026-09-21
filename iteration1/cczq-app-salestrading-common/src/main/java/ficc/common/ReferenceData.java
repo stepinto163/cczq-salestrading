@@ -34,13 +34,23 @@ public final class ReferenceData implements AutoCloseable {
 
     public com.alibaba.fastjson2.JSONArray filterCatalog() {
         com.alibaba.fastjson2.JSONArray fields = FilterFields.catalog();
+        Map<String, JSONObject> currentSecurities = securities();
         for (Object item : fields) {
             JSONObject field = (JSONObject)item;
             String name = field.getString("field");
             java.util.Set<String> values = new java.util.TreeSet<>();
             boolean simulated = false;
-            for (JSONObject security : securities().values()) {
+            for (JSONObject security : currentSecurities.values()) {
                 Object value = security.get(name);
+                if ("city".equals(name) && value != null) {
+                    com.alibaba.fastjson2.JSONArray options = field.getJSONArray("enumValues");
+                    boolean known = options.stream().anyMatch(option ->
+                            value.equals(((JSONObject) option).getString("value")));
+                    if (!known) {
+                        options.add(JsonUtils.object("value", value, "label",
+                                security.getString("cityName") == null ? value : security.getString("cityName")));
+                    }
+                }
                 if (values.size() < 100 && value != null) {
                     if (value instanceof java.util.Collection<?> list) list.forEach(entry -> values.add(entry.toString()));
                     else values.add(value.toString());

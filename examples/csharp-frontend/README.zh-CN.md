@@ -62,7 +62,7 @@ var filter = new JObject
         FilterExamples.Range("price", "2.0000", "3.0000"),
         FilterExamples.AnyOf("bondRating", "AAA", "AA+"),
         FilterExamples.AnyOf("liquidityGrade", "S", "A"),
-        FilterExamples.Condition("region", "CONTAINS", "上海"),
+        FilterExamples.Condition("region", "EQ", "310000"),
         FilterExamples.Condition("isSubordinated", "EQ", false))
 };
 await page.Open("quote", filter);
@@ -89,3 +89,5 @@ await page.Open("quote", filter);
 教学界面一次最多显示 20 行，因此用简单表格重绘突出协议流程；它不包含压力测试、生产级虚拟滚动、自动重连、离线队列或多面板管理。断线后重新启动并登录。所有写操作均需手动点击，不自动创建报价或修改提醒设置。
 
 可选只读验证：设置环境变量 `FICC_USER`、`FICC_PASSWORD`，以及可选 `FICC_HOST`、`FICC_PORT` 后，用 `--check` 参数启动程序。它检查登录、报价的全部筛选样例、行情和提醒的组合条件，以及订阅、查询、关闭流程，每次最多查询一条；结果写入程序目录的 `connection-check.txt`。检查验证服务器接受请求和分页复用，不保证已有数据覆盖每个筛选分支。它不创建或修改业务数据，不是压力测试。
+
+分类筛选使用稳定代码，例如企业性质 YQ/GQ/MQ/Other、付息频率 M1/M3/M6/Y1/Other。完整条件编辑器的“选择”按钮读取服务端 `filterFields.enumValues`，显示中文标签，发送代码；数值和布尔字段保持原有类型。字段字典见 [产品筛选契约](../../docs/product-filter-contract.zh-CN.md)。

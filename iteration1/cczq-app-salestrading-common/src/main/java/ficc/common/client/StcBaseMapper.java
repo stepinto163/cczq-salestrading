@@ -58,7 +58,7 @@ public final class StcBaseMapper {
                 "sourceIssuerType", text(issuer, "issuer_type"),
                 "bondRating", text(bond, "Rating_Current"), "issuerRating", text(bond, "Issuer_Rating_Current"),
                 "region", text(issuer, "province"), "remainingYears", text(valuation, "remaining_year"),
-                "hasExerciseOption", option != null && exercise.contains(option),
+                "hasExerciseOption", "NON".equals(option) ? Boolean.FALSE : exercise.contains(option == null ? "" : option) ? Boolean.TRUE : null,
                 "optionType", option, "maturityDate", date(text(bond, "Maturity_Date")),
                 "referenceVersion", version, "dataVendor", "SUMSCOPE",
                 "valuationYield", text(valuation, "valuation_yield"),
@@ -70,8 +70,9 @@ public final class StcBaseMapper {
                 });
         result.putAll(JsonUtils.object(
                 "issuerName", text(issuer, "issuer_name"), "listedMarket", text(bond, "Listed_Market"),
-                "city", text(issuer, "city"), "regionCode", text(issuer, "province_code"),
-                "industry", text(issuer, "sw_sector"), "ownershipType", text(issuer, "org_type"),
+                "cityName", text(issuer, "city"),
+                "city", text(issuer, "city_code") == null ? text(issuer, "city") : text(issuer, "city_code"), "regionCode", text(issuer, "province_code"),
+                "industry", text(issuer, "sw_sector"), "ownershipType", text(issuer, "institution_subtype"),
                 "couponRate", text(bond, "Coupon_Rate_Current"), "couponType", text(bond, "Coupon_Type"),
                 "couponFrequency", text(bond, "Coupon_Frequency"),
                 "valuationCleanPrice", text(valuation, "valuation_net_price"),
@@ -97,6 +98,7 @@ public final class StcBaseMapper {
             result.put(field, value);
         }
         BondFilterAttributes.normalize(result);
+        ficc.common.FilterDictionaries.normalizeAttributes(result);
         if (Boolean.parseBoolean(configuration.getProperty("base.filter.simulateMissing", "false"))) {
             ficc.common.FilterSampleData.fillMissing(result);
         }

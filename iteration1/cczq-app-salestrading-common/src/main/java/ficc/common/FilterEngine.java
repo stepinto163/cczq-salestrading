@@ -29,6 +29,9 @@ public final class FilterEngine {
             JSONObject definition = FilterFields.DEFINITIONS.get(field);
             if (definition == null || !definition.getJSONArray("operators").contains(operator))
                 fail(field, "Unknown field or unsupported operator");
+            if (FilterDictionaries.contains(field) && operator.equals("CONTAINS")) {
+                fail(field, "Categorical filters require EQ, IN or EXISTS");
+            }
             Object value = condition.get("value");
             if (value == null) fail(field, "Filter value required");
             if (operator.equals("EXISTS") || FilterFields.BOOLEANS.contains(field)) {
@@ -43,6 +46,10 @@ public final class FilterEngine {
             for (Object item : values) {
                 if (item == null || item.toString().isBlank() || item instanceof Map<?, ?> || item instanceof Collection<?>)
                     fail(field, "Scalar filter values required");
+                if (FilterDictionaries.contains(field)
+                        && (!(item instanceof String) || !item.equals(FilterDictionaries.canonical(field, item)))) {
+                    fail(field, "Unknown dictionary code");
+                }
                 if (NUMBERS.contains(field)) {
                     try { new BigDecimal(item.toString()); }
                     catch (NumberFormatException error) { fail(field, "Invalid decimal condition"); }

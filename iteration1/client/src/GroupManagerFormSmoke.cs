@@ -19,7 +19,7 @@ namespace Ficc.SalesTrading {
                     check(bondChoices.Items.Count==2,"bond choices loaded from base-data API for rate market");
                     bondChoices.SetItemChecked(0,true);bondChoices.SetItemChecked(1,true);
                 }else{
-                    AddCondition();AddCondition(2,new JObject{["field"]="region",["operator"]="IN",["value"]=new JArray("北京","上海")});
+                    AddCondition();AddCondition(2,new JObject{["field"]="region",["operator"]="IN",["value"]=new JArray("110000","310000")});
                     check(conditionGrid.VirtualMode&&fieldCatalog.ContainsKey("bondRating"),"condition editor uses server field catalog");
                 }
                 await SaveGroup();createdId=(string)currentGroup[IdField];

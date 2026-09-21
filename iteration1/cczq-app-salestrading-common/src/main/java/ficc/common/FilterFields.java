@@ -48,7 +48,15 @@ public final class FilterFields {
 
     public static JSONArray catalog() {
         JSONArray result = new JSONArray();
-        for (JSONObject field : DEFINITIONS.values()) result.add(JsonUtils.deepCopy(field));
+        for (JSONObject field : DEFINITIONS.values()) {
+            JSONObject definition = JsonUtils.deepCopy(field);
+            String name = definition.getString("field");
+            if (FilterDictionaries.contains(name)) {
+                definition.put("enumValues", FilterDictionaries.options(name));
+                definition.put("operators", JsonUtils.array("EQ", "IN", "EXISTS"));
+            }
+            result.add(definition);
+        }
         return result;
     }
 }

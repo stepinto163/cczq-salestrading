@@ -13,12 +13,12 @@ final class FilterEngineTest {
         JSONObject filter = JsonUtils.object("conditions", JsonUtils.array(
                 condition("bondRating", "EQ", "AAA"),
                 condition("bondRating", "EQ", "AA+"),
-                condition("region", "EQ", "上海")));
+                condition("region", "EQ", "310000")));
         FilterEngine.validate(filter);
 
-        assertTrue(FilterEngine.match(JsonUtils.object("bondRating", "AA+", "region", "上海"), filter));
-        assertFalse(FilterEngine.match(JsonUtils.object("bondRating", "AAA", "region", "北京"), filter));
-        assertFalse(FilterEngine.match(JsonUtils.object("bondRating", "AA", "region", "上海"), filter));
+        assertTrue(FilterEngine.match(JsonUtils.object("bondRating", "AA+", "region", "310000"), filter));
+        assertFalse(FilterEngine.match(JsonUtils.object("bondRating", "AAA", "region", "110000"), filter));
+        assertFalse(FilterEngine.match(JsonUtils.object("bondRating", "AA", "region", "310000"), filter));
     }
 
     @Test
@@ -48,12 +48,12 @@ final class FilterEngineTest {
         JSONObject filter = JsonUtils.object("conditions", JsonUtils.array(
                 condition("liquidityGrade", "IN", JsonUtils.array("S", "A")),
                 condition("isSubordinated", "EQ", false),
-                condition("industry", "CONTAINS", "金融"),
+                condition("industry", "EQ", "FINANCE"),
                 condition("couponRate", "BETWEEN", JsonUtils.array("2", "4")),
-                condition("hotTags", "IN", JsonUtils.array("绿色债", "城投"))));
+                condition("hotTags", "IN", JsonUtils.array("LZ", "CTZ"))));
         FilterEngine.validate(filter);
         JSONObject row = JsonUtils.object("liquidityGrade", "A", "isSubordinated", false,
-                "industry", "银行金融", "couponRate", "3.0000", "hotTags", JsonUtils.array("绿色债"));
+                "industry", "FINANCE", "couponRate", "3.0000", "hotTags", JsonUtils.array("LZ"));
         assertTrue(FilterEngine.match(row, filter));
         row.remove("isSubordinated");
         assertFalse(FilterEngine.match(row, filter));

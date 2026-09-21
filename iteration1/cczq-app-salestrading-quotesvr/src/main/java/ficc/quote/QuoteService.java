@@ -33,7 +33,10 @@ final class QuoteService {
         this.access = access;
         this.store=store;this.refs=refs;
         for(JSONObject q:store.quotes())quotes.put(q.getString("quoteId"),q);
-        for(JSONObject g:store.rows("SELECT payload FROM settings"))settings.put(settingId(g),g);
+        for (JSONObject group : store.rows("SELECT payload FROM settings")) {
+            FilterDictionaries.migrateSavedFilters(group);
+            settings.put(settingId(group), group);
+        }
         matcher=new QuoteMatcher(refs,settings);search=new LocalSearchSvrClient(store,refs,quotes,matcher,access);
         lastSequence=store.tail();views=new ViewService(this);
         for(String op:List.of("create","confirm","update","refer","unrefer","delete","clone"))handlers.put("ficc.quote."+op,c->unchecked(()->write(c,op)));
@@ -326,6 +329,29 @@ final class QuoteService {
                 .filter(id -> records.stream().noneMatch(value -> id.equals(value.getString(key)))).toList(),
                 "referenceVersion", refs.version());
     }
-    Object dictionary(boolean price,JSONObject r){JSONObject d=JsonUtils.object("side",JsonUtils.array(JsonUtils.object("value","1","label","买入"),JsonUtils.object("value","2","label","卖出")),"quoteType",JsonUtils.array(JsonUtils.object("value","1","label","收益率"),JsonUtils.object("value","2","label","净价"),JsonUtils.object("value","3","label","全价")),"yieldType",JsonUtils.array(JsonUtils.object("value","1","label","到期"),JsonUtils.object("value","2","label","行权")),"settlType",ficc.common.SettlementTypes.dictionary(),"market",JsonUtils.array(JsonUtils.object("value","RATE","label","利率"),JsonUtils.object("value","CREDIT","label","信用")));if(price)d.put("mode",JsonUtils.array(JsonUtils.object("value","BEST","label","最优"),JsonUtils.object("value","FULL","label","全部"),JsonUtils.object("value","DEPTH","label","档数")));if(r.getJSONArray("names")!=null){Set<String> names=new HashSet<>(r.getJSONArray("names").toJavaList(String.class));d.keySet().retainAll(names);}return JsonUtils.object("dictionaries",d,"filterFields",refs.filterCatalog());}
+    Object dictionary(boolean price, JSONObject request) {
+        JSONArray fields = refs.filterCatalog();
+        JSONObject dictionaries = FilterDictionaries.dictionaries();
+        for (Object entry : fields) {
+            JSONObject field = (JSONObject) entry;
+            if (field.containsKey("enumValues")) {
+                dictionaries.put(field.getString("field"), field.get("enumValues"));
+            }
+        }
+        dictionaries.put("market", JsonUtils.array(
+                JsonUtils.object("value", "RATE", "label", "利率"),
+                JsonUtils.object("value", "CREDIT", "label", "信用")));
+        if (price) {
+            dictionaries.put("mode", JsonUtils.array(
+                    JsonUtils.object("value", "BEST", "label", "最优"),
+                    JsonUtils.object("value", "FULL", "label", "全部"),
+                    JsonUtils.object("value", "DEPTH", "label", "档数")));
+        }
+        JSONArray names = request.getJSONArray("names");
+        if (names != null) {
+            dictionaries.keySet().retainAll(new HashSet<>(names.toJavaList(String.class)));
+        }
+        return JsonUtils.object("dictionaries", dictionaries, "filterFields", fields);
+    }
     Object intake(Call c)throws Exception{return Intake.apply(this,c);}
 }

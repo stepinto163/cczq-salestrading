@@ -9,6 +9,11 @@ export function conditionValue(definition, operator, text) {
         if (definition.type === 'decimal') {
             if (!/^-?\d+(\.\d+)?$/.test(value)) throw new Error(`${definition.label}: 请输入有效数值`);
         }
+        if (definition.enumValues) {
+            const option = definition.enumValues.find(item => item.value === value || item.label === value);
+            if (!option) throw new Error(`${definition.label}: 未知字典值 ${value}`);
+            return option.value;
+        }
         return value;
     };
     if (operator === 'BETWEEN' && values.length !== 2) throw new Error(`${definition.label}: 输入下限,上限`);
@@ -32,15 +37,13 @@ const labelFields = {
 const valueAliases = {
     settlType: { 'T+0': ['1'], 'T+1': ['2'], '非远期': ['1', '2'],
         '远期': ['3', '4', '5', '9', '10', '11', '12', '13', '14', '15', '16'] },
-    couponFrequency: { '按月': ['M', '12'], '按季': ['Q', '4'], '半年': ['S', '2'], '按年': ['A', '1'], '其他': ['N'] },
+    couponFrequency: { '按月': ['M1'], '按季': ['M3'], '半年': ['M6'], '按年': ['Y1'], '其他': ['Other'] },
     quoteType: { '收益率': ['1'], '净价': ['2'], '全价': ['3'] },
-    listingStatus: { '上市': ['上市', '已上市'], '非上市': ['非上市', '未上市'] },
     optionType: {
         '不含权': ['NON'], '含权': ['PUT', 'CNP', 'CAL', 'ETS', 'ASS', 'DCN', 'CNV'],
         '赎回权': ['CAL', 'CNP'], '回售权': ['PUT', 'CNP'], '其他权': ['ETS', 'ASS', 'DCN', 'CNV']
     },
-    bankType: { '股份制': ['股份制', '股份行'] },
-    region: { '北京市': ['北京市', '北京'], '上海市': ['上海市', '上海'], '广东省': ['广东省', '广东'] }
+    bankType: { '股份制': ['GF'] }
 };
 
 function normalizedLabel(text) {
@@ -78,6 +81,7 @@ function termCondition(text) {
 
 export function collectProductFilter(panel) {
     const conditions = [];
+    const definitions = panel.ficcFilterDefinitions || new Map();
     const search = panel.querySelector('.filter-section-sticky input');
     if (search?.value.trim()) conditions.push({ field: 'searchText', operator: 'CONTAINS', value: search.value.trim() });
     for (const group of panel.querySelectorAll('[data-ficc-filter-field]')) {
@@ -102,11 +106,27 @@ export function collectProductFilter(panel) {
             if (group.dataset.ficcFilterType === 'boolean') {
                 conditions.push({ field, operator: 'EQ', value: !tag.startsWith('非') && !tag.startsWith('不') });
             } else {
-                const regionAlias = ['region', 'localGovernmentRegion'].includes(field) ? tag.replace(/省$|市$|壮族自治区$|回族自治区$|维吾尔自治区$|自治区$/, '') : tag;
-                const values = valueAliases[field]?.[tag] || (regionAlias !== tag ? [tag, regionAlias] : [tag]);
-                conditions.push({ field, operator: values.length > 1 ? 'IN' : 'EQ', value: values.length > 1 ? values : values[0] });
+                let targetField = field;
+                let definition = definitions.get(field);
+                let values = valueAliases[field]?.[tag];
+                if (!values) {
+                    let option = definition?.enumValues?.find(item => item.value === tag || item.label === tag);
+                    if (!option && field === 'region') {
+                        option = definitions.get('city')?.enumValues?.find(item => item.value === tag || item.label === tag);
+                        if (option) targetField = 'city';
+                    }
+                    if (!option && ['region', 'localGovernmentRegion'].includes(field)) {
+                        option = definition?.enumValues?.find(item => item.label.replace(/省$|市$|壮族自治区$|回族自治区$|维吾尔自治区$|自治区$/, '') === tag);
+                    }
+                    if (definition?.enumValues && !option) throw new Error(`${definition.label}: 未定义选项 ${tag}`);
+                    values = [option ? option.value : tag];
+                }
+                conditions.push({ field: targetField, operator: values.length > 1 ? 'IN' : 'EQ', value: values.length > 1 ? values : values[0] });
             }
         }
+    }
+    if (conditions.some(item => item.field === 'city') && conditions.some(item => item.field === 'region')) {
+        throw new Error('暂不支持省份和城市混选，请选择同一级地区');
     }
     return { conditions };
 }
@@ -116,10 +136,12 @@ export function installFilterEditor(panel, definitions, apply, error) {
     panel.ficcFilterBinding?.dispose();
     const byLabel = new Map(definitions.map(definition => [definition.label, definition]));
     const byField = new Map(definitions.map(definition => [definition.field, definition]));
+    panel.ficcFilterDefinitions = byField;
     let previousLabel = '';
     for (const group of panel.querySelectorAll('.filter-group,.filter-grid-item')) {
         const label = group.querySelector('.filter-label')?.textContent.trim();
         let field = labelFields[label];
+        if (label === '发行人类型' && /央企|国企|民企/.test(group.textContent)) field = 'ownershipType';
         if (label === '中债评级') field = previousLabel === '主体评级' ? 'issuerCbrRating' : 'bondCbrRating';
         const definition = field ? byField.get(field) : byLabel.get(label);
         previousLabel = label;
@@ -134,15 +156,18 @@ export function installFilterEditor(panel, definitions, apply, error) {
             control.removeAttribute('aria-disabled');
         }
         const select = group.querySelector('select');
-        if (select && select.options.length === 1 && definition.examples?.length) {
+        if (select && definition.enumValues?.length) {
             const option = panel.ownerDocument.createElement('option');
             option.value = '';
             option.textContent = '不限';
             select.replaceChildren(option);
-            for (const example of definition.examples) {
+            const choices = definition.field === 'region'
+                ? [...definition.enumValues, ...(byField.get('city')?.enumValues || []).filter(item => !definition.enumValues.some(province => province.label === item.label))]
+                : definition.enumValues;
+            for (const example of choices) {
                 const choice = panel.ownerDocument.createElement('option');
-                choice.value = example;
-                choice.textContent = example;
+                choice.value = example.value;
+                choice.textContent = example.label;
                 select.append(choice);
             }
         }

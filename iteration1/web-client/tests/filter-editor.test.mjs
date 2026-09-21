@@ -11,3 +11,12 @@ test('range, multiple choice, boolean and text conditions preserve protocol type
     assert.throws(() => conditionValue({ type: 'decimal' }, 'EQ', 'NaN'));
     assert.throws(() => conditionValue({ type: 'boolean' }, 'EQ', 'unknown'));
 });
+
+test('dictionary labels are converted to protocol codes and unknown values fail', () => {
+    const definition = {
+        type: 'string', label: '企业性质',
+        enumValues: [{ value: 'YQ', label: '央企' }, { value: 'GQ', label: '国企' }]
+    };
+    assert.deepEqual(conditionValue(definition, 'IN', '央企,GQ'), ['YQ', 'GQ']);
+    assert.throws(() => conditionValue(definition, 'EQ', 'CGE'));
+});

@@ -20,6 +20,7 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
     private Method getBond;
     private Method getValuation;
     private Method getIssuer;
+    private Method getInstitution;
     private final long searchTimeoutMillis;
     private StcTransport searchTransport;
 
@@ -42,6 +43,7 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
             getBond = facade.getMethod("getBondInfo", String.class);
             getValuation = facade.getMethod("getChianBondInfo", String.class);
             getIssuer = requestClient.getMethod("getInfoTableVal", String.class, String.class);
+            getInstitution = requestClient.getMethod("getInstitution", String.class);
             facade.getField("isSubOrReq").set(null, "R");
             facade.getField("ServerKey").set(null, serverKey);
             requestClient.getField("ServerKey").set(null, serverKey);
@@ -79,7 +81,14 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
 
     @Override
     public JSONObject issuer(String issuerId) {
-        return invoke(getIssuer, "p_issuer_info", issuerId);
+        JSONObject issuer = invoke(getIssuer, "p_issuer_info", issuerId);
+        JSONObject institution = invoke(getInstitution, issuerId);
+        JSONObject result = issuer == null ? new JSONObject() : JsonUtils.deepCopy(issuer);
+        String subtype = StcBaseMapper.text(institution, "Institution_Subtype");
+        if (subtype != null) {
+            result.put("institution_subtype", subtype);
+        }
+        return result.isEmpty() ? null : result;
     }
 
     @Override

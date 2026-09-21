@@ -135,6 +135,17 @@ namespace Ficc.SalesTrading {
                     if(!fieldCatalog.TryGetValue(field,out var catalog)||!((JArray)catalog["operators"]).Any(value=>(string)value==operation))throw new Exception("该字段不支持所选条件，请重新选择");
                     var original=(JObject)row.Tag;var condition=original?["condition"] as JObject;condition=condition==null?new JObject():(JObject)condition.DeepClone();
                     condition["field"]=field;condition["operator"]=operation;condition["value"]=ParseConditionValue(field,operation,text,(string)catalog["type"]=="decimal");
+                    if (operation != "EXISTS" && catalog["enumValues"] is JArray options) {
+                        Func<JToken, JToken> code = token => {
+                            var option = options.OfType<JObject>().FirstOrDefault(item =>
+                                (string)item["value"] == (string)token || (string)item["label"] == (string)token);
+                            if (option == null) throw new Exception("未知筛选代码：" + token);
+                            return option["value"].DeepClone();
+                        };
+                        condition["value"] = condition["value"] is JArray selected
+                            ? new JArray(selected.Select(code))
+                            : code(condition["value"]);
+                    }
                     if(!sections.TryGetValue(number,out var section)){
                         var previous=(int?)original?["originalSubgroup"]==number?original?["section"] as JObject:null;
                         section=previous==null?new JObject():(JObject)previous.DeepClone();section["conditions"]=new JArray();sections.Add(number,section);
@@ -150,7 +161,7 @@ namespace Ficc.SalesTrading {
             Func<string,JToken> parse=value=>{
                 value=value.Trim();if(value.Length==0)throw new Exception("条件值不能为空");
                 if(numeric){if(!decimal.TryParse(value,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint,CultureInfo.InvariantCulture,out var number))throw new Exception("请输入有效数值，使用小数点");return new JValue(number.ToString(CultureInfo.InvariantCulture));}
-                if(new[]{"urgent","recommended","whole","oco","packing","hasExerciseOption","isMunicipal","isCrossMarket","isMortgage","isPerpetual","isSubordinated"}.Contains(field)){if(!bool.TryParse(value,out bool flag))throw new Exception("标签值请填写 true 或 false");return new JValue(flag);}
+                if(new[]{"urgent","recommended","whole","oco","packing","hasExerciseOption","isMunicipal","isCrossMarket","isMortgage","isPerpetual","isSubordinated","isTaxExempt","isHighYield","isPreListing"}.Contains(field)){if(!bool.TryParse(value,out bool flag))throw new Exception("标签值请填写 true 或 false");return new JValue(flag);}
                 return new JValue(value);
             };
             if(operation=="IN"||operation=="BETWEEN"){

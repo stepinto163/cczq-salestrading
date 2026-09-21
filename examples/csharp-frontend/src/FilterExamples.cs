@@ -24,28 +24,28 @@ namespace Ficc.FrontendLearning
                     conditions.Add(Range("price", "2.0000", "3.0000"));
                     break;
                 case "券种与流动性":
-                    conditions.Add(AnyOf("bondSubtype", "中票", "公司债"));
+                    conditions.Add(AnyOf("bondSubtype", "MTN", "CorporatebBonds"));
                     conditions.Add(AnyOf("liquidityGrade", "S", "A"));
                     break;
                 case "信用评级":
                     conditions.Add(AnyOf("bondRating", "AAA", "AA+"));
                     conditions.Add(Condition("issuerRating", "EQ", "AAA"));
-                    conditions.Add(Condition("yyRating", "EQ", "投资级"));
+                    conditions.Add(Condition("yyRating", "EQ", "INVESTMENT_GRADE"));
                     break;
                 case "条款":
                     conditions.Add(Condition("hasExerciseOption", "EQ", false));
                     conditions.Add(Condition("isSubordinated", "EQ", false));
-                    conditions.Add(Condition("repaymentType", "EQ", "到期"));
+                    conditions.Add(Condition("repaymentType", "EQ", "DQCF"));
                     break;
                 case "区域":
-                    conditions.Add(Condition("region", "CONTAINS", "上海"));
+                    conditions.Add(Condition("region", "EQ", "310000"));
                     conditions.Add(Condition("isMunicipal", "EQ", true));
                     break;
                 case "组合条件":
                     conditions.Add(Range("price", "2.0000", "3.0000"));
                     conditions.Add(AnyOf("bondRating", "AAA", "AA+"));
                     conditions.Add(AnyOf("liquidityGrade", "S", "A", "B"));
-                    conditions.Add(Condition("region", "CONTAINS", "上海"));
+                    conditions.Add(Condition("region", "EQ", "310000"));
                     conditions.Add(Condition("hasExerciseOption", "EQ", false));
                     break;
                 case "远期":
@@ -55,7 +55,7 @@ namespace Ficc.FrontendLearning
                     conditions.Add(Range("bidValuationSpread", "-20", "20"));
                     break;
                 case "付息与免税":
-                    conditions.Add(AnyOf("couponFrequency", "A", "1"));
+                    conditions.Add(AnyOf("couponFrequency", "Y1"));
                     conditions.Add(Condition("isTaxExempt", "EQ", true));
                     break;
                 default:

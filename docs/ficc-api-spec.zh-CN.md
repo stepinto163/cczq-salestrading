@@ -1082,7 +1082,7 @@ securityIds必填，最多100券；mode必填BEST/DEPTH/FULL；DEPTH必须有dep
 
 names可选，缺省返回本版全部业务字典；此接口返回Quote字典及filterFields，Price使用ficc.price.dictionary.query。当前字段目录来自共享FilterEngine，不调用尚未实现的SearchSvr。以下字典应答仅展示dictionaries，完整返回还包含filterFields；字段scope及operators以实际接口为准。
 
-2026-09-21：字段目录扩充为79项，覆盖报价、债券、流动性、信用、条款和区域；增加字符串CONTAINS与数组型属性匹配。目录增加label/group/examples/includesSimulatedData，客户端不应硬编码旧字段白名单。完整字段、单位、模拟数据开关及组合示例见[完整属性筛选接口](product-filter-contract.zh-CN.md)。查询、历史筛选与订阅采用同一条件语义；未知属性不会自动视为“否”或“其他”。
+2026-09-21：字段目录为79项，覆盖报价、债券、流动性、信用、条款和区域。目录包含label/group/examples/includesSimulatedData；分类字段另返回enumValues（value/label），支持EQ/IN/EXISTS。dictionaries返回37个分类及4个地区字典，前端显示label、发送value，不发送中文分类名称；自由文字仍支持CONTAINS。客户端不应硬编码旧字段白名单。完整字段、单位、模拟数据开关及组合示例见[完整属性筛选接口](product-filter-contract.zh-CN.md)。查询、历史筛选与订阅采用同一条件语义；未知属性不会自动视为“否”或“其他”。
 
 请求：
 

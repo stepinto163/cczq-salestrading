@@ -43,6 +43,12 @@ namespace Ficc.FrontendLearning
         [STAThread]
         public static void Main(string[] args)
         {
+            if (args.Contains("--filter-picker-check"))
+            {
+                Application.EnableVisualStyles();
+                Environment.ExitCode = FilterPickerCheck.Run();
+                return;
+            }
             if (args.Contains("--check"))
             {
                 Environment.ExitCode = ConnectionCheck.Run();
@@ -147,7 +153,7 @@ namespace Ficc.FrontendLearning
             {
                 var dictionary = await api.Request("ficc.quote.dictionary.query", new JObject());
                 using (var editor = new ProductFilterForm((JArray)dictionary["filterFields"],
-                    customFilter ?? FilterExamples.Build((string)filterExample.SelectedItem)))
+                    customFilter ?? FilterExamples.Build((string)filterExample.SelectedItem), (JObject)dictionary["dictionaries"]))
                 {
                     if (editor.ShowDialog(this) != DialogResult.OK) return;
                     customFilter = editor.Filter;

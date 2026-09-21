@@ -44,6 +44,7 @@ final class NotificationService {
             preferences.put(preference.getString("userId"), preference);
         }
         for (JSONObject group : store.rows("SELECT payload FROM " + store.table("settings"))) {
+            FilterDictionaries.migrateSavedFilters(group);
             groups.put(group.getString("filterGroupId"), group);
         }
         lastSequence = store.tail();
