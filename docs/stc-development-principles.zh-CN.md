@@ -78,7 +78,7 @@ SERVER.QuoteSvr.RegisterEnable=0
 
 `BaseApi` 的调用路径必须按具体签名区分：服务间常用的 `requestSync`、`subscribe`、`subscribeWithImage` 向 `NetClientWrapper` 委派；`requestSync2` 和部分 `subscribeWithImage2` 等重载向 `BaseApi.Connect` 初始化的 `CedaWrapper` 委派。不能仅按后缀判断。
 
-在 `cczq-app-salestrading-common` 中增加 `QuoteSvrClient`，提供查询报价状态、订阅报价事件、订阅价格等业务方法。内部复用公共 API 层，封装 `SERVER.QuoteSvr`、主题及请求/返回模型。NotificationSvr 不再自行创建 `GateWayApi`、拼接服务地址或重复封装原始请求。
+在 `cgws-ficc-saletrading-common` 中增加 `QuoteSvrClient`，提供查询报价状态、订阅报价事件、订阅价格等业务方法。内部复用公共 API 层，封装 `SERVER.QuoteSvr`、主题及请求/返回模型。NotificationSvr 不再自行创建 `GateWayApi`、拼接服务地址或重复封装原始请求。
 
 业务方法示意如下，实际实现见公共库 `ficc.common.client.QuoteSvrClient`；初始化参数和会话参数以代码为准：
 

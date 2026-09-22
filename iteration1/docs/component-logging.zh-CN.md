@@ -35,8 +35,8 @@ INFO ficc.startup - COMPONENT {"service":"QuoteSvr","component":"CRM","state":"I
 同时更新公共库、两个服务 JAR 及以下配置，然后重启服务：
 
 ```text
-iteration1/cczq-app-salestrading-quotesvr/control/QuoteSvr/log4j.ini
-iteration1/cczq-app-salestrading-notificationsvr/control/NotificationSvr/log4j.ini
+iteration1/cgws-ficc-saletrading-quotesvr/control/QuoteSvr/log4j.ini
+iteration1/cgws-ficc-saletrading-notificationsvr/control/NotificationSvr/log4j.ini
 ```
 
 搜索 `"component":"CRM"` 即可看到实际 `mode`、实现类、数据库地址/schema 以及初始化结果。`empty` 或 `simulator` 模式也会明确输出，不再依靠是否出现某条 PostgreSQL 专用提示猜测配置。

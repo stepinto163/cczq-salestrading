@@ -8,10 +8,11 @@
 
 | 目录 | 内容 |
 |---|---|
-| [iteration1/cczq-app-salestrading-common](iteration1/cczq-app-salestrading-common) | 共享业务工具与服务客户端 |
-| [iteration1/cczq-app-salestrading-quotesvr](iteration1/cczq-app-salestrading-quotesvr) | 报价生命周期、查询、行情价格簿 |
-| [iteration1/cczq-app-salestrading-notificationsvr](iteration1/cczq-app-salestrading-notificationsvr) | 报价提醒、用户偏好与已读状态 |
-| [iteration1/gateway](iteration1/gateway) | STC GW 配置与接入扩展 |
+| [iteration1/cgws-ficc-saletrading-parent-pom](iteration1/cgws-ficc-saletrading-parent-pom) | 独立 STC 父 POM、Java 8 构建约定 |
+| [iteration1/cgws-ficc-saletrading-common](iteration1/cgws-ficc-saletrading-common) | 共享业务工具与服务客户端 |
+| [iteration1/cgws-ficc-saletrading-quotesvr](iteration1/cgws-ficc-saletrading-quotesvr) | 报价生命周期、查询、行情价格簿 |
+| [iteration1/cgws-ficc-saletrading-notificationsvr](iteration1/cgws-ficc-saletrading-notificationsvr) | 报价提醒、用户偏好与已读状态 |
+| [iteration1/GW](iteration1/GW) | 标准 STC GW 配置 |
 | [iteration1/client](iteration1/client) | C# WinForms 平台与有界功能自动测试 |
 | [iteration1/web-client](iteration1/web-client/README.zh-CN.md) | Web 联调平台首轮：GW 登录、报价生命周期、行情与提醒 |
 | [iteration1/api-debugger](iteration1/api-debugger) | DPS 请求与订阅调试工具 |
@@ -22,15 +23,18 @@ QuoteSvr 与 NotificationSvr 共用 PostgreSQL 的 `ficc_salestrading` schema。
 
 ## 构建与运行
 
-Java 入口为 [Maven 父 POM](iteration1/pom.xml)，要求 JDK 17 和 Maven 3.9.x。首次构建前先准备兼容依赖：
+Java 后端统一使用 `cgws-ficc-saletrading-*`，要求 JDK 8 和 Maven 3.9.x。各项目的 **pom.xml 是正式 STC / Jenkins 入口**，继承独立的 [父 POM](iteration1/cgws-ficc-saletrading-parent-pom/pom.xml)。从仓库根目录按顺序构建：
 
 ```powershell
-mvn -B -ntp -f iteration1/pom.xml clean verify
+mvn -B -ntp -f iteration1/cgws-ficc-saletrading-parent-pom/pom.xml install
+mvn -B -ntp -f iteration1/cgws-ficc-saletrading-common/pom.xml clean install
+mvn -B -ntp -f iteration1/cgws-ficc-saletrading-quotesvr/pom.xml clean verify
+mvn -B -ntp -f iteration1/cgws-ficc-saletrading-notificationsvr/pom.xml clean verify
 ```
 
-详细步骤见 [Maven / Jenkins 构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。[Jenkinsfile](iteration1/Jenkinsfile) 构建 4 个 Java 模块并归档 JAR 与部署 ZIP；Maven 产物位于各模块的 `target-maven`。
+每个项目包含自己的 Jenkinsfile，正式产物位于各自的 `target`。父 POM 不包含 modules；跨 Jenkins 节点时，先将父 POM 和 common 发布到内网仓库。
 
-内网 STC Maven 环境使用独立入口 `mvn -f iteration1/pom_stc.xml clean verify`，包含 Common、QuoteSvr、NotificationSvr 和 GW，输出到各模块 `target-stc`。原有 `pom.xml` 保留供本机兼容构建使用。详见 [STC Maven 构建](iteration1/docs/maven-stc.zh-CN.md)。
+本机兼容构建使用明确命名的 `pom_compat.xml`，输出到 `target-compat`。旧 `cczq-app-*` 源码、根聚合 POM 和旧根 Jenkinsfile 已移除，不再作为构建入口。详见 [Maven / Jenkins 构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。
 
 C# 平台与调试器要求 Windows、.NET SDK 和 .NET Framework 4.7.2 开发工具：
 

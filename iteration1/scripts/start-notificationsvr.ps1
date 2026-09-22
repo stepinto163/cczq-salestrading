@@ -1,9 +1,9 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
-$serverPath=Join-Path $taskRoot 'cczq-app-salestrading-notificationsvr'
+$serverPath=Join-Path $taskRoot 'cgws-ficc-saletrading-notificationsvr'
 $pidFile=Join-Path $taskRoot 'runtime/notificationsvr.pid'
 if(Test-Path $pidFile){$priorId=[int](Get-Content $pidFile);if(Get-Process -Id $priorId -ErrorAction SilentlyContinue){throw 'Recorded NotificationSvr process is still running.'}}
-if(!(Test-Path "$serverPath/control/server.lic")){Copy-Item -LiteralPath "$taskRoot/cczq-app-salestrading-quotesvr/control/server.lic" -Destination "$serverPath/control/server.lic"}
+if(!(Test-Path "$serverPath/control/server.lic")){Copy-Item -LiteralPath "$taskRoot/cgws-ficc-saletrading-quotesvr/control/server.lic" -Destination "$serverPath/control/server.lic"}
 $classpath= & (Join-Path $PSScriptRoot 'server-classpath.ps1') -Server notificationsvr
 $arguments='-Xms24m -Xmx160m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8 -cp "'+$classpath+'" ficc.notification.NotificationMain'
 $oldAtsRoot=$env:ATS_ROOT

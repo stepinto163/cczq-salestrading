@@ -1,9 +1,9 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $taskRoot=Split-Path $PSScriptRoot -Parent
-$serverPath=Join-Path $taskRoot 'cczq-app-salestrading-quotesvr'
+$serverPath=Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr'
 $pidFile=Join-Path $taskRoot 'runtime/quotesvr.pid'
 if(Test-Path $pidFile){$priorId=[int](Get-Content $pidFile);if(Get-Process -Id $priorId -ErrorAction SilentlyContinue){throw 'Recorded QuoteSvr process is still running.'}}
-if(!(Test-Path "$serverPath/control/server.lic")){throw 'A valid STC server.lic is required under cczq-app-salestrading-quotesvr/control.'}
+if(!(Test-Path "$serverPath/control/server.lic")){throw 'A valid STC server.lic is required under cgws-ficc-saletrading-quotesvr/control.'}
 $classpath= & (Join-Path $PSScriptRoot 'server-classpath.ps1') -Server quotesvr
 $arguments='-Xms48m -Xmx256m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8 -cp "'+$classpath+'" ficc.quote.Main'
 $oldAtsRoot=$env:ATS_ROOT

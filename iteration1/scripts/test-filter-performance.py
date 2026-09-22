@@ -233,7 +233,7 @@ def main():
             sql("fixture", fixture.replace("PERFORMANCE_SCHEMA", schema).replace("QUOTE_COUNT", str(arguments.quotes)))
         quote_directory = directory / "quotesvr"
         gateway_directory = directory / "gateway"
-        shutil.copytree(ROOT / "cczq-app-salestrading-quotesvr/control", quote_directory / "control")
+        shutil.copytree(ROOT / "cgws-ficc-saletrading-quotesvr/control", quote_directory / "control")
         shutil.copytree(ROOT / "GW/control", gateway_directory / "control")
         shutil.copytree(ROOT / "GW/config", gateway_directory / "config")
         for service_directory in (quote_directory, gateway_directory):
@@ -266,8 +266,8 @@ def main():
         foundation = subprocess.check_output([
             "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
             str(ROOT / "scripts/foundation-classpath.ps1")], text=True, timeout=10).strip()
-        quote_jar = ROOT / "cczq-app-salestrading-quotesvr/target-maven/cczq-app-salestrading-quotesvr-0.1.0-SNAPSHOT.jar"
-        common_jar = ROOT / "cczq-app-salestrading-common/target-maven/cczq-app-salestrading-common-0.1.0-SNAPSHOT.jar"
+        quote_jar = ROOT / "cgws-ficc-saletrading-quotesvr/target-compat/cgws-ficc-saletrading-quotesvr-0.1.0-SNAPSHOT.jar"
+        common_jar = ROOT / "cgws-ficc-saletrading-common/target-compat/cgws-ficc-saletrading-common-0.1.0-SNAPSHOT.jar"
         gateway_jar = ROOT / "GW/javalib/gw-0.1.1-SNAPSHOT.jar"
         if not all(path.is_file() for path in (quote_jar, common_jar, gateway_jar)):
             raise RuntimeError("Run the Maven build first")

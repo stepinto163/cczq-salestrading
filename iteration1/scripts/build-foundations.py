@@ -24,7 +24,7 @@ def main():
         if src.name.startswith(('lombok-', 'tools-', 'jconsole-', 'xml-apis-')): continue
         dest = LIB/src.name
         if not dest.exists(): shutil.copy2(src,dest)
-    for src in (ROOT/'cczq-app-salestrading-common/lib').glob('*.jar'):
+    for src in (ROOT/'cgws-ficc-saletrading-common/lib').glob('*.jar'):
         if src.name.startswith(('gateway-api-', 'lombok-')): continue
         dest=LIB/src.name
         if not dest.exists(): shutil.copy2(src,dest)

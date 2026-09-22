@@ -1,6 +1,6 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
-$configuration = Join-Path $taskRoot 'cczq-app-salestrading-quotesvr/control/ATSConfig.ini'
+$configuration = Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr/control/ATSConfig.ini'
 $original = [IO.File]::ReadAllText($configuration)
 $encoding = New-Object Text.UTF8Encoding($false)
 $notificationPid = [int](Get-Content "$taskRoot/runtime/notificationsvr.pid")

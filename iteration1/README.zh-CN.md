@@ -8,7 +8,7 @@
 
 前端筛选延迟测试见 [独立性能测试说明及首轮结果](docs/filter-performance.zh-CN.md)。支持手动选择 500 至 50,000 条服务端报价，默认只运行 500 条，使用外部看门狗和虚拟网格。
 
-Java 模块现已提供 [Maven 父 POM](pom.xml) 和 [Jenkinsfile](Jenkinsfile)，构建、基础依赖准备及部署包说明见 [Maven 与 Jenkins 构建](docs/maven-jenkins.zh-CN.md)。Maven 使用独立的 `target-maven` 输出目录。
+Java 后端使用独立的 [STC 父 POM](cgws-ficc-saletrading-parent-pom/pom.xml) 和三个 cgws-ficc-saletrading 模块，要求 JDK 8。各项目的 pom.xml / Jenkinsfile 用于正式 STC 构建，pom_compat.xml 用于本机兼容构建。详见 [Maven 与 Jenkins 构建](docs/maven-jenkins.zh-CN.md)。
 
 迁移至 QA 空库时，使用 [建表 SQL](sql/001-create-tables.sql)；执行方法及数据库配置见 [QA 环境数据库初始化](docs/qa-database.zh-CN.md)。
 
@@ -20,18 +20,18 @@ Java 模块现已提供 [Maven 父 POM](pom.xml) 和 [Jenkinsfile](Jenkinsfile)�
 
 使用 `sc-app-stc-innersvr` 的框架机制，由 `ServerShell` 启动，资源、处理器和流通过 `control` 装配。
 
-项目按业务服务独立目录与 JAR 组织，采用 `cczq-app-salestrading-xxxsvr` 命名：
+项目按业务服务独立目录与 JAR 组织，采用 `cgws-ficc-saletrading-xxxsvr` 命名：
 
 | 模块 | 职责 | Java 包 |
 |---|---|---|
-| [cczq-app-salestrading-common](cczq-app-salestrading-common/README.zh-CN.md) | 共享 JSON/回复、筛选、数据库工具及基础资料模拟器 | `ficc.common` |
-| [cczq-app-salestrading-quotesvr](cczq-app-salestrading-quotesvr/README.zh-CN.md) | 报价生命周期、查询、行情；独立 Handler/Stream/control | `ficc.quote` |
-| [cczq-app-salestrading-notificationsvr](cczq-app-salestrading-notificationsvr/README.zh-CN.md) | 提醒规则、查询、偏好、已读；独立 Handler/Stream/control | `ficc.notification` |
+| [cgws-ficc-saletrading-common](cgws-ficc-saletrading-common/README.zh-CN.md) | 共享 JSON/回复、筛选、数据库工具及基础资料模拟器 | `ficc.common` |
+| [cgws-ficc-saletrading-quotesvr](cgws-ficc-saletrading-quotesvr/README.zh-CN.md) | 报价生命周期、查询、行情；独立 Handler/Stream/control | `ficc.quote` |
+| [cgws-ficc-saletrading-notificationsvr](cgws-ficc-saletrading-notificationsvr/README.zh-CN.md) | 提醒规则、查询、偏好、已读；独立 Handler/Stream/control | `ficc.notification` |
 
 两个业务服务分别依赖 common，不互相加载对方的业务 JAR。每个模块的产物为 `target/<模块名>.jar`；启动脚本显式组装各自的 classpath。此次调整项目目录和产物名，既有 `ficc.*` DPS topic、`QuoteSvr`/`NotificationSvr` 路由名及数据库保持兼容。`GW/` 使用标准 STC GW 分发包，不包含 FICC 自定义类，不参与 Maven 构建。
 
 ```text
-cczq-app-salestrading-quotesvr/
+cgws-ficc-saletrading-quotesvr/
   control/
     ATSConfig.ini
     QuoteSvr.ini
@@ -51,7 +51,7 @@ cczq-app-salestrading-quotesvr/
     PgStore.java             # PostgreSQL 持久化
 ```
 
-[Handler 示例](cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/handler/QuoteCreateHandler.java)、[公共 Handler](cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/handler/QuoteHandler.java)、[业务 Stream](cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/stream/QuoteStream.java)、[Handler 配置](cczq-app-salestrading-quotesvr/control/QuoteSvr/resourceCfg.ini)、[Stream 配置](cczq-app-salestrading-quotesvr/control/QuoteSvr/streams.xml)。
+[Handler 示例](cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/handler/QuoteCreateHandler.java)、[公共 Handler](cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/handler/QuoteHandler.java)、[业务 Stream](cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/stream/QuoteStream.java)、[Handler 配置](cgws-ficc-saletrading-quotesvr/control/QuoteSvr/resourceCfg.ini)、[Stream 配置](cgws-ficc-saletrading-quotesvr/control/QuoteSvr/streams.xml)。
 
 注册 32 个 QuoteSvr 请求接口，另有两个基础数据模拟接口、三个行情快照处理器及登录模拟处理器。报价与行情使用不同模型、接口及推送 topic；普通报价订阅不产生快照，行情订阅使用 STC 原生订阅快照机制。
 
@@ -121,7 +121,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-ui.p
 | WinForms 界面功能 | 18 项通过 | 1 条报价；报价、实时行情、提醒、已读及撤出移除；虚拟表格开启 |
 | 独立 DPS 调试器 | 通过 | 3 个请求，0 条新报价；QuoteSvr、NotificationSvr、行情订阅快照与退订；47 个模板 |
 
-测试代码：[业务](cczq-app-salestrading-quotesvr/src/test/java/ficc/quote/BusinessSmoke.java)、[Java DPS](compat/tests/StcTransportSmoke.java)、[C# 网关](client/src/GatewaySmoke.cs)、[界面](client/src/QuoteFormSmoke.cs)。这些是小规模功能检查，不代表每种参数组合均已覆盖，也不是性能测试。未运行万条报价或并发压力测试。
+测试代码：[业务](cgws-ficc-saletrading-quotesvr/src/test/java/ficc/quote/BusinessSmoke.java)、[Java DPS](compat/tests/StcTransportSmoke.java)、[C# 网关](client/src/GatewaySmoke.cs)、[界面](client/src/QuoteFormSmoke.cs)。这些是小规模功能检查，不代表每种参数组合均已覆盖，也不是性能测试。未运行万条报价或并发压力测试。
 
 ## 前端消息日志
 

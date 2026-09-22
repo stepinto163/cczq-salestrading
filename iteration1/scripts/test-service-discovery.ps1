@@ -1,11 +1,11 @@
-param([string]$Name = 'service-discovery')
+﻿param([string]$Name = 'service-discovery')
 $ErrorActionPreference = 'Stop'
 if ($Name -notmatch '^[a-z0-9-]+$') {
     throw 'Report name may contain lowercase letters, numbers and hyphens only.'
 }
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $classpath = & (Join-Path $PSScriptRoot 'foundation-classpath.ps1')
-$probe = Join-Path $taskRoot 'cczq-app-salestrading-common/src/test/java/RegistryProbe.java'
+$probe = Join-Path $taskRoot 'cgws-ficc-saletrading-common/src/test/java/RegistryProbe.java'
 $registryReport = Join-Path $taskRoot "runtime/$Name-registry.json"
 $arguments = '-Xmx96m -XX:ActiveProcessorCount=2 -cp "' + $classpath + '" "' + $probe + '" 127.0.0.1:12181 "' + $registryReport + '"'
 $process = Start-Process java -ArgumentList $arguments -WindowStyle Hidden -PassThru -RedirectStandardOutput "$taskRoot/runtime/$Name-registry.log" -RedirectStandardError "$taskRoot/runtime/$Name-registry.err"

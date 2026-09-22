@@ -4004,10 +4004,10 @@ handler.PriceFeedSnapshotHandler.class=ficc.quote.handler.PriceFeedSnapshotHandl
 
 本次实现核对：
 
-- [QuoteSvr注册](../iteration1/cczq-app-salestrading-quotesvr/control/QuoteSvr/resourceCfg.ini)、[NotificationSvr注册](../iteration1/cczq-app-salestrading-notificationsvr/control/NotificationSvr/resourceCfg.ini)：实际topic与Handler名称。
-- [QuoteService](../iteration1/cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/QuoteService.java)、[ViewService](../iteration1/cczq-app-salestrading-quotesvr/src/main/java/ficc/quote/ViewService.java)：请求、会话流、view及序号。
-- [PostgresCrmClient](../iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/PostgresCrmClient.java)：CRM匹配字段、关联及offset分页。
-- [NotificationResource](../iteration1/cczq-app-salestrading-notificationsvr/src/main/java/ficc/notification/NotificationResource.java)、[QuoteSvrClient](../iteration1/cczq-app-salestrading-common/src/main/java/ficc/common/client/QuoteSvrClient.java)：服务间订阅与恢复。
+- [QuoteSvr注册](../iteration1/cgws-ficc-saletrading-quotesvr/control/QuoteSvr/resourceCfg.ini)、[NotificationSvr注册](../iteration1/cgws-ficc-saletrading-notificationsvr/control/NotificationSvr/resourceCfg.ini)：实际topic与Handler名称。
+- [QuoteService](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/QuoteService.java)、[ViewService](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/ViewService.java)：请求、会话流、view及序号。
+- [PostgresCrmClient](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/common/client/PostgresCrmClient.java)：CRM匹配字段、关联及offset分页。
+- [NotificationResource](../iteration1/cgws-ficc-saletrading-notificationsvr/src/main/java/ficc/notification/NotificationResource.java)、[QuoteSvrClient](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/common/client/QuoteSvrClient.java)：服务间订阅与恢复。
 - [标准GW配置与权限边界](../iteration1/GW/README.zh-CN.md)：标准网关接入，不包含FICC自定义类。
 
 既有STC设计依据：

@@ -1,4 +1,4 @@
-[CmdletBinding(SupportsShouldProcess = $true)]
+﻿[CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [switch]$IncludeInfrastructure
 )
@@ -89,10 +89,10 @@ if (-not $PSCmdlet.ShouldProcess($taskRoot, "Restart $scope using existing confi
 # Check the existing local deployment before closing any application.
 foreach ($requiredPath in @(
     $clientPath,
-    (Join-Path $taskRoot 'cczq-app-salestrading-quotesvr/control/server.lic'),
-    (Join-Path $taskRoot 'cczq-app-salestrading-quotesvr/target/cczq-app-salestrading-quotesvr.jar'),
-    (Join-Path $taskRoot 'cczq-app-salestrading-notificationsvr/target/cczq-app-salestrading-notificationsvr.jar'),
-    (Join-Path $taskRoot 'cczq-app-salestrading-common/target/cczq-app-salestrading-common.jar'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr/control/server.lic'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr/target-compat/cgws-ficc-saletrading-quotesvr-0.1.0-SNAPSHOT.jar'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-notificationsvr/target-compat/cgws-ficc-saletrading-notificationsvr-0.1.0-SNAPSHOT.jar'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-common/target-compat/cgws-ficc-saletrading-common-0.1.0-SNAPSHOT.jar'),
     (Join-Path $taskRoot 'GW/javalib/gw-0.1.1-SNAPSHOT.jar')
 )) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {

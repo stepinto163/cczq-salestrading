@@ -35,7 +35,7 @@
 
 ## 构建与部署
 
-JDK 17。先将同版本 `cczq-app-salestrading-common` 及其依赖发布到公司 Maven 私服，或在父工程执行 `mvn install` 安装到同一本地仓库。构建命令：
+JDK 17。先将同版本 `cgws-ficc-saletrading-common` 及其依赖发布到公司 Maven 私服，或在父工程执行 `mvn install` 安装到同一本地仓库。构建命令：
 
 ```powershell
 mvn -B -ntp -f iteration1/extensions/crm-adapter/pom.xml package
