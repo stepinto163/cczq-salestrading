@@ -128,7 +128,7 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
             try {
                 request = mapper.map(message);
             } catch (FieldNotFound | IllegalArgumentException | java.time.DateTimeException error) {
-                inbox.rejectRaw(formatFixMessage(message), error.getMessage());
+                inbox.rejectRaw(safeFix(message), error.getMessage());
                 LOGGER.error("FIX state=REJECTED session=" + sessionId, error);
                 return;
             }
@@ -154,8 +154,9 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
         }
     }
 
-    static String formatFixMessage(Message message) {
+    static String safeFix(Message message) {
         return message.toString()
+                .replaceAll("(^|\u0001)(554|925|96)=[^\u0001]*", "$1$2=[REDACTED]")
                 .replace('\u0001', '|')
                 .replace("\r", "\\r")
                 .replace("\n", "\\n");
@@ -164,7 +165,7 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
     private void log(String direction, Message message, SessionID sessionId) {
         if (MESSAGES.isDebugEnabled()) {
             MESSAGES.debug(
-                    "FIX " + direction + " session=" + sessionId + " body=" + formatFixMessage(message));
+                    "FIX " + direction + " session=" + sessionId + " body=" + safeFix(message));
         }
     }
 

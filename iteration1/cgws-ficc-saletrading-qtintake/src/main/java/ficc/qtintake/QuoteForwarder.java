@@ -15,15 +15,18 @@ public final class QuoteForwarder {
     private static final Logger LOGGER = Logger.getLogger(QuoteForwarder.class);
     private final DurableInbox inbox;
     private final StcTransport transport;
+    private final String token;
     private final OwnerResolver owners;
 
     public interface OwnerResolver {
         String resolve(String account) throws Exception;
     }
 
-    public QuoteForwarder(DurableInbox inbox, StcTransport transport, OwnerResolver owners) {
+    public QuoteForwarder(
+            DurableInbox inbox, StcTransport transport, String token, OwnerResolver owners) {
         this.inbox = inbox;
         this.transport = transport;
+        this.token = token;
         this.owners = owners;
     }
 
@@ -42,6 +45,7 @@ public final class QuoteForwarder {
             source.put("ownerUserId", owners.resolve(source.getString("sourceUserId")));
             inbox.saveRequest(pending, request);
         }
+        request.getJSONObject("intake").put("token", token);
         JSONObject reply = transport.request("ficc.quote.create", null, request);
         String code = reply.getString("Code");
         if ("1009".equals(code) || "1099".equals(code)) {

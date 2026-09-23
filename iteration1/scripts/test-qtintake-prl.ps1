@@ -46,7 +46,7 @@ function Start-TestService($folder, $jar, $name) {
 try {
     $locked = $mutex.WaitOne(0)
     if (-not $locked) { throw 'Another PRL test is already running.' }
-    foreach ($path in @($java, $psql, "$intakeFolder/$intakeJar", "$quoteFolder/$quoteJar", "$intakeFolder/config/service.properties")) {
+    foreach ($path in @($java, $psql, "$intakeFolder/$intakeJar", "$quoteFolder/$quoteJar", "$run/control/QtIntakeAuth.properties")) {
         if (-not (Test-Path -LiteralPath $path)) { throw "Missing test file: $path" }
     }
     if ($settings.userSchema -notmatch '^ficc_qtprl_\d{8}_\d{6}_users$') {

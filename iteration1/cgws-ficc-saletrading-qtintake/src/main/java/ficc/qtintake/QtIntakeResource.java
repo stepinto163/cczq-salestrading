@@ -39,8 +39,12 @@ public final class QtIntakeResource extends ResourceAdapter {
                     getConfig().getString("intake.properties"),
                     () -> {
                         load(getConfig().getString("intake.properties"));
-                        QTradeFixReceiver.required(configuration, "fix.username");
-                        QTradeFixReceiver.required(configuration, "fix.password");
+                        load(QTradeFixReceiver.required(configuration, "secrets.file"));
+                        if (QTradeFixReceiver.required(configuration, "intake.token").length()
+                                < 32) {
+                            throw new IllegalArgumentException(
+                                    "intake.token must contain at least 32 characters");
+                        }
                         return configuration;
                     });
             inbox =
@@ -112,14 +116,16 @@ public final class QtIntakeResource extends ResourceAdapter {
                                         java.sql.PreparedStatement query =
                                                 connection.prepareStatement(
                                                         "SELECT userid, qtAccount, enable FROM"
-                                                                + " stc_tbook_users WHERE 1=0")) {
+                                                            + " stc_tbook_users WHERE 1=0")) {
                                     query.setQueryTimeout(3);
                                     try (java.sql.ResultSet ignored = query.executeQuery()) {
                                         return new StcQuoteOwnerResolver(database::getConnection);
                                     }
                                 }
                             });
-            forwarder = new QuoteForwarder(inbox, transport, owners);
+            forwarder =
+                    new QuoteForwarder(
+                            inbox, transport, configuration.getProperty("intake.token"), owners);
             receiver =
                     ComponentLog.initialize(
                             configuration,

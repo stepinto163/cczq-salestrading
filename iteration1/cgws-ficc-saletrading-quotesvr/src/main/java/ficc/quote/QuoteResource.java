@@ -21,7 +21,7 @@ public final class QuoteResource extends ResourceAdapter {
     private QuoteService service;
     private Properties configuration;
     private LoginSessionClient identity;
-    private final IntakeCreateEndpoint intakeCreate = new IntakeCreateEndpoint();
+    private IntakeCreateEndpoint intakeCreate;
     private BiConsumer<String, JSONObject> publisher = (topic, value) -> {};
 
     @Override
@@ -32,6 +32,7 @@ public final class QuoteResource extends ResourceAdapter {
                             "QuoteSvr",
                             getConfig().getString("quote.properties"),
                             getConfig().getString("adapter.properties", ""));
+            intakeCreate = IntakeCreateEndpoint.load(configuration);
             store =
                     ComponentLog.initialize(
                             configuration,
@@ -122,7 +123,7 @@ public final class QuoteResource extends ResourceAdapter {
             }
             requestId = request.getString("requestId");
             if ("ficc.quote.create".equals(topic) && request.containsKey("intake")) {
-                if (service == null) {
+                if (service == null || intakeCreate == null) {
                     throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
                 }
                 synchronized (service) {

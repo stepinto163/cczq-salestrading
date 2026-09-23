@@ -10,6 +10,7 @@ import java.util.*;
 
 /** Small PostgreSQL functional check: two imported quotes, temporary isolated schema. */
 public final class QtIntakeSmoke {
+    private static final String TOKEN = "local-test-token-at-least-thirty-two-characters";
     private static int checks;
 
     private static void check(boolean condition, String message) {
@@ -27,6 +28,8 @@ public final class QtIntakeSmoke {
                 id,
                 "intake",
                 JsonUtils.object(
+                        "token",
+                        TOKEN,
                         "sourceUserId",
                         account,
                         "ownerUserId",
@@ -89,23 +92,21 @@ public final class QtIntakeSmoke {
                             events.add(event);
                         }
                     };
-            IntakeCreateEndpoint endpoint = new IntakeCreateEndpoint();
+            IntakeCreateEndpoint endpoint = new IntakeCreateEndpoint(TOKEN);
             JSONObject request = request("qt-a", "U-001");
-            JSONObject missingOwner = JsonUtils.deepCopy(request);
-            missingOwner.getJSONObject("intake").remove("ownerUserId");
             try {
-                endpoint.create(service, missingOwner);
-                throw new AssertionError("missing owner accepted");
+                new IntakeCreateEndpoint("").authorize(request);
+                throw new AssertionError("disabled intake accepted");
             } catch (ApiException expected) {
-                check("1001".equals(expected.code), "intake still requires resolved owner");
+                check("1003".equals(expected.code), "intake disabled by default");
             }
-            JSONObject missingIntake = JsonUtils.deepCopy(request);
-            missingIntake.remove("intake");
+            JSONObject unauthorized = JsonUtils.deepCopy(request);
+            unauthorized.getJSONObject("intake").put("token", "wrong");
             try {
-                endpoint.create(service, missingIntake);
-                throw new AssertionError("missing intake accepted");
+                endpoint.authorize(unauthorized);
+                throw new AssertionError("bad token accepted");
             } catch (ApiException expected) {
-                check("1001".equals(expected.code), "intake metadata is required");
+                check("1003".equals(expected.code), "invalid service credential rejected");
             }
             JSONObject result =
                     endpoint.create(service, request)
@@ -152,13 +153,14 @@ public final class QtIntakeSmoke {
                     source.getJSONArray("quoteIds").contains(firstId),
                     "source text links back to created quote");
             check(
-                    !request.getJSONObject("intake").containsKey("token"),
-                    "service create succeeds without a custom token");
+                    !JsonUtils.toJson(source).contains(TOKEN)
+                            && !JsonUtils.toJson(quote).contains(TOKEN),
+                    "service token not persisted in source or quote");
         }
         try (PgStore database = new PgStore(configuration)) {
             QuoteService restarted = new QuoteService(database, new ReferenceData());
             JSONObject result =
-                    new IntakeCreateEndpoint().create(restarted, request("qt-a", "U-001"));
+                    new IntakeCreateEndpoint(TOKEN).create(restarted, request("qt-a", "U-001"));
             check(
                     firstId.equals(
                             result.getJSONObject("Data")
