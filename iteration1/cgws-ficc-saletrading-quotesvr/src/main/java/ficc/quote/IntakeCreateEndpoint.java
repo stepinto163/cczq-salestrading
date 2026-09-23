@@ -5,78 +5,16 @@ import com.alibaba.fastjson2.JSONObject;
 
 import ficc.common.*;
 
-import java.io.BufferedReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.security.MessageDigest;
-import java.util.Properties;
-
-/**
- * Restricted service-to-service use of quote.create; ordinary client creates still require login.
- */
+/** STC trusted inter-service quote intake; ordinary client creates still require login. */
 final class IntakeCreateEndpoint {
-    private final String token;
-
-    IntakeCreateEndpoint(String token) {
-        this.token = token == null ? "" : token;
-        if (!this.token.isEmpty() && this.token.length() < 32) {
-            throw new IllegalArgumentException("intake.token must contain at least 32 characters");
-        }
-    }
-
-    static IntakeCreateEndpoint load(Properties configuration) throws Exception {
-        String file = configuration.getProperty("intake.authFile", "").trim();
-        if (file.isEmpty()) {
-            return new IntakeCreateEndpoint("");
-        }
-        return ComponentLog.initialize(
-                configuration,
-                "INTAKE_AUTH",
-                "service",
-                "IntakeCreateEndpoint",
-                file,
-                () -> {
-                    String resolved = file;
-                    if (file.startsWith("$ATS_ROOT/")) {
-                        String root = System.getenv("ATS_ROOT");
-                        if (root == null || root.trim().isEmpty()) {
-                            throw new IllegalStateException(
-                                    "ATS_ROOT is required for intake.authFile");
-                        }
-                        resolved = Paths.get(root).resolve(file.substring(10)).toString();
-                    }
-                    Properties secrets = new Properties();
-                    try (BufferedReader reader = Files.newBufferedReader(Paths.get(resolved))) {
-                        secrets.load(reader);
-                    }
-                    String value = secrets.getProperty("intake.token", "");
-                    if (value.trim().isEmpty()) {
-                        throw new IllegalArgumentException(
-                                "Missing intake.token in intake.authFile");
-                    }
-                    return new IntakeCreateEndpoint(value);
-                });
-    }
-
-    void authorize(JSONObject request) {
-        JSONObject source = request.getJSONObject("intake");
-        String supplied = source == null ? null : source.getString("token");
-        if (token.isEmpty()
-                || supplied == null
-                || !MessageDigest.isEqual(
-                        token.getBytes(StandardCharsets.UTF_8),
-                        supplied.getBytes(StandardCharsets.UTF_8))) {
-            throw ApiException.forField(
-                    "1003", "FORBIDDEN", "Quote intake service is not authorized", null);
-        }
-    }
-
     JSONObject create(QuoteService service, JSONObject input) throws Exception {
-        authorize(input);
         RequestValidator.allowOnlyFields(input, "requestId", "quotes", "intake");
         JSONObject request = JsonUtils.deepCopy(input);
         JSONObject source = request.getJSONObject("intake");
-        source.remove("token");
+        if (source == null) {
+            throw ApiException.forField(
+                    "1001", "VALIDATION_FAILED", "intake is required", "intake");
+        }
         RequestValidator.allowOnlyFields(
                 source,
                 "ownerUserId",

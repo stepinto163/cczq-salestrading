@@ -21,7 +21,7 @@ class FixLoopbackTest {
 
     @Test
     @Timeout(20)
-    void receivesOneRealFixMessageAndLogsMaskedPayload() throws Exception {
+    void receivesOneRealFixMessageAndLogsFullPayload() throws Exception {
         int port;
         try (ServerSocket socket =
                 new ServerSocket(0, 1, java.net.InetAddress.getByName("127.0.0.1"))) {
@@ -86,7 +86,7 @@ class FixLoopbackTest {
         Properties configuration = new Properties();
         configuration.setProperty("fix.settings", settingsFile.toString());
         configuration.setProperty("fix.username", "loopback-user");
-        configuration.setProperty("fix.password", "never-print-this-password");
+        configuration.setProperty("fix.password", "loopback-password");
         Path log = directory.resolve("messages.log");
         FileAppender appender = new FileAppender(new PatternLayout("%m%n"), log.toString());
         Logger logger = Logger.getLogger("ficc.qtintake.messages");
@@ -114,8 +114,8 @@ class FixLoopbackTest {
             String output = new String(Files.readAllBytes(log), StandardCharsets.UTF_8);
             assertTrue(output.contains("FIX RECEIVE"));
             assertTrue(output.contains("117=QT-CAPTURE-1"));
-            assertTrue(output.contains("554=[REDACTED]"));
-            assertFalse(output.contains("never-print-this-password"));
+            assertTrue(output.contains("553=loopback-user"));
+            assertTrue(output.contains("554=loopback-password"));
         } finally {
             acceptor.stop(true);
             logger.removeAppender(appender);

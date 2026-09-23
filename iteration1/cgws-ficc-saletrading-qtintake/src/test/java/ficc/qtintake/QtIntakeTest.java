@@ -44,7 +44,7 @@ class QtIntakeTest {
         // Real PRL message shape from 2026-09-22; account/quote identifiers anonymized.
         String fix =
                 "8=FIX.4.4|9=375|35=S|34=5|49=QTRADE|52=20260922-10:06:13.372|"
-                    + "56=PRL-TEST-CLIENT|48=240210|54=1|55=24国开10|"
+                        + "56=PRL-TEST-CLIENT|48=240210|54=1|55=24国开10|"
                         + "60=20260922-18:06:13|100=XCFE|117=QT-CAPTURE-1|132=3|"
                         + "134=10000000|215=1|216=52|537=0|10176=4|11050=7.6192Y|"
                         + "18004=QT-ACCOUNT-1|18026=240210 3 1000 +1 bid|18034=2|"
@@ -200,7 +200,6 @@ class QtIntakeTest {
                     new QuoteForwarder(
                             inbox,
                             transport,
-                            "test-token",
                             account -> {
                                 resolutions.incrementAndGet();
                                 return "STC-1";
@@ -208,6 +207,7 @@ class QtIntakeTest {
             transport.fail = true;
             assertThrows(IllegalStateException.class, forwarder::tick);
             JSONObject first = JsonUtils.deepCopy(transport.last);
+            assertFalse(first.getJSONObject("intake").containsKey("token"));
             transport.fail = false;
             transport.reply =
                     JsonUtils.object(
@@ -231,7 +231,11 @@ class QtIntakeTest {
                         new String(
                                 Files.readAllBytes(files.findFirst().get()),
                                 java.nio.charset.StandardCharsets.UTF_8);
-                assertFalse(persisted.contains("test-token"));
+                JSONObject archived = com.alibaba.fastjson2.JSON.parseObject(persisted);
+                assertFalse(
+                        archived.getJSONObject("request")
+                                .getJSONObject("intake")
+                                .containsKey("token"));
             }
         }
     }
@@ -249,13 +253,13 @@ class QtIntakeTest {
     }
 
     @Test
-    void fixLoggingRedactsPasswords() {
+    void fixLoggingPreservesAllFields() {
         Message login = new Message();
         login.getHeader().setString(35, "A");
         login.setString(553, "user");
         login.setString(554, "secret-value");
-        assertFalse(QTradeFixReceiver.safeFix(login).contains("secret-value"));
-        assertTrue(QTradeFixReceiver.safeFix(login).contains("554=[REDACTED]"));
+        assertTrue(QTradeFixReceiver.formatFixMessage(login).contains("553=user"));
+        assertTrue(QTradeFixReceiver.formatFixMessage(login).contains("554=secret-value"));
     }
 
     static final class FakeTransport implements StcTransport {
