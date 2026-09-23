@@ -11,7 +11,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /** Diagnostic copies only: never change the message sent to DPS. */
-final class DpsMessageLog {
+public final class DpsMessageLog {
     private static final Set<String> SECRET_FIELDS =
             Collections.unmodifiableSet(
                     new HashSet<>(
@@ -31,7 +31,7 @@ final class DpsMessageLog {
 
     private DpsMessageLog() {}
 
-    static String body(String content) {
+    public static String body(String content) {
         if (content == null) {
             return "null";
         }

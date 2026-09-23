@@ -327,6 +327,8 @@ Notification包含notificationId、userId、securityId、reasons[]、content、q
 
 服务：`QuoteSvr`；topic：`ficc.quote.create`；handler：`QuoteCreateHandler.handle`。
 
+服务接入补充：`QtIntake` 复用本接口创建待确认报价，携带受服务凭据保护的 `intake` 来源信息。普通前端请求格式与用户会话校验不变。报价归属人由 QTrade `OwnQtNO` 查询 STC `stc_tbook_users.qtAccount` 得到；不是前端可自由指定的身份。字段映射、部署及请求示例见 [QTrade 接入服务](../iteration1/cgws-ficc-saletrading-qtintake/README.md)。未配置 `intake.authFile` 时此服务接入路径默认禁用。
+
 quotes必填，1至100条；每条须有clientQuoteId。创建PENDING_CONFIRM，不自动确认。Source及owner由服务端确定；不能假冒QT接入。单条也是quotes数组。
 
 待确认可先保存机构／联系人名称，ID为空；后端不自动按名称匹配。此例先录入名称，H02由用户从CRM列表手动选定记录后，UI补齐ID并提交确认。

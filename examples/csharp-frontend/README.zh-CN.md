@@ -20,6 +20,8 @@ dotnet build FrontendLearning.csproj -m:1
 
 注意这里是 DPS TCP 端口，不是 WebSocket 端口（本机 Web 使用的 `18601`）。只复制可运行程序时，应复制整个 `bin\Debug\net472` 文件夹，不能只复制 EXE。
 
+QA 登录时，GZip 必须与 GW 的 `serverConfig.gzip` 一致。STC 正式客户端直连 GW 时会启用 GZip；使用相同配置的 QA GW，请勾选登录栏的“GZip（QA直连通常启用）”。本机 GW 配置为 false 时不勾选。示例默认保持不压缩，避免改变本机连接方式。日志 CONNECT 显示实际 gzip 和 SDK 版本，不打印密码。命令行只读检查可设置 `FICC_GZIP=true`。
+
 “自包含”指本示例源码和客户端 DLL 完整，不表示内置服务器、数据库或 STC 基础资料。
 
 ## 建议阅读顺序

@@ -12,6 +12,8 @@ Treat performance experiments conservatively:
 
 # Naming and readability
 
+- Use `cgws` for new project names and Maven coordinates (for example, `cgws-app-salestrading-quotesvr` and `cgws.salestrading`). Do not introduce new `cczq` names. Existing names should change only as part of an explicit migration.
+
 - Treat this repository as the sales-trading platform. Use product terminology in current code, UI, filenames, scripts and documentation. Preserve literal names only where needed for historical evidence, external source references or backward-compatible data migration.
 
 - Prefer clear, descriptive class and method names over brevity.

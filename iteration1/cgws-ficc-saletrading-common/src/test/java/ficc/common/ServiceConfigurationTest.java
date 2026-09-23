@@ -17,6 +17,40 @@ final class ServiceConfigurationTest {
     @TempDir Path directory;
 
     @Test
+    void sharedDatabaseFileResolvesUnderAtsRootAndStillUsesNormalLoader() throws Exception {
+        Path control = Files.createDirectories(directory.resolve("control"));
+        Path database = control.resolve("ficc-database.properties");
+        Files.write(database, "db.schema=ficc_salestrading2\n".getBytes(StandardCharsets.UTF_8));
+        Path resolved =
+                ServiceConfiguration.resolvePath(
+                        "$ATS_ROOT/control/ficc-database.properties", directory.toString());
+        assertEquals(database.toAbsolutePath(), resolved);
+        Properties configuration =
+                ServiceConfiguration.load("QuoteSvr", resolved.toString(), "", message -> {});
+        assertEquals("ficc_salestrading2", configuration.getProperty("db.schema"));
+    }
+
+    @Test
+    void missingAtsRootFailsInsteadOfReadingAnUnrelatedLocalFile() {
+        for (String atsRoot : Arrays.asList(null, "", " ")) {
+            java.io.IOException error =
+                    assertThrows(
+                            java.io.IOException.class,
+                            () ->
+                                    ServiceConfiguration.resolvePath(
+                                            "$ATS_ROOT/control/ficc-database.properties", atsRoot));
+            assertTrue(error.getMessage().contains("ATS_ROOT is required"));
+        }
+    }
+
+    @Test
+    void localConfigurationPathsDoNotRequireAtsRoot() throws Exception {
+        assertEquals(
+                java.nio.file.Paths.get("config/database.properties").toAbsolutePath().normalize(),
+                ServiceConfiguration.resolvePath("./config/database.properties", null));
+    }
+
+    @Test
     void blankAdapterValueOverridesInheritedSubsetAndReportsActualSourcesWithoutSecrets()
             throws Exception {
         Path database = directory.resolve("database.properties");

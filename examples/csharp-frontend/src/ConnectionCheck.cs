@@ -20,6 +20,8 @@ namespace Ficc.FrontendLearning
                 {
                     var screenLog = new ConcurrentQueue<string>();
                     client.Trace += screenLog.Enqueue;
+                    client.UseGzip = string.Equals(Environment.GetEnvironmentVariable("FICC_GZIP"),
+                        "true", StringComparison.OrdinalIgnoreCase);
                     client.Connect(Environment.GetEnvironmentVariable("FICC_USER"),
                         int.Parse(Environment.GetEnvironmentVariable("FICC_PORT") ?? "18600"),
                         Environment.GetEnvironmentVariable("FICC_HOST") ?? "127.0.0.1",

@@ -16,6 +16,7 @@ namespace Ficc.SalesTrading
         public string LogDirectory => MessageLog.DirectoryPath;
         public event Action<string, JObject> Message;
         public event Action<string> Trace;
+        public bool UseGzip { get; set; }
         public bool LogHeartbeats
         {
             get => logHeartbeats;
@@ -27,10 +28,14 @@ namespace Ficc.SalesTrading
         public void Connect(string user, int port = 18600, string host = "127.0.0.1", string password = "trader1")
         {
             account = user;
+            api.IsGzip = UseGzip;
+            Trace?.Invoke("CONNECT " + host + ":" + port + " gzip=" + UseGzip
+                + " sdk=" + typeof(GateWayApi).Assembly.GetName().Version);
             Record("SEND", "CONNECT", "SYS.ATS.LOGIN", new JObject
             {
                 ["host"] = host,
                 ["port"] = port,
+                ["gzip"] = UseGzip,
                 ["userName"] = user,
                 ["password"] = "[REDACTED]"
             });

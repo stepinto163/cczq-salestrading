@@ -1,11 +1,32 @@
-library 'sslib@0.0.1'
+library 'sslib@main'
 
+// QA library verified against main commit 43d4f0642e2b7d8e473ed78ffebf7f1c607b6e4c.
+// This service project must be checked out at the Jenkins workspace root.
+// QA.APP is the only environment. The Jenkins SSH profile must use sumscope.
+// Existing ~/scripts/stop and ~/scripts/start must support this service.
 def jobInfo = [
-    nodeName: "std-docker-slave",
+    nodeName: "jdk8",
+    projName: "ficc",
+    name: "cgws-ficc-saletrading-notificationsvr",
+    appName: "NotificationSvr",
     buildInfo: [
         pom: "pom.xml",
         options: ""
+    ],
+    packageInfo: [
+        name: "NotificationSvr",
+        packageName: "cgws-ficc-saletrading-notificationsvr",
+        archiveFiles: "*-QA.APP-*.tar.gz"
+    ],
+    deployInfo: [
+        QA: [[
+            hostName: "10.130.21.53",
+            packageFile: "cgws-ficc-saletrading-notificationsvr-QA.APP-*.tar.gz",
+            targetFolder: "/opt/sumscope/stc",
+            preCommands: 'source ~/.bash_profile && cd ~/scripts && ./stop NotificationSvr',
+            postCommands: 'source ~/.bash_profile && cd ~/scripts && ./start NotificationSvr'
+        ]]
     ]
 ]
 
-building.buildJavaArtifact jobInfo
+building.buildJavaService(jobInfo)

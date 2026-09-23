@@ -20,6 +20,11 @@ namespace Ficc.FrontendLearning
         private readonly TextBox port = Input("18600", 65);
         private readonly TextBox user = Input("", 95);
         private readonly TextBox password = Input("", 95);
+        private readonly CheckBox gzip = new CheckBox
+        {
+            Text = "GZip（QA直连通常启用）",
+            AutoSize = true
+        };
         private readonly TextBox security = Input("250001.IB");
         private readonly TextBox price = Input("2.5000", 75);
         private readonly TextBox quoteId = Input("", 260);
@@ -98,6 +103,7 @@ namespace Ficc.FrontendLearning
             Controls.Add(layout);
             var login = Bar(layout);
             Add(login, "GW", host, "端口", port, "账号", user, "密码", password);
+            login.Controls.Add(gzip);
             Button(login, "1. 登录", async () =>
             {
                 if (connected) throw new InvalidOperationException("已登录。切换账号请关闭并重启示例。");
@@ -105,6 +111,7 @@ namespace Ficc.FrontendLearning
                 string loginPassword = password.Text;
                 string loginHost = host.Text;
                 int loginPort = int.Parse(port.Text);
+                client.UseGzip = gzip.Checked;
                 await Task.Run(() => client.Connect(loginUser, loginPort, loginHost, loginPassword));
                 connected = true;
                 password.Clear();

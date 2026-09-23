@@ -14,9 +14,9 @@
 
 `pom.xml` 是标准入口，使用 `cgws.ficc.saletrading` 坐标。父项目继承 `sumscope.stc:sc-app-stc-parent-pom:0.1.1-SNAPSHOT`，从内网 Maven 获取 STC 依赖。各子项目使用 `<relativePath/>`，只从 Maven 仓库解析父 POM。
 
-同一工作站按 parent-pom → common → quotesvr / notificationsvr 的顺序，在各项目目录执行 `mvn -B -ntp install`。服务可单独执行 `mvn -B -ntp verify`，输出 `target/*-dist.zip`。
+同一工作站按 parent-pom → common → quotesvr / notificationsvr 的顺序，在各项目目录执行 `mvn -B -ntp install`。服务可单独执行 `mvn -B -ntp verify`，输出 `target/bin、target/javalib 和业务 JAR，供 QA Jenkins 打成 tar.gz`。
 
-Jenkinsfile 沿用 STC 的 `sslib@0.0.1` 和 `building.buildJavaArtifact`。为四个独立仓库各建一个 Job，使用 Java 8 的构建节点；内网 settings.xml、共享库及仓库发布权限由 Jenkins 环境提供。不同节点之间须先发布父 POM 和 common（`mvn deploy`），而不是仅 install。没有配置业务服务部署目标。共享库执行细节需在内网 Jenkins 验证。
+Jenkins：parent/common 使用 sslib@0.0.1 和 buildJavaArtifact；QuoteSvr/NotificationSvr 使用 sslib@main 和 buildJavaService，仅配置 QA.APP。详见 [QA Jenkins](../docs/jenkins-qa.zh-CN.md)。
 
 ## 本机兼容构建
 

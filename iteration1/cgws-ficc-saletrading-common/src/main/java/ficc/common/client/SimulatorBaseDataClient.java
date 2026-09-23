@@ -17,6 +17,8 @@ public final class SimulatorBaseDataClient implements BaseDataClient {
     public SimulatorBaseDataClient() {
         add("250001.IB", "示例国债", "RATE", "GOVERNMENT", "AAA", "北京", false);
         add("250002.IB", "示例政策银行债", "RATE", "POLICY_BANK", "AAA", "北京", false);
+        // Local QTrade integration fixture; valuation and other attributes remain simulated.
+        add("240210.IB", "24国开10", "RATE", "POLICY_BANK", "AAA", "北京", false);
         add("102500001.IB", "示例企业债", "CREDIT", "CORPORATE", "AA+", "上海", false);
         add("102500002.IB", "示例含权企业债", "CREDIT", "CORPORATE", "AAA", "广东", true);
         securities.values().forEach(ficc.common.FilterSampleData::fillMissing);

@@ -55,13 +55,14 @@ public final class ServiceConfiguration {
             String serviceName, String databaseFile, String adapterFile, Consumer<String> log)
             throws IOException {
         Properties configuration = new Properties();
-        Path databasePath = Paths.get(databaseFile).toAbsolutePath().normalize();
+        Path databasePath = resolvePath(databaseFile, System.getenv("ATS_ROOT"));
         loadFile(configuration, databasePath);
         Path adapterPath = null;
         if (adapterFile != null && !adapterFile.trim().isEmpty()) {
-            adapterPath = Paths.get(adapterFile).toAbsolutePath().normalize();
+            adapterPath = resolvePath(adapterFile, System.getenv("ATS_ROOT"));
             loadFile(configuration, adapterPath);
         }
+        StcDatabaseConfiguration.apply(configuration, log);
         log.accept(
                 serviceName
                         + " configuration: workingDirectory="
@@ -102,6 +103,23 @@ public final class ServiceConfiguration {
                         + (source == null ? "<unavailable>" : source.getLocation()));
         configuration.setProperty("diagnostics.serviceName", serviceName);
         return configuration;
+    }
+
+    static Path resolvePath(String configuredPath, String atsRoot) throws IOException {
+        if (configuredPath == null || configuredPath.trim().isEmpty()) {
+            throw new IOException("Service configuration path is empty");
+        }
+        String rootPrefix = "$ATS_ROOT/";
+        if (configuredPath.startsWith(rootPrefix)) {
+            if (atsRoot == null || atsRoot.trim().isEmpty()) {
+                throw new IOException("ATS_ROOT is required for " + configuredPath);
+            }
+            return Paths.get(atsRoot)
+                    .resolve(configuredPath.substring(rootPrefix.length()))
+                    .toAbsolutePath()
+                    .normalize();
+        }
+        return Paths.get(configuredPath).toAbsolutePath().normalize();
     }
 
     private static void loadFile(Properties configuration, Path path) throws IOException {

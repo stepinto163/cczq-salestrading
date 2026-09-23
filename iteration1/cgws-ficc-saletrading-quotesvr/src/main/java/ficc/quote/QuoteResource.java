@@ -21,6 +21,7 @@ public final class QuoteResource extends ResourceAdapter {
     private QuoteService service;
     private Properties configuration;
     private LoginSessionClient identity;
+    private IntakeCreateEndpoint intakeCreate;
     private BiConsumer<String, JSONObject> publisher = (topic, value) -> {};
 
     @Override
@@ -31,6 +32,7 @@ public final class QuoteResource extends ResourceAdapter {
                             "QuoteSvr",
                             getConfig().getString("quote.properties"),
                             getConfig().getString("adapter.properties", ""));
+            intakeCreate = IntakeCreateEndpoint.load(configuration);
             store =
                     ComponentLog.initialize(
                             configuration,
@@ -120,6 +122,14 @@ public final class QuoteResource extends ResourceAdapter {
                         ApiException.forField("1001", "VALIDATION_FAILED", "Invalid JSON", null));
             }
             requestId = request.getString("requestId");
+            if ("ficc.quote.create".equals(topic) && request.containsKey("intake")) {
+                if (service == null || intakeCreate == null) {
+                    throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
+                }
+                synchronized (service) {
+                    return intakeCreate.create(service, request);
+                }
+            }
             if (QuoteSvrClient.INTERNAL_STATE_QUERY.equals(topic)
                     || QuoteSvrClient.INTERNAL_PRICE_QUERY.equals(topic)) {
                 // STC may put a transport connection ID in signalID even without user login.
