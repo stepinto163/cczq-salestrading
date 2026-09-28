@@ -50,7 +50,11 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         public Task<QuoteParseResult> ParsePreciseTextAsync(string text, CancellationToken ct)
         {
-            throw new NotSupportedException("ParseSvr尚未接入。请使用“手工报价”创建真实报价；不会用模拟识别结果提交。");
+            if (disposed)
+            {
+                throw new ObjectDisposedException(nameof(DpsSalesTradingServices));
+            }
+            return new StcQuoteParserClient(transport, UserName).ParseAsync(text, ct);
         }
 
         public Task<IReadOnlyList<FuzzyCandidate>> QueryFuzzyCandidatesAsync(FuzzyQuery query, CancellationToken ct)
@@ -63,24 +67,9 @@ namespace STC.SalesTrading.Plugin.Ficc
             throw new NotSupportedException("模糊报价服务尚未接入，未提交任何记录。");
         }
 
-        public async Task SubmitQuotesAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
+        public Task SubmitQuotesAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
         {
-            ct.ThrowIfCancellationRequested();
-            JObject[] inputs = rows.Select(row =>
-            {
-                JObject input = DpsModelMapper.Input(row);
-                input["clientQuoteId"] = row.ClientQuoteId;
-                return input;
-            }).ToArray();
-            JArray results = FiccApiClient.RequireQuoteResults(await Api.CreateAsync(inputs));
-            foreach (JObject result in results.OfType<JObject>())
-            {
-                JObject quote = await Api.GetQuoteAsync((string)result["quoteId"]);
-                if ((string)quote["status"] == "PENDING_CONFIRM")
-                {
-                    FiccApiClient.RequireQuoteResults(await Api.OperateAsync("confirm", new[] { quote }));
-                }
-            }
+            return new ParsedQuoteSubmitter(Api).SubmitAsync(rows, ct);
         }
 
         public async Task ConfirmRowsAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)

@@ -192,14 +192,27 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     Rows.Add(rvm);
                 }
 
-                if (!KeepTextAfterParse) InputText = string.Empty;
+                if (!KeepTextAfterParse && result.Rows.Count > 0
+                    && (result.Warnings == null || result.Warnings.Count == 0))
+                {
+                    InputText = string.Empty;
+                }
 
-                StatusMessage = string.Format("识别完成 · 成功 {0} 条 · 失败 {1} 条 · 耗时 {2}ms",
-                    result.SucceededCount, result.FailedCount, (int)result.Elapsed.TotalMilliseconds);
+                StatusMessage = string.Format("识别返回 {0} 条 · 请核对原文及报价 · 耗时 {1}ms",
+                    result.Rows.Count, (int)result.Elapsed.TotalMilliseconds);
+                if (result.Warnings != null && result.Warnings.Count > 0)
+                {
+                    StatusMessage += " · " + string.Join("；", result.Warnings);
+                }
                 RecomputeStats();
+            }
+            catch (OperationCanceledException)
+            {
+                // Disposed or superseded requests must not replace the active preview.
             }
             catch (Exception ex)
             {
+                com.gateway.log.LogHelper.Error("ParserSvr precise quote recognition failed", ex);
                 StatusMessage = "识别失败：" + ex.Message;
                 RecomputeStats();
             }
@@ -220,9 +233,12 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             var selected = SelectedRows.ToList();
             if (selected.Count == 0) { ToastService.Show("请先勾选要确认的报价", ToastKind.Warning); return; }
 
-            foreach (var row in selected) row.Commit();
             try
             {
+                foreach (var row in selected)
+                {
+                    row.Commit();
+                }
                 await _quoteService.SubmitQuotesAsync(
                     selected.Select(row => row.Row).ToList(),
                     CancellationToken.None);

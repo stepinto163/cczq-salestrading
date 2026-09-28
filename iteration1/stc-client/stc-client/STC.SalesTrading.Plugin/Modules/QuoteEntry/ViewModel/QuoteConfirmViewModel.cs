@@ -337,9 +337,12 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             var selected = SelectedRows.ToList();
             if (selected.Count == 0) { ToastService.Show("请先勾选要确认的报价", ToastKind.Warning); return; }
 
-            foreach (var row in selected) row.Commit();
             try
             {
+                foreach (var row in selected)
+                {
+                    row.Commit();
+                }
                 if (_quoteService is DpsSalesTradingServices services)
                 {
                     await services.ConfirmRowsAsync(selected.Select(row => row.Row).ToArray(), CancellationToken.None);

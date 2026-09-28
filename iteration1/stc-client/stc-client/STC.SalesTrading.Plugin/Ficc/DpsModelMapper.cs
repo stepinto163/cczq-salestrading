@@ -85,15 +85,17 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 ["securityId"] = row.Code, ["side"] = row.Direction == QuoteDirection.Bid ? "1" : "2",
                 ["quoteType"] = row.PriceType == PriceType.CleanPrice ? "2" : row.PriceType == PriceType.DirtyPrice ? "3" : "1",
-                ["yieldType"] = row.PriceType == PriceType.YieldToExercise ? "2" : "1",
-                ["price"] = row.Price?.ToString("0.####", CultureInfo.InvariantCulture),
+                ["yieldType"] = row.PriceType == PriceType.YieldToExercise ? "2"
+                    : row.PriceType == PriceType.YieldToMaturity ? "1" : null,
+                ["price"] = row.Price?.ToString(CultureInfo.InvariantCulture),
                 ["quantity"] = row.Volume?.ToString(CultureInfo.InvariantCulture), ["quantityUnit"] = "WAN", ["currency"] = "CNY",
                 ["settlType"] = settlement, ["tradeDate"] = (row.TradeDate ?? DateTime.Today).ToString("yyyy-MM-dd"),
                 ["institutionId"] = row.InstitutionId, ["institutionName"] = row.Institution,
                 ["contactId"] = row.ContactId, ["contactName"] = row.Trader,
                 ["urgent"] = row.Flags.HasFlag(QuoteFlag.Urgent), ["recommended"] = row.Flags.HasFlag(QuoteFlag.Recommend),
                 ["whole"] = row.Flags.HasFlag(QuoteFlag.Whole), ["oco"] = row.Flags.HasFlag(QuoteFlag.Oco),
-                ["packing"] = row.Flags.HasFlag(QuoteFlag.Packing)
+                ["packing"] = row.Flags.HasFlag(QuoteFlag.Packing),
+                ["remark"] = row.TextContent
             };
         }
     }

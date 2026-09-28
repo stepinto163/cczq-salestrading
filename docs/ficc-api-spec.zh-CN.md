@@ -2712,6 +2712,8 @@ collection必填；返回field/type/operators及枚举或单位。前端通过�
 
 ### H40 自然语言识别为候选报价（待实现）
 
+当前 STC 客户端已改为调用现有 `ParserSvr` 的 `stc.parser.bond`，并非本节规划的 `ficc.quote.recognize`。实际请求、应答和验证边界见[精确报价接入说明](../iteration1/stc-client/stc-client/docs/parser-integration.zh-CN.md)。
+
 服务：`ParseSvr`；topic：`ficc.quote.recognize`；handler：`QuoteRecognizeHandler.handle`。
 
 text必填，默认最大20000字符；sourceMessageId与context可选。只返回候选，不生成正式quoteId，不写QuoteSvr；客户端校正后调用quote.create。不能识别的字段返回issues，不用估值替用户输入价格。

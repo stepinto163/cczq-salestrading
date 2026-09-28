@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using System;
+using System.Globalization;
 using PriceTypeEnum = STC.SalesTrading.Plugin.Abstractions.Models.PriceType;
 
 namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
@@ -17,9 +18,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             Row = row ?? new QuoteConfirmRow();
 
             _direction = Row.Direction == QuoteDirection.Bid ? "Bid" : Row.Direction == QuoteDirection.Ofr ? "Ofr" : string.Empty;
-            _price = Row.Price?.ToString("0.####") ?? string.Empty;
+            _price = Row.Price?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
             _priceType = PriceTypeDisplay(Row.PriceType);
-            _volume = Row.Volume?.ToString("0.#") ?? string.Empty;
+            _volume = Row.Volume?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
             _institution = Row.Institution ?? string.Empty;
             _trader = Row.Trader ?? string.Empty;
             _tradeDate = Row.TradeDate?.ToString("MM-dd") ?? string.Empty;
@@ -124,14 +125,23 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 : Row.Direction;
 
             decimal parsed;
-            if (decimal.TryParse(_price, out parsed)) Row.Price = parsed;
+            if (!decimal.TryParse(_price, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            {
+                throw new InvalidOperationException("请输入有效的报价价格：" + Row.Code);
+            }
+            Row.Price = parsed;
 
             Row.PriceType = ParsePriceType(_priceType);
-            if (decimal.TryParse(_volume, out parsed)) Row.Volume = parsed;
+            if (!decimal.TryParse(_volume, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed) || parsed <= 0)
+            {
+                throw new InvalidOperationException("请输入有效的报价数量：" + Row.Code);
+            }
+            Row.Volume = parsed;
 
             if (Row.Institution != _institution)
             {
                 Row.InstitutionId = null;
+                Row.ContactId = null;
             }
             if (Row.Trader != _trader)
             {

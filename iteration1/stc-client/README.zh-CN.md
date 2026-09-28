@@ -21,3 +21,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 输出位于 `stc-client/runtime/native-client`，与现有运行安装隔离。QA 配置及打包入口见[QA 客户端说明](stc-client/control/QA/README.zh-CN.md)；原生接入与尚未完成的功能见[合并说明](stc-client/docs/lsj-integration.zh-CN.md)。
 
 旧设计笔记记录分阶段实施过程，当前默认业务实现为 `DpsSalesTradingServices`，复用宿主登录后的连接。Mock 实现仅供隔离测试，不代表服务已接通。
+
+精确报价已接入现有 ParserSvr 协议，流程、字段映射、测试与真实服务验证边界见[自然语言报价接入](stc-client/docs/parser-integration.zh-CN.md)。
