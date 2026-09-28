@@ -1,3 +1,12 @@
+# AI collaboration
+
+- For an assigned collaboration task, start with `handoff/INDEX.md` and its task file. Read `handoff/README.md` on first use; do not scan all historical tasks.
+- Codex owns task design and review; WorkBuddy implements bounded tasks on separate branches/checkouts. Task scope and the user's latest instructions govern work.
+- Use the task's `sourceBranch`, not an assumed `main`. Read the task at the fetched publication commit before creating its work branch.
+- Report actual validation and untested behavior. Do not treat a worker's completion report as review approval or permission to merge.
+- Use commit author `adrian` and the repository's existing email; do not change global Git identity.
+- When the user writes in English, briefly offer a more natural version when useful, then continue the task. Preserve code identifiers and Chinese business terms; avoid lengthy grammar explanations.
+
 # Performance testing
 
 The user had to hard-reboot after an earlier grid benchmark hung the laptop.

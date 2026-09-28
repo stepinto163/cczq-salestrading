@@ -21,6 +21,7 @@
 
 ## 构建、部署与排障
 
+- [本机 build / deploy 命令](../iteration1/docs/local-build-deploy.zh-CN.md)
 - [FICC 销售交易平台开发入口](../iteration1/README.zh-CN.md)
 - [服务部署包](../iteration1/build/distribution/README.zh-CN.md)
 - [本机 QA Maven 依赖准备](../iteration1/build/qa-maven/README.zh-CN.md)
@@ -67,7 +68,7 @@ deployment 下的说明参与服务打包，保留独立副本供离线部署使
 
 ## 旧系统参考与交接协议
 
-保留有独立价值的来源分析与外部协议映射。交接协议当前没有待执行任务；旧任务上下文仅供追溯。
+保留有独立价值的来源分析与外部协议映射。当前协作任务以 handoff/INDEX.md 为准；旧任务上下文仅供追溯，不恢复已取消任务。
 
 - [FICC销售交易旧系统实现与迁移参考](legacy-ficc-findings.zh-CN.md)
 - [旧客户端销售交易布局重建](legacy-layout-reconstruction.zh-CN.md)
@@ -75,6 +76,9 @@ deployment 下的说明参与服务打包，保留独立副本供离线部署使
 - [QTrade消息与销售交易前端模型映射](qtrade-frontend-model-mapping.zh-CN.md)
 - [QTrade对外通信消息清单](qtrade-message-inventory.zh-CN.md)
 - [当前交接任务](../handoff/INDEX.md)
-- [Codex / WorkBuddy 文件交接协议（讨论稿 v1）](../handoff/README.md)
+- [Codex / WorkBuddy 协作协议 v2](../handoff/README.md)
+- [WorkBuddy 启动提示词](../handoff/WORKBUDDY.md)
+- [协作路线图](../handoff/ROADMAP.md)
+- [最小项目上下文](../handoff/CONTEXT.md)
 - [codex-20260914-002 · 历史交接上下文（已取消）](../handoff/tasks/codex-20260914-002/context.md)
 - [codex-20260915-001 · 历史交接上下文（已取消）](../handoff/tasks/codex-20260915-001/context.md)

@@ -4,6 +4,8 @@
 
 ## 文档入口
 
+AI 协作从 [handoff/INDEX.md](handoff/INDEX.md) 开始；WorkBuddy 使用[启动提示词](handoff/WORKBUDDY.md)，按任务分支提交，Codex 评审后集成。
+
 **[文档目录](docs/README.md)** 汇总当前设计、开发、部署及排障文档。
 
 - 了解系统：[架构](docs/ficc-sales-trading-architecture.zh-CN.md)、[核心模型](docs/models/core-data-model-er.zh-CN.md)。
@@ -29,6 +31,18 @@
 原生桌面前端源码已纳入本仓库，见 [STC 客户端](iteration1/stc-client/README.zh-CN.md)。使用在 `feature/ficc-native-salestrading` 基础上合并产品 UI 的 LSJ 版本。独立 C# 学习示例和 WinForms 原型已移除。
 
 ## 构建与运行
+
+在仓库根目录运行：
+
+```powershell
+.\build quotesvr             # Maven 构建并测试
+.\deploy quotesvr            # 构建成功后部署并重启
+.\deploy quotesvr -NoBuild   # 使用最近一次成功构建
+.\build client               # MSBuild 构建 STC 客户端
+.\deploy client -NoBuild     # 部署并启动客户端
+```
+
+支持 `quotesvr`、`notificationsvr`、`crmsvr`、`qtintakesvr`、`client` 和 `all`；配置选择、日志位置和失败回退见[本机构建与部署](iteration1/docs/local-build-deploy.zh-CN.md)。
 
 Java 使用 JDK 8、Maven 3.9.x 和各工程主 `pom.xml`，不再维护 `pom_compat.xml`。父 POM 不含 modules；先构建 parent-pom 和 common，再构建各服务。依赖准备、构建命令及 Jenkins 差异见[构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。
 

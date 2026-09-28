@@ -1,10 +1,13 @@
-# 当前交接任务
+# 当前协作任务
 
-`templates` 下是讨论用格式，不应执行。
+发布分支：feature/ficc-native-salestrading。执行前 fetch 并读取远端此分支，不从 main 或旧副本猜测任务。
 
-| taskId | 执行方 | 工作分支 | 任务文件 |
+| taskId | 执行方 | 任务 | 工作分支 |
 |---|---|---|---|
+| wb-20260928-001 | WorkBuddy | [只读审计文档入口与链接](tasks/wb-20260928-001/task.json) | work/wb-20260928-001 |
 
-当前无待执行任务。用户于 2026-09-15 取消本轮自动联调，改为手工修复 WorkBuddy 环境；不要继续旧任务或自动创建替代任务。
+以 task.json 的 state 为准，只有 ready 可执行。结果同目录 result.json，Codex 复核同目录 review.md。表内出现不代表已测试或已接受。
 
-只列当前任务，不在这里重复记录状态或结果；分别以 task.json、result.json 为准。
+2026-09-15 取消的 v1 任务保持取消。本次是新一轮小任务协作，不恢复旧自动联调。
+
+后续候选见 [ROADMAP.md](ROADMAP.md)，它们不是执行指令。

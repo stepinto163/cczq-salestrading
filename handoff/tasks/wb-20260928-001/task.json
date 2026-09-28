@@ -1,0 +1,41 @@
+{
+    "protocolVersion":  2,
+    "taskId":  "wb-20260928-001",
+    "from":  "codex",
+    "to":  "workbuddy",
+    "state":  "ready",
+    "sourceBranch":  "feature/ficc-native-salestrading",
+    "baseCommit":  "34789ea33e29690498dc6befe2a02f8d42808019",
+    "workBranch":  "work/wb-20260928-001",
+    "goal":  "只读审计三个现有文档入口的本地链接与明显过时说明，为 Codex 提供小而明确的修复清单。",
+    "readFiles":  [
+                      "README.md",
+                      "docs/README.md",
+                      "iteration1/stc-client/README.zh-CN.md"
+                  ],
+    "writePaths":  [
+                       "handoff/tasks/wb-20260928-001/result.json",
+                       "handoff/tasks/wb-20260928-001/evidence.md"
+                   ],
+    "constraints":  [
+                        "只读源码/文档；仅可提交本任务 result.json 和 evidence.md，不修改 task.json、INDEX 或产品文件。",
+                        "只检查三个入口文件及其直接引用的本地文档；不递归扫描整个文档树，不访问外部 URL。",
+                        "不执行 build/deploy，不启动客户端或服务，不连接数据库，不运行性能测试。",
+                        "不存在的机器本地运行目录与断裂的仓库文档链接分开记录；不把未跟踪的本机文件当作远端已存在。",
+                        "对失效说法给出对应源码或现行文档依据；低置信度项明确写待确认，不自行修复。",
+                        "结果摘要保持简短，细节放 evidence.md，不复制完整文档。"
+                    ],
+    "acceptance":  [
+                       "列明实际审计的 publicationCommit，并确认它包含任务 baseCommit。",
+                       "为三个入口分别报告直接本地链接总数、有效数、失效数和跳过项；锚点未核验需单列说明。",
+                       "每个问题给出来源文件/行号、原链接或表述、判断依据、建议；没有问题也报告实际检查数量。",
+                       "区分确定失效、机器环境差异、需要 Codex 决策三类；不把缺依赖当作业务缺陷。",
+                       "仅提交两个允许文件，result.json 经 handoff/check.py 检查通过，推送指定任务分支。"
+                   ],
+    "verification":  [
+                         "git merge-base --is-ancestor \u003ctask.baseCommit\u003e \u003cpublicationCommit\u003e，记录退出码。",
+                         "在 publicationCommit 对应 checkout 中核验三份文档的直接本地链接；可用只读脚本，不执行文档内命令。",
+                         "python handoff/check.py wb-20260928-001 --result。",
+                         "git diff --name-only \u003cpublicationCommit\u003e...HEAD，确认仅包含允许的报告文件。"
+                     ]
+}
