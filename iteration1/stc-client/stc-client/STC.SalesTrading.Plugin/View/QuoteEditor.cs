@@ -68,6 +68,7 @@ namespace STC.SalesTrading.Plugin.View
         private void AddText(Panel panel, string field, string label, string value)
         {
             TextBox input = new TextBox { Text = value, Width = 135, Margin = new Thickness(3), Padding = new Thickness(4) };
+            System.Windows.Automation.AutomationProperties.SetAutomationId(input, "QuoteEditor." + field);
             texts.Add(field, input);
             StackPanel wrapper = new StackPanel { Margin = new Thickness(3) };
             wrapper.Children.Add(new TextBlock { Text = label });
@@ -78,6 +79,7 @@ namespace STC.SalesTrading.Plugin.View
         private void AddChoice(Panel panel, string field, string label, string[] values)
         {
             ComboBox choice = new ComboBox { Width = 125, Margin = new Thickness(3), SelectedValuePath = "Tag" };
+            System.Windows.Automation.AutomationProperties.SetAutomationId(choice, "QuoteEditor." + field);
             foreach (string value in values)
             {
                 string[] parts = value.Split('|');

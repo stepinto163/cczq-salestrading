@@ -1,6 +1,9 @@
+param([string]$OutputRoot)
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
-$outputRoot = Join-Path $clientRoot 'runtime/native-client'
+if (!$OutputRoot) {
+    $OutputRoot = Join-Path $clientRoot 'runtime/native-client'
+}
 $testName = 'ParserIntegrationChecks'
 $testExe = Join-Path $outputRoot "$testName.exe"
 if (Get-Process -Name $testName -ErrorAction SilentlyContinue) {

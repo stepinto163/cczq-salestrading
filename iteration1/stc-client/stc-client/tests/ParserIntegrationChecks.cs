@@ -7,12 +7,16 @@ using System.Runtime.Remoting.Proxies;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Newtonsoft.Json.Linq;
 using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Ficc;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel;
+using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 
 internal static class ParserIntegrationChecks
 {
@@ -23,7 +27,7 @@ internal static class ParserIntegrationChecks
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         STC.Common.Utils.LogHandler.InitLog("parser-check-logs/Parser", "INFO");
-        Application application = new Application();
+        Application application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
         int exitCode = 1;
         application.Dispatcher.BeginInvoke(new Action(async () =>
@@ -133,12 +137,16 @@ internal static class ParserIntegrationChecks
         catch (OperationCanceledException) { Check(true, "reply arriving after cancellation is discarded"); }
         transport.Pending = null;
 
-        using (PreciseQuoteViewModel viewModel = new PreciseQuoteViewModel(new ParserQuoteService(parser)))
+        ParserQuoteService quoteService = new ParserQuoteService(parser);
+        using (PreciseQuoteViewModel viewModel = new PreciseQuoteViewModel(quoteService))
         {
             transport.Response = Reply();
             viewModel.InputText = "240210 bid 2.5 1000";
             await viewModel.IdentifyCommand.ExecuteAsync(null);
             Check(viewModel.Rows.Count == 2 && !viewModel.IsParsing, "existing precise-quote command populates preview");
+            await CheckRenderedSelectionAsync(viewModel, quoteService);
+            viewModel.InputText = "240210 bid 2.5 1000";
+            await viewModel.IdentifyCommand.ExecuteAsync(null);
 
             transport.Response = JObject.Parse("{'Code':'2003','Msg':'未识别到报价'}");
             viewModel.InputText = "unrecognized original";
@@ -169,6 +177,67 @@ internal static class ParserIntegrationChecks
             Check(messages.Any(message => message.Contains("REQ stc.parser.bond") && message.Contains("LOG-CHECK"))
                 && messages.Any(message => message.Contains("REP stc.parser.bond") && message.Contains("Datas")),
                 "real host transport emits complete parser request and response logs");
+        }
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T match)
+            {
+                yield return match;
+            }
+            foreach (T descendant in Descendants<T>(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
+    private static async Task CheckRenderedSelectionAsync(PreciseQuoteViewModel viewModel, ParserQuoteService quoteService)
+    {
+        PreciseQuoteView view = new PreciseQuoteView { DataContext = viewModel };
+        Window window = new Window
+        {
+            Content = view, Width = 1200, Height = 800,
+            ShowActivated = false, ShowInTaskbar = false, Left = -20000, Top = -20000
+        };
+        try
+        {
+            window.Show();
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            window.UpdateLayout();
+            DataGrid grid = Descendants<DataGrid>(view).Single();
+            QuoteConfirmRowViewModel row = viewModel.Rows[0];
+            grid.ScrollIntoView(row);
+            grid.UpdateLayout();
+            CheckBox checkbox = Descendants<CheckBox>(grid).First(control => ReferenceEquals(control.DataContext, row));
+            MethodInfo click = typeof(ToggleButton).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic);
+            click.Invoke(checkbox, null);
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            Check(checkbox.IsChecked == true && row.IsSelected && viewModel.SelectedCount == 1,
+                "rendered checkbox immediately updates selected row and count without leaving the row");
+            click.Invoke(checkbox, null);
+            Check(checkbox.IsChecked == false && !row.IsSelected && viewModel.SelectedCount == 0,
+                "rendered checkbox immediately clears selection");
+            click.Invoke(checkbox, null);
+            Button confirm = Descendants<Button>(view).First(button => ReferenceEquals(button.Command, viewModel.ConfirmSelectedCommand));
+            typeof(Button).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(confirm, null);
+            Task execution = viewModel.ConfirmSelectedCommand.ExecutionTask;
+            if (execution != null)
+            {
+                await execution;
+            }
+            Check(quoteService.SubmittedRows.Count == 1 && ReferenceEquals(quoteService.SubmittedRows[0], row.Row),
+                "rendered confirm button submits exactly the checked quote");
+            Check(viewModel.Rows.Count == 1 && viewModel.SelectedCount == 0 && !viewModel.Rows.Contains(row),
+                "confirmation removes submitted row and retains unchecked row");
+        }
+        finally
+        {
+            window.Close();
         }
     }
 
@@ -292,12 +361,17 @@ internal static class ParserIntegrationChecks
     private sealed class ParserQuoteService : IQuoteService
     {
         private readonly StcQuoteParserClient parser;
+        public List<QuoteConfirmRow> SubmittedRows = new List<QuoteConfirmRow>();
         public ParserQuoteService(StcQuoteParserClient parser) { this.parser = parser; }
         public Task<QuoteParseResult> ParsePreciseTextAsync(string text, CancellationToken ct) { return parser.ParseAsync(text, ct); }
         public Task<IReadOnlyList<QuoteConfirmRow>> LoadPendingRowsAsync(CancellationToken ct) { throw new NotSupportedException(); }
         public Task<IReadOnlyList<FuzzyCandidate>> QueryFuzzyCandidatesAsync(FuzzyQuery query, CancellationToken ct) { throw new NotSupportedException(); }
         public Task ConfirmQuotesAsync(IReadOnlyCollection<string> ids, CancellationToken ct) { throw new NotSupportedException(); }
-        public Task SubmitQuotesAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct) { throw new NotSupportedException(); }
+        public Task SubmitQuotesAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
+        {
+            SubmittedRows.AddRange(rows);
+            return Task.CompletedTask;
+        }
         public Task DeleteQuotesAsync(IReadOnlyCollection<string> ids, CancellationToken ct) { throw new NotSupportedException(); }
         public Task SubmitIntentQuotesAsync(IReadOnlyCollection<BoardIntentRow> rows, CancellationToken ct) { throw new NotSupportedException(); }
     }
