@@ -1,0 +1,78 @@
+# 本机构建与部署
+
+在仓库根目录执行。Java 使用各工程的主 `pom.xml` 和 Maven；STC 客户端使用现有 MSBuild 脚本。包装脚本统一命令、构建产物和启停流程，不替代 Jenkins。
+
+```powershell
+cd D:\workspace\greatewall\ficc\ficc
+
+.\build quotesvr                 # 编译、运行 Maven 测试、打包；不停止服务
+.\deploy quotesvr                # 先构建，成功后替换二进制并重启
+.\deploy quotesvr -NoBuild       # 部署最近一次成功打包的产物
+
+.\build client                   # 独立目录编译 STC 客户端
+.\deploy client -NoBuild         # 替换客户端二进制并启动
+.\deploy notificationsvr
+.\build all                      # 构建四个业务服务及客户端
+.\deploy all -NoBuild            # 依次部署四个业务服务及客户端
+.\deploy quotesvr -Plan          # 只查看目标和执行计划
+```
+
+入口为 `build.cmd` / `deploy.cmd`，内部调用 `iteration1/scripts/product.ps1`。CMD 入口已设置本次 PowerShell 进程的执行策略，不需要修改系统执行策略。
+
+## 目标和依赖
+
+| 目标 | 构建内容 | 部署位置 |
+|---|---|---|
+| `parent-pom` | 安装父 POM | 无进程，不支持 deploy |
+| `common` | parent-pom → common | 无进程；部署使用它的服务 |
+| `quotesvr` | parent-pom → common → quotesvr | `ATS_ROOT/stc/QuoteSvr` |
+| `notificationsvr` | parent-pom → common → notificationsvr | `ATS_ROOT/stc/NotificationSvr` |
+| `crmsvr` | parent-pom → common → crmsvr | `ATS_ROOT/stc/CRMSvr` |
+| `qtintakesvr` | parent-pom → common → qtintakesvr | `ATS_ROOT/stc/QtIntakeSvr` |
+| `client` | netapi、Common、Frame、SalesTrading.Plugin、STC | `iteration1/stc-client/stc-client/runtime/native-client` |
+| `all` | 四个业务服务及客户端 | 按上表依次部署 |
+
+Java 执行 `mvn clean install`，不跳过测试。先使用 `JAVA_HOME`，未设置时尝试仓库 runtime 中的 JDK 8；主 POM 以 Java 8 为编译目标。Maven 优先使用 PATH，其次使用 runtime 中的 Maven。客户端需要 MSBuild、WPF 和 .NET Framework 4.7.2 开发工具。
+
+本入口不编译或重启外部 STC 底座：GW、LoginSvr、BaseSvr、ParserSvr、ZooKeeper、PostgreSQL 等。它们仍由环境启停脚本管理。`deploy all` 会启动 QtIntakeSvr，使用该命令前应确认当前需要建立 QTrade 连接。
+
+## 环境选择
+
+`ATS_ROOT` 的选择顺序：`-AtsRoot` 参数 → 当前环境变量 `ATS_ROOT` → 仓库同级 `qa_env/ats_root`。
+
+```powershell
+.\deploy quotesvr -AtsRoot D:\workspace\greatewall\ficc\qa_env\ats_root
+.\build quotesvr -SettingsFile C:\path\settings.xml
+.\deploy client -NoBuild -ClientConfig C:\path\STC.exe.config
+```
+
+默认 Maven settings 为 `iteration1/build/qa-maven/settings-local.xml`，依赖准备见[本机 QA Maven 依赖](../build/qa-maven/README.zh-CN.md)。默认客户端配置为 ATS_ROOT 上级目录的 `stc-client/STC.exe.config`。
+
+服务必须已安装在目标环境并在 `ATS_ROOT/scripts/serverlist.csv` 中启用。部署调用该环境的 `scripts/service.ps1`；客户端调用 `iteration1/scripts/manage-stc-client.ps1`。这是本机部署命令，不通过 SSH 部署远程 QA，也不执行 Maven 的 `deploy` 仓库发布目标。
+
+## 部署行为
+
+1. 完成构建和包检查后才停止目标进程；构建失败不影响正在运行的版本。
+2. 校验产物清单和 SHA-256，完整替换 `javalib` 或客户端 `bin`，避免旧依赖混入新版本。
+3. 保留服务的 `control`、`config`、数据库配置和运行数据；不运行 SQL。客户端启动时应用选定的 `STC.exe.config`。
+4. 旧二进制保存在目标目录的 `.deploy/<本次编号>/previous`。新版本启动失败时，恢复旧二进制并尝试启动；命令仍返回失败状态。
+5. `all` 先完成全部构建和包校验，再逐个部署。某个服务失败时只恢复该服务，已成功部署的服务不会自动回退。
+
+启动检查只确认服务端口由目标进程监听，或客户端进程存活，不代表登录、基础资料或业务端到端检查通过。客户端有未保存内容、无法正常退出时，部署失败，不强制杀进程。不要同时用其他脚本启停同一目标。
+
+## 产物与日志
+
+- 每次执行：`iteration1/runtime/builds/<本次编号>/build.log` 或 `deploy.log`。
+- 构建包：同目录下 `<目标>/payload` 和 `package.json`；客户端详细编译日志也在 payload 中。
+- 最近成功包指针：`iteration1/runtime/builds/latest-<目标>.txt`。
+- 服务运行日志：目标 `ATS_ROOT/log`，沿用环境原来的日志配置。
+
+`-NoBuild` 使用最近成功包，不自动检测源代码是否更新；修改代码后应先 build，或直接 deploy。产物及备份为本机文件，不提交 Git；脚本不会自动清理回退所需文件。
+
+部署回退的隔离检查（需先成功 build quotesvr）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-product-build.ps1
+```
+
+该检查使用临时目录与假的启停脚本，覆盖启动失败恢复、停止失败保护、配置保留和旧依赖替换，不停止真实服务。

@@ -1,10 +1,12 @@
 ﻿param(
     [string]$MSBuild,
-    [string]$TargetFramework = 'v4.7.2'
+    [string]$TargetFramework = 'v4.7.2',
+    [string]$OutputRoot
 )
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
-$outputRoot = Join-Path $clientRoot 'runtime/native-client'
+if (!$OutputRoot) { $OutputRoot = Join-Path $clientRoot 'runtime/native-client' }
+$outputRoot = [IO.Path]::GetFullPath($OutputRoot)
 $binaryRoot = Join-Path $outputRoot 'bin'
 New-Item -ItemType Directory -Force -Path $binaryRoot | Out-Null
 
