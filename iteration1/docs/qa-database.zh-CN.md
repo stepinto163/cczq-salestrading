@@ -33,16 +33,15 @@ psql -h QA_DB_HOST -p 5432 -U ficc_quote -d ficc_quote -W -v ON_ERROR_STOP=1 -f 
 
 ## 服务配置
 
-修改 QA 副本中的 `iteration1/runtime/quotesvr.local.properties`，保留其他配置项，更新以下数据库属性：
+QA 连接配置集中在 `$ATS_ROOT/control/DBPoolConfig.ini`，服务包内的 `config/service.properties` 只选择数据源和 schema：
 
 ```properties
-db.url=jdbc:postgresql://QA_DB_HOST:5432/ficc_quote
-db.user=ficc_quote
-db.password=填写QA密码
+dbpool.cfg=$ATS_ROOT/control/DBPoolConfig.ini
+db.sourceName=FICC_SALESTRADING
 db.schema=ficc_salestrading
 ```
 
-QuoteSvr 和 NotificationSvr 的 `control/<服务名>/resourceCfg.ini` 中，`quote.properties` 必须指向 QA 上的实际配置文件。两个服务读取同一份连接属性和 `db.schema`，不再为 NotificationSvr 强制指定另一个 schema。必须部署本次更新后的 common 和 NotificationSvr JAR，旧二进制仍使用旧 schema。
+两个服务使用同一业务 schema，通知表带独立前缀。实际 QA 可以使用其他 schema（如 `ficc_salestrading2`），但建表 SQL、检查 SQL 和服务配置必须一致；脚本默认创建 `ficc_salestrading`，不会创建数据库。共享数据源的追加方法见[QA 配置指南](jenkins-qa.zh-CN.md)，保留 STC 既有 `MYSQL0`。
 
 当前服务启动时仍执行 `CREATE ... IF NOT EXISTS`，所以仅授予增删改查权限不足以满足现有启动代码；使用拥有这些对象及专用数据库的应用账号最直接。若由 DBA 代为建表，应使用 `SET ROLE` 切换到应用账号后执行，使对象归属一致。
 
@@ -76,9 +75,3 @@ ORDER BY update_time DESC;
 4. 两个服务的 `db.schema` 都设为 `ficc_salestrading`，部署新代码后启动服务。报价原表由 schema 改名保留；旧 `ficc_notification` 仅作为迁移备份保留，新版本不再读写它。
 
 `002` 是一次性迁移，不要在已启动并产生通知数据的新库上执行。它不会删除旧表，也不会搬迁旧通知 schema 中无用的报价表。
-
-## 本机验证（2026-09-14）
-
-建表脚本在临时 schema 的事务中连续执行两次，确认 14 张表后回滚。common、QuoteSvr、NotificationSvr 编译通过；共享 schema 测试确认不同服务可同时连接、同一服务的重复写入者被拒绝，事件与幂等结果互不干扰，测试写入全部回滚。
-
-本机迁移前备份为 `iteration1/runtime/before-shared-schema-20260914-113125.dump`。迁移后、重启前逐行比较 7 张通知表，内容完全一致。当时服务已切换至旧名称的共享 schema（不代表已执行本轮命名迁移）；旧 `ficc_notification` 保留作备份。网关在本次维护后未自动恢复 QuoteSvr 连接，重启 GW 后，C# 连接检查 3 项及提醒功能检查 20 项通过，功能检查仅创建 3 条测试报价。结果见 `runtime/shared-schema-client.json`、`runtime/shared-schema-notifications.json`；未执行压力测试。

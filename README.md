@@ -1,66 +1,49 @@
 # FICC 销售交易平台
 
-命名及已有数据库升级步骤见 [产品命名更新](iteration1/docs/product-naming.zh-CN.md)。
+基于 STC / BBox / DPS 的销售交易系统，包含报价生命周期、行情价格簿、报价提醒、CRM 和 QTrade 接入。桌面业务前端已整合到 STC 客户端；Web 联调页面与独立 DPS API 调试器保留。
 
-本仓库保存销售交易服务、C# 桌面平台、DPS API 调试器、数据库 SQL 和设计文档。服务基于既有 STC/BBox/DPS 框架；前端经独立 GW 调用后台。
+## 文档入口
+
+**[文档目录](docs/README.md)** 汇总当前设计、开发、部署及排障文档。
+
+- 了解系统：[架构](docs/ficc-sales-trading-architecture.zh-CN.md)、[核心模型](docs/models/core-data-model-er.zh-CN.md)。
+- 开发接入：[API 规格](docs/ficc-api-spec.zh-CN.md)、[筛选字段与枚举](docs/product-filter-contract.zh-CN.md)、[STC 开发约定](docs/stc-development-principles.zh-CN.md)。
+- 构建部署：[Maven 构建](iteration1/docs/maven-jenkins.zh-CN.md)、[QA Jenkins](iteration1/docs/jenkins-qa.zh-CN.md)、[数据库初始化与迁移](iteration1/docs/qa-database.zh-CN.md)。
+- 运行联调：[本机启动](iteration1/docs/local-startup.zh-CN.md)、[依赖适配](iteration1/docs/stc-adapters.zh-CN.md)、[API 调试器](iteration1/docs/api-debugger.zh-CN.md)。
 
 ## 代码
 
-| 目录 | 内容 |
+| 目录 | 职责 |
 |---|---|
-| [iteration1/cgws-ficc-saletrading-parent-pom](iteration1/cgws-ficc-saletrading-parent-pom) | 独立 STC 父 POM、Java 8 构建约定 |
-| [iteration1/cgws-ficc-saletrading-common](iteration1/cgws-ficc-saletrading-common) | 共享业务工具与服务客户端 |
-| [iteration1/cgws-ficc-saletrading-quotesvr](iteration1/cgws-ficc-saletrading-quotesvr) | 报价生命周期、查询、行情价格簿 |
-| [iteration1/cgws-ficc-saletrading-notificationsvr](iteration1/cgws-ficc-saletrading-notificationsvr) | 报价提醒、用户偏好与已读状态 |
-| [iteration1/GW](iteration1/GW) | 标准 STC GW 配置 |
-| [iteration1/web-client](iteration1/web-client/README.zh-CN.md) | Web 联调平台首轮：GW 登录、报价生命周期、行情与提醒 |
-| [iteration1/api-debugger](iteration1/api-debugger) | DPS 请求与订阅调试工具 |
-| [iteration1/sql](iteration1/sql) | PostgreSQL 初始化及旧 schema 迁移脚本 |
+| [parent-pom](iteration1/cgws-ficc-saletrading-parent-pom) | 独立 STC 父 POM、Java 8 构建约定 |
+| [common](iteration1/cgws-ficc-saletrading-common) | 共享业务工具、筛选、存储与服务客户端 |
+| [quotesvr](iteration1/cgws-ficc-saletrading-quotesvr) | 报价生命周期、查询、行情价格簿 |
+| [notificationsvr](iteration1/cgws-ficc-saletrading-notificationsvr) | 报价提醒、用户偏好与已读状态 |
+| [crmsvr](iteration1/cgws-ficc-saletrading-crmsvr) | CRM 查询与 STC 镜像 |
+| [qtintakesvr](iteration1/cgws-ficc-saletrading-qtintakesvr) | QTrade FIX 接入及报价转发 |
+| [GW](iteration1/GW/README.zh-CN.md) | 标准 STC GW 配置，使用 QA 运行库 |
+| [Web](iteration1/web-client/README.zh-CN.md) | 原需求界面的 GW 接入版 |
+| [API 调试器](iteration1/docs/api-debugger.zh-CN.md) | DPS 请求与订阅调试 |
+| [SQL](iteration1/sql) | PostgreSQL 初始化、迁移及测试夹具 |
 
-QuoteSvr 与 NotificationSvr 共用 PostgreSQL 的 `ficc_salestrading` schema。默认使用模拟数据；登录、基础数据可切换至真实 STC 服务，CRM 支持空实现及外部适配 JAR。配置与联调边界见 [STC / CRM 适配指南](iteration1/docs/stc-adapters.zh-CN.md)。
-
-桌面业务前端已整合到 `stc-client`。独立 C# 示例、WinForms 原型及其专用测试脚本已移除；API 调试器保留。
+原生桌面前端在本地独立 `iteration1/stc-client/stc-client` 仓库维护，不包含在本仓库的 GitHub 文件树中。独立 C# 学习示例和 WinForms 原型已移除。
 
 ## 构建与运行
 
-Java 后端统一使用 `cgws-ficc-saletrading-*`，要求 JDK 8 和 Maven 3.9.x。各项目的 **pom.xml 是正式 STC / Jenkins 入口**，继承独立的 [父 POM](iteration1/cgws-ficc-saletrading-parent-pom/pom.xml)。从仓库根目录按顺序构建：
+Java 使用 JDK 8、Maven 3.9.x 和各工程主 `pom.xml`，不再维护 `pom_compat.xml`。父 POM 不含 modules；先构建 parent-pom 和 common，再构建各服务。依赖准备、构建命令及 Jenkins 差异见[构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。
 
-```powershell
-mvn -B -ntp -f iteration1/cgws-ficc-saletrading-parent-pom/pom.xml install
-mvn -B -ntp -f iteration1/cgws-ficc-saletrading-common/pom.xml clean install
-mvn -B -ntp -f iteration1/cgws-ficc-saletrading-quotesvr/pom.xml clean verify
-mvn -B -ntp -f iteration1/cgws-ficc-saletrading-notificationsvr/pom.xml clean verify
-```
-
-每个项目包含自己的 Jenkinsfile，正式产物位于各自的 `target`。父 POM 不包含 modules；跨 Jenkins 节点时，先将父 POM 和 common 发布到内网仓库。
-
-本机与 QA 统一使用主 `pom.xml`、Java 8 和 QA 原版依赖。旧 `cczq-app-*` 源码、根聚合 POM 和旧根 Jenkinsfile 已移除，不再作为构建入口。详见 [Maven / Jenkins 构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。
-
-API 调试器要求 Windows、.NET SDK 和 .NET Framework 4.7.2 开发工具：
+API 调试器需要 Windows、.NET SDK 和 .NET Framework 4.7.2 开发工具：
 
 ```powershell
 dotnet build iteration1/api-debugger/DpsApiDebugger.csproj
 ```
 
-日常启动、功能测试和配置见 [平台说明](iteration1/README.zh-CN.md)、[启动指南](iteration1/docs/local-startup.zh-CN.md) 和 [QA 数据库指南](iteration1/docs/qa-database.zh-CN.md)。
+QuoteSvr 与 NotificationSvr 共用业务 schema。用户及债券资料可接真实 STC 服务；CRM 支持通过 CRMSvr 访问、直接只读访问 PostgreSQL，或显式选择模拟实现。QA 配置和本机配置分别维护，不应互相覆盖。
 
-报价、行情和提醒通过 `view.query` 分页查询，客户端只缓存当前批次，不再使用 `view.extend` 累积扩展。C# 支持滚动换批和上一批／下一批；Web 滚动后进入稳定浏览模式，点击“有 XX 条变更”返回实时更新。详见 [分页查询与滚动浏览](iteration1/docs/quote-scrolling.zh-CN.md) 和 [Web 浏览交互](docs/quote-board-browsing-ux.zh-CN.md)。
-
-服务端 ID 复用 STC 生成器，规则与兼容性见 [ID 生成说明](iteration1/docs/id-generation.zh-CN.md)。
-
-## 文档
-
-当前设计入口：
-
-- [系统架构](docs/ficc-sales-trading-architecture.zh-CN.md)
-- [核心数据模型与 ER 图](docs/models/core-data-model-er.zh-CN.md)
-- [API 规格](docs/ficc-api-spec.zh-CN.md)
-- [STC 开发原则](docs/stc-development-principles.zh-CN.md)
-
-`docs` 内的旧协议草案、历史代码分析和界面复原资料用于参考；实际平台行为及部署步骤以 `iteration1` 下的代码和文档为准。
+报价、行情和提醒各有独立模型及推送频道，使用 `view.open` / `view.query` 和客户端分页排序；交互约定见[前后端协作说明](docs/quote-board-paging-collaboration.zh-CN.md)。
 
 ## 仓库边界
 
-数据库数据、密码、许可证、运行日志、安装程序、编译产物和本机缓存不提交。Java 依赖通过 Maven 本地仓库或公司私服提供，详见构建指南。API 调试器使用的 `gateway-api.dll` 随源码保留；其余公开 .NET 依赖通过 NuGet 恢复。
+数据库数据、密码、许可证、运行日志、安装程序和本机缓存不提交。Java 依赖来自公司 Maven 仓库或本机导入的 QA 原版依赖；API 调试器所需的 DPS SDK DLL 随源码保留。
 
-首次克隆后需要在本机准备数据库连接配置、有效许可证和 QA 原版 STC 依赖。原始浏览器页面存档、无关旧数据库脚本和早期网格压力测试工具不属于本仓库发布内容。
+旧接口讨论稿、已移除客户端的操作指南及一次性测试记录已从当前文档树移除，可从 Git 历史追溯。保留的旧系统分析单独列为参考，不作为当前 API 契约。

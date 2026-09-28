@@ -35,26 +35,24 @@
 3. 点击 **订阅**，再通过请求区调用对应 view.open 登记筛选条件。也可以手工填写精确 topic。
 4. 同页左侧选择收到的消息，右侧 **完整推送消息（可复制）** 显示时间、topic 和完整 JSON 正文，不截断消息内容。可拖动分隔条调整宽度；正在查看历史消息时，新消息不会强制跳到最新一条。
 
-C# 客户端的 **操作结果 / 开发工具 → DPS 消息** 中新增 **记录 HEARTBEAT**，默认不勾选。关闭时，心跳不写入界面日志和 JSONL 文件；仍正常参与消息序号与连接状态处理。勾选后只记录后续心跳。请求、回复和业务推送不受此选项影响。
-
 API 调试器在 **订阅 / 发布** 的订阅、退订按钮旁提供 **显示 HEARTBEAT**，同样默认关闭。该选项即时控制后续心跳是否进入订阅列表、消息日志及 JSONL 文件，无需重新连接；已显示或写入的历史记录保留。开启后可选中心跳查看完整正文，关闭也不会改变订阅或消息处理。
 
 | 服务 | Topic | 用途及访问范围 |
 |---|---|---|
 | QuoteSvr | `ficc.quote.report.<sessionId>` | 当前会话报价变化，无订阅快照 |
 | QuoteSvr | `ficc.price.report.<sessionId>` | 当前会话行情价格簿，支持订阅快照 |
-| QuoteSvr | `ficc.quote.events` | 内部报价事件，当前 GW 禁止 |
-| QuoteSvr | `ficc.price.snapshots` | 内部批量价格簿同步，当前 GW 禁止 |
-| QuoteSvr | `ficc.price.book.<securityId>` | 内部单债券 STC MarketData，当前 GW 禁止 |
+| QuoteSvr | `ficc.quote.events` | 内部报价事件，内部服务用途；取决于 GW 路由及权限配置 |
+| QuoteSvr | `ficc.price.snapshots` | 内部批量价格簿同步，内部服务用途；取决于 GW 路由及权限配置 |
+| QuoteSvr | `ficc.price.book.<securityId>` | 内部单债券 STC MarketData，内部服务用途；取决于 GW 路由及权限配置 |
 | NotificationSvr | `ficc.notification.report.<sessionId>` | 当前会话提醒、已读及偏好变化，无订阅快照 |
-| NotificationSvr | `ficc.notification.events` | 内部通知事件，当前 GW 禁止 |
+| NotificationSvr | `ficc.notification.events` | 内部通知事件，内部服务用途；取决于 GW 路由及权限配置 |
 
 此目录描述当前代码实际发布的 7 类 topic；内部 topic 也列出供理解服务数据流，不表示能经前端 GW 使用。它是本地维护的目录，不是运行时自动发现。
 
 - 报价、通知使用普通订阅；初始内容通过各自 view.open/query 请求取得。
 - 行情可勾选“行情订阅快照”，观察原生快照，再发送 price.view.open 观察增量。
 - 推送列表展示时间、kind、topic；选择一条后在“推送内容”查看 JSON。“退订”取消所选 topic。
-- GW 拒绝其他会话的私有 topic。调试器不会绕过服务端权限。
+- 私有推送使用当前会话的 stream.open 返回值；标准 GW 的实际会话隔离边界见下文，不假定调试工具替代服务端鉴权。
 
 ### 通配订阅
 
@@ -66,7 +64,7 @@ DPS 的 TopicUtils 支持按点分段的 `*` 和 `**` 匹配；例如 `ficc.pric
 
 ## 日志及构建
 
-与平台共用 UTF-8 JSONL 日志：时间、连接标识、用户、方向、服务名、topic、完整业务消息体；密码脱敏。界面“消息日志”页可打开实际目录，文件不受界面 200 条预览限制。底层 SDK 未暴露的 TCP 帧及原始退订确认不在应用日志范围。
+调试器使用自身的 UTF-8 JSONL 日志：时间、连接标识、用户、方向、服务名、topic、完整业务消息体；密码脱敏。界面“消息日志”页可打开实际目录，文件不受界面 200 条预览限制。底层 SDK 未暴露的 TCP 帧及原始退订确认不在应用日志范围。
 
 ```powershell
 dotnet build iteration1/api-debugger/DpsApiDebugger.csproj -m:1
@@ -74,7 +72,7 @@ dotnet build iteration1/api-debugger/DpsApiDebugger.csproj -m:1
 
 源码入口：`api-debugger/src/ApiDebugForm.cs`；订阅界面：`ApiDebugSubscriptions.cs`；请求模板：`api-debugger/requests.json`；订阅目录及中文解释：`api-debugger/subscriptions.json`。
 
-启动参数 `--self-test <结果文件>` 验证服务过滤后的 7 类 topic、会话 topic 获取、QuoteSvr/NotificationSvr 请求、行情快照订阅、退订，以及 GW 拒绝通配和内部订阅。不创建报价。本轮结果为 `runtime/debugger-subscriptions.json`，全部通过。
+早期订阅自测包含已移除自定义 GW 的权限假设，不作为标准 GW 的当前验收结果。联调时逐项检查目标服务的请求、推送及实际权限配置。
 
 当前版本已构建到标准输出目录，可直接运行：
 

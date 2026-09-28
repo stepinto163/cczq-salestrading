@@ -706,29 +706,29 @@ QT原始消息或手工输入
 | sc-app-stc-sbpcomsvr | `2f5a5779c3e09ebbfff507836a143f547c3be083` |
 | 编号 | 文件及定位 | 说明 |
 | --- | --- | --- |
-| Q1 | [MessageListener.java:684](D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java:684) | FIX来源分支、身份补充、方向转换及发布 |
-| Q2 | [QuoteInputInfoVo.java:168](D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/vo/QuoteInputInfoVo.java:168) | 价格、报量、时间和来源字段转换 |
-| Q3 | [QtradeStream.java:1620](D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/QtradeStream.java:1620) | 联系人和机构主数据缓存 |
-| Q4 | [QtCategoryJob.java:23](D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/job/QtCategoryJob.java:23) | 按输入表最新创建时间清理内容分组缓存 |
-| S1 | [SbpStream.java:351](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/stream/SbpStream.java:351) | 消息接收、用户转换、再识别、入库和推送 |
-| S2 | [QuoteInputInfo.java:16](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/model/QuoteInputInfo.java:16) | 输入模型及确认字段 |
-| S3 | [SbpQuoteInfo.java:24](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/model/po/SbpQuoteInfo.java:24) | 正式报价模型及关联字段 |
-| S4 | [ConfirmIntentionQuoteHandler.java:66](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/ConfirmIntentionQuoteHandler.java:66) | 确认、合并、撤销旧报价与转换新报价 |
-| S5 | [QuoteStatusEnum.java:4](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/model/emu/QuoteStatusEnum.java:4) | 正式报价状态枚举 |
-| S6 | [QuoteInfoServiceImpl.java:62](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/service/impl/QuoteInfoServiceImpl.java:62) | 报价加载、修改、撤销、恢复和发布 |
-| S7 | [OrderFacade.java:41](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/service/impl/OrderFacade.java:41) | 订单缓存和成交动作处理入口 |
-| S8 | [SBPBondsExtendJob.java:36](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/job/SBPBondsExtendJob.java:36) | 日终撤销与清理计划 |
-| S9 | [IntentionHelper.java:306](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/utils/IntentionHelper.java:306) | 文本数量和价格解释辅助方法 |
-| S10 | [UserInfoDao.java:16](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/dao/UserInfoDao.java:16) | 启用内部用户的QT账号查询 |
-| S11 | [SBPCacheManage.java:26](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/cache/SBPCacheManage.java:26) | 全量报价缓存和按券扫描 |
-| S12 | [QueryQuoteInfoPageHandler.java:31](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/QueryQuoteInfoPageHandler.java:31) | 全量排序后分页 |
-| S13 | [RtOutputStream.java:21](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/stream/RtOutputStream.java:21) | 消息发布与异常处理 |
-| S14 | [QuoteInputMapper.xml:5](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/resources/mapper/mysql/QuoteInputMapper.xml:5) | 输入表SQL绑定和更新字段 |
-| S15 | [QuoteInputInfoServiceImpl.java:34](D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/service/impl/QuoteInputInfoServiceImpl.java:34) | 输入列表查询与QT状态清理 |
-| C1 | [SbpcomCacheManager.java:29](D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/common/SbpcomCacheManager.java:29) | 推荐缓存及双向候选查询 |
-| C2 | [SymbolTradeDataServiceImpl.java:30](D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/service/impl/SymbolTradeDataServiceImpl.java:30) | 按机构统计与属性分组 |
-| C3 | [SymbolStatistics.java:10](D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/model/po/SymbolStatistics.java:10) | 历史instId到partyId转换 |
-| C4 | [SbpcomJob.java:43](D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/job/SbpcomJob.java:43) | 推荐清空与加载计划 |
+| Q1 | MessageListener.java:684（本地来源：`D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java:684`） | FIX来源分支、身份补充、方向转换及发布 |
+| Q2 | QuoteInputInfoVo.java:168（本地来源：`D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/vo/QuoteInputInfoVo.java:168`） | 价格、报量、时间和来源字段转换 |
+| Q3 | QtradeStream.java:1620（本地来源：`D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/QtradeStream.java:1620`） | 联系人和机构主数据缓存 |
+| Q4 | QtCategoryJob.java:23（本地来源：`D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/job/QtCategoryJob.java:23`） | 按输入表最新创建时间清理内容分组缓存 |
+| S1 | SbpStream.java:351（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/stream/SbpStream.java:351`） | 消息接收、用户转换、再识别、入库和推送 |
+| S2 | QuoteInputInfo.java:16（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/model/QuoteInputInfo.java:16`） | 输入模型及确认字段 |
+| S3 | SbpQuoteInfo.java:24（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/model/po/SbpQuoteInfo.java:24`） | 正式报价模型及关联字段 |
+| S4 | ConfirmIntentionQuoteHandler.java:66（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/ConfirmIntentionQuoteHandler.java:66`） | 确认、合并、撤销旧报价与转换新报价 |
+| S5 | QuoteStatusEnum.java:4（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/model/emu/QuoteStatusEnum.java:4`） | 正式报价状态枚举 |
+| S6 | QuoteInfoServiceImpl.java:62（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/service/impl/QuoteInfoServiceImpl.java:62`） | 报价加载、修改、撤销、恢复和发布 |
+| S7 | OrderFacade.java:41（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/service/impl/OrderFacade.java:41`） | 订单缓存和成交动作处理入口 |
+| S8 | SBPBondsExtendJob.java:36（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/job/SBPBondsExtendJob.java:36`） | 日终撤销与清理计划 |
+| S9 | IntentionHelper.java:306（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/utils/IntentionHelper.java:306`） | 文本数量和价格解释辅助方法 |
+| S10 | UserInfoDao.java:16（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/dao/UserInfoDao.java:16`） | 启用内部用户的QT账号查询 |
+| S11 | SBPCacheManage.java:26（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/cache/SBPCacheManage.java:26`） | 全量报价缓存和按券扫描 |
+| S12 | QueryQuoteInfoPageHandler.java:31（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/QueryQuoteInfoPageHandler.java:31`） | 全量排序后分页 |
+| S13 | RtOutputStream.java:21（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/stream/RtOutputStream.java:21`） | 消息发布与异常处理 |
+| S14 | QuoteInputMapper.xml:5（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/resources/mapper/mysql/QuoteInputMapper.xml:5`） | 输入表SQL绑定和更新字段 |
+| S15 | QuoteInputInfoServiceImpl.java:34（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/service/impl/QuoteInputInfoServiceImpl.java:34`） | 输入列表查询与QT状态清理 |
+| C1 | SbpcomCacheManager.java:29（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/common/SbpcomCacheManager.java:29`） | 推荐缓存及双向候选查询 |
+| C2 | SymbolTradeDataServiceImpl.java:30（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/service/impl/SymbolTradeDataServiceImpl.java:30`） | 按机构统计与属性分组 |
+| C3 | SymbolStatistics.java:10（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/model/po/SymbolStatistics.java:10`） | 历史instId到partyId转换 |
+| C4 | SbpcomJob.java:43（本地来源：`D:/workspace/greatewall/Archive/sc-app-stc-sbpcomsvr/src/main/java/sc/app/stc/sbpcom/job/SbpcomJob.java:43`） | 推荐清空与加载计划 |
 
 关键源码文件SHA256如下，便于后续核对是否为同一工作区版本。
 ```text

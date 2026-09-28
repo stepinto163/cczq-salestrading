@@ -10,7 +10,7 @@
 
 Maven 输出 `target/bin`、`target/javalib` 和服务 JAR。Jenkins 读取 `salt-formula/<工程名>/config.yaml`，将 `common` 与 `QA.APP` 合并后渲染 `files`，生成 `*-QA.APP-<分支>.tar.gz`。
 
-QA 的完整服务配置直接保存在 `salt-formula/<工程名>/files/control`：服务入口 INI、`resource.xml`、`resourceCfg.ini`、`streams.xml`、`streamCfg.ini`、`log4j.ini` 均可在源码中查看。打包不再从本机 `control` 目录生成这些文件；本机兼容配置与 QA 模板分别维护。
+QA 的完整服务配置直接保存在 `salt-formula/<工程名>/files/control`：服务入口 INI、`resource.xml`、`resourceCfg.ini`、`streams.xml`、`streamCfg.ini`、`log4j.ini` 均可在源码中查看。打包不再从本机 `control` 目录生成这些文件；本机 control 配置与 QA 模板分别维护。
 
 QA 部署使用 Jenkins 中名为 `10.130.21.53` 的 SSH 配置，登录账号必须为 `sumscope`（账号在 Jenkins 的 SSH 配置中设置，不是 Jenkinsfile 的自定义字段）。解压目标为 `/opt/sumscope/stc`，包内服务目录分别是 `QuoteSvr`、`NotificationSvr`，最终路径如下：
 
@@ -83,6 +83,6 @@ NotificationSvr 在自己的目录执行同样命令。启动脚本保留共享 
 | 启动及组件初始化 | QuoteSvr-startup_yyyyMMdd.log | NotificationSvr-startup_yyyyMMdd.log |
 | DPS / 适配器调用诊断 | QuoteSvr-dps_yyyyMMdd.log | NotificationSvr-dps_yyyyMMdd.log |
 
-启动 INFO、错误及异常栈同时写控制台与运行日志；初始化日志另外写 startup 文件。现有客户端调用诊断类别保持 DEBUG，详细消息只进入 dps 文件，不灌入控制台或运行日志。切换 DEBUG 可在各类别的 `log4j.logger` 中调整。此变更只调整日志配置及路由，不增加新的 DPS 消息采集点。
+启动 INFO、错误及异常栈同时写控制台与运行日志；初始化日志另外写 startup 文件。客户端适配诊断类别保持 DEBUG，同时挂载 stdout、运行文件和 dps appender；控制台 appender 阈值为 INFO。业务 DPS 类别单独写 dps 文件。应按实际类别与 appender 检查正文去向，不能认为所有详细消息都显示在控制台。切换 DEBUG 可在各类别的 `log4j.logger` 中调整。此变更只调整日志配置及路由，不增加新的 DPS 消息采集点。
 
-手工启动 NotificationSvr 时，控制台重定向文件改为 `NotificationSvr-console.out`。控制台重定向文件由启动脚本或运维管理，不属于 Log4j 每日滚动文件。本机兼容配置仍使用原来的服务内 logs 目录。
+手工启动 NotificationSvr 时，控制台重定向文件改为 `NotificationSvr-console.out`。控制台重定向文件由启动脚本或运维管理，不属于 Log4j 每日滚动文件。本机 control 配置使用服务内 logs 目录。

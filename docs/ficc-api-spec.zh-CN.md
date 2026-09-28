@@ -4014,17 +4014,17 @@ handler.PriceFeedSnapshotHandler.class=ficc.quote.handler.PriceFeedSnapshotHandl
 
 既有STC设计依据：
 
-- [ContentHandler](D:/workspace/GitHub/ats-app-ym-foundation/src/main/java/ats/app/ym/ceda/server/ContentHandler.java:60)：有内容进入handle，无内容进入snapshot。
-- [InnerSvr QueryOrderHandler](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/QueryOrderHandler.java:16)：Code/Msg式请求应答。
-- [InnerSvr MarketHandler](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/MarketHandler.java:34)：订阅初始image按topic返回行情。
-- [InnerSvr sendAllMD](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:221)：MarketDataSnapshotFullRefresh/NoMDEntries发布。
-- [BaseApi普通订阅与退订](D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java:270)：普通subscribe已实现，unSubscribe底层调用被注释；不能只使用带image订阅。
-- [BaseApi行情订阅](D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java:251)：subscribeWithImage与退订重载；带Class退订方法为空。
-- [底层退订实现](D:/workspace/GitHub/ats-app-ym-foundation/src/main/java/ats/app/ym/ceda/CedaClientWrapper.java:59)：底层CedaClientWrapper的unSubscribe会调用连接客户端退订。
-- [InnerSvr订单报告发布](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:404)：ExecutionReport发布到stc.inner.o.*，与行情p.*分离。
-- [InnerSvr市场代码](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/Consts.java:11)：MarketIndicator使用4。
-- [共享行情模型](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/fix/message/MarketDataSnapshotFullRefresh.java:388)：YieldToExecution、DirtyPrice、UserID等实际已有字段。
-- [LoginSvrClient](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java:121)、[CalSvrClient](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/CalSvrClient.java:47)：身份及计算服务复用。
+- ContentHandler（本地来源：`D:/workspace/GitHub/ats-app-ym-foundation/src/main/java/ats/app/ym/ceda/server/ContentHandler.java:60`）：有内容进入handle，无内容进入snapshot。
+- InnerSvr QueryOrderHandler（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/QueryOrderHandler.java:16`）：Code/Msg式请求应答。
+- InnerSvr MarketHandler（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/MarketHandler.java:34`）：订阅初始image按topic返回行情。
+- InnerSvr sendAllMD（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:221`）：MarketDataSnapshotFullRefresh/NoMDEntries发布。
+- BaseApi普通订阅与退订（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java:270`）：普通subscribe已实现，unSubscribe底层调用被注释；不能只使用带image订阅。
+- BaseApi行情订阅（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java:251`）：subscribeWithImage与退订重载；带Class退订方法为空。
+- 底层退订实现（本地来源：`D:/workspace/GitHub/ats-app-ym-foundation/src/main/java/ats/app/ym/ceda/CedaClientWrapper.java:59`）：底层CedaClientWrapper的unSubscribe会调用连接客户端退订。
+- InnerSvr订单报告发布（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:404`）：ExecutionReport发布到stc.inner.o.*，与行情p.*分离。
+- InnerSvr市场代码（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/Consts.java:11`）：MarketIndicator使用4。
+- 共享行情模型（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/fix/message/MarketDataSnapshotFullRefresh.java:388`）：YieldToExecution、DirtyPrice、UserID等实际已有字段。
+- LoginSvrClient（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java:121`）、CalSvrClient（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/CalSvrClient.java:47`）：身份及计算服务复用。
 
 STC源码证明通信形式、订单/行情分离及可复用模型，不证明新topic、恢复日志、权限校验或本稿业务语义已经实现。
 

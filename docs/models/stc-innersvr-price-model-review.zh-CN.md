@@ -30,23 +30,23 @@ flowchart LR
 | 内存 | `InnerOrderEntity` / `OrderBook<InnerOrderEntity>` | 挂单对象及按债券、买卖侧组织的有序集合 |
 | 对外消息 | `MarketDataSnapshotFullRefresh` / `GNoMDEntries` | 债券及渠道信息放在消息头，各订单的行情信息放在条目列表 |
 
-表定义见[IDBPro.create_tables.sql](../../IDBPro.create_tables.sql:983)中的stc_tbook_inner_orders；主键为`(orderid, clordid)`。内存订单索引使用orderID，消息MDEntryID也使用orderID；并非直接把数据库复合键序列化成行情ID。
+表定义见IDBPro.create_tables.sql（仓库外参考：`../../IDBPro.create_tables.sql:983`）中的stc_tbook_inner_orders；主键为`(orderid, clordid)`。内存订单索引使用orderID，消息MDEntryID也使用orderID；并非直接把数据库复合键序列化成行情ID。
 
-`OrderManager.htOrders`按securityID保存OrderBook，另有`ht`按orderID定位挂单。[OrderBook](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/model/OrderBook.java:21)使用ConcurrentSkipListSet：买侧price升序、卖侧price降序，同价按orderID升序。不同清算类型未作为分簿键；同价订单仍是独立成员，没有汇总成一条价格记录。
+`OrderManager.htOrders`按securityID保存OrderBook，另有`ht`按orderID定位挂单。OrderBook（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/model/OrderBook.java:21`）使用ConcurrentSkipListSet：买侧price升序、卖侧price降序，同价按orderID升序。不同清算类型未作为分簿键；同价订单仍是独立成员，没有汇总成一条价格记录。
 
 ## 3．数据库写入及恢复
 
-新增订单通过[OrderResource.insertInnerOrder](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:78)调用DBOrderDao，再进入[CommonDataManager.insertInnerOrder](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/CommonDataManager.java:294)。它组装SQL参数，以orderID将任务放入异步执行队列；工作线程调用DBUtils.update。
+新增订单通过OrderResource.insertInnerOrder（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:78`）调用DBOrderDao，再进入CommonDataManager.insertInnerOrder（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/CommonDataManager.java:294`）。它组装SQL参数，以orderID将任务放入异步执行队列；工作线程调用DBUtils.update。
 
-修改使用同表UPDATE，条件为orderid及clordid，更新状态、累计成交量、价格、收益率、净价和部分关联信息。[SQL定义](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/Consts.java:63)明确了写入表名。撤销从内存簿移除订单，同时更新数据库状态；不是删除一份独立PriceBook快照。
+修改使用同表UPDATE，条件为orderid及clordid，更新状态、累计成交量、价格、收益率、净价和部分关联信息。SQL定义（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/Consts.java:63`）明确了写入表名。撤销从内存簿移除订单，同时更新数据库状态；不是删除一份独立PriceBook快照。
 
-[启动恢复](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderManager.java:556)读取数据库，将TTbookInnerOrders转换为InnerOrderEntity，重建两个内存索引并生成行情。虽然读取方法名为getAllIOCInnerOrder，实际[查询参数](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/CommonDataManager.java:531)是：当天创建、TimeInForce=DAY、状态0/1、渠道MANUAL/QUANT/IDB。不能按方法名误认为恢复的是IOC订单，也不能将这条路径描述成恢复所有历史订单。
+启动恢复（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderManager.java:556`）读取数据库，将TTbookInnerOrders转换为InnerOrderEntity，重建两个内存索引并生成行情。虽然读取方法名为getAllIOCInnerOrder，实际查询参数（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/common/CommonDataManager.java:531`）是：当天创建、TimeInForce=DAY、状态0/1、渠道MANUAL/QUANT/IDB。不能按方法名误认为恢复的是IOC订单，也不能将这条路径描述成恢复所有历史订单。
 
 因此，该表承担的是**可用于恢复订单簿的订单状态存储**。它不是按时点保存的完整行情快照序列。源码虽有stc_tbook_inner_execorders写入方法，但上述新增/更新路径的调用已注释，不能据此宣称每次变更都有独立历史记录。
 
 ## 4．行情条目与源订单映射
 
-实际使用[OrderManager.getMktInfo](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderManager.java:321)逐条转换；MarketHandler也调用此方法，其文件内另一个private getMktInfo不是这里的实际调用点。
+实际使用OrderManager.getMktInfo（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderManager.java:321`）逐条转换；MarketHandler也调用此方法，其文件内另一个private getMktInfo不是这里的实际调用点。
 
 | 行情字段 | 订单来源或生成方式 |
 | --- | --- |
@@ -65,7 +65,7 @@ flowchart LR
 
 对于IDB来源，转换还可能先从inf3反序列化GNoMDEntries，再覆盖当前订单字段。这说明旧实现保留STC行情结构以承接来源扩展，但FICC不宜将必要业务字段都塞入inf3。
 
-[sendAllMD](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:221)合并买卖条目，以MarketDataSnapshotFullRefresh发布到`stc.inner.p.{securityId}`；[MarketHandler.snapshot](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/MarketHandler.java:34)从内存簿生成订阅初始快照。这里的snapshot是消息快照，不是读一张已序列化的快照表。
+sendAllMD（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/service/impl/OrderResource.java:221`）合并买卖条目，以MarketDataSnapshotFullRefresh发布到`stc.inner.p.{securityId}`；MarketHandler.snapshot（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/handler/MarketHandler.java:34`）从内存簿生成订阅初始快照。这里的snapshot是消息快照，不是读一张已序列化的快照表。
 
 需注意getMktInfo按marketNum限制每侧**条数**；仓库普通配置为50，部署模板值另行提供。因此方法名sendAllMD不保证输出整本订单簿，也不保证同价订单全部输出。
 

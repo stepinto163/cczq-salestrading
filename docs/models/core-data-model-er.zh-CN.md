@@ -300,11 +300,11 @@ roleid、biztypeid等字段沿用STC含义，FICC功能权限与可见范围的�
 
 源码依据：
 
-- [LoginDao.java](D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/dao/LoginDao.java:30)：用户查询、会话按username关联，以及独立CRM分支。
-- [Users.java](D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/po/Users.java:17)：userid、username、name、角色及渠道账户等字段。
-- [UsersSessionControl.java](D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/po/UsersSessionControl.java:19)：既有会话记录字段。
-- [AbstractLogin.java](D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/type/AbstractLogin.java:334)：创建会话、保存记录并建立sid到Users的缓存。
-- [LoginSvrClient.java](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java:121)：服务侧会话缓存、查询及登录状态消息处理；用于FICC身份接入。
+- LoginDao.java（本地来源：`D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/dao/LoginDao.java:30`）：用户查询、会话按username关联，以及独立CRM分支。
+- Users.java（本地来源：`D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/po/Users.java:17`）：userid、username、name、角色及渠道账户等字段。
+- UsersSessionControl.java（本地来源：`D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/po/UsersSessionControl.java:19`）：既有会话记录字段。
+- AbstractLogin.java（本地来源：`D:/workspace/GitHub/sc-app-stc-loginsvr/src/main/java/sc/app/stc/login/type/AbstractLogin.java:334`）：创建会话、保存记录并建立sid到Users的缓存。
+- LoginSvrClient.java（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java:121`）：服务侧会话缓存、查询及登录状态消息处理；用于FICC身份接入。
 
 ## 3．待确认后补全的实体
 
@@ -319,26 +319,26 @@ Price是衍生视图，不能限制成只含一个Bid和一个Ofr的独立业务
 
 **排序已确认：先收益率，后更新时间；Bid收益率升序，Ofr收益率降序，同档Quote按updateTime降序（最新在前）。** 更新时间相同以quoteId升序作为确定性兜底，不表示额外业务优先级。updateTime来自Quote，不使用资料刷新时间或价格簿重算时间；仅更新时间变化可调整档内位置，不会生成新价格档。
 
-此规则不能表述为完全照搬MDSvr：[其比较器](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:627)在价格相同后还比较FirmFlag、InternalFlag、Info2，再按MDEntryTime升序及MDEntryID排序。本产品采用本轮确认的“同档最新在前”，与销售客户端MatchQuoteInfoViewModel的UpdateTime降序方向一致，不引入上述额外排序优先级。
+此规则不能表述为完全照搬MDSvr：其比较器（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:627`）在价格相同后还比较FirmFlag、InternalFlag、Info2，再按MDEntryTime升序及MDEntryID排序。本产品采用本轮确认的“同档最新在前”，与销售客户端MatchQuoteInfoViewModel的UpdateTime降序方向一致，不引入上述额外排序优先级。
 
 **首版仅支持收益率排序，后续增加净价排序。** 这是价格簿内部形成价格档和判断最优的规则，不增加前端自由排序功能，也不改变报价列表按updateTime展示的约定。PriceLevel.price保存该档用于比较的收益率，使用百分数十进制字符串，例如"2.50"表示2.50%；它不覆盖Quote.price中用户输入的原值。清算是可选筛选条件，无清算过滤时允许混合比较。
 
 **收益率最多保留4位小数，用户输入超过4位时前端直接判定格式错误，不自动四舍五入后接受。** 例如2.5、2.50、2.5000表示同一数值，属于同档；2.50005不是合法用户输入。服务端操作接口采用同一格式约束，防止绕过前端校验。CalSvr返回的计算结果与用户输入分别处理：需要对齐4位小数的入簿精度，但超出精度时具体采用何种舍入规则尚待确认，不能以输入校验规则推断。净价、全价的输入精度未在本轮一并定稿。
 
-计算精度源码复核：[CalReq.Scale默认4](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/CalReq.java:25)，MDSvr的CalStream未覆盖该值；返回后将到期/行权收益率乘100，再调用[TextUtil.removeZero](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/TextUtil.java:154)移除末尾零。该方法只使用stripTrailingZeros，不执行四舍五入；CalSvrClient也不调整返回数值。因此已确认MDSvr这条计算调用路径不额外舍入，精度控制的请求交给CalSvr。CalSvr是否对两种收益率都按百分数4位小数返回、以及是否使用HALF_UP，仍需服务端实现或接口契约验证；不能仅凭调用方没有舍入就视为已确认。
+计算精度源码复核：CalReq.Scale默认4（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/CalReq.java:25`），MDSvr的CalStream未覆盖该值；返回后将到期/行权收益率乘100，再调用TextUtil.removeZero（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/TextUtil.java:154`）移除末尾零。该方法只使用stripTrailingZeros，不执行四舍五入；CalSvrClient也不调整返回数值。因此已确认MDSvr这条计算调用路径不额外舍入，精度控制的请求交给CalSvr。CalSvr是否对两种收益率都按百分数4位小数返回、以及是否使用HALF_UP，仍需服务端实现或接口契约验证；不能仅凭调用方没有舍入就视为已确认。
 
 补充核查用户提供的AnalyticServiceLib-2.5.15.1反编译源码：
 
-- [FeCalculator.calcBond](C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/FeCalculator.java:215)调用bondService后返回BondMessage；本轮沿此对象接口追踪。
-- [service/e.java的possiblyFromCleanPrice](C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/service/e.java:575)在roundCleanPrice=true时将净价保留4位小数，然后按该净价重新计算。其[utils/f.java](C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/utils/f.java:43)调用BigDecimal.setScale(4, 4)，第二个4为ROUND_HALF_UP，即四舍五入；这明确针对净价，不是收益率输出精度。
-- 同文件populateCommonResult直接将计算结果的double yield赋给BondMessage.yield；optionCallCalc和optionPutCalc同样直接赋值，yieldToExecution在缺失时取yieldToCall或yieldToPut。已检查的返回路径没有统一将收益率按百分数4位小数舍入。[常规债券计算路径](C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/bond/analytic/b.java:206)求解yield后直接生成结果，求解容差不等于输出小数位数。
+- FeCalculator.calcBond（本地来源：`C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/FeCalculator.java:215`）调用bondService后返回BondMessage；本轮沿此对象接口追踪。
+- service/e.java的possiblyFromCleanPrice（本地来源：`C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/service/e.java:575`）在roundCleanPrice=true时将净价保留4位小数，然后按该净价重新计算。其utils/f.java（本地来源：`C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/utils/f.java:43`）调用BigDecimal.setScale(4, 4)，第二个4为ROUND_HALF_UP，即四舍五入；这明确针对净价，不是收益率输出精度。
+- 同文件populateCommonResult直接将计算结果的double yield赋给BondMessage.yield；optionCallCalc和optionPutCalc同样直接赋值，yieldToExecution在缺失时取yieldToCall或yieldToPut。已检查的返回路径没有统一将收益率按百分数4位小数舍入。常规债券计算路径（本地来源：`C:/Users/loong/Downloads/AnalyticServiceLib-2.5.15.1.jar.src/com/sumscope/bond/analytic/b.java:206`）求解yield后直接生成结果，求解容差不等于输出小数位数。
 - BondMessage及其父类CalcMessage没有STC CalReq中的Scale字段。该库提供净价四舍五入能力，但不能据此认定CalSvr最终返回的收益率已做相同处理。CalSvr包装层源码用户将后续提供，计算收益率最终舍入规则保留待核查；本次不运行库、不连接数据源。
 
 **含权债使用行权收益率分档和排序，由CalSvr提供所需行权收益率。** PriceBook.yieldType表示整本簿的比较口径：无行权选项时为"1"（到期），含权债为"2"（行权）。该字段与Quote.yieldType共用字典，但用途不同：后者描述用户原始收益率输入；即使用户输入到期收益率、净价或全价，含权债入簿时仍使用对应的行权收益率，不修改原始报价类型和数值。CalInfo.yield对应到期收益率，yieldToExecution对应行权收益率，适配时显式选择。含权识别和行权依据使用基础资料及计算服务；多个或已过期行权选项的处理、计算结果缺失时的处理仍待细化，不能将这些情况视为已确认的到期收益率回退规则。
 
-用户输入的收益率、净价或全价可通过CalSvr换算成其他表示。既有[CalSvrClient](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/CalSvrClient.java:47)使用stc.broker.calbond请求/应答并缓存成功结果；[CalStream](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/stream/CalStream.java:100)经CalResource调用，结合债券、输入类型/数值及清算类型补齐行情数据。[CalInfo](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/CalInfo.java:7)包含到期/行权收益率、净价、全价及交收日期。换算值属于报价的计算结果，不是每日估值；调用适配需显式转换收益率百分数与小数及价格类型代码。QuoteSvr内部行情模块通过CalSvr补齐所需计算值，MarketDataEntry承接结果；计算精度及失败处理后续细化，不改写Quote原始输入。
+用户输入的收益率、净价或全价可通过CalSvr换算成其他表示。既有CalSvrClient（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/CalSvrClient.java:47`）使用stc.broker.calbond请求/应答并缓存成功结果；CalStream（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/stream/CalStream.java:100`）经CalResource调用，结合债券、输入类型/数值及清算类型补齐行情数据。CalInfo（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/CalInfo.java:7`）包含到期/行权收益率、净价、全价及交收日期。换算值属于报价的计算结果，不是每日估值；调用适配需显式转换收益率百分数与小数及价格类型代码。QuoteSvr内部行情模块通过CalSvr补齐所需计算值，MarketDataEntry承接结果；计算精度及失败处理后续细化，不改写Quote原始输入。
 
-参考[STC PriceResource.java](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:149)：book按行情标识汇集报价并按买卖侧排序，book_atf_depth限制遍历的报价条数，MDPriceLevel对条目顺序编号；主book路径的最优输出可保留同价报价，独立H0方法则每侧取首条。新设计按不同价格档计深度，不能直接复用旧实现按条数截断的规则。这里只复用价格簿与多种视图的建模思路，不照搬来源快照替换、状态码或排序字典。
+参考STC PriceResource.java（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:149`）：book按行情标识汇集报价并按买卖侧排序，book_atf_depth限制遍历的报价条数，MDPriceLevel对条目顺序编号；主book路径的最优输出可保留同价报价，独立H0方法则每侧取首条。新设计按不同价格档计深度，不能直接复用旧实现按条数截断的规则。这里只复用价格簿与多种视图的建模思路，不照搬来源快照替换、状态码或排序字典。
 
 ### MDSvr价格结构与报量依据
 
@@ -346,29 +346,29 @@ Price是衍生视图，不能限制成只含一个Bid和一个Ofr的独立业务
 
 #### stc_tbook_md_price持久化表核查（2026-09-13）
 
-[建表定义](../../IDBPro.create_tables.sql:1089)以mdentryid（报价编号）为唯一主键，每行包含securityid、渠道、side、price、qty、settltype，以及cleanprice、dirtyprice、yield和创建/更新时间。其粒度是单条行情报价，不是一只债券的整个PriceBook，也不是聚合后的PriceLevel。表内没有独立快照批次或历史版本键，因此结构上适合保存每个报价编号的一份状态；仅凭DDL不能确认其实际更新、清理或历史保存策略。
+建表定义（仓库外参考：`../../IDBPro.create_tables.sql:1089`）以mdentryid（报价编号）为唯一主键，每行包含securityid、渠道、side、price、qty、settltype，以及cleanprice、dirtyprice、yield和创建/更新时间。其粒度是单条行情报价，不是一只债券的整个PriceBook，也不是聚合后的PriceLevel。表内没有独立快照批次或历史版本键，因此结构上适合保存每个报价编号的一份状态；仅凭DDL不能确认其实际更新、清理或历史保存策略。
 
-本次在可用STC仓库及greatewall旧代码的Java/XML/C#源码中未找到该表的读写引用，不能认定当前MDSvr正在使用它持久化行情或重启恢复。已确认的路径是[PriceResource.cache](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:127)按ric将快照保存到内存htAllPrice，[getPrice](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:1028)从该缓存读取。数据库表存在与运行时已启用持久化是两项不同证据。
+本次在可用STC仓库及greatewall旧代码的Java/XML/C#源码中未找到该表的读写引用，不能认定当前MDSvr正在使用它持久化行情或重启恢复。已确认的路径是PriceResource.cache（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:127`）按ric将快照保存到内存htAllPrice，getPrice（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:1028`）从该缓存读取。数据库表存在与运行时已启用持久化是两项不同证据。
 
 进一步沿调用链复核MDSvr与共享sc-app-stc组件，而非只搜索表名：
 
-- MDSvr、MD1Svr、MD2Svr的现有部署流配置均将RtOutputStream绑定到共享[NetRtOutputStream](D:/workspace/GitHub/sc-app-stc-mdsvr/control/MDSvr/streams.xml:95)。其[publishMessage](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/net/NetRtOutputStream.java:87)序列化消息后调用[NetServerResource.publishMessage](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/net/NetServerResource.java:84)，由CEDA/GW发布；该路径未写入行情价格表。MDSvr仓库内同名RtOutputStream.java的旧实现已整体注释，不能据此判断实际配置。
-- MDSvr的[CommonDataManager](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/stream/CommonDataManager.java:330)确有异步SQL执行器，但当前调用用于stc_tbook_md_securityids订阅设置及stc_tbook_system_oplog操作日志；未发现逐条行情入库或从stc_tbook_md_price恢复的调用。
+- MDSvr、MD1Svr、MD2Svr的现有部署流配置均将RtOutputStream绑定到共享NetRtOutputStream（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/control/MDSvr/streams.xml:95`）。其publishMessage（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/net/NetRtOutputStream.java:87`）序列化消息后调用NetServerResource.publishMessage（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/net/NetServerResource.java:84`），由CEDA/GW发布；该路径未写入行情价格表。MDSvr仓库内同名RtOutputStream.java的旧实现已整体注释，不能据此判断实际配置。
+- MDSvr的CommonDataManager（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/stream/CommonDataManager.java:330`）确有异步SQL执行器，但当前调用用于stc_tbook_md_securityids订阅设置及stc_tbook_system_oplog操作日志；未发现逐条行情入库或从stc_tbook_md_price恢复的调用。
 - sc-app-stc的SqlBatchExecutor和BatchDBUtil提供通用SQL执行及动态SQL生成能力，但在上述MDSvr源码中没有相应行情调用。共享库还包含RocksDB消息存储和SQLite消息记录/回放组件，当前检查的MDSvr流配置未接入这些组件；它们也不是该MySQL表的写入实现。
 
 核查结论限于当前提供的源码和部署配置：没有找到stc_tbook_md_price的实际持久化实现。旧版本、其他服务或部署时另外接入的记录程序仍有可能使用此表，不能将未找到调用等同于该表在所有STC版本中均未使用。
 
 对本ER的启发：可以逐条保存构成价格簿的行情状态，再据此重建价格视图；不必将每个筛选条件、深度或价格档保存成独立业务事实。该表暂作为存储设计参考，不据此新增已确认的PriceSnapshot实体或断言旧系统具备一致时点快照恢复能力。
 
-[PriceResource](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:323)内部按行情标识、买卖侧保存GNoMDEntries列表；对外MarketDataSnapshotFullRefresh.NoMDEntries仍是报价条目列表。主book路径排序后逐条加入输出，每条保留自己的MDEntryID、MDEntryPx、MDEntrySize、来源及SettlType；没有按同价报价求和生成价格档总量。最优输出可保留并列报价，仍是各自报量。[QDMESP专用分档逻辑](D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:576)根据同侧不同价格设置Info3/Info4，也不求和报量。该结论限于PriceResource组簿路径，不推断上游原始报量必然未经其他处理。
+PriceResource（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:323`）内部按行情标识、买卖侧保存GNoMDEntries列表；对外MarketDataSnapshotFullRefresh.NoMDEntries仍是报价条目列表。主book路径排序后逐条加入输出，每条保留自己的MDEntryID、MDEntryPx、MDEntrySize、来源及SettlType；没有按同价报价求和生成价格档总量。最优输出可保留并列报价，仍是各自报量。QDMESP专用分档逻辑（本地来源：`D:/workspace/GitHub/sc-app-stc-mdsvr/src/main/java/sc/app/stc/md/resource/PriceResource.java:576`）根据同侧不同价格设置Info3/Info4，也不求和报量。该结论限于PriceResource组簿路径，不推断上游原始报量必然未经其他处理。
 
 本图PriceLevel表达本产品已确认的“不同价格档及其全部报价”关系；不要求物理建表、合并Quote或采用嵌套报文。后续消息可采用带档位的平铺报价列表，具体协议另定。既有客户端的特定来源展示汇总与PriceResource结构分开看待。
 
 ### 清算过滤的旧客户端依据
 
-- 销售对价板：[QuotationBoardViewModel](D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/QuotationBoard/QuotationBoardViewModel.cs:703)按SecurityId对可见报价分组，没有将settlType或tradeDate加入键。[MatchQuoteInfoViewModel](D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/Data/MatchQuoteInfoViewModel.cs:337)再按买卖侧组织报价，Bid按收益率升序、Ofr降序；显示视图按YieldBestSort及UpdateTime排序。因此可见的T+0、T+1报价可参与同券同侧比较，最优Bid与Ofr不要求同一清算类型。
-- 共享行情小面板：[MarketPriceLittleViewModel](D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.Common/ViewModel/Card/MarketPriceLittleViewModel.cs:1690)先调用GetGNoMDEntriesList，再生成全部/最优等视图。其[清算筛选与合并逻辑](D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.Common/ViewModel/Card/MarketPriceLittleViewModel.cs:2041)先按所选清算类型过滤；部分CDH/CFETS来源再按方向、渠道和价格合并同价条目，分组键不含清算类型，并拼接不同SettlType。该行为仅为旧展示实现，本产品仍保留档内全部Quote，不照搬合并成一条报价的方式。
-- 计算与展示分开：[QuoteInfoViewModel.CalPrice](D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/Data/QuoteInfoViewModel.cs:2319)发送该报价的交易日期和清算类型，T+0/T+1原值保留在请求中；上述分组/排序路径没有先统一交收日期再比较的步骤。合并展示不表示不同清算条件已经换算成同一交易条件。
+- 销售对价板：QuotationBoardViewModel（本地来源：`D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/QuotationBoard/QuotationBoardViewModel.cs:703`）按SecurityId对可见报价分组，没有将settlType或tradeDate加入键。MatchQuoteInfoViewModel（本地来源：`D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/Data/MatchQuoteInfoViewModel.cs:337`）再按买卖侧组织报价，Bid按收益率升序、Ofr降序；显示视图按YieldBestSort及UpdateTime排序。因此可见的T+0、T+1报价可参与同券同侧比较，最优Bid与Ofr不要求同一清算类型。
+- 共享行情小面板：MarketPriceLittleViewModel（本地来源：`D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.Common/ViewModel/Card/MarketPriceLittleViewModel.cs:1690`）先调用GetGNoMDEntriesList，再生成全部/最优等视图。其清算筛选与合并逻辑（本地来源：`D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.Common/ViewModel/Card/MarketPriceLittleViewModel.cs:2041`）先按所选清算类型过滤；部分CDH/CFETS来源再按方向、渠道和价格合并同价条目，分组键不含清算类型，并拼接不同SettlType。该行为仅为旧展示实现，本产品仍保留档内全部Quote，不照搬合并成一条报价的方式。
+- 计算与展示分开：QuoteInfoViewModel.CalPrice（本地来源：`D:/workspace/greatewall/stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/Data/QuoteInfoViewModel.cs:2319`）发送该报价的交易日期和清算类型，T+0/T+1原值保留在请求中；上述分组/排序路径没有先统一交收日期再比较的步骤。合并展示不表示不同清算条件已经换算成同一交易条件。
 
 本产品已确认采用“同券统一报价集合、每条报价保留清算条件、按条件过滤后生成价格视图”。没有清算条件时，T+0/T+1及远期报价共同参与收益率分档；筛选发生在深度截取前，不能先取未过滤的N档再筛清算类型，否则可能遗漏后续符合条件的档位。本次仅阅读源码，未运行客户端或性能测试。
 
@@ -376,7 +376,7 @@ Price是衍生视图，不能限制成只含一个Bid和一个Ofr的独立业务
 
 本轮目标是完成核心业务模型的实体、关联、关键字段及约束。下表用于逐项收敛，未确认的建议不视为最终决定；物理DDL、供应商完整字段映射和运行时缓存结构不在本轮强行定稿。第1节已按现行Quote字典补齐报量单位、业务标记、来源引用、执行主体与时间字段；reference和validationIssues属于只读补充结果，不作为报价事实或审计快照字段。
 
-当前进度：Price的核心关系和Notification的逻辑草稿已写入上方ER。通知模型依据产品[报价提醒要求](../../FICC销售智能交易平台_files/requirement-spec-page.js:108)，覆盖四类提醒、用户隔离、同券多类型合并及对价关联；不因此新增历史通知查询功能。按用户要求，CalSvr计算细节、舍入、异常场景及通知的运行细节后续处理，本轮集中补全实体与关系。
+当前进度：Price的核心关系和Notification的逻辑草稿已写入上方ER。通知模型依据产品报价提醒要求（仓库外参考：`../../FICC销售智能交易平台_files/requirement-spec-page.js:108`），覆盖四类提醒、用户隔离、同券多类型合并及对价关联；不因此新增历史通知查询功能。按用户要求，CalSvr计算细节、舍入、异常场景及通知的运行细节后续处理，本轮集中补全实体与关系。
 
 | 顺序 | 范围 | 已有依据与本轮需明确的内容 |
 | --- | --- | --- |
@@ -387,8 +387,8 @@ Price是衍生视图，不能限制成只含一个Bid和一个Ofr的独立业务
 | 5 | STCUser、Institution、Contact | STC用户引用已定；明确对手机构/联系人主数据来源、联系人转机构后的历史口径及可见范围，不混淆发行人与对手机构 |
 | 6 | 关注债券及筛选分组 | 已补入Watchlist及债券成员、FilterGroup及条件子组和条件记录；个人归属、信用/利率范围、行情/历史隔离、同字段OR与跨字段AND按产品要求建模。字段编码及物理DDL后续细化；持久化设置与运行时订阅分开 |
 
-产品复核依据：[整合需求](../../FICC销售智能交易平台_files/srs-integrated-data.js)中的BR-3.1（全部/最优报价）、BR-3.5（筛选子分组）、BR-3.8（四类提醒），以及[示例数据模型](../../FICC销售智能交易平台_files/data-model-spec-data.js)中的board_credit_best、board_rate_best、alert_read。示例模型保存用户维度已读记录，但不足以替代新系统对通知归属和共享方式的确认；不直接复制示例表结构。
+产品复核依据：整合需求（仓库外参考：`../../FICC销售智能交易平台_files/srs-integrated-data.js`）中的BR-3.1（全部/最优报价）、BR-3.5（筛选子分组）、BR-3.8（四类提醒），以及示例数据模型（仓库外参考：`../../FICC销售智能交易平台_files/data-model-spec-data.js`）中的board_credit_best、board_rate_best、alert_read。示例模型保存用户维度已读记录，但不足以替代新系统对通知归属和共享方式的确认；不直接复制示例表结构。
 
-关注分组与筛选分组补充依据：[筛选子分组需求](../../FICC销售智能交易平台_files/requirement-spec-page.js:105)、[行情与历史条件隔离](../../FICC销售智能交易平台_files/requirement-spec-page.js:150)、示例数据模型中的market_groups与market_group_items，以及[提醒匹配分组实现](../../FICC销售智能交易平台_files/app.js:944)。示例表用kind区分收藏/筛选，本逻辑ER分开表达两类业务模型及其成员，不要求物理表名照搬示例实现。
+关注分组与筛选分组补充依据：筛选子分组需求（仓库外参考：`../../FICC销售智能交易平台_files/requirement-spec-page.js:105`）、行情与历史条件隔离（仓库外参考：`../../FICC销售智能交易平台_files/requirement-spec-page.js:150`）、示例数据模型中的market_groups与market_group_items，以及提醒匹配分组实现（仓库外参考：`../../FICC销售智能交易平台_files/app.js:944`）。示例表用kind区分收藏/筛选，本逻辑ER分开表达两类业务模型及其成员，不要求物理表名照搬示例实现。
 
 每项确认后同步更新上方ER及对应字段说明；涉及服务职责或现有Quote字典的变更，再同步架构或报价模型文档。未确认项继续明确标注，不将本图称为已完成的数据库设计。

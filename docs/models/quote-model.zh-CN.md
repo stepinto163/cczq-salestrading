@@ -1,6 +1,6 @@
 # Quote报价模型与字典（讨论稿）
 
-日期：2026-09-11。本文集中定义报价字段及枚举，供[QuoteSvr接口](../interfaces/quote-svr.zh-CN.md)、SearchSvr和客户端引用。QuoteSvr负责业务字段定义；其他服务补充展示或搜索数据时，不改变这些字段的业务含义。
+日期：2026-09-11。本文集中定义报价字段及枚举，供[QuoteSvr接口](../ficc-api-spec.zh-CN.md)、SearchSvr和客户端引用。QuoteSvr负责业务字段定义；其他服务补充展示或搜索数据时，不改变这些字段的业务含义。
 
 ## 1．基本约定
 

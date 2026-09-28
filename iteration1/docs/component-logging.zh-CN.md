@@ -30,6 +30,8 @@ INFO ficc.startup - COMPONENT {"service":"QuoteSvr","component":"CRM","state":"I
 
 基础框架的 GW、ZooKeeper、handler/stream 注册日志仍由 STC 框架输出，本轮不修改上游库。当前基础资料适配器按需查券，不把空缓存称为“全量资料已就绪”。
 
+上述 `logs/` 路径适用于源码 `control` 中的本机配置。QA salt-formula 配置写入 `$ATS_ROOT/log`，使用服务名区分运行、startup、dps 文件，见[QA 日志](jenkins-qa.zh-CN.md#qa-日志)。
+
 ## 部署与排障
 
 同时更新公共库、两个服务 JAR 及以下配置，然后重启服务：

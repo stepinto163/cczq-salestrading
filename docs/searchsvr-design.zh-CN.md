@@ -2,6 +2,8 @@
 
 日期：2026-09-13。与[系统架构](ficc-sales-trading-architecture.zh-CN.md)一致：QuoteSvr合并报价与行情职责，NotificationSvr独立，SearchSvr为内部搜索存储。
 
+> 实现状态：独立 SearchSvr 尚未落地，当前使用进程内实现；见[现有搜索依赖](../iteration1/docs/search-dependency.zh-CN.md)。本文描述目标职责。
+
 ## 1．职责
 
 SearchSvr接收QuoteSvr的报价与行情条目、NotificationSvr的通知，以及基础资料更新；维护内存数据及索引，提供内部DSL查询、搜索属性获取和历史搜索。它不直接服务前端，不保存业务订阅或结果成员，也不管理用户筛选设置。

@@ -1,79 +1,25 @@
-# 本机 ZooKeeper 与 STC 服务发现
+# STC 服务发现
 
-更新日期：2026-09-14。
+服务使用 STC 的标准启动、注册和客户端资源，通过 ZooKeeper 发现配置的目标服务，不在业务代码中写死远端 IP。机制依据见[STC 开发约定](../../docs/stc-development-principles.zh-CN.md)。
 
-## 1．安装与运行方式
+## 配置归属
 
-已安装 Apache ZooKeeper 3.8.6，使用 Apache 官方二进制包并校验 SHA-512。安装目录为 `iteration1/runtime/tools/apache-zookeeper-3.8.6-bin`。
+- 注册中心地址及 `SERVER.*` 服务定义由对应环境的 `ATSConfig.ini` 维护。
+- QA 使用共享 `$ATS_ROOT/control/ATSConfig.ini`；服务包不覆盖它，见[QA 部署](jenkins-qa.zh-CN.md)。
+- 仓库内的启动脚本有独立本机配置，完整本机 STC 环境位于外部 `qa_env`；两套部署及脚本的范围见[启动说明](local-startup.zh-CN.md)。端口以各环境配置为准。
+- `SERVER.LoginSvr` 必须指向当前选择的真实或模拟登录服务。模拟模式与 STC 模式的切换见[依赖适配](stc-adapters.zh-CN.md)。
 
-本机只运行一个 ZooKeeper 进程，监听 `127.0.0.1:12181`；Java 堆上限为 128 MB，进程总内存会包含堆外开销。未设置开机自启动，未修改其他 ZooKeeper 或系统数据库实例。这是开发注册中心，不是生产 HA 集群。
+## 内部订阅
 
-从项目根目录执行：
+NotificationSvr 通过 `QuoteSvrClient` / `NetClientResource` 接入 QuoteSvr，分别订阅报价事件与价格快照，再请求内部状态完成恢复。此链路不执行用户登录；前端业务请求仍须验证真实用户会话。
 
-```powershell
-# 首次安装；已安装时校验现有包
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/setup-zookeeper.ps1
+连接中断、代次变化或有界队列溢出会触发业务状态重建。连接恢复和资料就绪必须根据实际日志确认，不能仅凭客户端资源初始化成功判断。会话失效后，前端需重新登录并重新打开视图。
 
-# 启动及停止
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/start-zookeeper.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/stop-zookeeper.ps1
-```
+## 排障
 
-运行配置及数据位于 `runtime/zookeeper/`，输出日志为 `runtime/zookeeper.log`、`runtime/zookeeper.err`。停止脚本只停止记录的本项目进程，保留数据。完整启动顺序见 [本机启动指南](local-startup.zh-CN.md)。
+1. 确认进程实际读取的 ATS_ROOT、工作目录及配置路径。
+2. 检查注册中心可达、服务注册名与消费者配置一致，注册的地址可从调用方访问。
+3. 比较进程日志与 ZooKeeper 节点；端口仍监听不代表临时注册节点仍存在。
+4. 检查发现、连接、请求及恢复日志，日志位置见[组件日志](component-logging.zh-CN.md)和[DPS 日志](dps-logging.zh-CN.md)。
 
-安装版本及配置依据：[Apache 发布页](https://zookeeper.apache.org/releases/)、[3.8.6 管理文档](https://zookeeper.apache.org/doc/r3.8.6/zookeeperAdmin.html)。
-
-## 2．服务配置
-
-QuoteSvr、NotificationSvr 均通过 `ServerWrapper.Start` 启动，使用自身 `control/ATSConfig.ini` 中的定义注册到 `/MDTService/<ServiceName>`。
-
-NotificationSvr 在 `resource.xml` 装配 `NetClientResource`。公共 `QuoteSvrClient` 使用逻辑键 `SERVER.QuoteSvr`，通过现有 `NetClientWrapper` 请求及订阅，由 STC 管理发现、连接和订阅恢复。
-
-GW 的 QuoteSvr、NotificationSvr 路由也已启用 ZooKeeper 发现。
-
-```ini
-REGISTER.ServerList=REGISTER.Local
-REGISTER.Local.Name=LocalZooKeeper
-REGISTER.Local.Host=127.0.0.1:12181
-
-SERVER.QuoteSvr.Name=QuoteSvr
-SERVER.QuoteSvr.ServiceName=QuoteSvr
-SERVER.QuoteSvr.Host=127.0.0.1:1
-SERVER.QuoteSvr.RegType=1
-SERVER.QuoteSvr.LBFactor=1
-SERVER.QuoteSvr.RegisterEnable=1
-SERVER.QuoteSvr.RegisterServerList=REGISTER.Local
-```
-
-上例是**调用方**配置。此版本 `PropertiesHelper` 即使启用注册仍强制要求 `Host`、`LBFactor`。调用方用不可用的 `127.0.0.1:1` 占位，实际地址来自注册中心；不存在固定地址回退。不要将该占位地址复制到服务自身的监听配置。
-
-QuoteSvr 自身仍配置实际 `127.0.0.1:18680`，NotificationSvr 自身为 `127.0.0.1:18690`。如关闭注册使用固定地址模式，应将调用方 `Host` 改成真实地址。
-
-## 3．身份与订阅边界
-
-2026-09-16 本机回归修正：NotificationSvr 的模拟身份适配器默认使用 `SERVER.QuoteSvr`，与报价同步共用同一客户端路由；本机适配模板也设置 `identity.serverKey=SERVER.QuoteSvr`。避免在同一进程为同一个 QuoteSvr 注册名建立两个逻辑客户端后，发现监听互相覆盖。真实 STC 模式仍使用 `SERVER.LoginSvr`。旧本机配置如果显式写了 `identity.serverKey=SERVER.LoginSvr`，应按上述规则更新。
-
-- 真实 LoginSvr 暂未启动；原来的模拟登录仍由 QuoteSvr 承载。因此调用方 `SERVER.LoginSvr.ServiceName=QuoteSvr`，发现的是 QuoteSvr 节点，不是一个新增 LoginSvr 进程。
-- `SimulatorLoginSvrClient` 实现 `LoginSessionClient`，把模拟登录和用户解析从 NotificationResource 中分离。模拟账号现通过 `adapter.properties` 指向的配置文件设置，业务资源没有固定地址或账号。
-- `QuoteSvrClient` 使用实例化的 `NetClientWrapper` 调用，显式传入 sessionId 和 3 秒超时；不修改 `BaseApi` 全局静态 sid，不另建底层网络连接。
-- 普通报价事件和价格更新分别订阅。当前公共库 `GwClient.subscribeWithImage` 未向底层转发业务 sid，因此采用普通价格订阅加显式带 sid 的原生价格快照请求，避免绕过认证或复制错误实现。
-- STC 管理网络恢复；NotificationResource 保留有界队列、连接代次、事件序号检测和业务状态重建。连接变化或队列溢出时进入未就绪状态，重新登录模拟服务并查询状态。
-- 用户提供的基础库原仓库未修改，没有新增网络框架。真实 LoginSvr 适配现已提供，复用其源码；切换步骤与验证范围见 [依赖适配指南](stc-adapters.zh-CN.md)。本节其余验证记录针对本机模拟环境，完整生产主备切换尚未验证。
-
-## 4．本轮验证
-
-| 验证 | 结果与范围 |
-|---|---|
-| 注册与只读请求 | ZooKeeper 中存在 QuoteSvr、NotificationSvr 实例；C# 经 GW 完成报价、行情和提醒偏好查询，0 条新报价 |
-| 修改服务端口 | 只修改 QuoteSvr 的监听配置到 18681；GW 和 NotificationSvr 不重启即可发现新地址，提醒服务重新同步，C# 只读请求通过；随后恢复 18680 |
-| 提醒功能 | 20 项通过，覆盖四类提醒；3 条测试报价 |
-| C# 界面功能 | 18 项通过；1 条测试报价，验证生命周期、行情和提醒更新 |
-
-证据在 `runtime/service-discovery-*.json`、`runtime/service-relocated-*.json`、`runtime/service-relocation.json`、`runtime/zk-notifications.json`、`runtime/zk-ui.json`。消息全文仍保存到报告所指向的 `messageLogDirectory`。
-
-```powershell
-# 只读：注册信息及 C# 服务调用；不会创建报价
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-service-discovery.ps1
-```
-
-`test-registry-relocation.ps1` 会短暂重启 QuoteSvr 并恢复原端口，供专门的恢复检查使用，不纳入普通启动流程。强制停止 JVM 后，旧临时节点可能保留到 ZooKeeper 会话超时，本轮观察到新旧节点短暂同时存在。该检查不证明生产双活、数据复制或长时间注册中心中断后的恢复能力。
+旧临时节点可能到会话超时后才消失；单次本机重连成功不代表长期中断、主备切换或双活已经验收。旧原型的服务发现测试脚本已移除，不再作为当前运行入口。

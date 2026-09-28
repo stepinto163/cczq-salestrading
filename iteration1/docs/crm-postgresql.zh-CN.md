@@ -1,6 +1,8 @@
 # CRM PostgreSQL 接入
 
-QuoteSvr 通过 `PostgresCrmClient` 只读访问独立 CRM 数据库；前端仍经 GW 调用 QuoteSvr 的 DPS 接口。当前不使用 `owner_user_ids` 做用户归属过滤。CRM 数据不复制到报价库，确认时将所选机构、联系人 ID 和规范名称保存到报价及历史。
+本文描述 `crm.mode=postgresql` 的直连方式。使用 `crm.mode=stc` 时，由[CRMSvr](../cgws-ficc-saletrading-crmsvr/deployment/README.zh-CN.md)访问同一 CRM 数据库，QuoteSvr 通过 DPS 查询；前端的 `ficc.base.query/get` 接口不变。
+
+直连模式下，QuoteSvr 通过 `PostgresCrmClient` 只读访问独立 CRM 数据库；前端仍经 GW 调用 QuoteSvr 的 DPS 接口。当前不使用 `owner_user_ids` 做用户归属过滤。CRM 数据不复制到报价库，确认时将所选机构、联系人 ID 和规范名称保存到报价及历史。
 
 | 来源 | 对外字段 |
 |---|---|
@@ -83,12 +85,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/setup-crm
 
 报价其他必填字段须已齐全。服务重新按 ID 查询 CRM，验证所选机构在联系人的当前机构集合中，并写入规范名称。未匹配的名称仍可先保存为待确认报价；确认及有效报价修改均不能绕过匹配。
 
-## 前端与验证
 
-- C#：在现有对手机构/联系人输入栏中填写名称或代码，点击“查机构”，选择机构后点击“查联系人”。确认弹窗复用同一组控件；选项显示名称及 ID。
-- Web：保留需求页面原下拉提示控件，250ms 输入防抖后经 GW 搜索 CRM。精确报价、报价确认、报价编辑弹窗提交所选 ID；手工名称不自动当成已匹配。同名记录按 ID 区分。
-- 列表只显示最多 50 个候选，结果较多时提示细化条件；不会加载整张机构表。数据库连接超时 3 秒、单条 SQL 超时 5 秒、socket 超时 8 秒。真实 QA 大表的模糊搜索延迟仍需在 QA 验证，不能据本地小样本声称达到低延迟指标。
+## 前端约定
 
-本轮验证：23 项 Java 测试通过（包含真实本机 PostgreSQL 的 CRM 查询与关系校验），两个服务构建成功；C# 现有对手方测试 15 项通过；Web 原页面 DOM/GW 测试 14 项通过，两者均创建、确认并清理一条报价，验证 CRM ID/名称落入报价。服务身份和债券数据仍用模拟适配器，CRM 使用真实 PostgreSQL；没有执行压力测试。
+搜索返回候选 ID 和名称，用户选择后在确认请求中提交 ID；只录入名称的报价可以保存为待确认，有名称却未匹配 ID 时不能确认。联系人必须属于所选机构，同名记录按 ID 区分。当前桌面界面以 STC 客户端为准，不再使用旧原型的按钮或测试入口。
 
-报告：`iteration1/runtime/counterparty-ui-smoke.json`、`iteration1/runtime/requirements-dom-report.json`。CRM 启动状态统一输出到控制台及 `logs/startup.log`，搜索 `"component":"CRM"`；运行期查询仍在 `logs/dps-messages.log`（INFO 行数/耗时，DEBUG 查询参数）。格式和失败处理见 [组件启动日志](component-logging.zh-CN.md)。
+QA 大表检索延迟需在目标环境验证，本地夹具不能代表真实数据规模。日志格式见[组件日志](component-logging.zh-CN.md)，QA 日志路径见[QA 部署](jenkins-qa.zh-CN.md#qa-日志)。

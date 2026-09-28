@@ -16,7 +16,7 @@ FIX应用消息的接收路径为 `CFixApi.fromApp → MessageListener.crack →
 
 `sendQuote`虽然名为“发送报价”，实际接收通用FIX Message，负责发送报价、询价、成交单据、回执和行情拉取请求等多种报文。
 
-源码：[接收分发](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L338)、[统一发送](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L476)。文内源码相对链接按当前工作区目录布局编写，部分Markdown阅读器可能不支持行号锚点。
+源码：接收分发（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L338`）、统一发送（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L476`）。文内源码相对链接按当前工作区目录布局编写，部分Markdown阅读器可能不支持行号锚点。
 
 ## 3 上行：本服务发送给QTrade
 
@@ -33,16 +33,16 @@ FIX应用消息的接收路径为 `CFixApi.fromApp → MessageListener.crack →
 
 主要源码：
 
-- [IntentionHandler](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/IntentionHandler.java#L472)：`S`回价构造位于472行附近，`U41`询价和撤销构造位于577、656行附近。
-- [TrsIntentionHandler](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/TrsIntentionHandler.java#L147)：构造`U41`。
-- [QtTradeCaptureReportSendHandler](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QtTradeCaptureReportSendHandler.java#L263)：构造`AE`。
-- [QtTradeCaptureReportAckSendHandler](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QtTradeCaptureReportAckSendHandler.java#L217)：构造`AR`。
-- [SingleBondMarketDataJob](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/job/SingleBondMarketDataJob.java#L92)：构造并发送`U44`。
-- [QoneceHandler](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QoneceHandler.java#L73)：发送`R`，需注意其样例字段。
+- IntentionHandler（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/IntentionHandler.java#L472`）：`S`回价构造位于472行附近，`U41`询价和撤销构造位于577、656行附近。
+- TrsIntentionHandler（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/TrsIntentionHandler.java#L147`）：构造`U41`。
+- QtTradeCaptureReportSendHandler（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QtTradeCaptureReportSendHandler.java#L263`）：构造`AE`。
+- QtTradeCaptureReportAckSendHandler（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QtTradeCaptureReportAckSendHandler.java#L217`）：构造`AR`。
+- SingleBondMarketDataJob（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/job/SingleBondMarketDataJob.java#L92`）：构造并发送`U44`。
+- QoneceHandler（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QoneceHandler.java#L73`）：发送`R`，需注意其样例字段。
 
 ## 4 下行：QTrade发送给本服务
 
-以下入口均位于 [MessageListener.java](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java)。
+以下入口均位于 MessageListener.java（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java`）。
 
 | FIX类型 | 消息类 | 业务含义及本地处理 | 入口行号 |
 | --- | --- | --- | --- |
@@ -77,7 +77,7 @@ FIX应用消息的接收路径为 `CFixApi.fromApp → MessageListener.crack →
 
 心跳、测试请求、重传及序号恢复属于QuickFIX引擎会话层能力，不在本文已核对的业务消息清单中。本次未逐项验证引擎内部实现或实际线上报文，不能把协议通常支持的类型全部列为本项目已观测通信。
 
-源码：[管理消息处理](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L171)、[回执关联](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L223)、[Reject处理器](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java#L2535)。
+源码：管理消息处理（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L171`）、回执关联（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/client/CFixApi.java#L223`）、Reject处理器（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java#L2535`）。
 
 ## 6 HTTP接口
 
@@ -94,7 +94,7 @@ FIX应用消息的接收路径为 `CFixApi.fromApp → MessageListener.crack →
 
 `QtTableClientInfoForDemo`也包含标签和联系人请求，其存在不代表正式任务运行了该演示类。正式任务使用的域名来自配置，不能用演示类中的固定地址推断部署目标。
 
-源码：[QuoteBroadcastHttpUtils](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/http/QuoteBroadcastHttpUtils.java)、[QtTableClientInfoJob](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/job/QtTableClientInfoJob.java)、[接口常量](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/Consts.java#L113)。
+源码：QuoteBroadcastHttpUtils（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/http/QuoteBroadcastHttpUtils.java`）、QtTableClientInfoJob（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/job/QtTableClientInfoJob.java`）、接口常量（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/Consts.java#L113`）。
 
 ## 7 已发现的实现边界
 
@@ -104,7 +104,7 @@ FIX应用消息的接收路径为 `CFixApi.fromApp → MessageListener.crack →
 4. **部分发送调用被注释。** 例如`QtSubScriptHandler`、`QtQOnceRequireHandler`以及部分分类管理分支。仅找到构造器或调用文本，不足以认定功能启用。
 5. **业务确认存在多个层次。** FIX接口回执、对手方单据响应、内部输入报价确认以及最终成交是不同事件，设计新系统时应分别建模。
 
-源码：[首次发送及变价分支](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/QtradeStream.java#L565)、[撤销上行](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/QtradeStream.java#L661)。
+源码：首次发送及变价分支（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/QtradeStream.java#L565`）、撤销上行（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/stream/QtradeStream.java#L661`）。
 
 ## 8 与现有分析的关系
 

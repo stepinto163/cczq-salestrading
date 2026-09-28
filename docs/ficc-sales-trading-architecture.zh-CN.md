@@ -176,7 +176,7 @@ ParseSvr、QuoteSvr等需要直接识别债券或校验基础资料时使用Base
 - 切换前比较标识映射、字段含义、单位、估值日期/口径及缺失值；差异在适配层解决或明确业务规则，不能用DM空值无条件覆盖已有数据。历史搜索仍使用当前参考属性与最新日估值，不改变原报价及审计。
 - 当前确认的是源码中的表、模型和访问能力，尚未验证部署数据覆盖率及更新及时性。DM具体映射待其文档就绪；历史搜索还需确保已到期债券的基础资料可获取，不能仅依赖当前有效债券缓存。
 
-实现依据：[表查询定义](D:/workspace/GitHub/sc-app-stc-basesvr/src/main/java/sc/app/stc/base/utils/Consts.java:38)、[发行人模型](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/base/po/TIssuerInfo.java:16)、[既有客户端基础资料查询](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/BaseSvr2Client.java:662)。这里定义FICC接入边界，不表示已改造既有客户端或实现DM适配器。
+实现依据：表查询定义（本地来源：`D:/workspace/GitHub/sc-app-stc-basesvr/src/main/java/sc/app/stc/base/utils/Consts.java:38`）、发行人模型（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/base/po/TIssuerInfo.java:16`）、既有客户端基础资料查询（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/BaseSvr2Client.java:662`）。这里定义FICC接入边界，不表示已改造既有客户端或实现DM适配器。
 
 ## 3．主要数据流
 
@@ -363,7 +363,7 @@ FICC封装统一处理身份缺失、请求超时及缓存不可确认有效的�
 
 接入时需验证的已有实现细节：缓存未命中的同步请求超时为30秒，不能直接放入实时过滤线程；本类未显式提供缓存有效期或断线重连清理，`clear()`只清理SID缓存。会话访问封装应统一处理超时、恢复及相关缓存一致性，具体复用或修正方案经验证后确定。这里描述集成设计，不表示已修改共享库。
 
-实现依据：[LoginSvrClient.java](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java:121)。此缓存服务于会话身份解析，不是全部用户目录；离线用户的历史姓名展示不能仅依赖`get(sid)`。
+实现依据：LoginSvrClient.java（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/LoginSvrClient.java:121`）。此缓存服务于会话身份解析，不是全部用户目录；离线用户的历史姓名展示不能仅依赖`get(sid)`。
 
 ### 对外消息约定
 
@@ -373,7 +373,7 @@ FICC封装统一处理身份缺失、请求超时及缓存不可确认有效的�
 - 操作者从已认证DPS会话取得；审计及QuoteReport记录operatorUserId、operationTime。初始查询与本地过滤的用户范围均由业务服务提供，不能信任客户端直接传入的权限条件；权限变化时业务服务重新校验、更新或终止相关订阅。
 - Quote初始列表由view.open/query显式返回，事件订阅不带业务snapshot；Price订阅提供当前快照。两类客户端流分别使用streamId和sequence，viewId在各自连接内不复用，不引入通用dataset或订阅version；quote.revision仅表示报价自身版本。SearchSvr数据处理位置、属性版本及本地事件消费位置分别管理，不能用单条报价revision替代快照交接位置。历史报价查询只使用请求/应答，不建立订阅流。
 
-当前接口见[FICC API评审稿](ficc-api-spec.zh-CN.md)，字段见[Quote模型与字典](models/quote-model.zh-CN.md)。[SearchSvr设计](searchsvr-design.zh-CN.md)已同步当前职责；[早期看板订阅草案](quote-board-subscription-protocol.zh-CN.md)保留为历史讨论资料，分页与自由排序方案不再适用。数据库边界已同步至核心数据模型ER图。
+当前接口见[FICC API评审稿](ficc-api-spec.zh-CN.md)，字段见[Quote模型与字典](models/quote-model.zh-CN.md)。[SearchSvr设计](searchsvr-design.zh-CN.md)已同步当前职责；当前查询、分页与推送协作见[前后端协作说明](quote-board-paging-collaboration.zh-CN.md)，不提供用户自由排序。数据库边界已同步至核心数据模型ER图。
 
 ## 6．待确定事项
 

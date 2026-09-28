@@ -22,6 +22,6 @@
 - `STC.SalesTrading.Plugin/View/Component/MarketPrice/MarketPriceView.xaml`
 - `STC.Common/View/Card/PriceAndOrderViewST.xaml`
 
-[来源与完整列清单](images/legacy-layout/source-manifest.json)记录绝对路径；[重建脚本](../tools/reconstruct-legacy-layout.py)可重新生成图片。脚本仅解析XML并绘制静态图片，不运行WPF、不连接后端、不进行压力测试。
+[来源与完整列清单](images/legacy-layout/source-manifest.json)记录绝对路径；重建脚本（仓库外参考：`../tools/reconstruct-legacy-layout.py`）未随本仓库发布；此处仅记录历史来源。原脚本仅解析XML并绘制静态图片，不运行WPF、不连接后端、不进行压力测试。
 
 模型与消息来源见[前端模型映射](qtrade-frontend-model-mapping.zh-CN.md)。

@@ -31,7 +31,7 @@ flowchart TD
 - `GwClient` 使用 `SERVER.BaseSvr` 等逻辑服务键获得地址，监听服务变化，移除旧连接、连接新增实例并恢复记录的订阅。连接选择由共享负载管理组件处理。
 - 底层仍建立到目标服务的 DPS 连接。ZooKeeper 用于发现和状态通知，不承载业务消息，也不要求服务间经过前端使用的独立 GW 进程。
 
-依据：[INNERSvr 入口](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/INNERSvr.java)、[ServerWrapper](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/ServerWrapper.java)、[ServerGwWrapper](D:/workspace/GitHub/sc-app-common/src/main/java/com/gw/common/utils/ServerGwWrapper.java)、[NetClientResource](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/net/NetClientResource.java)、[GwClient](D:/workspace/GitHub/sc-app-common/src/main/java/com/gw/common/utils/GwClient.java)。源码链接指向本机仓库。
+依据：INNERSvr 入口（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/INNERSvr.java`）、ServerWrapper（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/ServerWrapper.java`）、ServerGwWrapper（本地来源：`D:/workspace/GitHub/sc-app-common/src/main/java/com/gw/common/utils/ServerGwWrapper.java`）、NetClientResource（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/net/NetClientResource.java`）、GwClient（本地来源：`D:/workspace/GitHub/sc-app-common/src/main/java/com/gw/common/utils/GwClient.java`）。源码链接指向本机仓库。
 
 ## 2．服务启动、注册与配置
 
@@ -64,7 +64,7 @@ SERVER.QuoteSvr.RegisterEnable=0
 
 接入 STC 环境时配置注册中心并启用注册，业务调用仍使用同一服务键。业务类不得硬编码地址、端口或模拟登录凭据。
 
-依据：[ATSROOTConfig](D:/workspace/GitHub/ats-foundation-utilities/src/main/java/ats/foundation/utils/config/ATSROOTConfig.java)、[ConfigUtils](D:/workspace/GitHub/sc-app-common/src/main/java/com/gw/common/utils/ConfigUtils.java)、[ZkCluster](D:/workspace/GitHub/sc-app-common/src/main/java/com/app/common/cluster/ZkCluster.java)、[ServerInfo](D:/workspace/GitHub/sc-app-common/src/main/java/com/app/common/cluster/ServerInfo.java)。
+依据：ATSROOTConfig（本地来源：`D:/workspace/GitHub/ats-foundation-utilities/src/main/java/ats/foundation/utils/config/ATSROOTConfig.java`）、ConfigUtils（本地来源：`D:/workspace/GitHub/sc-app-common/src/main/java/com/gw/common/utils/ConfigUtils.java`）、ZkCluster（本地来源：`D:/workspace/GitHub/sc-app-common/src/main/java/com/app/common/cluster/ZkCluster.java`）、ServerInfo（本地来源：`D:/workspace/GitHub/sc-app-common/src/main/java/com/app/common/cluster/ServerInfo.java`）。
 
 ## 3．公共 API 与服务 Client
 
@@ -91,7 +91,7 @@ quoteSvrClient.queryState(request);
 quoteSvrClient.queryPriceSnapshot();
 ```
 
-依据：[ServerApi](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/ServerApi.java)、[ClientApi](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/ClientApi.java)、[BaseApi](D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java)、[BaseSvrClient](D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/BaseSvrClient.java)。
+依据：ServerApi（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/ServerApi.java`）、ClientApi（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/api/ClientApi.java`）、BaseApi（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/ats/app/api/BaseApi.java`）、BaseSvrClient（本地来源：`D:/workspace/GitHub/sc-app-stc/src/main/java/sc/app/stc/utils/BaseSvrClient.java`）。
 
 内部状态与价格同步不执行用户登录：复用 STC 服务连接，调用两个专用只读主题 `ficc.quote.internal.state.query`、`ficc.price.internal.snapshot.query`。用户账号密码由前端登录界面提供，QuoteSvr/NotificationSvr 仅解析用户请求携带的会话，不配置 `identity.serviceUsername` 等服务登录参数。内部网络需限制服务端口的访问；ZooKeeper 注册不等于认证。具体边界与部署步骤见 [STC 适配说明](../iteration1/docs/stc-adapters.zh-CN.md#内部同步与用户登录的边界)。
 
@@ -110,7 +110,7 @@ quoteSvrClient.queryPriceSnapshot();
 
 INNERSvr 的 Handler 映射位于 `resourceCfg.ini` 的 `handlerList`、`handler.<Name>.topic/class`；资源由 `resource.xml` 声明，流由 `streams.xml` 声明，并通过 `<output>` 连接 `NetRtOutputStream`。沿用实际配置结构，不另造路由注册机制。
 
-依据：[资源配置](D:/workspace/GitHub/sc-app-stc-innersvr/control/INNERSvr/resource.xml)、[Handler 配置](D:/workspace/GitHub/sc-app-stc-innersvr/control/INNERSvr/resourceCfg.ini)、[Stream 配置](D:/workspace/GitHub/sc-app-stc-innersvr/control/INNERSvr/streams.xml)、[BaseStream](D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/stream/BaseStream.java)。
+依据：资源配置（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/control/INNERSvr/resource.xml`）、Handler 配置（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/control/INNERSvr/resourceCfg.ini`）、Stream 配置（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/control/INNERSvr/streams.xml`）、BaseStream（本地来源：`D:/workspace/GitHub/sc-app-stc-innersvr/src/main/java/sc/app/stc/inner/stream/BaseStream.java`）。
 
 ## 5．请求、订阅和恢复原则
 

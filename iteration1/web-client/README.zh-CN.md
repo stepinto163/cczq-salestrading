@@ -57,7 +57,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-requ
 
 该检查加载实际原 HTML 与全部脚本，通过原页面处理函数新建、确认一条报价，检查原表格和右侧盘口内容，随后删除测试报价。Node 堆上限 160 MB，外部看门狗 35 秒，不测性能。结果记录于 `iteration1/runtime/requirements-dom-report.json`。
 
-原脚本/DOM 联调已通过；浏览器视觉验收仍需手工进行。结果见 [测试记录](../docs/web-first-flow-test.zh-CN.md)。
+测试命令见上文；每次以本轮实际结果为准。早期一次性测试记录保留在 Git 历史，不代表当前版本已经验收。
 
 2026-09-16操作回归增加：行情存在而QuoteView缓存缺失时的撤销、工具栏／右键动作、完整字段编辑、并发版本冲突、历史日期查询、历史查询失败提示及恢复、历史恢复操作、持久化操作日志。运行命令不变；只创建少量测试报价，结束时验证清理状态，不执行压力测试。
 

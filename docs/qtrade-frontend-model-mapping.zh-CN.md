@@ -152,25 +152,25 @@ FIX S价格类型在`QuoteInputInfoVo`构造器中的转换是：`BidPxType/Offe
 
 | 证据 | 源码位置 |
 | --- | --- |
-| 对价板两个债券视图 | [QuotationBoardView.xaml](../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/View/QuotationBoard/QuotationBoardView.xaml#L260) |
-| 对价板正式报价订阅 | [QuotationBoardViewModel.cs](../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/QuotationBoard/QuotationBoardViewModel.cs#L459) |
-| 当日报价管理用户过滤 | [TodayQuoManageViewModel.cs](../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/QuotationManagement/TodayQuoManageViewModel.cs#L790) |
-| 正式、输入、历史接口与确认 | [SalesTradingHandler.cs](../../../stc-client-sz/stc-client-lite/STC.Common/Handler/SalesTrading/SalesTradingHandler.cs#L321) |
-| 正式报价前端传输模型 | [StcTbookSbpQuoteInfo.cs](../../../stc-client-sz/stc-client-lite/STC.Common/Model/SalesTrading/StcTbookSbpQuoteInfo.cs) |
-| 正式报价界面包装 | [QuoteInfoViewModel.cs](../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/Data/QuoteInfoViewModel.cs#L108) |
-| QT直接订阅和查询 | [QtRiskHandler.cs](../../../stc-client-sz/stc-client-lite/STC.Common/Handler/Risk/RiskSetting/QtRiskHandler.cs#L244) |
-| QT集合及单条接口模型 | [QtMdInfo.cs](../../../stc-client-sz/stc-client-lite/STC.Common/Model/Qtrade/QtMdInfo.cs) |
-| QT显示行 | [QtMdModel.cs](../../../stc-client-sz/stc-client-lite/STC.Common/Model/Qtrade/QtMdModel.cs) |
-| QT显示筛选 | [QuotationListViewModel.cs](../../../stc-client-sz/stc-client-lite/STC.Common/ViewModel/QuotationListViewModel.cs#L4256) |
-| 行情面板的嵌入关系 | [MarketPriceView.xaml](../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/View/Component/MarketPrice/MarketPriceView.xaml#L37) |
-| MDSvr订阅终点 | [ClientApi.cs](../../../stc-client-sz/stc-client-lite/STC.Common/Api/ClientApi.cs#L803) |
-| FIX R/S/W及相关下游发布 | [MessageListener.java](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java)；R入口211，S入口684，W入口2160，禁用的输入发布约2493 |
-| S转输入报价字段 | [QuoteInputInfoVo.java](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/vo/QuoteInputInfoVo.java) |
-| R侧集合模型 | [QuoteMdDto.java](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/vo/QuoteMdDto.java) |
-| QT询价初始查询 | [QuoteRequestHandler.java](../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QuoteRequestHandler.java#L38) |
-| SBPSvr输入、用户映射、方向换算 | [SbpStream.java](../../../Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/stream/SbpStream.java#L351) |
-| SBPSvr输入转正式 | [ConfirmIntentionQuoteHandler.java](../../../Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/ConfirmIntentionQuoteHandler.java#L773) |
-| SBPSvr正式分页查询 | [QueryQuoteInfoPageHandler.java](../../../Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/QueryQuoteInfoPageHandler.java#L39) |
+| 对价板两个债券视图 | QuotationBoardView.xaml（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/View/QuotationBoard/QuotationBoardView.xaml#L260`） |
+| 对价板正式报价订阅 | QuotationBoardViewModel.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/QuotationBoard/QuotationBoardViewModel.cs#L459`） |
+| 当日报价管理用户过滤 | TodayQuoManageViewModel.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/QuotationManagement/TodayQuoManageViewModel.cs#L790`） |
+| 正式、输入、历史接口与确认 | SalesTradingHandler.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/Handler/SalesTrading/SalesTradingHandler.cs#L321`） |
+| 正式报价前端传输模型 | StcTbookSbpQuoteInfo.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/Model/SalesTrading/StcTbookSbpQuoteInfo.cs`） |
+| 正式报价界面包装 | QuoteInfoViewModel.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/ViewModel/Data/QuoteInfoViewModel.cs#L108`） |
+| QT直接订阅和查询 | QtRiskHandler.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/Handler/Risk/RiskSetting/QtRiskHandler.cs#L244`） |
+| QT集合及单条接口模型 | QtMdInfo.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/Model/Qtrade/QtMdInfo.cs`） |
+| QT显示行 | QtMdModel.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/Model/Qtrade/QtMdModel.cs`） |
+| QT显示筛选 | QuotationListViewModel.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/ViewModel/QuotationListViewModel.cs#L4256`） |
+| 行情面板的嵌入关系 | MarketPriceView.xaml（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.SalesTrading.Plugin/View/Component/MarketPrice/MarketPriceView.xaml#L37`） |
+| MDSvr订阅终点 | ClientApi.cs（仓库外参考：`../../../stc-client-sz/stc-client-lite/STC.Common/Api/ClientApi.cs#L803`） |
+| FIX R/S/W及相关下游发布 | MessageListener.java（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/lisener/MessageListener.java`）；R入口211，S入口684，W入口2160，禁用的输入发布约2493 |
+| S转输入报价字段 | QuoteInputInfoVo.java（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/vo/QuoteInputInfoVo.java`） |
+| R侧集合模型 | QuoteMdDto.java（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/vo/QuoteMdDto.java`） |
+| QT询价初始查询 | QuoteRequestHandler.java（仓库外参考：`../../../sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/src/main/java/sc/app/stc/qtradesvr/handler/QuoteRequestHandler.java#L38`） |
+| SBPSvr输入、用户映射、方向换算 | SbpStream.java（仓库外参考：`../../../Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/stream/SbpStream.java#L351`） |
+| SBPSvr输入转正式 | ConfirmIntentionQuoteHandler.java（仓库外参考：`../../../Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/ConfirmIntentionQuoteHandler.java#L773`） |
+| SBPSvr正式分页查询 | QueryQuoteInfoPageHandler.java（仓库外参考：`../../../Archive/sc-app-stc-sbpsvr/src/main/java/sc/app/stc/sbp/handler/QueryQuoteInfoPageHandler.java#L39`） |
 
 ## 9 对建模的直接启示
 
