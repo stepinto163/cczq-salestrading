@@ -1,33 +1,21 @@
-﻿# Maven / Jenkins 构建
+# Maven / Jenkins 构建
 
-后端源码以 iteration1/cgws-ficc-saletrading-* 为准，旧 cczq-app-* 项目已从当前版本删除，历史实现可通过 Git 历史查看。
+本机与 QA 统一使用 Java 8、Maven 3.9.x 和每个项目的主 `pom.xml`。不再维护第二套兼容坐标、补丁基础库或 GW 编译步骤。
 
-## 正式入口
+构建顺序：`cgws-ficc-saletrading-parent-pom` → `common` → `quotesvr`、`notificationsvr`、`crmsvr`、`qtintakesvr`。
+父 POM 继承 `sumscope.stc:sc-app-stc-parent-pom:0.1.1-SNAPSHOT`。Jenkins 继续使用自己的 Maven settings、共享流水线和 QA salt-formula；跨节点先发布 parent/common，再构建服务。
 
-使用 **JDK 8、Maven 3.9.x**。四个项目分别构建，不使用根聚合 POM：
-
-1. cgws-ficc-saletrading-parent-pom
-2. cgws-ficc-saletrading-common
-3. cgws-ficc-saletrading-quotesvr
-4. cgws-ficc-saletrading-notificationsvr
-
-每个项目的 **pom.xml 是 STC 主入口**。父 POM 继承 sumscope.stc:sc-app-stc-parent-pom:0.1.1-SNAPSHOT；业务模块使用 cgws.ficc.saletrading 坐标。parent/common 使用 sslib@0.0.1 和 building.buildJavaArtifact；两个业务服务使用 QA 的 sslib@main 和 building.buildJavaService。内网依赖及 settings.xml 由 Jenkins 环境提供。
-
-在同一机器按上述顺序运行 `mvn -B -ntp clean install`。跨 Jenkins 节点时，先将 parent-pom、common 执行 deploy 发布到内网仓库，再构建服务。标准服务构建输出 target/bin、target/javalib 和业务 JAR；Jenkins 用 salt-formula 生成 QA.APP 的 tar.gz 包。rel_ 应用分支部署到 10.130.21.53 的 /opt/sumscope/stc，使用 sumscope 账号及既有 start/stop 脚本，详见 [QA Jenkins](jenkins-qa.zh-CN.md)。标准 GW、C#、Web 不属于 Java 构建。
-
-## 本机兼容入口
-
-明确使用 pom_compat.xml，坐标为 cgws.ficc.saletrading.compat，输出 target-compat；不能把它作为内网 STC 默认入口。
+本机首次准备 QA 依赖及缺失父 POM，见 [QA Maven 依赖准备](../build/qa-maven/README.zh-CN.md)。准备好后：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File iteration1/scripts/build-server.ps1
+powershell -ExecutionPolicy Bypass -File iteration1/scripts/build-server.ps1 `
+  -SettingsFile iteration1/build/qa-maven/settings-local.xml
 python iteration1/scripts/verify-maven-packages.py
 ```
 
-兼容依赖需要先安装到本地 Maven 仓库，具体准备方法见 [父项目说明](../cgws-ficc-saletrading-parent-pom/README.md)。本机启动脚本从 Maven 部署包提取与 manifest 对应的依赖，不再使用旧手工 javac 产物。
+服务产物为 `target/<artifact>-0.1.0-SNAPSHOT.jar`、`target/javalib/`、`target/bin/start`。
+QA 部署包由 Jenkins 将这些产物与 salt-formula 配置组装，见 [QA Jenkins](jenkins-qa.zh-CN.md)。
+GW 使用已有 QA 可运行包。地址、数据库、许可证等环境配置不随依赖导入覆盖。
 
-## 配置与验证
-
-服务工作目录设为当前服务目录。本机兼容启动继续使用 config/database.properties；QA 使用共享 $ATS_ROOT/control/DBPoolConfig.ini，服务包内只保留数据源选择及适配器设置。密码和许可证不提交。
-
-本轮已经实际使用 JDK 8 完成兼容构建、31 项单元测试和 50 项有界 PostgreSQL 功能检查；1 项 CRM 集成测试按条件跳过。正式内网依赖和 Jenkins 共享流水线仍需在 STC 环境验证。
+2026-09-28 验证：主 POM 构建 parent/common 与四个服务成功，95 项测试通过、2 项数据库集成测试按条件跳过；四个服务的入口、依赖文件及业务 Java 8 字节码检查通过。
+重建根 POM 不等于取得 QA 原始父 POM，原文件仍应补回。

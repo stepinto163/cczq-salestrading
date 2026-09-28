@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+service_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+cd "$service_dir"
+: "${ATS_ROOT:?Set ATS_ROOT to the existing STC root (for example /opt/sumscope)}"
+export ATS_ROOT
+mkdir -p ../../log
+for config_file in config/crmsvr.local.properties "$ATS_ROOT/control/ATSConfig.ini"; do
+    if [[ ! -f "$config_file" ]]; then
+        echo "Missing service configuration: $config_file" >&2
+        exit 1
+    fi
+done
+java_command="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+# The CRM directory holds several hundred thousand institutions in memory.
+exec "$java_command" -Xms256m -Xmx1g -Dfile.encoding=UTF-8 -cp 'javalib/*' CRMSvr "$@"

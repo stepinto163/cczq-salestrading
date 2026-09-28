@@ -1,12 +1,12 @@
-param(
-    [string]$ClientDirectory = (Join-Path $PSScriptRoot '../client/bin/FilterPerformance')
+﻿param(
+    [string]$ClientDirectory = (Join-Path $PSScriptRoot '../api-debugger/bin/Debug/net472')
 )
 
 $ErrorActionPreference = 'Stop'
 $clientFolder = (Resolve-Path $ClientDirectory).Path
 # This DPS DLL embeds Newtonsoft.Json; there is no separate Newtonsoft assembly.
 [void][Reflection.Assembly]::LoadFrom((Join-Path $clientFolder 'gateway-api.dll'))
-$clientAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $clientFolder 'Ficc.SalesTradingClient.exe'))
+$clientAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $clientFolder 'Ficc.DpsApiDebugger.exe'))
 $logType = $clientAssembly.GetType('Ficc.SalesTrading.MessageLog', $true)
 $redactMethod = $logType.GetMethod('Redact', [Reflection.BindingFlags]'NonPublic,Static')
 $original = [Newtonsoft.Json.Linq.JToken]::Parse(@'

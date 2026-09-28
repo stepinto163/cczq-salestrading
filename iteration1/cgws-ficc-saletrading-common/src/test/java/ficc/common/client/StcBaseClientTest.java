@@ -16,6 +16,41 @@ import java.util.Properties;
 
 final class StcBaseClientTest {
     @Test
+    void mappedSecurityCacheReusesLookupsWithoutSharingMutableResults() {
+        FakeSource source = new FakeSource();
+        Properties configuration = new Properties();
+        configuration.setProperty("base.securityCacheTtlMillis", "30000");
+        StcBaseDataClient adapter = new StcBaseDataClient(source, configuration);
+
+        JSONObject first = adapter.security("240210.IB");
+        first.put("bondRating", "CLIENT-EDIT");
+        JSONObject second = adapter.security("240210.IB");
+
+        assertEquals("AAA", second.getString("bondRating"));
+        assertEquals(Integer.valueOf(1), source.requests.get("240210.IB"));
+        source.online = false;
+        assertThrows(ApiException.class, () -> adapter.security("240210.IB"));
+    }
+
+    @Test
+    void referenceVersionChangesAfterAnUpdateOrRemoval() {
+        FakeSource source = new FakeSource();
+        StcBaseDataClient adapter = new StcBaseDataClient(source, new Properties());
+        adapter.security("240210.IB");
+        String initialVersion = adapter.version();
+        assertEquals(initialVersion, adapter.version());
+
+        source.rating = "AA+";
+        adapter.security("240210.IB");
+        String updatedVersion = adapter.version();
+        assertNotEquals(initialVersion, updatedVersion);
+
+        source.missing = true;
+        adapter.security("240210.IB");
+        assertNotEquals(updatedVersion, adapter.version());
+    }
+
+    @Test
     void nameSearchUsesTheSharedClientDictionaryBeforeAnyBondHasBeenLookedUp() {
         FakeSource source = new FakeSource();
         StcBaseDataClient adapter = new StcBaseDataClient(source, new Properties());

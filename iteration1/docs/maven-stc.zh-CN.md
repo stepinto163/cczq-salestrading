@@ -1,23 +1,7 @@
-# STC Maven 构建
+# STC Java 独立工程构建
 
-**正式 STC 构建使用各 cgws-ficc-saletrading-* 项目中的 pom.xml。** 不再使用旧根 pom_stc.xml。
+当前源码以 `iteration1/cgws-ficc-saletrading-*` 为准，各工程使用主 `pom.xml`；父 POM 不含 modules。
 
-| 环境 | 项目内入口 | 坐标 | 输出 |
-|---|---|---|---|
-| 内网 STC / Jenkins | pom.xml | cgws.ficc.saletrading | target |
-| 本机兼容环境 | pom_compat.xml | cgws.ficc.saletrading.compat | target-compat |
+本机与 QA/Jenkins 统一使用 Java 8，按 parent-pom → common → 各服务顺序构建，输出 `target`。跨 Jenkins 节点先发布父 POM 和 common。
 
-两个入口编译同一份 Java 8 源码。按 parent-pom → common → quotesvr / notificationsvr 的顺序构建。
-
-先在父项目和 common 项目中执行 `mvn -B -ntp install`，然后在服务项目中执行：
-
-```powershell
-mvn -v
-mvn -B -ntp clean verify
-```
-
-确认 Maven 使用 JDK 8；内网仓库不在默认配置时，加 -s 指定 settings.xml。跨 Jenkins 节点需先 deploy 父 POM 和 common。
-
-完整说明见 [Maven / Jenkins 构建](maven-jenkins.zh-CN.md)。
-
-QA 环境打包及共享数据库配置见 [QA Jenkins](jenkins-qa.zh-CN.md)。
+旧拆分过程和兼容构建记录保留在 Git 历史，不再作为当前入口。详见 [构建指南](maven-jenkins.zh-CN.md)。

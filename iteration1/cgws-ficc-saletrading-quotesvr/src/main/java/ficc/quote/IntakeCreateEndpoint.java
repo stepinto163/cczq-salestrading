@@ -20,7 +20,10 @@ final class IntakeCreateEndpoint {
     IntakeCreateEndpoint(String token) {
         this.token = token == null ? "" : token;
         if (!this.token.isEmpty() && this.token.length() < 32) {
-            throw new IllegalArgumentException("intake.token must contain at least 32 characters");
+            // The length is the whole point: the file is shared with QtIntakeSvr, which does not
+            // check it, so a short token looks fine on that side and aborts QuoteSvr on this one.
+            throw new IllegalArgumentException(
+                    "intake.token must contain at least 32 characters, got " + this.token.length());
         }
     }
 
@@ -52,7 +55,7 @@ final class IntakeCreateEndpoint {
                     String value = secrets.getProperty("intake.token", "");
                     if (value.trim().isEmpty()) {
                         throw new IllegalArgumentException(
-                                "Missing intake.token in intake.authFile");
+                                "Missing intake.token in intake.authFile: " + resolved);
                     }
                     return new IntakeCreateEndpoint(value);
                 });

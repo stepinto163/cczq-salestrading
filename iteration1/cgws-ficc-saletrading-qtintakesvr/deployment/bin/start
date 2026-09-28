@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+service_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+cd "$service_dir"
+: "${ATS_ROOT:?Set ATS_ROOT to the existing STC root (for example /opt/sumscope)}"
+export ATS_ROOT
+mkdir -p ../../log
+
+# The service reads secrets.file from config/service.properties, so the pre-flight check
+# follows that key instead of hard-coding a name. Renaming or relocating the credentials
+# file is then a one-line config change, not a code change.
+secrets_file="$(sed -n 's/^[[:space:]]*secrets\.file=//p' config/service.properties | tail -1)"
+secrets_file="${secrets_file/\$ATS_ROOT/$ATS_ROOT}"
+if [[ -z "$secrets_file" ]]; then
+    echo "Missing service configuration: secrets.file in config/service.properties" >&2
+    exit 1
+fi
+
+for config_file in config/service.properties config/qtrade-fix.cfg "$secrets_file" "$ATS_ROOT/control/ATSConfig.ini" "$ATS_ROOT/control/DBPoolConfig.ini"; do
+    if [[ ! -f "$config_file" ]]; then
+        echo "Missing service configuration: $config_file" >&2
+        exit 1
+    fi
+done
+java_command="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+exec "$java_command" -Xms32m -Xmx192m -Dfile.encoding=UTF-8 -cp 'javalib/*' QtIntakeSvr "$@"

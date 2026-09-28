@@ -1,7 +1,7 @@
 ﻿$ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $foundation = & (Join-Path $PSScriptRoot 'server-classpath.ps1') -Server quotesvr
-$common = Join-Path $taskRoot 'cgws-ficc-saletrading-common/target-compat'
+$common = Join-Path $taskRoot 'cgws-ficc-saletrading-common/target'
 $classpath = "$common/test-classes;$common/cgws-ficc-saletrading-common-0.1.0-SNAPSHOT.jar;$foundation"
 foreach ($service in @('QuoteSvr', 'NotificationSvr')) {
     $module = if ($service -eq 'QuoteSvr') { 'quotesvr' } else { 'notificationsvr' }

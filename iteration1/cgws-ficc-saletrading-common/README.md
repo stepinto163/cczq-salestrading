@@ -16,14 +16,10 @@
 
 同一工作站按 parent-pom → common → quotesvr / notificationsvr 的顺序，在各项目目录执行 `mvn -B -ntp install`。服务可单独执行 `mvn -B -ntp verify`，输出 `target/bin、target/javalib 和业务 JAR，供 QA Jenkins 打成 tar.gz`。
 
-Jenkins：parent/common 使用 sslib@0.0.1 和 buildJavaArtifact；QuoteSvr/NotificationSvr 使用 sslib@main 和 buildJavaService，仅配置 QA.APP。详见 [QA Jenkins](../docs/jenkins-qa.zh-CN.md)。
+Jenkins：四个项目统一使用 sslib@main（sslib 仓库没有 0.0.1 标签，写 `@0.0.1` 会报 `No version 0.0.1 found for library sslib`），构建节点标签为 `jdk8`。parent/common 走 buildJavaArtifact，发布到 Nexus 私服（当前 `0.1.0-SNAPSHOT`）；QuoteSvr/NotificationSvr 走 buildJavaService，只配置 QA.APP。详见 [QA Jenkins](../docs/jenkins-qa.zh-CN.md)。
 
-## 本机兼容构建
+本仓库是 Maven 构件，不参与服务部署：任何分支构建成功都会 deploy 到私服，下游服务加 `-U` 才能拿到最新快照（agent 本地仓库会缓存"找不到"的失败结果）。
 
-`pom_compat.xml` 仅用于当前笔记本的已安装 STC 兼容依赖。按同一顺序执行 `mvn -o -B -ntp -f pom_compat.xml install`，服务输出 `target-compat/*-dist.zip`。
+## 本机与 QA 统一构建
 
-本机项目使用 `cgws.ficc.saletrading.compat` 坐标，与标准构建隔离。运行库改用 `cgws.ficc.saletrading.compat:stc-foundation-runtime-java8:1.0-SNAPSHOT`，其中六个本地 STC 基础库已重新生成 Java 8 字节码，不覆盖原 Java 17 JAR。全新电脑需先准备这些本机依赖；内网直接使用标准 pom.xml。
-
-Java 包名 `ficc.*`、DPS topic、服务发现名称、数据库 schema 均不随工程名称变更。当前仓库只维护 cgws-ficc-saletrading 项目，旧 cczq-app 项目通过 Git 历史查看，不再维护两份源码。
-
-服务自己的 build、deployment、control 目录包含完整打包输入。SQL 和配置模板随两个服务分别发布，公共变更需同步两份。密码、许可证、本机运行配置不入库。IntelliJ 的 Working directory 设置为当前服务项目根目录，配置及运行方法见 deployment/README.zh-CN.md。
+使用 Java 8 和主 `pom.xml`；依赖来自 QA 原版 JAR。准备方法见 [构建指南](../docs/maven-jenkins.zh-CN.md)。

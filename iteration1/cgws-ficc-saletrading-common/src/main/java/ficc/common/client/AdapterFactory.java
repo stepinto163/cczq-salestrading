@@ -115,18 +115,28 @@ public final class AdapterFactory {
             throws Exception {
         String selectedMode = configuration.getProperty("crm.mode", "simulator");
         String implementation;
-        if ("postgresql".equals(selectedMode)) implementation = "PostgresCrmClient";
-        else if ("simulator".equals(selectedMode)) implementation = "SimulatorCrmClient";
-        else if ("empty".equals(selectedMode)) implementation = "EmptyCrmClient";
-        else if ("custom".equals(selectedMode))
+        if ("postgresql".equals(selectedMode)) {
+            implementation = "PostgresCrmClient";
+        } else if ("stc".equals(selectedMode)) {
+            implementation = "StcCrmClient";
+        } else if ("simulator".equals(selectedMode)) {
+            implementation = "SimulatorCrmClient";
+        } else if ("empty".equals(selectedMode)) {
+            implementation = "EmptyCrmClient";
+        } else if ("custom".equals(selectedMode)) {
             implementation = configuration.getProperty("crm.adapterClass", "<missing>");
-        else implementation = "<invalid mode>";
+        } else {
+            implementation = "<invalid mode>";
+        }
         String target =
                 "postgresql".equals(selectedMode)
                         ? ComponentLog.databaseTarget(configuration, "crm.jdbcUrl", "crm.schema")
-                        : "custom".equals(selectedMode)
-                                ? configuration.getProperty("crm.adapterJar", "<missing>")
-                                : "local";
+                        : "stc".equals(selectedMode)
+                                ? configuration.getProperty("crm.serverKey", "SERVER.CRMSvr")
+                                : "custom".equals(selectedMode)
+                                        ? configuration.getProperty(
+                                                "crm.adapterJar", "<missing>")
+                                        : "local";
         return ComponentLog.initialize(
                 configuration,
                 "CRM",
@@ -149,6 +159,9 @@ public final class AdapterFactory {
                 break;
             case "postgresql":
                 client = new PostgresCrmClient();
+                break;
+            case "stc":
+                client = new StcCrmClient();
                 break;
             case "custom":
                 {
@@ -181,7 +194,7 @@ public final class AdapterFactory {
                 }
             default:
                 throw new IllegalArgumentException(
-                        "crm.mode must be simulator, empty, postgresql or custom");
+                        "crm.mode must be simulator, empty, postgresql, stc or custom");
         }
         client.initialize(network, configuration);
         return client;

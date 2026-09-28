@@ -18,9 +18,15 @@ final class QuoteMatcher {
     }
 
     boolean matches(String user, JSONObject q, JSONObject f) {
+        // An absent or empty filter matches every quote: FilterEngine.match returns true and
+        // every group clause below is skipped on a missing key. Building the enriched row for
+        // each of them resolved the whole reference universe on every snapshot request, which
+        // is where the repeated BaseSvr lookups came from. Skipping also means an unreadable
+        // securityId is no longer rejected here; the price paths still call require() for the
+        // securities they actually return.
+        if (f == null || f.isEmpty()) return true;
         JSONObject row = refs.enrich(q);
         if (!FilterEngine.match(row, f)) return false;
-        if (f == null) return true;
         for (String list : Arrays.asList("watchlistIds", "filterGroupIds")) {
             JSONArray ids = f.getJSONArray(list);
             if (ids == null || ids.isEmpty()) continue;

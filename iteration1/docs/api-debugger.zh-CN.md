@@ -1,6 +1,6 @@
 # DPS API 调试器
 
-独立 WinForms 程序，使用与平台相同的真实 DPS DLL，经 GW 调试 STC 风格的 request/reply 和 subscribe/publish。可从平台顶部 **API 调试器** 打开，或单独启动：
+独立 WinForms 程序，使用真实 DPS DLL，经 GW 调试 STC 风格的 request/reply 和 subscribe/publish。代码和 SDK 均位于 `iteration1/api-debugger`，不依赖已移除的独立 C# 原型。构建后单独启动：
 
 ```powershell
 & .\iteration1\api-debugger\bin\Debug\net472\Ficc.DpsApiDebugger.exe
@@ -8,7 +8,7 @@
 
 ## 请求调试
 
-接入真实 STC 的自动测试请使用C# 客户端的 **自动测试 → STC QA** 模式，填写两个真实账号并选择 BaseSvr 债券，详见 [QA 功能自动测试](qa-autotest.zh-CN.md)。下文的 trader1/trader2 等默认账号仅适用于模拟适配模式。
+桌面业务测试以集成后的 `stc-client` 为准，旧原型的自动测试按钮和脚本已退役。下文的 trader1/trader2 等默认账号仅适用于模拟适配模式；连接实际 STC 时使用该环境的账号和地址。
 
 1. 默认连接 `127.0.0.1:18600`，账户和密码为 `trader1`；需要测试另一用户时使用 `trader2`，内部接口用 `search` 或 `intake`。
 2. 选择服务与接口模板，编辑请求 JSON，点击“发送请求”。提供 47 个已注册请求接口模板：32 个报价/行情/分组接口、13 个通知接口、两个基础数据模拟接口。

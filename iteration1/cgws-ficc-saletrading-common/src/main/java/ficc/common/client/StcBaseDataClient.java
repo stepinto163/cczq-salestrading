@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /** Maps STC objects; STC owns loading, caching and invalidation. */
 public final class StcBaseDataClient implements BaseDataClient {
@@ -35,11 +36,15 @@ public final class StcBaseDataClient implements BaseDataClient {
     }
 
     private static final Logger LOGGER = Logger.getLogger(StcBaseDataClient.class);
+    private static final long MAX_SECURITY_CACHE_TTL_MILLIS = 600_000L;
     private final Source source;
     private final StcBaseMapper mapper;
+    private final long securityCacheTtlNanos;
+    private final Map<String, CachedSecurity> securityCache = new ConcurrentHashMap<>();
     private final Map<String, JSONObject> mappedSecurities = new ConcurrentHashMap<>();
     private final Map<String, JSONObject> mappedIssuers = new ConcurrentHashMap<>();
     private final Map<String, JSONObject> mappedValuations = new ConcurrentHashMap<>();
+    private volatile String cachedVersion;
 
     public StcBaseDataClient(NetClientWrapper network, Properties configuration) {
         this(new StcBaseSvrClientBridge(network, configuration), configuration);
@@ -48,6 +53,14 @@ public final class StcBaseDataClient implements BaseDataClient {
     StcBaseDataClient(Source source, Properties configuration) {
         this.source = source;
         mapper = new StcBaseMapper(configuration);
+        long cacheTtlMillis =
+                Long.parseLong(configuration.getProperty("base.securityCacheTtlMillis", "0"));
+        if (cacheTtlMillis < 0 || cacheTtlMillis > MAX_SECURITY_CACHE_TTL_MILLIS) {
+            throw new IllegalArgumentException(
+                    "base.securityCacheTtlMillis must be between 0 and "
+                            + MAX_SECURITY_CACHE_TTL_MILLIS);
+        }
+        securityCacheTtlNanos = TimeUnit.MILLISECONDS.toNanos(cacheTtlMillis);
         if (Boolean.parseBoolean(
                 configuration.getProperty("base.filter.simulateMissing", "false"))) {
             LOGGER.info(
@@ -65,7 +78,8 @@ public final class StcBaseDataClient implements BaseDataClient {
         source.start();
         LOGGER.info(
                 "BaseSvr adapter initialized: BaseSvrClient request mode -> BaseSvr2Client;"
-                        + " lookup=on-demand");
+                        + " lookup=on-demand; securityCacheTtlMillis="
+                        + TimeUnit.NANOSECONDS.toMillis(securityCacheTtlNanos));
     }
 
     private void ensureOnline() {
@@ -77,10 +91,37 @@ public final class StcBaseDataClient implements BaseDataClient {
     @Override
     public JSONObject security(String securityId) {
         ensureOnline();
+        // STC already memoises the three underlying lookups, but re-deriving the mapped
+        // record costs a full JSON round trip plus the record hash on every call. A single
+        // client request fans out over every active quote, so the same security is resolved
+        // hundreds of times. The memo is opt-in: STC invalidates its own caches, and a TTL
+        // would hide those updates, so it stays off unless base.securityCacheTtlMillis is set.
+        if (securityCacheTtlNanos == 0) {
+            return loadSecurity(securityId);
+        }
+        long now = System.nanoTime();
+        CachedSecurity cached = securityCache.get(securityId);
+        if (cached != null && cached.expiresAtNanos - now > 0) {
+            return JsonUtils.deepCopy(cached.value);
+        }
+        JSONObject loaded = loadSecurity(securityId);
+        if (loaded == null) {
+            securityCache.remove(securityId);
+        } else {
+            securityCache.put(
+                    securityId,
+                    new CachedSecurity(now + securityCacheTtlNanos, JsonUtils.deepCopy(loaded)));
+        }
+        return loaded;
+    }
+
+    private JSONObject loadSecurity(String securityId) {
         JSONObject bond = source.bond(securityId);
         if (bond == null) {
             mappedSecurities.remove(securityId);
             mappedValuations.remove(securityId);
+            securityCache.remove(securityId);
+            cachedVersion = null;
             LOGGER.warn("STC BaseSvr bond not found: securityId=" + JsonUtils.toJson(securityId));
             return null;
         }
@@ -108,6 +149,7 @@ public final class StcBaseDataClient implements BaseDataClient {
         } else {
             mappedValuations.put(securityId, mappedValuation);
         }
+        cachedVersion = null;
         return result;
     }
 
@@ -238,6 +280,24 @@ public final class StcBaseDataClient implements BaseDataClient {
     @Override
     public String version() {
         ensureOnline();
-        return "STC-" + JsonUtils.canonicalHash(mappedSecurities);
+        // Hashes every mapped record and every issuer and valuation under it, so it is only
+        // recomputed when one of those maps actually changed.
+        String cached = cachedVersion;
+        if (cached == null) {
+            cached = "STC-" + JsonUtils.canonicalHash(mappedSecurities);
+            cachedVersion = cached;
+        }
+        return cached;
+    }
+
+    /** Memo of a mapped record; never handed out directly so callers cannot mutate it. */
+    private static final class CachedSecurity {
+        final long expiresAtNanos;
+        final JSONObject value;
+
+        CachedSecurity(long expiresAtNanos, JSONObject value) {
+            this.expiresAtNanos = expiresAtNanos;
+            this.value = value;
+        }
     }
 }

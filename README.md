@@ -13,13 +13,13 @@
 | [iteration1/cgws-ficc-saletrading-quotesvr](iteration1/cgws-ficc-saletrading-quotesvr) | 报价生命周期、查询、行情价格簿 |
 | [iteration1/cgws-ficc-saletrading-notificationsvr](iteration1/cgws-ficc-saletrading-notificationsvr) | 报价提醒、用户偏好与已读状态 |
 | [iteration1/GW](iteration1/GW) | 标准 STC GW 配置 |
-| [iteration1/client](iteration1/client) | C# WinForms 平台与有界功能自动测试 |
 | [iteration1/web-client](iteration1/web-client/README.zh-CN.md) | Web 联调平台首轮：GW 登录、报价生命周期、行情与提醒 |
 | [iteration1/api-debugger](iteration1/api-debugger) | DPS 请求与订阅调试工具 |
-| [examples/csharp-frontend](examples/csharp-frontend/README.zh-CN.md) | 自包含 C# 学习示例：报价生命周期、完整条件编辑、订阅与分页；附可运行 bin 目录 |
 | [iteration1/sql](iteration1/sql) | PostgreSQL 初始化及旧 schema 迁移脚本 |
 
 QuoteSvr 与 NotificationSvr 共用 PostgreSQL 的 `ficc_salestrading` schema。默认使用模拟数据；登录、基础数据可切换至真实 STC 服务，CRM 支持空实现及外部适配 JAR。配置与联调边界见 [STC / CRM 适配指南](iteration1/docs/stc-adapters.zh-CN.md)。
+
+桌面业务前端已整合到 `stc-client`。独立 C# 示例、WinForms 原型及其专用测试脚本已移除；API 调试器保留。
 
 ## 构建与运行
 
@@ -34,12 +34,11 @@ mvn -B -ntp -f iteration1/cgws-ficc-saletrading-notificationsvr/pom.xml clean ve
 
 每个项目包含自己的 Jenkinsfile，正式产物位于各自的 `target`。父 POM 不包含 modules；跨 Jenkins 节点时，先将父 POM 和 common 发布到内网仓库。
 
-本机兼容构建使用明确命名的 `pom_compat.xml`，输出到 `target-compat`。旧 `cczq-app-*` 源码、根聚合 POM 和旧根 Jenkinsfile 已移除，不再作为构建入口。详见 [Maven / Jenkins 构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。
+本机与 QA 统一使用主 `pom.xml`、Java 8 和 QA 原版依赖。旧 `cczq-app-*` 源码、根聚合 POM 和旧根 Jenkinsfile 已移除，不再作为构建入口。详见 [Maven / Jenkins 构建指南](iteration1/docs/maven-jenkins.zh-CN.md)。
 
-C# 平台与调试器要求 Windows、.NET SDK 和 .NET Framework 4.7.2 开发工具：
+API 调试器要求 Windows、.NET SDK 和 .NET Framework 4.7.2 开发工具：
 
 ```powershell
-dotnet build iteration1/client/SalesTradingClient.csproj
 dotnet build iteration1/api-debugger/DpsApiDebugger.csproj
 ```
 
@@ -62,6 +61,6 @@ dotnet build iteration1/api-debugger/DpsApiDebugger.csproj
 
 ## 仓库边界
 
-数据库数据、密码、许可证、运行日志、安装程序、编译产物和本机缓存不提交。Java 兼容依赖通过 Maven 本地仓库或公司私服提供，详见构建指南。两个 C# 项目直接使用的 `gateway-api.dll` 随源码保留；其余公开 .NET 依赖通过 NuGet 恢复。
+数据库数据、密码、许可证、运行日志、安装程序、编译产物和本机缓存不提交。Java 依赖通过 Maven 本地仓库或公司私服提供，详见构建指南。API 调试器使用的 `gateway-api.dll` 随源码保留；其余公开 .NET 依赖通过 NuGet 恢复。
 
-首次克隆后需要在本机准备数据库连接配置、有效许可证和 STC 兼容依赖。原始浏览器页面存档、无关旧数据库脚本和早期网格压力测试工具不属于本仓库发布内容。
+首次克隆后需要在本机准备数据库连接配置、有效许可证和 QA 原版 STC 依赖。原始浏览器页面存档、无关旧数据库脚本和早期网格压力测试工具不属于本仓库发布内容。

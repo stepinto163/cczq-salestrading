@@ -6,7 +6,6 @@ param(
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
 $runtimePath = Join-Path $taskRoot 'runtime'
-$clientPath = Join-Path $taskRoot 'client/bin/Debug/net472/Ficc.SalesTradingClient.exe'
 $powershellPath = Join-Path $PSHOME 'powershell.exe'
 if (-not (Test-Path -LiteralPath $powershellPath)) {
     $powershellPath = (Get-Command powershell.exe -ErrorAction Stop).Source
@@ -78,7 +77,7 @@ function Wait-ServiceReady {
     throw "$Name was not ready within 45 seconds. Inspect $logPath and $runtimePath/$Name.err; later components were not started."
 }
 
-$scope = 'QuoteSvr, NotificationSvr, GW, C# client and web server'
+$scope = 'QuoteSvr, NotificationSvr, GW and web server'
 if ($IncludeInfrastructure) {
     $scope += ', project PostgreSQL and ZooKeeper'
 }
@@ -88,11 +87,10 @@ if (-not $PSCmdlet.ShouldProcess($taskRoot, "Restart $scope using existing confi
 
 # Check the existing local deployment before closing any application.
 foreach ($requiredPath in @(
-    $clientPath,
     (Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr/control/server.lic'),
-    (Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr/target-compat/cgws-ficc-saletrading-quotesvr-0.1.0-SNAPSHOT.jar'),
-    (Join-Path $taskRoot 'cgws-ficc-saletrading-notificationsvr/target-compat/cgws-ficc-saletrading-notificationsvr-0.1.0-SNAPSHOT.jar'),
-    (Join-Path $taskRoot 'cgws-ficc-saletrading-common/target-compat/cgws-ficc-saletrading-common-0.1.0-SNAPSHOT.jar'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-quotesvr/target/cgws-ficc-saletrading-quotesvr-0.1.0-SNAPSHOT.jar'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-notificationsvr/target/cgws-ficc-saletrading-notificationsvr-0.1.0-SNAPSHOT.jar'),
+    (Join-Path $taskRoot 'cgws-ficc-saletrading-common/target/cgws-ficc-saletrading-common-0.1.0-SNAPSHOT.jar'),
     (Join-Path $taskRoot 'GW/javalib/gw-0.1.1-SNAPSHOT.jar')
 )) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
@@ -114,18 +112,6 @@ try {
     Repair-ServicePid 'quotesvr' 'ficc.quote.Main'
     Repair-ServicePid 'notificationsvr' 'ficc.notification.NotificationMain'
     Repair-ServicePid 'gateway' 'GW'
-
-    $clients = @(Get-CimInstance Win32_Process -Filter "Name='Ficc.SalesTradingClient.exe'" | Where-Object {
-        $_.ExecutablePath -and [IO.Path]::GetFullPath($_.ExecutablePath) -eq [IO.Path]::GetFullPath($clientPath)
-    })
-    foreach ($client in $clients) {
-        $clientProcess = Get-Process -Id $client.ProcessId -ErrorAction SilentlyContinue
-        if (-not $clientProcess) { continue }
-        Write-Host "[restart] Closing C# client (PID $($client.ProcessId))..."
-        if (-not $clientProcess.CloseMainWindow() -or -not $clientProcess.WaitForExit(8000)) {
-            throw 'The C# client did not close. Finish any pending dialog and close it, then rerun this script.'
-        }
-    }
 
     Invoke-ProjectScript 'stop-web-client.ps1'
     Invoke-ProjectScript 'stop-gateway.ps1'
@@ -150,12 +136,7 @@ try {
     $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8088/' -UseBasicParsing -TimeoutSec 5
     if ($response.StatusCode -ne 200) { throw 'Web client HTTP check failed.' }
 
-    # This is the interactive client the user requested; background services use hidden windows.
-    $clientProcess = Start-Process -FilePath $clientPath -WorkingDirectory (Split-Path $clientPath -Parent) -PassThru
-    if ($clientProcess.WaitForExit(1000)) {
-        throw "C# client exited immediately. Inspect $runtimePath/client-logs."
-    }
-    Write-Host "[restart] Complete. C# client PID $($clientProcess.Id); web http://127.0.0.1:8088/"
+    Write-Host '[restart] Complete. Web http://127.0.0.1:8088/. Start stc-client through its own launcher.'
     Write-Host '[restart] Refresh the browser and log in again. No autotest was started.'
 } finally {
     if ($restartLock) { $restartLock.Dispose() }

@@ -13,20 +13,26 @@ import sc.app.stc.net.NetClientWrapper;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 /** Reuses the deployment's STC client and adds dictionary search in our adapter. */
 final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
     private static final Logger LOGGER = Logger.getLogger(StcBaseSvrClientBridge.class);
+    private static final long MAX_EMPTY_LOOKUP_TTL_MILLIS = 600_000L;
     private final NetClientWrapper network;
     private final String serverKey;
+    private final Map<String, Long> emptyInfoTableLookups = new ConcurrentHashMap<>();
     private Class<?> requestClient;
     private Method getBond;
     private Method getValuation;
     private Method getInfoTable;
     private final long searchTimeoutMillis;
+    private final long emptyInfoTableTtlNanos;
     private StcTransport searchTransport;
 
     StcBaseSvrClientBridge(NetClientWrapper network, Properties configuration) {
@@ -38,6 +44,14 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
             throw new IllegalArgumentException(
                     "base.requestTimeoutMillis must be between 100 and 10000");
         }
+        long emptyInfoTableTtlMillis =
+                Long.parseLong(configuration.getProperty("base.emptyInfoTableTtlMillis", "60000"));
+        if (emptyInfoTableTtlMillis < 0 || emptyInfoTableTtlMillis > MAX_EMPTY_LOOKUP_TTL_MILLIS) {
+            throw new IllegalArgumentException(
+                    "base.emptyInfoTableTtlMillis must be between 0 and "
+                            + MAX_EMPTY_LOOKUP_TTL_MILLIS);
+        }
+        emptyInfoTableTtlNanos = TimeUnit.MILLISECONDS.toNanos(emptyInfoTableTtlMillis);
     }
 
     @Override
@@ -97,7 +111,31 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
 
     @Override
     public JSONObject issuer(String issuerId) {
-        return loadIssuer(issuerId, (table, id) -> invoke(getInfoTable, table, id));
+        return loadIssuer(issuerId, this::infoTable);
+    }
+
+    /**
+     * BaseSvr2Client.getInfoTableVal only caches hits, so an absent table key is requested over the
+     * wire again on every call. Remember the miss for a while instead; the lookup already answered,
+     * and a null result is handled the same way an empty map was.
+     */
+    private JSONObject infoTable(String table, String key) {
+        String memoKey = table + '|' + key;
+        if (emptyInfoTableTtlNanos > 0) {
+            Long expiresAt = emptyInfoTableLookups.get(memoKey);
+            if (expiresAt != null && expiresAt - System.nanoTime() > 0) {
+                return null;
+            }
+        }
+        JSONObject value = invoke(getInfoTable, table, key);
+        if (emptyInfoTableTtlNanos > 0) {
+            if (value == null || value.isEmpty()) {
+                emptyInfoTableLookups.put(memoKey, System.nanoTime() + emptyInfoTableTtlNanos);
+            } else {
+                emptyInfoTableLookups.remove(memoKey);
+            }
+        }
+        return value;
     }
 
     static JSONObject loadIssuer(String issuerId, BiFunction<String, String, JSONObject> lookup) {

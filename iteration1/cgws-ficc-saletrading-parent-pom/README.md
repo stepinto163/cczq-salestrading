@@ -16,36 +16,14 @@
 
 同一工作站按 parent-pom → common → quotesvr / notificationsvr 的顺序，在各项目目录执行 `mvn -B -ntp install`。服务可单独执行 `mvn -B -ntp verify`，输出 `target/bin、target/javalib 和业务 JAR，供 QA Jenkins 打成 tar.gz`。
 
-Jenkins：parent/common 使用 sslib@0.0.1 和 buildJavaArtifact；QuoteSvr/NotificationSvr 使用 sslib@main 和 buildJavaService，仅配置 QA.APP。详见 [QA Jenkins](../docs/jenkins-qa.zh-CN.md)。
+Jenkins：四个项目统一使用 sslib@main（sslib 仓库没有 0.0.1 标签，写 `@0.0.1` 会报 `No version 0.0.1 found for library sslib`），构建节点标签为 `jdk8`。parent/common 走 buildJavaArtifact，发布到 Nexus 私服（当前 `0.1.0-SNAPSHOT`）；QuoteSvr/NotificationSvr 走 buildJavaService，只配置 QA.APP。详见 [QA Jenkins](../docs/jenkins-qa.zh-CN.md)。
 
-## 本机兼容构建
+本仓库是 Maven 构件，不参与服务部署：任何分支构建成功都会 deploy 到私服，下游服务加 `-U` 才能拿到最新快照。
 
-`pom_compat.xml` 仅用于当前笔记本的已安装 STC 兼容依赖。按同一顺序执行 `mvn -o -B -ntp -f pom_compat.xml install`，服务输出 `target-compat/*-dist.zip`。
+## 本机与 QA 统一构建
 
-本机项目使用 `cgws.ficc.saletrading.compat` 坐标，与标准构建隔离。运行库改用 `cgws.ficc.saletrading.compat:stc-foundation-runtime-java8:1.0-SNAPSHOT`，其中六个本地 STC 基础库已重新生成 Java 8 字节码，不覆盖原 Java 17 JAR。全新电脑需先准备这些本机依赖；内网直接使用标准 pom.xml。
-
-Java 包名 `ficc.*`、DPS topic、服务发现名称、数据库 schema 均不随工程名称变更。当前仓库只维护 cgws-ficc-saletrading 项目，旧 cczq-app 项目通过 Git 历史查看，不再维护两份源码。
-
-服务自己的 build、deployment、control 目录包含完整打包输入。SQL 和配置模板随两个服务分别发布，公共变更需同步两份。密码、许可证、本机运行配置不入库。IntelliJ 的 Working directory 设置为当前服务项目根目录，配置及运行方法见 deployment/README.zh-CN.md。
+使用 Java 8 和主 `pom.xml`；依赖来自 QA 原版 JAR。准备方法见 [构建指南](../docs/maven-jenkins.zh-CN.md)。
 
 ## Java 8 构建约定
 
-- Jenkins 使用 JDK 8 和 Maven 3.9.x，保持现有 STC 共享库和独立项目构建顺序。
-- 编译插件固定为 3.13.0，目标为 Java 8（class major version 52）。JDK 8 下采用 source/target，较新 JDK 下通过 release 8 检查标准库 API。
-- Java 源码采用四空格缩进，字段分别声明，方法和分支展开；格式工具使用 google-java-format 1.22.0 的 `--aosp` 风格，不参与 Jenkins 编译。
-- 本机兼容依赖曾使用 Java 17 编译，不能直接用于 Java 8 进程。新的 Java 8 依赖使用独立坐标，正式 Jenkins 仍使用内网 STC 依赖。
-
-如需重新准备本机依赖，可运行 `scripts/prepare-java8-compat.py`，指定已有的暂存源码目录和全新的空输出目录。该工具用 JDK 17 的 `--release 8` 重编译暂存库，不修改 STC 源仓库，也不用于 Jenkins。
-
-```powershell
-python scripts/prepare-java8-compat.py --foundation-build <暂存目录> --runtime-pom <原运行库POM> --jdk17 <JDK17目录> --maven <mvn.cmd路径> --output <独立空目录>
-```
-
-## 本次验证（2026-09-22）
-
-- 实际使用 Temurin JDK 8u504 和 Maven 3.9.16，四个兼容 POM 均完成 clean install。
-- common：31 项测试通过，1 项需要单独 CRM 数据库配置的测试按条件跳过。
-- 两个服务均生成完整 dist.zip；各包内 124 个 JAR 的运行时 class 均兼容 Java 8。多版本 JAR 的版本目录及 module-info 不属于 Java 8 加载范围。
-- 在独立 PostgreSQL schema 中执行 5 条报价的有界功能回归，50 项检查通过，覆盖生命周期、筛选、发布回调和持久化；不包含 GW 链路测试。
-- 标准 pom.xml 的内网依赖解析及 Jenkins 共享流水线仍需在内网验证。
-- 本机打包使用 `MAVEN_OPTS=-Xmx256m -XX:ActiveProcessorCount=2` 限制并发。处理器参数适用于本次 8u504，不作为旧版 JDK 8 的必要启动参数。
+Java 8、Maven 3.9.x；按 parent-pom → common → 服务顺序构建，不编译 GW 或改写 STC 基础库。

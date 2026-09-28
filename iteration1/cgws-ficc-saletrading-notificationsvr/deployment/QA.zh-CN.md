@@ -47,13 +47,15 @@ db.schema=ficc_salestrading2
 
 `adapters.properties` 选择真实 STC 登录、基础资料和 CRM，并指定 `crm.sourceName=FICC_CRM`、`crm.schema=public`。不再包含未使用的 `identity.serviceUsername`、`identity.servicePasswordEnv` 等设置，也不设置已废弃的 `base.securityIds`。
 
+基础资料的解析结果可选做短期备忘：`base.securityCacheTtlMillis`（毫秒，默认 `0` 关闭，每次都按 STC 当前数据重新推导）。报价簿与行情快照请求会对同一条证券重复解析多次，开启后能显著压低 BaseSvr 调用量；代价是该证券的 STC 更新最长滞后一个 TTL 才可见，QA 模板当前设为 `30000`。
+
 数据库 URL、账号、密码只写入共享 `DBPoolConfig.ini`，不放进 Git、Jenkins 环境模板或业务服务包。`FICC_SALESTRADING` 指向 `ficc_salestrading` 数据库；`FICC_CRM` 指向 `ficc_ibor` 数据库。两个业务服务通过不同表前缀共用 `ficc_salestrading2` schema。
 
 ## 对既有 STC 的影响边界
 
 保留 `MYSQL0` 和全部既有数据源定义，不修改它们的 URL、账号、密码、池参数或 STC 各服务的默认数据源。
 
-已确认 QA 原配置只有索引 0 的 `MYSQL0`，原来的 `DBPOOL.DBCount=4` 与实际条目不一致。保留 `MYSQL0`，在索引 1、2 分别追加 `FICC_SALESTRADING`、`FICC_CRM`，将 `DBPOOL.DBCount` 设为 3。**示例片段不是完整配置文件，禁止直接覆盖原文件。** 先备份，共享文件继续由 QA 运维维护；服务升级不覆盖它。
+用户提供的共享文件声明 `DBPOOL.DBCount=4`，因此片段使用索引 4、5。实施前检查完整文件；如果计数已经变化，应改用新的空闲索引。仅追加两个数据源，并将计数改成正确总数，例如 6。**片段不是完整配置文件，禁止覆盖原文件。** 先备份，共享文件继续由 QA 运维维护；服务升级不覆盖它。
 
 数据源填写参考放在源码 `deployment/DBPoolConfig.salestrading.example.ini`，只供首次配置时查阅，不会被程序读取，也不打入服务包。运行时唯一数据库配置来源是共享 `$ATS_ROOT/control/DBPoolConfig.ini`。
 

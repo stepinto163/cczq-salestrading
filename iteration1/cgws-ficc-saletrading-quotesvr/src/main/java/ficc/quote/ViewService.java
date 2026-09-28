@@ -343,8 +343,13 @@ final class ViewService {
                                                 && q.getString("status").equals("ACTIVE")
                                                 && svc.matches(user, q, filter))
                         .collect(Collectors.toList());
+        // The exercise flag is a property of the security, not of the quote: resolve it once
+        // instead of once per active quote.
+        boolean exercise = false;
+        if (!qs.isEmpty()) {
+            exercise = svc.refs.require(security).getBooleanValue("hasExerciseOption");
+        }
         for (JSONObject q : qs) {
-            boolean exercise = svc.refs.require(security).getBooleanValue("hasExerciseOption");
             if (!"1".equals(q.getString("quoteType"))
                     || !Objects.equals(q.getString("yieldType"), exercise ? "2" : "1"))
                 throw ApiException.forField(
