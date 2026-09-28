@@ -1,0 +1,397 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.UI.PageSetQuotation"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:STC.Broker.Plugin.View.UI"
+      mc:Ignorable="d" 
+      d:DesignHeight="600" d:DesignWidth="311" Background="#172422">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+        
+        
+        <Style x:Key="BillDefaultRadioButton" TargetType="RadioButton">
+            <Style.Resources>
+                <SolidColorBrush x:Key="Button.Background" Color="Transparent"/>
+                <SolidColorBrush x:Key="Button.Static.Foreground" Color="#FFEBC8"/>
+                <SolidColorBrush x:Key="Button.MouseOver.Foreground" Color="#178674"/>
+                <SolidColorBrush x:Key="Button.Pressed.Foreground" Color="#F9C152"/>
+            </Style.Resources>
+            <Setter Property="IsChecked" Value="False"/>
+            <Setter Property="Background" Value="{StaticResource Button.Background}"></Setter>
+            <Setter Property="Foreground" Value="{StaticResource Button.Static.Foreground}"></Setter>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Width" Value="60"></Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <DockPanel  Background="{TemplateBinding Background}" ToolTip="{TemplateBinding Content}" LastChildFill="False" Width="{TemplateBinding Width}">
+                            <Image Margin="2 0 5 0" DockPanel.Dock="Left" x:Name="_img"  Stretch="None" Source="pack://application:,,,/STC.Broker.Plugin;component/Images/radio_button_normal.png" />
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="true">
+                                <Setter TargetName="_img" Property="Source" Value="pack://application:,,,/STC.Broker.Plugin;component/Images/radio_button_selected.png"/>
+                                <Setter Property="Foreground" Value="{StaticResource Button.Pressed.Foreground}"></Setter>
+                            </Trigger>
+                            <!--<Trigger Property="IsMouseOver" Value="true">
+                            <Setter TargetName="_img" Property="Source" Value="./Images/radio_button_selected.png"/>
+                            <Setter Property="Foreground" Value="{StaticResource Button.MouseOver.Foreground}"></Setter>
+                        </Trigger>-->
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--Button Style-->
+        <Style x:Key="AddButtonStyle" TargetType="{x:Type Button}">
+
+            <Setter Property="Background" Value="#325850"/>
+            <Setter Property="Foreground" Value="#FFEBC8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="MicrosoftYaHei"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                            <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="0" BlurRadius="10"></DropShadowEffect>
+                            </Border.Effect>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsDefaulted" Value="true">
+                                <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" TargetName="border" Value="#193D37"/>
+                                <!--<Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.MouseOver.Border}"/>-->
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Background" TargetName="border" Value="#136C5E"/>
+                                <!--<Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Pressed.Border}"/>-->
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--2*6样式-->
+        <Style x:Key="SmallButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="#8F9598"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}" 
+                            CornerRadius="2">
+
+                                <Image x:Name="image" Source="/STC.Broker.Plugin;component/Images/monitor_s_normal.png"></Image>
+                            </Border>
+                            <Grid>
+                                <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!--<Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" TargetName="background" Value="#193D37">
+                                </Setter>
+                            </Trigger>-->
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Source" TargetName="image" Value="/STC.Broker.Plugin;component/Images/monitor_s_selected.png">
+                                </Setter>
+                                <Setter Property="Foreground" Value="#F9C152"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <Style x:Key="SmallCheckBoxStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="#8F9598"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <Grid>
+                            <Image x:Name="CheckBoxImage"/>
+                            <ContentPresenter  VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckBoxImage" Property="Source" Value="/STC.Broker.Plugin;component/Images/monitor_s_selected.png"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="CheckBoxImage" Property="Source" Value="/STC.Broker.Plugin;component/Images/monitor_s_normal.png"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!--3*7样式-->
+        <Style x:Key="MidButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="#8F9598"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}" 
+                            CornerRadius="2">
+
+                                <Image x:Name="image" Source="/STC.Broker.Plugin;component/Images/monitor_l_normal.png"></Image>
+                            </Border>
+                            <Grid>
+                                <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!--<Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" TargetName="background" Value="#193D37">
+                                </Setter>
+                            </Trigger>-->
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Source" TargetName="image" Value="/STC.Broker.Plugin;component/Images/monitor_l_selected.png">
+                                </Setter>
+                                <Setter Property="Foreground" Value="#F9C152"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MidCheckBoxStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="#8F9598"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <Grid>
+                            <Image x:Name="CheckBoxImage"/>
+                            <ContentPresenter  VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckBoxImage" Property="Source" Value="/STC.Broker.Plugin;component/Images/monitor_l_selected.png"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="CheckBoxImage" Property="Source" Value="/STC.Broker.Plugin;component/Images/monitor_l_normal.png"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--5*4样式-->
+        <Style x:Key="BigButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Foreground" Value="#8F9598"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}" 
+                            CornerRadius="2">
+
+                                <Image x:Name="image" Source="/STC.Broker.Plugin;component/Images/monitor_v_normal.png"></Image>
+                            </Border>
+                            <Grid>
+                                <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!--<Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" TargetName="background" Value="#193D37">
+                                </Setter>
+                            </Trigger>-->
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Source" TargetName="image" Value="/STC.Broker.Plugin;component/Images/monitor_v_selected.png">
+                                </Setter>
+                                <Setter Property="Foreground" Value="#F9C152"/>
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BigCheckBoxStyle" TargetType="{x:Type CheckBox}">
+            <Setter Property="Foreground" Value="#8F9598"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <Grid>
+                            <Image x:Name="CheckBoxImage"/>
+                            <ContentPresenter  VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckBoxImage" Property="Source" Value="/STC.Broker.Plugin;component/Images/monitor_v_selected.png"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="CheckBoxImage" Property="Source" Value="/STC.Broker.Plugin;component/Images/monitor_v_normal.png"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Background="#0A0F0E">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64"/>
+            <RowDefinition Height="30" />
+            <RowDefinition Height="35" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="64" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="10 0 0 0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="模式选择" Foreground="#FF9B00" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+            <StackPanel  Grid.Row="1" Orientation="Horizontal">
+                <RadioButton Style="{StaticResource BillDefaultRadioButton}"  GroupName="QuotesShowModeGroup"  x:Name="fullQuotesMode" Tag="1" Content="完整模式" HorizontalAlignment="Left" Foreground="#9BA1A3" IsChecked="True" Width="86" />
+                <RadioButton Style="{StaticResource BillDefaultRadioButton}"  GroupName="QuotesShowModeGroup"  x:Name="simpleQuotesMode" Tag="2" Content="简洁模式" HorizontalAlignment="Left" Foreground="#9BA1A3" Width="86" />
+            </StackPanel>
+        </Grid>
+        <!--布局提示-->
+        <Grid Grid.Row="1" Margin="12 4 0 0">
+            <TextBlock Text="布局" Foreground="#FF9B00" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!--布局功能-->
+        <Grid Height="35" Margin="10,0,0,0" Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="0"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <RadioButton Grid.Row="0" Grid.RowSpan="2"  Margin="0,0,0,16" Width="85" GroupName="modeGroup" x:Name="modeList" Content="自动模式" HorizontalAlignment="Left" Foreground="#9BA1A3" Click="modeListChecked" Visibility="Collapsed" Style="{StaticResource BillDefaultRadioButton}" />
+            <StackPanel  Grid.Row="1" Orientation="Horizontal">
+                <RadioButton Style="{StaticResource BillDefaultRadioButton}"  GroupName="modeGroup" x:Name="modeCard" Content="卡片模式" HorizontalAlignment="Left" Foreground="#9BA1A3" Click="modeCardChecked" IsChecked="True" Width="86" />
+                <TextBlock x:Name="tbLayoutInfo" Text="" Margin="73,10,0,0" FontSize="12"  Foreground="#F9C152" />
+            </StackPanel>
+        </Grid>
+        <!--网格选择功能-->
+        <local:LayoutSetting x:Name="layoutSetting" Grid.Row="3"
+                                         Margin="12,5,0,0"
+                                         VerticalAlignment="Top"
+                                         HorizontalAlignment="Left" />
+
+        <!--图片选择功能-->
+        <Grid  Grid.Row="4" Margin="12 0 0 0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <TextBlock Text="推荐使用：" Foreground="#8F9598" FontWeight="Bold" FontSize="12" Height="20"/>
+
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="24"/>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="77"></ColumnDefinition>
+                    <ColumnDefinition Width="84"></ColumnDefinition>
+                    <ColumnDefinition Width="80"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+
+                <!--<Button Grid.Row="0" Grid.Column="0" Content="2x6" Width="60" Height="50" Style="{StaticResource SmallButtonStyle}" VerticalAlignment="Bottom" Click="smallBtn_Click"></Button>-->
+                <CheckBox x:Name="cbSmall" Grid.Row="0" Grid.Column="0" Content="2x6" Width="70" Height="50" Style="{StaticResource SmallCheckBoxStyle}" 
+                          HorizontalAlignment="Left" VerticalAlignment="Bottom" Checked="small_Checked" Unchecked="small_Checked"
+                          TextBlock.TextAlignment="Center"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="小屏" Margin="0, 10, 16, 0" HorizontalAlignment="Center" Foreground="#9BA1A3" FontSize="12" VerticalAlignment="Center"/>
+
+
+                <!--<Button Grid.Row="0" Grid.Column="1" Content="3x7" Width="80" Height="57" Style="{StaticResource MidButtonStyle}" VerticalAlignment="Bottom" Click="bigBtn_Click"></Button>-->
+                <CheckBox x:Name="cbMid" Grid.Row="0" Grid.Column="1" Content="3x8" Width="80" Height="57" Style="{StaticResource MidCheckBoxStyle}" 
+                          HorizontalAlignment="Left" VerticalAlignment="Bottom" Checked="mid_Checked" Unchecked="mid_Checked"
+                          TextBlock.TextAlignment="Center"/>
+                
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="大屏" HorizontalAlignment="Center" Foreground="#9BA1A3" FontSize="12" VerticalAlignment="Center" Margin="0 10 15 0"/>
+
+
+                <!--<Button Grid.Row="0" Grid.Column="2" Content="5x4" Width="80" Height="80" Style="{StaticResource BigButtonStyle}" VerticalAlignment="Bottom" Click="vBtn_Click"></Button>-->
+                <CheckBox x:Name="cbBig" Grid.Row="0" Grid.Column="2" Content="5x4" Width="80" Height="80" Style="{StaticResource BigCheckBoxStyle}" 
+                          HorizontalAlignment="Left"  VerticalAlignment="Bottom" Checked="big_Checked" Unchecked="big_Checked"
+                          TextBlock.TextAlignment="Center"/>
+                
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="竖屏" HorizontalAlignment="Center" Foreground="#9BA1A3" FontSize="12" VerticalAlignment="Center"  Margin="0 10 18 0"/>
+            </Grid>
+            
+            
+            
+            <!--<StackPanel Orientation="Horizontal" Grid.Row="2">
+                <TextBlock Text="小屏" Foreground="#9BA1A3" FontSize="12" VerticalAlignment="Center"/>
+                <Button x:Name="smallBtn" Style="{StaticResource AddButtonStyle}" Content="2×6" Click="smallBtn_Click" Margin="2 0 0 0" Height="20" Width="40" VerticalAlignment="Center"/>
+                <TextBlock Text="大屏" Foreground="#9BA1A3" FontSize="12" VerticalAlignment="Center" Margin="8 0 0 0"/>
+                <Button x:Name="bigBtn" Style="{StaticResource AddButtonStyle}" Content="3×7" Click="bigBtn_Click" Margin="2 0 0 0" Height="20" Width="40" VerticalAlignment="Center"/>
+                <TextBlock Text="竖屏" Foreground="#9BA1A3" FontSize="12" VerticalAlignment="Center"  Margin="8 0 0 0"/>
+                <Button x:Name="vBtn" Style="{StaticResource AddButtonStyle}" Content="5×4" Click="vBtn_Click" Margin="2 0 0 0" Height="20" Width="40" VerticalAlignment="Center"/>
+            </StackPanel>-->
+        </Grid>
+        <!--交易布局设置-->
+        <Grid Grid.Row="5" Margin="10 0 0 0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="交易处理" Foreground="#FF9B00" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+            <StackPanel  Grid.Row="1" Orientation="Horizontal">
+                <RadioButton Style="{StaticResource BillDefaultRadioButton}"  GroupName="TransactionGroup"  x:Name="TransactionCard" Tag="1" Content="卡片" HorizontalAlignment="Left" Foreground="#9BA1A3" IsChecked="True" Width="86" />
+                <RadioButton Style="{StaticResource BillDefaultRadioButton}"  GroupName="TransactionGroup"  x:Name="TransactionList" Tag="2" Content="列表" HorizontalAlignment="Left" Foreground="#9BA1A3" Width="86" />
+                <RadioButton Style="{StaticResource BillDefaultRadioButton}"  GroupName="TransactionGroup"  x:Name="TransactionAutomatic" Tag="3" Content="自适应" HorizontalAlignment="Left" Foreground="#9BA1A3" Width="86" />
+            </StackPanel>
+        </Grid>
+
+        <!--确定按钮-->
+        <Border Grid.Row="7" BorderThickness="0" BorderBrush="#A0A0A0" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0"></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="32"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="2" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <!--<Button Content="取消" Click="Cancel_Click" FontSize="12" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0,1,0,0"  Width="80" Height="24"/>-->
+                    <Button Content="确定" Click="btConfirm_Click" x:Name="SaveIsEnable"  FontSize="12"  Style="{DynamicResource BlueGreenStyle}" BorderThickness="0,1,0,0"  Width="80" Height="24"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

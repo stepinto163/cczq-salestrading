@@ -1,0 +1,399 @@
+﻿<v:ModalWindowBase x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.FilterGroupManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
+        Title="筛选分组管理" Width="880" Height="640"
+        ModalWidth="880"
+        WindowStartupLocation="Manual" ShowInTaskbar="False"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" FontFamily="Segoe UI" UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <!--
+        筛选分组管理弹窗（原型 showFilterGroupModal/_fgmRender，懒创建 → 按 app.js 模板 + app.css 还原）：
+        遮罩 + .modal.modal-wide(880px)；标题按市场（信用/利率筛选分组管理）。
+        正文 .fbm-layout{height:480px}：
+          左列 260px = 上半分组列表（同 fbm：双击重命名/删除/+新建，条目数 = 条件总数）+
+                       下半 .fgm-selected-pane = 子分组卡片（.fgm-subgroup：条件 chip 可删、
+                       卡片右上 hover ✕ 删除、active 蓝描边）+ 底部「+ 新增分组」虚线按钮；
+          右侧 = 粘贴条件文本识别（城投 AAA T+0 1-3Y）+ 条件目录（分区标题 → 条件组多选 chip、
+                 文本/下拉/区间「添加」行、不可用组整组 opacity .5）。
+        页脚 = 取消 / 保存。保存为会话内存储，后端同步待接。
+    -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+
+            <!-- 子分组卡片容器：ListBoxItem 只做承载，选中/悬停观感由卡片 Border 的触发器呈现 -->
+            <Style x:Key="FgmSubgroupItem" TargetType="ListBoxItem">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="SnapsToDevicePixels" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <ContentPresenter />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- .fgm-subgroup 卡片：bg #0d1117 / 边框 #21262d / 圆角 6；active=蓝描边+微蓝底；hover(未选中)=边框 #30363d
+                 顶部外距 7 是给悬浮 ✕（top:-7）留位，避免被 ListBox 的 ScrollViewer 裁剪 -->
+            <Style x:Key="FgmSubgroupCard" TargetType="Border">
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Background" Value="{DynamicResource PageBgBrush}" />
+                <Setter Property="BorderBrush" Value="#21262D" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Margin" Value="6,7,8,8" />
+                <Setter Property="SnapsToDevicePixels" Value="True" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter Property="BorderBrush" Value="#30363D" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter Property="BorderBrush" Value="#663B82F6" />
+                        <Setter Property="Background" Value="#0D3B82F6" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- 卡片右上角删除 ✕：原型 hover 卡片才显示（top/right -7 悬浮角标） -->
+            <Style x:Key="FgmSubgroupDelButton" TargetType="Button">
+                <Setter Property="Width" Value="18" />
+                <Setter Property="Height" Value="18" />
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Content" Value="✕" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Opacity" Value="0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#66F85149" />
+                                    <Setter TargetName="Bd" Property="Background" Value="#1AF85149" />
+                                    <Setter Property="Foreground" Value="#F85149" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter Property="Opacity" Value="1" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- .fgm-condition-chip：条件 chip（蓝描边浅蓝底 #79c0ff 字 + ✕） -->
+            <Style x:Key="ConditionChipButton" TargetType="Button">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Padding" Value="2,0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="2">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  Margin="{TemplateBinding Padding}" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Foreground" Value="#F85149" />
+                        <Setter Property="Background" Value="#26F85149" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- .fbm-check：目录条件 chip（可多选） -->
+            <Style x:Key="CatalogCheckButton" TargetType="Button">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Padding" Value="8,3" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4">
+                                <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <v:ModalWindowBase.ModalBody>
+        <!-- 正文 .fbm-layout{height:480px}；PreviewMouseWheel 滚轮聚焦列表滚动 -->
+        <Grid PreviewMouseWheel="OnPreviewMouseWheel" Height="480">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="260" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左列 -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.RowSpan="2" BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,0,1,0" />
+
+                        <!-- 上半：分组列表 + 新建 -->
+                        <Grid Grid.Row="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ListBox x:Name="GroupList" Grid.Row="0" ItemsSource="{Binding Groups}"
+                                     SelectedIndex="{Binding SelectedIndex}"
+                                     ItemContainerStyle="{StaticResource StcModalGroupItem}"
+                                     Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     MouseDoubleClick="OnGroupListDoubleClick">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="GName" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding Name}" /><Run Text="  (" Foreground="#7D8590" FontSize="10" /><Run Text="{Binding ConditionCount, Mode=OneWay}" Foreground="#7D8590" FontSize="10" /><Run Text=")" Foreground="#7D8590" FontSize="10" />
+                                            </TextBlock>
+                                            <TextBox x:Name="GEdit" Visibility="Collapsed" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                                     MaxLength="30" Background="Transparent" BorderThickness="0"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" CaretBrush="White"
+                                                     KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus" />
+                                            <Button Grid.Column="1" Content="✕" FontSize="10" Width="16" Height="16"
+                                                    Foreground="{DynamicResource TextMutedBrush}" Background="Transparent"
+                                                    BorderThickness="0" Cursor="Hand" Margin="6,0,0,0"
+                                                    Click="OnDeleteGroupClick" />
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                <Setter TargetName="GName" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="GEdit" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Grid Grid.Row="1" Margin="8,6">
+                                <TextBox x:Name="NewGroupInput" Visibility="Collapsed" MaxLength="10"
+                                         Background="Transparent" BorderThickness="0" FontSize="12"
+                                         Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="White"
+                                         KeyDown="OnNewGroupKeyDown" LostFocus="OnNewGroupLostFocus" />
+                                <Button x:Name="NewGroupButton" Content="+ 新建" Style="{StaticResource StcModalDashedButton}"
+                                        Click="OnStartNewGroupClick" />
+                            </Grid>
+                        </Grid>
+
+                        <!-- 下半：已选区 = 子分组卡片 + 「+ 新增分组」（原型 .fgm-selected-pane） -->
+                        <Border Grid.Row="1" Background="{DynamicResource PageBgBrush}"
+                                BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,1,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- 未选分组时的空态（原型「请先选择分组」） -->
+                                <TextBlock Grid.Row="0" Text="请先选择分组" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           FontSize="12" Foreground="#484F58">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedGroup}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <ListBox x:Name="SubgroupList" Grid.Row="0" BorderThickness="0" Background="Transparent"
+                                         ItemsSource="{Binding SelectedGroup.Subgroups}"
+                                         IsSynchronizedWithCurrentItem="True"
+                                         SelectionMode="Single"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ItemContainerStyle="{StaticResource FgmSubgroupItem}"
+                                         SelectionChanged="OnSubgroupSelectionChanged">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <!-- 卡片本体（.fgm-subgroup）：边框/选中/悬停观感都在 FgmSubgroupCard 触发器里 -->
+                                            <Border Style="{StaticResource FgmSubgroupCard}">
+                                                <Grid>
+                                                    <!-- 条件 chip 流式换行（.fgm-subgroup-items：padding 8 28 8 8 + gap 6） -->
+                                                    <ItemsControl ItemsSource="{Binding Conditions}" Margin="8,8,28,8">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <WrapPanel />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <!-- chip 只显示 value；title 才是 label:value 全称（原型语义） -->
+                                                                <Border Margin="0,0,6,6" Padding="8,3,4,3" CornerRadius="4"
+                                                                        Background="#17388BFD" BorderBrush="#4758A6FF" BorderThickness="1"
+                                                                        ToolTip="{Binding DisplayText}">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="{Binding Value}" FontSize="11"
+                                                                                   Foreground="#79C0FF" VerticalAlignment="Center" />
+                                                                        <Button Content="✕" Width="18" Height="18" FontSize="10"
+                                                                                Style="{StaticResource ConditionChipButton}"
+                                                                                Margin="3,0,0,0" Click="OnRemoveConditionClick" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <!-- 空卡提示（原型：暂无条件，点击右侧目录或识别文本添加） -->
+                                                    <TextBlock Text="暂无条件，点击右侧目录或识别文本添加" Margin="8,10"
+                                                               FontSize="11" Foreground="#484F58">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Conditions.Count}" Value="0">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <!-- 卡片右上 ✕：hover 卡片才显示 -->
+                                                    <Button Style="{StaticResource FgmSubgroupDelButton}"
+                                                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                            Margin="0,-7,-7,0" Panel.ZIndex="1"
+                                                            Click="OnDeleteSubgroupClick" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <Border Grid.Row="1" BorderBrush="#21262D" BorderThickness="0,1,0,0" Background="{DynamicResource PageBgBrush}" Padding="8,6,8,8">
+                                    <Button Content="+ 新增分组" Style="{StaticResource StcModalDashedButton}" Click="OnAddSubgroupClick" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- 右侧 -->
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 粘贴条件文本 + 清空/识别 -->
+                        <Border Grid.Row="0" Background="{DynamicResource PageBgBrush}"
+                                BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,10">
+                            <Grid>
+                            <TextBox x:Name="ConditionInputBox" Height="150" BorderThickness="0" Background="Transparent"
+                                     FontSize="12" FontFamily="Consolas" Foreground="{DynamicResource TextPrimaryBrush}"
+                                     CaretBrush="{DynamicResource TextPrimaryBrush}" Padding="12,10,120,10"
+                                     AcceptsReturn="True" TextWrapping="Wrap"
+                                     Text="{Binding ConditionInput, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="OnConditionInputKeyDown" />
+                            <!-- 占位（原型 textarea::placeholder）：输入为空时显示 -->
+                            <TextBlock Text="粘贴筛选条件文本，自动识别匹配条件&#x0a;例：城投 AAA T+0 1-3Y"
+                                       Foreground="#484F58" FontSize="12" Margin="13,10,120,10"
+                                       IsHitTestVisible="False" TextWrapping="Wrap" LineHeight="18">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ConditionInput}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                        Margin="0,0,12,10">
+                                <Button Content="清空" Height="24" FontSize="11" FontWeight="SemiBold" Padding="14,0"
+                                        Background="{DynamicResource HoverStrongBgBrush}" Foreground="{DynamicResource TextMutedBrush}"
+                                        BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1" Cursor="Hand"
+                                        Click="OnClearClick" />
+                                <Button x:Name="MatchButton" Content="识别" Height="24" FontSize="11" FontWeight="SemiBold" Padding="14,0" Margin="6,0,0,0"
+                                        Background="#1A3B82F6" Foreground="#58A6FF"
+                                        BorderBrush="#4D3B82F6" BorderThickness="1" Cursor="Hand"
+                                        Click="OnMatchClick" />
+                            </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 条件目录 -->
+                        <ScrollViewer x:Name="CatalogScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="12,0,5,0"
+                                      Style="{DynamicResource StcPanelScrollViewer}">
+                            <StackPanel>
+                                <!-- 识别结果（有匹配时显示） -->
+                                <Border x:Name="MatchedPanel" Visibility="Collapsed"
+                                        BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,0,0,1"
+                                        Background="{DynamicResource PageBgBrush}" Padding="12,8,12,6" Margin="0,0,0,4">
+                                    <StackPanel>
+                                        <TextBlock Text="识别结果：" FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextMutedBrush}" />
+                                        <ItemsControl x:Name="MatchedList" ItemsSource="{Binding MatchedTokens}" Margin="0,4,0,0">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="{Binding}" Style="{StaticResource CatalogCheckButton}"
+                                                            Margin="0,0,4,4" Click="OnMatchedTokenClick" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- 目录分区（code-behind 填充，保持勾选态与激活子分组联动） -->
+                                <ItemsControl x:Name="CatalogHost" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+
+    </v:ModalWindowBase.ModalBody>
+
+    <v:ModalWindowBase.ModalFooter>
+        <Border BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,1,0,0" Padding="20,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Style="{DynamicResource StcModalCancelButton}" Click="OnCancelClick" />
+                <Button Content="保存" Style="{DynamicResource StcModalSaveButton}" Click="OnSaveClick" />
+            </StackPanel>
+        </Border>
+    </v:ModalWindowBase.ModalFooter>
+</v:ModalWindowBase>

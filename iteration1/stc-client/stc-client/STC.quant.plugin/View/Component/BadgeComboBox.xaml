@@ -1,0 +1,274 @@
+﻿<UserControl x:Class="STC.quant.plugin.View.Component.BadgeComboBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.quant.plugin.View.Component"
+             mc:Ignorable="d" x:Name="usercontrol" Loaded="usercontrol_Loaded" Initialized="usercontrol_Initialized"
+             d:DesignHeight="24" d:DesignWidth="376">
+    <!--d:DesignHeight="24" d:DesignWidth="376"-->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="ComboBoxButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="#0F0F0F"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#0F0F0F"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#0F0F0F"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#0F0F0F"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type Border}">
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <!-- 搜索文本框 -->
+            <Style x:Key="SearchTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{StaticResource TextBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{StaticResource TextBox.Focus.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" Margin="0,0,0,0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border"  Value="{StaticResource TextBox.Disable.Background}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Disable.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border"  Value="{StaticResource TextBox.MouseOver.Background}"/>
+                                    <!--<Setter Property="BorderBrush" TargetName="border" Value="{Binding MouseOverBorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:BadgeComboBox}, Mode=FindAncestor}}"/>-->
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="Background" TargetName="border"  Value="{StaticResource TextBox.Focus.Background}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextBox.Focus.Foreground}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{Binding FocusBorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:BadgeComboBox}, Mode=FindAncestor}}"/>
+                                </Trigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{StaticResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="MainBorderStyle" TargetType="{x:Type Border}">
+                <Style.Triggers>
+                    <!--<Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="BorderBrush" Value="Red"/>
+                    </Trigger>-->
+                    <!--<Trigger Property="IsKeyboardFocused" Value="False">
+                        <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                    </Trigger>-->
+                    <!--<Trigger Property="IsMouseOver" Value="False">
+                        <Setter Property="BorderBrush" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Trigger>-->
+                </Style.Triggers>
+            </Style>
+            
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Border x:Name="mainborder" Background="#0F0F0F" BorderThickness="1" SnapsToDevicePixels="True" Style="{StaticResource MainBorderStyle}" BorderBrush="#3B3C3E">
+        <Grid Background="#0F0F0F">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel x:Name="stackpanel" Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" PreviewMouseLeftButtonUp="StackPanel_PreviewMouseLeftButtonUp" Panel.ZIndex="100">
+                <ItemsControl x:Name="ic">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#3C3C3C" VerticalAlignment="Center" Margin="2.5,0,0,0" Height="18" HorizontalAlignment="Left"
+                                    CornerRadius ="2" MaxWidth="116">
+                                <Grid VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="Name_tb" Grid.Column="0" Text="{Binding Value}" HorizontalAlignment="Left" Margin="5,0,0,0" MaxWidth="96" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path=Text,ElementName=Name_tb}"/>
+                                    <Button x:Name="close_btn" Grid.Column="1" Style="{StaticResource ImageCloseButton}" Width="15" Click="close_btn_Click"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid>
+                    <!--Width="{Binding ElementName=stackpanel,Path=ActualWidth}"-->
+                    <TextBox x:Name="SearchTextBox" Style="{StaticResource SearchTextBoxStyle}" VerticalAlignment="Center" HorizontalAlignment="Left"
+                          BorderThickness="0" TextChanged="SearchTextBox_TextChanged" MaxLength="30" PreviewKeyDown="SearchTextBox_PreviewKeyDown"
+                          Width="{Binding ElementName=stackpanel,Path=ActualWidth}"
+                          Focusable="True" GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus">
+                    </TextBox>
+                    <TextBlock x:Name="HintTextBox" IsHitTestVisible="False" Text="搜索标签..." VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0" 
+                       Foreground="{StaticResource TextBox.Static.Border}">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=SearchTextBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock x:Name="Fill_TextBlock" Width="{Binding ElementName=SearchTextBox,Path=ActualWidth}" Background="#0F0F0F" Visibility="Collapsed"/>
+                </Grid>
+
+            </StackPanel>
+
+            <Button x:Name="down_button" Grid.Column="1" Style="{StaticResource ComboBoxButtonStyle}" HorizontalAlignment="Stretch" Width="29" Height="{Binding ElementName=usercontrol,Path=ActualHeight}" Click="button_Click" Panel.ZIndex="999">
+                <Button.Content>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Grid.Column="1"  Source="/STC.quant.plugin;component/Images/stc_button_dropdownarrow_normal.png" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                </Button.Content>
+            </Button>
+
+            <Popup x:Name="pop" PlacementTarget="{Binding ElementName=MainBtn}" StaysOpen="False" Width="{Binding ElementName=usercontrol,Path=ActualWidth}" MaxHeight="350"
+               PopupAnimation="Slide" AllowsTransparency="False" VerticalOffset="1">
+                <Border BorderBrush="#282828" BorderThickness="1" MaxHeight="350">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Row="0" Content="建议:" Background="{StaticResource DefaultBackgroup.ColorBrush}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Margin="0,0,0,0" Padding="8,0,0,0" Height="20" VerticalAlignment="Center" VerticalContentAlignment="Center" FontWeight="Bold"/>
+
+                        <DataGrid Grid.Row="1" x:Name="datagrid" 
+                            MaxHeight="350"
+                            ItemsSource="{Binding}"
+                            HeadersVisibility="None"
+                            BorderThickness="0"       
+                            VirtualizingPanel.IsVirtualizing="True"
+                            VirtualizingPanel.ScrollUnit="Pixel"
+                            ScrollViewer.CanContentScroll="True"
+                            Margin="0" 
+                            Width="{Binding ElementName=usercontrol,Path=ActualWidth}"
+                            MouseUp="datagrid_MouseUp"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+                            <DataGrid.Resources>
+                                <Style x:Key="tbStyle" TargetType="{x:Type TextBlock}">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Style>
+                                <StaticResource ResourceKey="DefaultDataGrid"/>
+                            </DataGrid.Style>
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent" VerticalAlignment="Center">
+                                                <TextBlock Grid.Column="0" Height="20" Text="{Binding Value}" VerticalAlignment="Center"  Margin="5, 0, 0, 5" Padding="0,4,0,0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                    TextTrimming="CharacterEllipsis" >
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip Content="{Binding Text}"/>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+            </Popup>
+        </Grid>
+    </Border>
+    
+</UserControl>

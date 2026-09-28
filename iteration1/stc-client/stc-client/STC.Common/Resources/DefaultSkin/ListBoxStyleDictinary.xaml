@@ -1,0 +1,1358 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero">
+    <!--Default 样式-->
+    <Style x:Key="FilterListBoxStyle" TargetType="{x:Type ListBox}">
+        <Setter Property="Foreground" Value="#A0A0A0"/>
+        <Setter Property="Background" Value="#1E1E1E"/>
+        <Setter Property="BorderBrush" Value="#1E1E1E"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+        <!--<Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>-->
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource FilterListBoxItemStyle}"/>
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Grid>
+                        <TextBlock Text="{Binding Value}"/>
+                    </Grid>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="FilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+        <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+        <Setter Property="Foreground" Value="#A0A0A0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="10,2,10,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Grid MinHeight="28">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle x:Name="Sep"  Grid.Column="0" Width="1" Height="10" Fill="#3C3C3C" VerticalAlignment="Center"/>
+                        <Border x:Name="Bd" Grid.Column="1" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                            <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                            <Setter TargetName="Sep" Property="Visibility" Value="Hidden"/>
+                            <Setter TargetName="Bd" Property="Background" Value="#3C3C3C"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource ListBoxItem.SelectedInactive.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource ListBoxItem.SelectedActive.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="CommonFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <Setter Property="MinHeight" Value="20"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="#3C3C3C" CornerRadius="1" VerticalAlignment="Center" Margin="2,0,0,0"
+                            BorderThickness="0, 1, 0, 0" BorderBrush="{DynamicResource ListBoxItem.Normal.Border}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Border}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--我的订单-->
+    <Style x:Key="MyCommonFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="#3C3C3C" CornerRadius="1" VerticalAlignment="Center" Margin="1,0,0,0" BorderThickness="0, 1, 0, 0" BorderBrush="#515151" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Margin="0,-1,0,0"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                            <Setter TargetName="Bd" Property="Background" Value="#3C3C3C"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource ListBoxItem.SelectedInactive.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource ListBoxItem.SelectedActive.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--内部看板-->
+    <Style x:Key="InnerBoardFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="#1E1E1E"/>
+        <Setter Property="Foreground" Value="#D7D7D7"/>
+        <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                        <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Background}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Foreground}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Foreground}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Foreground}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Foreground}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Foreground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="MyCommonFilterListBoxItemStyle1" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#D7D7D7"/>
+        <Setter Property="Background" Value="#282828"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <Setter Property="MinWidth" Value="24"/>
+        <Setter Property="Height" Value="22"/>
+        <Setter Property="FontSize" Value="12px"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="MicroSoft YaiHei"/>
+        <Setter Property="BorderThickness" Value="0, 1, 0, 0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" Margin="0,0,0,0" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"
+                              BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="#515151" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}"  TextElement.FontFamily="{TemplateBinding  FontFamily}" TextElement.FontWeight="{TemplateBinding FontWeight}" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!--列表Button-->
+    <Style x:Key="ListFloatButtonStyle" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource CommonFilterListBoxItemStyle}">
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="MinWidth" Value="18"/>
+        <Setter Property="MinHeight" Value="18"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Name="Border" CornerRadius="0" Background="Transparent">
+                        <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <Label.Content>
+                                <Image Source="/STC.Common;component/Images/stc_icon_listview2_normal.png" Height="10"/>
+                            </Label.Content>
+                        </Label>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_listview2_selected.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource Item.MouseOver.Background}" />
+                            <Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_listview2_hover.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--图表模式Button-->
+    <Style x:Key="ListChatButtonStyle" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource CommonFilterListBoxItemStyle}">
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="MinWidth" Value="18"/>
+        <Setter Property="MinHeight" Value="18"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Name="Border" CornerRadius="0" Background="Transparent">
+                        <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <Label.Content>
+                                <Image Source="/STC.Common;component/Images/stc_icon_chart2_normal.png" Height="12"/>
+                            </Label.Content>
+                        </Label>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_chart2_selected.png" Height="12"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource Item.MouseOver.Background}" />
+                            <Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_chart2_hover.png" Height="12"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--K线模式Button-->
+    <Style x:Key="ListKlineButtonStyle" TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource CommonFilterListBoxItemStyle}">
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="MinWidth" Value="18"/>
+        <Setter Property="MinHeight" Value="18"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBlockForeground}"/>
+        <Setter Property="Background" Value="{DynamicResource PriceButtonDefaultBackground}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Name="Border" CornerRadius="0" Background="Transparent">
+                        <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <Label.Content>
+                                <Image Source="/STC.Common;component/Images/stc_icon_kline_normal.png" Height="12"/>
+                            </Label.Content>
+                        </Label>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_kline_hover.png" Height="12"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource Item.MouseOver.Background}" />
+                            <Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_kline_hover.png" Height="12"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--内部看板闪蓝色ListBoxItem default-->
+    <Style x:Key="InnerBoardFilterListBoxItemDodgerBlueStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource ListBoxItemDodgerBlue.Static.Background}"></Setter>
+        <Setter Property="BorderBrush" Value="{DynamicResource ListBoxItemDodgerBlue.Static.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource ListBoxItemDodgerBlue.Static.Foreground}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                        <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource ListBoxItemDodgerBlue.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource ListBoxItemDodgerBlue.MouseOver.Background}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource ListBoxItemDodgerBlue.Static.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource ListBoxItemDodgerBlue.Pressed.Background}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource ListBoxItemDodgerBlue.Pressed.Border}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource ListBoxItemDodgerBlue.Static.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource ListBoxItemDodgerBlue.Pressed.Background}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource ListBoxItemDodgerBlue.Pressed.Border}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="{DynamicResource ListBoxItemDodgerBlue.Disabled.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource ListBoxItemDodgerBlue.Disabled.Background}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource ListBoxItemDodgerBlue.Disabled.Foreground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--DefaultSkin-->
+    <!--清算速度 +0 +1 全-->
+    <Style x:Key="SelfFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource ListBoxItemSettle.SelectedInactive.Foreground}"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Margin" Value="1, 0, 0, 0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{DynamicResource ListBoxItemSettle.Normal.Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{DynamicResource ListBoxItemSettle.Normal.Border}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}"
+                            SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <!--Condition Property="Selector.IsSelectionActive" Value="True"/-->
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedInactive.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.Disabled.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.Disabled.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource ListBoxItemSettle.Disabled.Foreground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!--清算速度 远 小红点-->
+    <Style x:Key="FwdListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Margin" Value="1, 0, 0, 0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{DynamicResource ListBoxItemSettle.Normal.Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{DynamicResource ListBoxItemSettle.Normal.Border}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}"
+                            SnapsToDevicePixels="true">
+                        <Grid>
+                            <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" 
+                                          HorizontalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            <Ellipse x:Name="elli" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 ,0, 0, 0"
+                                        Width="5" Visibility="Collapsed"
+                                        Height="5"
+                                        Fill="#FF3C3C" />
+                        </Grid>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <!--Condition Property="Selector.IsSelectionActive" Value="True"/-->
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.Disabled.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItemSettle.Disabled.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource ListBoxItemSettle.Disabled.Foreground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--绿色列表Button-->
+    <Style TargetType="{x:Type ListBoxItem}" x:Key="ListFloatBlueButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Width" Value="13"/>
+        <Setter Property="Height" Value="11"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="2" Background="{TemplateBinding Background}">
+                            <Viewbox Height="11" Width="13">
+                                <Path x:Name="svg_path" Style="{StaticResource list_path}"/>
+                            </Viewbox>
+                        </Border>
+                        <Grid>
+                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_listview2_selected.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_listview2_normal.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--绿色图表模式 Button-->
+    <Style TargetType="{x:Type ListBoxItem}" x:Key="ListChatBlueButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Width" Value="13"/>
+        <Setter Property="Height" Value="11"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"   CornerRadius="2" Background="{TemplateBinding Background}">
+                            <Viewbox Height="14" Width="15">
+                                <Path x:Name="svg_path" Style="{StaticResource chart_path}"/>
+                            </Viewbox>
+                        </Border>
+                        <Grid>
+                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_chart2_selected.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_chart2_normal.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--过滤筛选闪蓝色ListBoxItem Default-->
+    <Style x:Key="FilterListBoxItemDodgerBlueStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"></Setter>
+        <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Foreground}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinWidth" Value="24"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0 1 0 0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                        <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Border}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Foreground}"/>
+                            <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Border}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Foreground}"/>
+                            <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Background}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Foreground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!--过滤筛选闪蓝色ListBoxItemAll Default-->
+    <Style x:Key="FilterListBoxItemDodgerBlueAllStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"></Setter>
+        <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlueAll.IsSelected.Foreground}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0 1 0 0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                        <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Border}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlueAll.IsSelected.Foreground}"/>
+                            <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Border}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlueAll.IsSelected.Foreground}"/>
+                            <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Border}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlueAll.NoSelected.Foreground}"/>
+                            <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Background}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Background}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Foreground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!--点价用 清算速度 DailanBlueGreenOrangeComboBox +0 远 按钮 Default 样式-->
+    <Style x:Key="DailanGreenOrangeListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Foreground}"/>
+        <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Border}"/>
+        <Setter Property="Width" Value="48"/>
+        <Setter Property="Margin" Value="1, 0, 0, 0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center"
+                                BorderBrush="{TemplateBinding BorderBrush}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}"
+                                SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}"  TextElement.FontWeight="Normal"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBoxUnSelect.Normal.Background}"></Setter>
+                            <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBoxUnSelect.Normal.Border}"></Setter>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Foreground}"/>
+                        </MultiTrigger>
+
+
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="ToolTip" Value="x;Null"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DefaultMouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DefaultMouseOver.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="ToolTip" Value="REQ"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQMouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQMouseOver.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="ToolTip" Value="DRP"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRPMouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRPMouseOver.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="ToolTip" Value="GVN"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVNMouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVNMouseOver.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="ToolTip" Value="TKN"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKNMouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKNMouseOver.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="ToolTip" Value="x;Null"/>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Default.Border}"></Setter>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Default.Background}"></Setter>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="ToolTip" Value="REQ"/>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQ.Border}"></Setter>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQ.Background}"></Setter>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQ.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="ToolTip" Value="DRP"/>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRP.Border}"></Setter>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRP.Background}"></Setter>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="ToolTip" Value="GVN"/>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVN.Border}"></Setter>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVN.Background}"></Setter>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True"/>
+                                <Condition Property="ToolTip" Value="TKN"/>
+                                <Condition Property="IsMouseOver" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="BorderBrush" TargetName="Bd"  Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKN.Border}"></Setter>
+                            <Setter Property="Background" TargetName="Bd" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKN.Background}"></Setter>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"/>
+                        </MultiTrigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Disabled.Foreground}"/>
+                            <Setter Property="Background"  TargetName="Bd"  Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Disabled.Background}"/>
+                            <Setter Property="BorderBrush"  TargetName="Bd"  Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Disabled.Border}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- DailanBlueGreenOrangeComboBox Default 样式-->
+    <Style x:Key="DailanBlueGreenOrangeComboBoxStyle" TargetType="{x:Type ComboBox}">
+        <Setter Property="Tag" Value="1"/>
+        <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Border}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Normal.Foreground }"/>
+        <Setter Property="BorderThickness" Value="0 1 0 0"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="Padding" Value="0,0,0,0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+        <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTemplate}"/>
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItemStyle}"/>
+
+        <Style.Triggers>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Tag" Value="0"/>
+                    <Condition Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBoxUnSelect.Normal.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBoxUnSelect.Normal.Background}"></Setter>
+                <Setter Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Default.Foreground}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                    <Condition Property="ToolTip" Value="x;Null"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.MouseOver.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.MouseOver.Background}"></Setter>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                    <Condition Property="ToolTip" Value="REQ"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQMouseOver.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQMouseOver.Border}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                    <Condition Property="ToolTip" Value="DRP"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRPMouseOver.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRPMouseOver.Border}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                    <Condition Property="ToolTip" Value="GVN"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVNMouseOver.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVNMouseOver.Border}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                    <Condition Property="ToolTip" Value="TKN"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKNMouseOver.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKNMouseOver.Border}"/>
+            </MultiTrigger>
+
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Tag" Value="1"/>
+                    <Condition Property="ToolTip" Value="x;Null"/>
+                    <Condition Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Default.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Default.Background}"></Setter>
+                <Setter Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Default.Foreground}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Tag" Value="1"/>
+                    <Condition Property="ToolTip" Value="REQ"/>
+                    <Condition Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQ.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQ.Background}"></Setter>
+                <Setter Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.REQ.Foreground}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Tag" Value="1"/>
+                    <Condition Property="ToolTip" Value="DRP"/>
+                    <Condition Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRP.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRP.Background}"></Setter>
+                <Setter Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.DRP.Foreground}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Tag" Value="1"/>
+                    <Condition Property="ToolTip" Value="GVN"/>
+                    <Condition Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVN.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVN.Background}"></Setter>
+                <Setter Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.GVN.Foreground}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="Tag" Value="1"/>
+                    <Condition Property="ToolTip" Value="TKN"/>
+                    <Condition Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKN.Border}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKN.Background}"></Setter>
+                <Setter Property="TextBlock.Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.TKN.Foreground}"/>
+            </MultiTrigger>
+
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="DailanBlueGreenOrangeComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
+        <Setter Property="OverridesDefaultStyle" Value="true"/>
+        <Setter Property="IsTabStop" Value="false"/>
+        <Setter Property="Focusable" Value="false"/>
+        <Setter Property="ClickMode" Value="Press"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border x:Name="templateRoot" SnapsToDevicePixels="true" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2">
+                        <Border x:Name="splitBorder" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" SnapsToDevicePixels="true" Margin="0 -2 2 0" HorizontalAlignment="Right" BorderThickness="1" BorderBrush="Transparent" CornerRadius="2">
+                            <Path x:Name="arrow"  Stroke="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.Normal.Stroke}" StrokeThickness="1" Data="M 6,10 L 10,15 L 14,10"/>
+                        </Border>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!--鼠标移过-->
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Stroke" TargetName="arrow" Value="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.MouseOver.Stroke}"/>
+                        </Trigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                <Condition Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}" Value="false"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Background" TargetName="templateRoot" Value="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="templateRoot" Value="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.MouseOver.Border}"/>
+                        </MultiDataTrigger>
+                        <!--鼠标按下-->
+                        <Trigger Property="IsEnabled" Value="true">
+                            <Setter Property="Stroke" TargetName="arrow" Value="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.Normal.Stroke}"/>
+                        </Trigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsPressed, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                <Condition Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}}" Value="false"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Background" TargetName="templateRoot" Value="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="templateRoot" Value="{DynamicResource DailanBlueGreenOrangeComboBoxArrowBtn.MouseOver.Border}"/>
+                        </MultiDataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <ControlTemplate x:Key="DailanBlueGreenOrangeComboBoxTemplate" TargetType="{x:Type ComboBox}">
+        <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition MinWidth="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" Width="0"/>
+            </Grid.ColumnDefinitions>
+            <Popup x:Name="PART_Popup" AllowsTransparency="true" Grid.ColumnSpan="2" IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Margin="1" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom">
+                <Themes:SystemDropShadowChrome x:Name="shadow" Color="Transparent" MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{Binding ActualWidth, ElementName=templateRoot}">
+                    <Border x:Name="dropDownBorder" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxPopup.Normal.Border}" BorderThickness="0" Background="{DynamicResource DailanBlueGreenOrangeComboBoxPopup.Normal.Background}">
+                        <ScrollViewer x:Name="DropDownScrollViewer">
+                            <Grid x:Name="grid" RenderOptions.ClearTypeHint="Enabled">
+                                <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="0" VerticalAlignment="Top" Width="0">
+                                    <Rectangle x:Name="opaqueRect" Fill="{Binding Background, ElementName=dropDownBorder}" Height="{Binding ActualHeight, ElementName=dropDownBorder}" Width="{Binding ActualWidth, ElementName=dropDownBorder}"/>
+                                </Canvas>
+                                <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="{TemplateBinding Padding}"/>
+                            </Grid>
+                        </ScrollViewer>
+                    </Border>
+                </Themes:SystemDropShadowChrome>
+            </Popup>
+            <ToggleButton x:Name="toggleButton" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.ColumnSpan="2" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource DailanBlueGreenOrangeComboBoxToggleButton}"/>
+            <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Content="{TemplateBinding SelectionBoxItem}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" IsHitTestVisible="false" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="HasDropShadow" SourceName="PART_Popup" Value="true">
+                <Setter Property="Margin" TargetName="shadow" Value="0,0,5,5"/>
+                <Setter Property="Color" TargetName="shadow" Value="#71000000"/>
+            </Trigger>
+            <Trigger Property="HasItems" Value="false">
+                <Setter Property="Height" TargetName="dropDownBorder" Value="95"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsGrouping" Value="true"/>
+                    <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="false"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+            </MultiTrigger>
+            <Trigger Property="ScrollViewer.CanContentScroll" SourceName="DropDownScrollViewer" Value="false">
+                <Setter Property="Canvas.Top" TargetName="opaqueRect" Value="{Binding VerticalOffset, ElementName=DropDownScrollViewer}"/>
+                <Setter Property="Canvas.Left" TargetName="opaqueRect" Value="{Binding HorizontalOffset, ElementName=DropDownScrollViewer}"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsDropDownOpen" Value="True"/>
+                    <Condition SourceName="PART_Popup" Property="IsMouseOver" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter TargetName="toggleButton" Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxPopup.Normal.Border}"></Setter>
+                <Setter TargetName="toggleButton" Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxPopup.Normal.Background}"></Setter>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsDropDownOpen" Value="True"/>
+                    <Condition SourceName="PART_Popup" Property="IsMouseOver" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter TargetName="toggleButton" Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxPopup.MouseOver.Background}"></Setter>
+                <Setter TargetName="toggleButton" Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxPopup.Normal.Border}"></Setter>
+            </MultiTrigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style x:Key="DailanBlueGreenOrangeComboBoxItemStyle" TargetType="ComboBoxItem">
+        <Setter Property="MinHeight" Value="20"></Setter>
+        <Setter Property="MinWidth" Value="48"></Setter>
+        <Setter Property="Foreground" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"></Setter>
+        <Setter Property="FontSize" Value="12"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border Name="Back" Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderThickness="0,0,0,0" CornerRadius="0"  Margin="0 0 0 0" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}">
+                        <ContentPresenter ContentSource="{Binding Source}" VerticalAlignment="Center" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="2 0 16 0"></ContentPresenter>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Back" Property="Background" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.MouseOver.Background}"></Setter>
+                            <Setter TargetName="Back" Property="BorderBrush" Value="{DynamicResource DailanBlueGreenOrangeComboBoxItem.MouseOver.Border}"></Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--持仓管理-->
+    <Style x:Key="HistoryPositionIListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource TabItem.Unselected.Foreground}"/>
+        <Setter Property="Background" Value="{DynamicResource TabItem.Unselected.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource TabItem.Static.Border}"/>
+        <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+        <Setter Property="Margin" Value="2,0,2,0"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Width" Value="60"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                        <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Foreground"  Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource TabItem.Selected.Background}"/>
+                            <Setter Property="BorderBrush" Value="#00CDAD"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" Value="{DynamicResource TabItem.Selected.Background}"/>
+                            <Setter Property="BorderBrush" Value="#00CDAD"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="#A0A0A0"/>
+                            <Setter Property="Opacity" TargetName="Bd" Value="0.56"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="MainFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#FFEBC8"/>
+        <Setter Property="Background" Value="#172422"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Margin" Value="1, 0, 0, 0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{StaticResource ListBoxItem.Normal.Border}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"
+                            SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="#FF9300"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="#60F9C152"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="#000000"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontFamily" Value="MicrosoftYaHeiSemibold"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="#FF9300"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="#F9C152"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="#000000"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontFamily" Value="MicrosoftYaHeiSemibold"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+</ResourceDictionary>

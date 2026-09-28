@@ -1,0 +1,242 @@
+﻿<Popup x:Class="STC.XBond.Plugin.View.DetailPopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:vm="clr-namespace:STC.XBond.Plugin.ViewModel"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d"
+             TextBlock.TextAlignment="Left">
+    <!--Foreground="#FFFFFF"
+             BorderBrush="#A0A0A0"
+             BorderThickness="1">-->
+    <Popup.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/ScrollViewerDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="Expander.MouseOver.Circle.Stroke" Color="#FF5593FF"/>
+            <SolidColorBrush x:Key="Expander.MouseOver.Circle.Fill" Color="#FFF3F9FF"/>
+            <SolidColorBrush x:Key="Expander.MouseOver.Arrow.Stroke" Color="#FF000000"/>
+            <SolidColorBrush x:Key="Expander.Pressed.Circle.Stroke" Color="#FF3C77DD"/>
+            <SolidColorBrush x:Key="Expander.Pressed.Circle.Fill" Color="#FFD9ECFF"/>
+            <SolidColorBrush x:Key="Expander.Pressed.Arrow.Stroke" Color="#FF000000"/>
+            <SolidColorBrush x:Key="Expander.Disabled.Circle.Stroke" Color="#FFBCBCBC"/>
+            <SolidColorBrush x:Key="Expander.Disabled.Circle.Fill" Color="#FFE6E6E6"/>
+            <SolidColorBrush x:Key="Expander.Disabled.Arrow.Stroke" Color="#FF707070"/>
+            <SolidColorBrush x:Key="Expander.Static.Circle.Fill" Color="#1E1E1E"/>
+            <SolidColorBrush x:Key="Expander.Static.Circle.Stroke" Color="#1E1E1E"/>
+            <SolidColorBrush x:Key="Expander.Static.Arrow.Stroke" Color="#FFFFFF"/>
+            <vm:DetailPopupViewModel x:Key="detailPopupViewModel"/>
+        </ResourceDictionary>
+    </Popup.Resources>
+    <Popup.DataContext>
+        <StaticResourceExtension ResourceKey="detailPopupViewModel"/>
+    </Popup.DataContext>
+    <Border Width="362" BorderBrush="#A0A0A0" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" Color="#FF858484" Direction="90" ShadowDepth="3"/>
+        </Border.Effect>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="20"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid  Grid.ColumnSpan="3">
+                <Grid.Background>
+                    <LinearGradientBrush EndPoint="0.5,0.971" StartPoint="0.5,0.042">
+                        <GradientStop Color="#4E4E4E" Offset="0"/>
+                        <GradientStop Color="#282828" Offset="1"/>
+                    </LinearGradientBrush>
+                </Grid.Background>
+               <TextBlock VerticalAlignment="Center" FontWeight="Medium" Text="{Binding Title}" Margin="10,0,0,0" Foreground="#FFFFFF"/>
+            </Grid>
+
+            <UniformGrid Grid.Row="1" Grid.ColumnSpan="3" Columns="3" Height="20" Background="#1E1E1E">
+                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Text="报价方" Foreground="#A0A0A0"/>
+                <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" Text="数量(万)" Foreground="#A0A0A0"/>
+                <TextBlock VerticalAlignment="Center" Margin="10,0,0,0" Text="清算速度" Foreground="#A0A0A0"/>
+            </UniformGrid>
+
+            <UniformGrid Grid.Row="2" Grid.ColumnSpan="3" Columns="3" Background="#141414">
+                <Border BorderThickness="0,0,1,0" BorderBrush="#282828">
+
+                    <Border Background="{Binding Source, Converter={StaticResource venuesBgColorConvertor}}" Width="45" Height="16" CornerRadius="2">
+                        <TextBlock Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding Source,  Converter={StaticResource EnumTypeConvertor}, ConverterParameter='venues'}"/>
+                    </Border>
+                    
+
+                    <!--<Image VerticalAlignment="Center" HorizontalAlignment="Center" Width="40" Height="16" Source="{Binding Source, Converter={StaticResource venuesImageConvertor}}"/>-->
+                </Border>
+                <Border BorderThickness="0" BorderBrush="#282828">
+                    <TextBlock TextWrapping="Wrap" Margin="10,5,10,5" Foreground="#FFFFFF" Text="{Binding TotalQty}" FontWeight="Bold" />
+                </Border>
+                <Border BorderThickness="1,0,0,0" BorderBrush="#282828" >
+                    <TextBlock TextWrapping="Wrap" Margin="10,5,10,5" Foreground="#FFFFFF" Text="{Binding AllSettleType}" />
+                </Border>
+            </UniformGrid>
+            <Expander Visibility="{Binding IsShowExpander}" Header="本方" Foreground="#A0A0A0 " Grid.Row="3" Grid.ColumnSpan="3" IsExpanded="True" Background="#1E1E1E" BorderThickness="0" Style="{DynamicResource ExpanderStyle1}" HorizontalAlignment="Left" Width="362">
+                <Expander.Resources>
+                    <Style x:Key="ExpanderDownHeaderStyle" TargetType="{x:Type ToggleButton}">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                    <Border Padding="{TemplateBinding Padding}">
+                                        <Grid Background="Transparent" SnapsToDevicePixels="False">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="39"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Rectangle Grid.Column="1" x:Name="circle" Fill="{StaticResource Expander.Static.Circle.Fill}" HorizontalAlignment="Center" Height="18" Stroke="{StaticResource Expander.Static.Circle.Stroke}" VerticalAlignment="Center" Width="18"/>
+                                            <Path Grid.Column="1" x:Name="arrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" HorizontalAlignment="Center" SnapsToDevicePixels="false" Stroke="{StaticResource Expander.Static.Arrow.Stroke}" StrokeThickness="2" VerticalAlignment="Center"/>
+                                            <ContentPresenter HorizontalAlignment="Left" Margin="40,0,0,0" RecognizesAccessKey="True" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="true">
+                                            <Setter Property="Data" TargetName="arrow" Value="M 1,4.5  L 4.5,1  L 8,4.5"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <Style x:Key="ExpanderStyle1" TargetType="{x:Type Expander}">
+                        <Setter Property="Foreground" Value="{StaticResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type Expander}">
+                                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="0" SnapsToDevicePixels="true">
+                                        <DockPanel>
+                                            <ToggleButton x:Name="HeaderSite" ContentTemplate="{TemplateBinding HeaderTemplate}" ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}" Content="{TemplateBinding Header}" DockPanel.Dock="Top" Foreground="{TemplateBinding Foreground}" FontWeight="{TemplateBinding FontWeight}" FontStyle="{TemplateBinding FontStyle}" FontStretch="{TemplateBinding FontStretch}" FontSize="{TemplateBinding FontSize}" FontFamily="{TemplateBinding FontFamily}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Margin="1" MinWidth="0" MinHeight="0" Padding="{TemplateBinding Padding}" Style="{StaticResource ExpanderDownHeaderStyle}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                            <ContentPresenter x:Name="ExpandSite" DockPanel.Dock="Bottom" Focusable="false" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" Visibility="Collapsed" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                        </DockPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsExpanded" Value="true">
+                                            <Setter Property="Visibility" TargetName="ExpandSite" Value="Visible"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="false">
+                                            <Setter Property="Foreground" Value="{StaticResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Expander.Resources>
+
+                <DataGrid ItemsSource="{Binding DetailDv}" Foreground="#FFFFFF" BorderThickness="0" Background="#141414" RowHeight="24" RowBackground="#141414"
+                          HeadersVisibility="None" AutoGenerateColumns="False"  GridLinesVisibility="All" 
+                          HorizontalGridLinesBrush="#282828" VerticalGridLinesBrush="#282828"
+                          AllowDrop="False" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False"
+                          CanUserResizeColumns="False" CanUserResizeRows="False" CanUserSortColumns="False"
+                          SelectionMode="Single" SelectionUnit="FullRow" ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.IsDeferredScrollingEnabled="True" MaxHeight="300">
+                    <!--<DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>
+                            <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                            <Setter Property="Height" Value="24"/>
+                            <Style.Triggers>
+                                --><!--选中颜色--><!--
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{StaticResource Item.SelectedInactive.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedInactive.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{StaticResource Item.SelectedActive.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedActive.Border}"/>
+                                </MultiTrigger>
+                                --><!--鼠标移过--><!--
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                                </MultiTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>-->
+                    <DataGrid.CellStyle>
+                        <Style TargetType="{x:Type DataGridCell}">
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type DataGridCell}">
+                                        <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True" BorderBrush="{StaticResource DataGridCellBorderBrush}" BorderThickness="0">
+                                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,0,0"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.CellStyle>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="26"/>
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <Border x:Name="isMeBorder" CornerRadius="2" Width="18" Height="18" Background="#E63034" Visibility="{Binding IsMe, Converter={StaticResource visibilityConvertor}}">
+                                            <TextBlock Text="我" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding UserName}"  Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <TextBlock Text="{Binding Qty}" Margin="8,0,5,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <TextBlock Text="{Binding SettleType, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='SettleType'}" Margin="8,0,5,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                       
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Expander>
+        </Grid>
+    </Border>
+</Popup>

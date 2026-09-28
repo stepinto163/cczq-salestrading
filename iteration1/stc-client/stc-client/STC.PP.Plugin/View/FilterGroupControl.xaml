@@ -1,0 +1,78 @@
+﻿<UserControl x:Class="STC.PP.Plugin.View.FilterGroupControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.PP.Plugin.View"
+             mc:Ignorable="d" >
+    <!-- 菜单资源 -->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ✅ 按钮样式的 CheckBox -->
+            <Style x:Key="ButtonLikeCheckBoxStyle" TargetType="CheckBox">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.Static.Foreground}"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="MinWidth" Value="40"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Margin" Value="4 0 0 4"/>
+                <Setter Property="Padding" Value="10,0,10,0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                                <ContentPresenter Grid.Column="1" x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <ContextMenu x:Key="DeleteMenu" x:Shared="False" Style="{DynamicResource DefaultContextMenu}">
+                <MenuItem x:Name="DelGroupMenu" Header="删除" Style="{DynamicResource DefaultMenuItem}" Click="MenuItem_Delete_Click"/>
+            </ContextMenu>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding PPGroupList, RelativeSource={RelativeSource AncestorType=UserControl}}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox Content="{Binding GroupName}"
+                          Tag="{Binding Remark}"
+                          Style="{StaticResource ButtonLikeCheckBoxStyle}"
+                          Click="CheckBox_Click"
+                          MouseRightButtonDown="CheckBox_MouseRightButtonDown">
+                    </CheckBox>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,220 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.View.Trade.BrokerPriceTableView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Trade"
+             mc:Ignorable="d" 
+             d:DesignHeight="135" d:DesignWidth="332">
+
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+
+
+            <Style x:Key="BidDataGridRowStyle" TargetType="{x:Type DataGridRow}">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Height" Value="24"/>
+                <!--<EventSetter Event="MouseDoubleClick" Handler="BidDataGrid_MouseDoubleClick"/>
+                -->
+                <!--<EventSetter Event="MouseRightButtonDown" Handler="BidDataGrid_MouseRightButtonDown"/>-->
+                <!--
+                <EventSetter Event="MouseRightButtonUp" Handler="DataGrid_MouseRightButtonUp"/>-->
+                <Style.Triggers>
+
+                    <Trigger Property="AlternationIndex" Value="0">
+                        <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                    </Trigger>
+                    <Trigger Property="AlternationIndex" Value="1">
+                        <Setter Property="Background" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>
+                    </Trigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Bid.MouseOver.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Bid.MouseOver.BorderBrush}"/>
+
+                    </MultiTrigger>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="{StaticResource Bid.Selected.Backgroud}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Bid.Selected.BorderBrush}"/>
+                    </Trigger>
+                    <DataTrigger Binding="{Binding IsBest}" Value="true">
+                        <Setter Property="Height" Value="40"/>
+                    </DataTrigger>
+                </Style.Triggers>
+
+            </Style>
+
+            <ControlTemplate x:Key="QuotationList_DataGridCellTemplate" TargetType="{x:Type DataGridCell}">
+                <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                    <ContentPresenter VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <!--<DataTrigger Binding="{Binding IsBest}" Value="true">
+                        <Setter Property="Height" Value="40"/>
+                    </DataTrigger>-->
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <Style x:Key="QuotationList_DataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="TextBlock.TextAlignment" Value="Center"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Template" Value="{StaticResource QuotationList_DataGridCellTemplate}"/>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="72"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="0" Grid.Column="0" CornerRadius="2" Height="72" Width="166" Background="{StaticResource Bid.Selected.BorderBrush-16%}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="16"></RowDefinition>
+                    <RowDefinition Height="24"></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="10"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Bid" Grid.Row="0" Margin="0, 2, 0, 0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Bid.textblock.foreground}" TextAlignment="Center" FontSize="{StaticResource FontSize-12}"></TextBlock>
+
+                <TextBlock Text="{Binding BidPrice}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Bid.textblock.foreground}" TextAlignment="Center" FontSize="{StaticResource FontSize-24}"></TextBlock>
+
+                <TextBlock Text="{Binding BidTxt}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 3, 0, 0" Foreground="{StaticResource Button.Static.Foreground}" TextAlignment="Center" 
+                           FontSize="{StaticResource FontSize-12}" ToolTip="{Binding Text}"  TextTrimming="CharacterEllipsis" MaxWidth="140"></TextBlock>
+
+
+                <Canvas x:Name="bidCornerMarket" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="1, 0, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+            </Grid>
+        </Border>
+
+
+        <Border Grid.Row="0" Grid.Column="1" CornerRadius="2" Height="72" Width="166" Background="{StaticResource Ofr.Selected.BorderBrush-16%}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="16"></RowDefinition>
+                    <RowDefinition Height="24"></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="10"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Ofr" Grid.Row="0" Margin="0, 2, 0, 0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Ofr.Selected.BorderBrush}" TextAlignment="Center" FontSize="{StaticResource FontSize-12}"></TextBlock>
+
+                <TextBlock Text="{Binding OfrPrice}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Ofr.Selected.BorderBrush}" TextAlignment="Center" FontSize="{StaticResource FontSize-24}"></TextBlock>
+
+                <TextBlock Text="{Binding OfrTxt}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 3, 0, 0" Foreground="{StaticResource Button.Static.Foreground}" TextAlignment="Center" 
+                           FontSize="{StaticResource FontSize-12}" ToolTip="{Binding Text}" TextTrimming="CharacterEllipsis" MaxWidth="140"></TextBlock>
+
+
+                <Canvas x:Name="ofrCornerMarket" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="1, 0, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+            </Grid>
+        </Border>
+
+
+        <DataGrid Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" ItemsSource="{Binding TableView}" HeadersVisibility="None" Style="{StaticResource DefaultDataGrid}"
+                     Margin="2, 0, 1, 0" CellStyle="{StaticResource QuotationList_DataGridCellStyle}" HorizontalScrollBarVisibility="Hidden" MouseDoubleClick="DataGrid_MouseDoubleClick">
+
+            <DataGrid.Columns>
+
+                <DataGridTextColumn Binding="{Binding ShowSettleType}" 
+                                    Header="清算速度" Width="16*"
+                                    Foreground="{StaticResource DataGrid.TextBlock.Foreground}"/>
+
+                <DataGridTextColumn Binding="{Binding BidAmount}" 
+                                    Header="买入量" Width="17*"
+                                    Foreground="{StaticResource DataGrid.TextBlock.Foreground}"/>
+
+                <DataGridTextColumn Binding="{Binding Bid}" 
+                                    Header="Bid" Width="17*"
+                                    Foreground="{StaticResource Bid.textblock.foreground}"/>
+
+                <DataGridTextColumn Binding="{Binding Ofr}" 
+                                    Header="Ofr" Width="25*"
+                                    Foreground="{StaticResource ColorBrush.Blue_firm}"/>
+
+                <DataGridTextColumn Binding="{Binding OfrAmount}" 
+                                    Header="卖出量" Width="25*"
+                                    Foreground="{StaticResource DataGrid.TextBlock.Foreground}"/>
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+    </Grid>
+</UserControl>

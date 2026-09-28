@@ -1,0 +1,238 @@
+﻿<UserControl x:Class="STC.Frame.CustomUI.LogoInfoGrid"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Frame.CustomUI"
+             mc:Ignorable="d" 
+             xmlns:cv ="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             d:DesignHeight="300" d:DesignWidth="300" Height="40" Width="200" Loaded="UserControl_Loaded">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <cv:VisibilityConvertor x:Key="visibilityConvertor"/>
+
+            <Style x:Key="FixFloatButtonStyle" TargetType="CheckBox">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Border Name="border" CornerRadius="2" Background="Transparent">
+                                <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Label.Content>
+                                        <Image Source="/STC.Common;component/Images/stc_icon_top_normal.png" Width="14" Height="14" ToolTip="置顶" />
+                                    </Label.Content>
+                                </Label>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#136C5E" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#172422" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.Common;component/Images/stc_icon_toppressed_normal.png" Width="14" Height="14" ToolTip="取消置顶" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="13"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="24"></ColumnDefinition>
+            <ColumnDefinition Width="24"></ColumnDefinition>
+            <ColumnDefinition Width="24"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0, 5, 0, 5" Grid.RowSpan="2"
+                           Height="22" Width="1" BorderBrush="#4F6964" BorderThickness="1"></Separator>
+
+        <TextBlock Text="Hello" HorizontalAlignment="Left" Foreground="{StaticResource ColorBrush.While}" 
+                   Grid.Row="0" Grid.Column="1" FontSize="10" VerticalAlignment="Bottom"
+                           Width="35" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Height="12" ></TextBlock>
+
+        <CheckBox Margin="0,0,5,2" x:Name="btnFixFloatButton" Style="{StaticResource FixFloatButtonStyle}" HorizontalAlignment="Right" Grid.Column="1"
+                  Checked="btnFixFloatButton_Checked" Unchecked="btnFixFloatButton_Checked" Width="22" Height="12" Visibility="Collapsed"></CheckBox>
+
+
+
+        <Grid Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3" Margin="0, 0, 0, 3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="btnMin" Style="{StaticResource TitleBarButtonStyle}"  ContentTemplate="{StaticResource MinimizeWhite}" Width="22" Height="12" Grid.Column="0" Click="btnMin_Click"></Button>
+            <Button x:Name="btnMax" Style="{StaticResource TitleBarButtonStyle}"  ContentTemplate="{StaticResource MaximizeWhite}"  Visibility="Collapsed" Width="22" Height="12" Grid.Column="1" Click="btnMax_Click"></Button>
+            <Button x:Name="btnRestore" Style="{StaticResource TitleBarButtonStyle}" ContentTemplate="{StaticResource RestoreWhite}" Width="22" Height="12" Grid.Column="1" Click="btnMax_Click"></Button>
+            <Button x:Name="btnClose" Style="{StaticResource TitleBarButtonStyle}" ContentTemplate="{StaticResource CloseWhite}" Width="22" Height="12" Grid.Column="2" Click="btnClose_Click"></Button>
+        </Grid>
+
+       
+        <TextBlock x:Name="tbUserName" Text="Hello" Foreground="{StaticResource ColorBrush.While}" Grid.Row="1" Grid.Column="1" FontSize="10"
+                           Margin="0, 0, 0, 5" Width="133" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Height="12" ></TextBlock>
+
+        <Border x:Name="bdStatus" Margin="0, 0, 0, 5" Background="#00A84B" CornerRadius="2" Width="10" Height="10" Grid.Row="1" Grid.Column="3"
+                MouseEnter="btnStatus_MouseEnter" MouseLeave="btnStatus_MouseLeave"></Border>
+        <Button x:Name="btnSetting" Margin="0, 0, 0, 5" Style="{StaticResource MainPageImageSettingButton}" Click="btnSetting_Click" Width="14" Height="14" Grid.Row="1" Grid.Column="4"></Button>
+        <Ellipse x:Name="elli" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18 ,0, 0, 0"  Visibility="Collapsed" Width="5"  Height="5" Fill="#FF3C3C" Grid.Row="1" Grid.Column="4" />
+        <Button x:Name="btnRedirect" Margin="0, 0, 0, 5" Style="{StaticResource MainPageImageRedirctButton}" Width="14" Height="14" Grid.Row="1" Grid.Column="4"
+                Click="btnRedirect_Click" Visibility="Collapsed"></Button>
+
+        <Popup x:Name="popMsg" PlacementTarget="{Binding ElementName=bdStatus}" 
+                   StaysOpen="False" Width="462" Height="Auto"
+                   PopupAnimation="Slide" AllowsTransparency="True">
+
+            <Border x:Name="border" CornerRadius="1" BorderBrush="{StaticResource ColorBrush.Red11}" BorderThickness="1" Background="{StaticResource ColorBrush.Black8}">
+                <Grid x:Name="grid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="24"></RowDefinition>
+                        <RowDefinition Height="65"></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="tbStatus" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Bold}" Text="X-Bond:" 
+                                   VerticalAlignment="Center" Margin="18 , 0, 0, 0" Grid.Row="0" Grid.Column="0" Width="50"
+                               Foreground="{StaticResource ColorBrush.While}" FontSize="{StaticResource SmallContentFontSize}"></TextBlock>
+                        <TextBlock x:Name="tbStatusTxt" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Bold}" Text="" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10 , 0, 0, 0" Grid.Row="0" Grid.Column="1"
+                               Foreground="{StaticResource ColorBrush.While}" FontSize="{StaticResource SmallContentFontSize}"></TextBlock>
+                    </Grid>
+
+
+                    <Border Grid.Row="1" BorderThickness="0, 0 ,0 ,1" BorderBrush="{StaticResource ColorBrush.Gray20}">
+
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition></RowDefinition>
+                            </Grid.RowDefinitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="92"></ColumnDefinition>
+                                <ColumnDefinition Width="14"></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+
+
+                            <TextBlock x:Name="tbError" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Bold}" Text="个连线中断，请立即处理。" Grid.Row="0"  Grid.Column="0" Grid.ColumnSpan="3"
+                                Height="34" Foreground="{StaticResource ColorBrush.Red11}" FontSize="{StaticResource SmallContentFontSize}" Padding="0, 11, 0, 0" TextAlignment="Center"></TextBlock>
+
+                            <TextBlock x:Name="tbConStatus" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Bold}" Text="连接状态：" 
+                                   VerticalAlignment="Center" Margin="10 , 0, 0, 0" Width="60" Grid.Row="1" Grid.Column="0"
+                               Foreground="{StaticResource ColorBrush.While}" FontSize="{StaticResource SmallContentFontSize}"></TextBlock>
+
+                            <Border x:Name="bdConStatus" CornerRadius="1" Background="{StaticResource ColorBrush.Red7}" Width="10" Height="10" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left"></Border>
+                            <TextBlock x:Name="tbConStatusTxt" Text="连接中断" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Red7}"
+                                   Grid.Column="2" Grid.Row="1"  HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+                        </Grid>
+
+
+                    </Border>
+
+                    <Grid Grid.Column="0" Grid.Row="2" x:Name="gridStatus">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30"></RowDefinition>
+                            <RowDefinition MinHeight="30"></RowDefinition>
+                            <RowDefinition MinHeight="30"></RowDefinition>
+                            <!--<RowDefinition MinHeight="30"></RowDefinition>-->
+                        </Grid.RowDefinitions>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="92"></ColumnDefinition>
+                            <ColumnDefinition Width="14"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                            <!--<ColumnDefinition Width="14"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                            <ColumnDefinition Width="14"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>-->
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="服务器连接：" Grid.Column="0" Grid.Row="0" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}"
+                                   VerticalAlignment="Center"  HorizontalAlignment="Left" Margin="10, 0, 0, 0"></TextBlock>
+                        <TextBlock Text="交易接口：" Grid.Column="0" Grid.Row="1" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}"
+                                   VerticalAlignment="Top" HorizontalAlignment="Left" Margin="22, 10, 0, 0"></TextBlock>
+                        <TextBlock Text="行情接口：" Grid.Column="0" Grid.Row="2" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}"
+                                   VerticalAlignment="Top"  HorizontalAlignment="Left" Margin="21, 10, 0, 0"></TextBlock>
+
+                        <!--<TextBlock Text="内部接口：" Grid.Column="0" Grid.Row="3" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}"
+                                   VerticalAlignment="Top"  HorizontalAlignment="Left" Margin="21, 10, 0, 0"></TextBlock>-->
+
+                        <Border x:Name="bdStcLite" CornerRadius="1" Background="{StaticResource ColorBrush.Green14}" Width="10" Height="10" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left"></Border>
+                        <TextBlock x:Name="tbStcLite" Text="BDB" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.While}"
+                                   Grid.Column="2" Grid.Row="0"  HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+
+                        <Grid x:Name="gridTrader" Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+                        <Grid x:Name="gridPrice" Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                        </Grid>
+
+                        <!--<Grid x:Name="gridInner" Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                        </Grid>-->
+
+
+                        <!--<Border x:Name="bdXBond" CornerRadius="1" Background="{StaticResource ColorBrush.Red7}" Width="10" Height="10" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left"></Border>
+                        <TextBlock x:Name="tbXBond" Text="X-Bond" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Red7}"
+                                   Grid.Column="2" Grid.Row="1"  HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+
+                        <Border x:Name="bdESP" CornerRadius="1" Background="{StaticResource ColorBrush.Red7}" Width="10" Height="10" Grid.Column="3" Grid.Row="1" HorizontalAlignment="Left"></Border>
+                        <TextBlock x:Name="tbESP" Text="双边(ESP)" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Red7}"
+                                   Grid.Column="4" Grid.Row="1"  HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+
+                        <Border x:Name="bdSOR" CornerRadius="1" Background="{StaticResource ColorBrush.Red7}" Width="10" Height="10" Grid.Column="5" Grid.Row="1" HorizontalAlignment="Left"></Border>
+                        <TextBlock x:Name="tbSOR" Text="经纪商交易(SOR)" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Red7}"
+                                   Grid.Column="6" Grid.Row="1"  HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+
+                        <Border x:Name="bdCDH" CornerRadius="1" Background="{StaticResource ColorBrush.Green14}" Width="10" Height="10" Grid.Column="1" Grid.Row="2" HorizontalAlignment="Left"></Border>
+                        <TextBlock x:Name="tbCDH" Text="经纪商行情(CDH)" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.While}"
+                                   Grid.Column="2" Grid.Row="2"  HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>-->
+                    </Grid>
+
+
+                </Grid>
+            </Border>
+        </Popup>
+
+    </Grid>
+</UserControl>

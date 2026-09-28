@@ -1,0 +1,386 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <SolidColorBrush x:Key="ListBoxItem.MouseOver.Background" Color="#193D37"/>
+    <SolidColorBrush x:Key="ListBoxItem.MouseOver.Border" Color="#136C5E"/>
+    <SolidColorBrush x:Key="ListBoxItem.SelectedInactive.Foreground" Color="#FFEBC8"/>
+    <SolidColorBrush x:Key="ListBoxItem.SelectedInactive.Background" Color="#136C5E"/>
+    <SolidColorBrush x:Key="ListBoxItem.SelectedInactive.Border" Color="#193D37"/>
+    <SolidColorBrush x:Key="ListBoxItem.SelectedActive.Foreground" Color="#FEEBC8"/>
+    <SolidColorBrush x:Key="ListBoxItem.SelectedActive.Background" Color="#136C5E"/>
+    <SolidColorBrush x:Key="ListBoxItem.SelectedActive.Border" Color="#00D198"/>
+    <SolidColorBrush x:Key="ListBoxItem.Normal.Border" Color="#193D37"/>
+
+    <Style x:Key="FilterListBoxStyle" TargetType="{x:Type ListBox}">
+        <Setter Property="Foreground" Value="#A0A0A0"/>
+        <Setter Property="Background" Value="#1E1E1E"/>
+        <Setter Property="BorderBrush" Value="#1E1E1E"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+        <!--<Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>-->
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource FilterListBoxItemStyle}"/>
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Grid>
+                        <Border BorderBrush="Transparent"  BorderThickness="1"  Width="100"  Height="22" CornerRadius="2">
+                            <TextBlock Text="{Binding Value}"/>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="FilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+        <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+        <Setter Property="Foreground" Value="#A0A0A0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="10,2,10,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Grid MinHeight="28">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle x:Name="Sep"  Grid.Column="0" Width="1" Height="10" Fill="#3C3C3C" VerticalAlignment="Center"/>
+                        <Border x:Name="Bd" Grid.Column="1" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                            <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                            <Setter TargetName="Sep" Property="Visibility" Value="Hidden"/>
+                            <Setter TargetName="Bd" Property="Background" Value="#3C3C3C"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{StaticResource ListBoxItem.SelectedInactive.Foreground}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedActive.Border}"/>
+                            <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{StaticResource ListBoxItem.SelectedActive.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="CommonFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#8F9598"/>
+        <Setter Property="Padding" Value="0,0,0,2"/>
+        <Setter Property="Width" Value="24"/>
+        <!--<Setter Property="Margin" Value="1, 0, 0, 0"/>-->
+        <Setter Property="FontSize" Value="12"/>
+        <!--<Setter Property="Height" Value="28"/>-->
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="#121A19" CornerRadius="0" BorderThickness="0, 0, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{StaticResource ListBoxItem.Normal.Border}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"
+                            SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <!--<MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Border}"/>
+                        </MultiTrigger>-->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <!--Condition Property="Selector.IsSelectionActive" Value="True"/-->
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="#325850"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedActive.Border}"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{StaticResource ListBoxItem.SelectedActive.Foreground}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <Style x:Key="MainFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!--<Setter Property="Padding" Value="0"/>-->
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="#FFEBC8"/>
+        <Setter Property="Background" Value="#172422"/>
+        <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Margin" Value="1, 0, 0, 0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{StaticResource ListBoxItem.Normal.Border}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"
+                            SnapsToDevicePixels="true">
+                        <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="#FF9300"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="#60F9C152"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="#000000"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontFamily" Value="MicrosoftYaHeiSemibold"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="#FF9300"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="#F9C152"/>
+                            <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="#000000"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontFamily" Value="MicrosoftYaHeiSemibold"/>
+                            <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <SolidColorBrush x:Key="ListBox.Static.Background" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="ListBox.Static.Border" Color="#FFABADB3"/>
+    <SolidColorBrush x:Key="ListBox.Disabled.Background" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="ListBox.Disabled.Border" Color="#FFD9D9D9"/>
+    <Style x:Key="ChartListBoxStyle" TargetType="{x:Type ListBox}">
+        <Setter Property="Background" Value="{StaticResource ListBox.Static.Background}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ListBox.Static.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+        <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBox}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="0" SnapsToDevicePixels="true">
+                        <ScrollViewer Focusable="false" Padding="{TemplateBinding Padding}">
+                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </ScrollViewer>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBox.Disabled.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBox.Disabled.Border}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsGrouping" Value="true"/>
+                                <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="false"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="list_path" TargetType="Path">
+        <Setter Property="Data" Value="M0,1.08970618 C0,0.789746428 0.104361111,0.533138794 0.313083333,0.319883276 C0.521805556,0.106627759 0.772958333,0 1.06654167,0 C1.360125,0 1.61127778,0.106627759 1.82,0.319883276 C2.02872222,0.533138794 2.13308333,0.789746428 2.13308333,1.08970618 C2.13308333,1.38966593 2.02872222,1.64627356 1.82,1.85952908 C1.61127778,2.0727846 1.360125,2.17941236 1.06654167,2.17941236 C0.772958333,2.17941236 0.521805556,2.0727846 0.313083333,1.85952908 C0.104361111,1.64627356 0,1.38966593 2.40548322e-16,1.08970618 L0,1.08970618 Z M12.390625,1.59166834 L3.96066667,1.59166834 C3.79130556,1.59166834 3.64740278,1.53115986 3.52895833,1.41014289 C3.41051389,1.28912591 3.35129167,1.14209767 3.35129167,0.969058161 L3.35129167,0.969058161 C3.35129167,0.796018649 3.41051389,0.648990407 3.52895833,0.527973435 C3.64740278,0.406956463 3.79130556,0.346447977 3.96066667,0.346447977 L12.390625,0.346447977 C12.5599861,0.346447977 12.7038889,0.406956463 12.8223333,0.527973435 C12.9407778,0.648990407 13,0.796018649 13,0.969058161 L13,0.969058161 C13,1.14209767 12.9407778,1.28912591 12.8223333,1.41014289 C12.7038889,1.53115986 12.5599861,1.59166834 12.390625,1.59166834 Z M0,5.5 C0,5.20004025 0.104361111,4.94343262 0.313083333,4.7301771 C0.521805556,4.51692158 0.772958333,4.41029382 1.06654167,4.41029382 C1.360125,4.41029382 1.61127778,4.51692158 1.82,4.7301771 C2.02872222,4.94343262 2.13308333,5.20004025 2.13308333,5.5 C2.13308333,5.79995975 2.02872222,6.05656738 1.82,6.2698229 C1.61127778,6.48307842 1.360125,6.58970618 1.06654167,6.58970618 C0.772958333,6.58970618 0.521805556,6.48307842 0.313083333,6.2698229 C0.104361111,6.05656738 0,5.79995975 2.40548322e-16,5.5 L0,5.5 Z M12.390625,6.00140873 L3.96066667,6.00140873 C3.79130556,6.00140873 3.64740278,5.94090025 3.52895833,5.81988328 C3.41051389,5.6988663 3.35129167,5.55183806 3.35129167,5.37879855 L3.35129167,5.37879855 C3.35129167,5.20575904 3.41051389,5.0587308 3.52895833,4.93771383 C3.64740278,4.81669685 3.79130556,4.75618837 3.96066667,4.75618837 L12.390625,4.75618837 C12.5599861,4.75618837 12.7038889,4.81669685 12.8223333,4.93771383 C12.9407778,5.0587308 13,5.20575904 13,5.37879855 L13,5.37879855 C13,5.55183806 12.9407778,5.6988663 12.8223333,5.81988328 C12.7038889,5.94090025 12.5599861,6.00140873 12.390625,6.00140873 Z M0,9.91029382 C0,9.61033407 0.104361111,9.35372644 0.313083333,9.14047092 C0.521805556,8.9272154 0.772958333,8.82058764 1.06654167,8.82058764 C1.360125,8.82058764 1.61127778,8.9272154 1.82,9.14047092 C2.02872222,9.35372644 2.13308333,9.61033407 2.13308333,9.91029382 C2.13308333,10.2102536 2.02872222,10.4668612 1.82,10.6801167 C1.61127778,10.8933722 1.360125,11 1.06654167,11 C0.772958333,11 0.521805556,10.8933722 0.313083333,10.6801167 C0.104361111,10.4668612 0,10.2102536 2.40548322e-16,9.91029382 L0,9.91029382 Z M12.390625,10.4117026 L3.96066667,10.4117026 C3.79130556,10.4117026 3.64740278,10.3511941 3.52895833,10.2301771 C3.41051389,10.1091601 3.35129167,9.96213188 3.35129167,9.78909237 L3.35129167,9.78909237 C3.35129167,9.61605286 3.41051389,9.46902462 3.52895833,9.34800765 C3.64740278,9.22699068 3.79130556,9.16648219 3.96066667,9.16648219 L12.390625,9.16648219 C12.5599861,9.16648219 12.7038889,9.22699068 12.8223333,9.34800765 C12.9407778,9.46902462 13,9.61605286 13,9.78909237 L13,9.78909237 C13,9.96213188 12.9407778,10.1091601 12.8223333,10.2301771 C12.7038889,10.3511941 12.5599861,10.4117026 12.390625,10.4117026 Z"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Fill" Value="#8F9598"/>
+    </Style>
+
+    <Style x:Key="chart_path" TargetType="Path">
+        <Setter Property="Data" Value="M14.422,14 L1.547,14 C1.39066667,14 1.25783333,13.9453333 1.1485,13.836 C1.03916667,13.7266667 0.9845,13.5938333 0.9845,13.4375 L0.9845,0.547 C0.9845,0.390666667 1.03916667,0.257833333 1.1485,0.1485 C1.25783333,0.0391666667 1.39066667,-0.0155 1.547,-0.0155 C1.70333333,-0.0155 1.83616667,0.0391666667 1.9455,0.1485 C2.05483333,0.257833333 2.1095,0.390666667 2.1095,0.547 L2.1095,12.875 L14.422,12.875 C14.5783333,12.875 14.7111667,12.9296667 14.8205,13.039 C14.9298333,13.1483333 14.9845,13.2811667 14.9845,13.4375 C14.9845,13.5938333 14.9298333,13.7266667 14.8205,13.836 C14.7111667,13.9453333 14.5783333,14 14.422,14 Z M6.0155,10.6095 C5.8175,10.6095 5.66116667,10.5261667 5.5465,10.3595 L3.0935,6.453 C3.01016667,6.31766667 2.98416667,6.1745 3.0155,6.0235 C3.04683333,5.8725 3.1275,5.75533333 3.2575,5.672 C3.3875,5.58866667 3.52816667,5.56266667 3.6795,5.594 C3.83083333,5.62533333 3.948,5.7035 4.031,5.8285 L5.781,8.6725 L6.5,5.907 C6.54166667,5.74033333 6.64066667,5.6205 6.797,5.5475 L9.641,4.1725 C9.77633333,4.10983333 9.91183333,4.09683333 10.0475,4.1335 C10.1831667,4.17016667 10.2925,4.25083333 10.3755,4.3755 L11.7975,6.688 L13.8915,0.391 C13.9435,0.245 14.0373333,0.135666667 14.173,0.063 C14.3086667,-0.00966666667 14.4493333,-0.0201666667 14.595,0.0315 C14.7406667,0.0831666667 14.85,0.177 14.923,0.313 C14.996,0.449 15.0065,0.589666667 14.9545,0.735 L12.4855,8.188 C12.4125,8.41733333 12.2561667,8.545 12.0165,8.571 C11.7768333,8.597 11.5945,8.511 11.4695,8.313 L9.6725,5.4065 L7.532,6.438 L6.563,10.188 C6.50033333,10.4276667 6.34933333,10.5631667 6.11,10.5945 C6.07866667,10.6048333 6.04733333,10.61 6.016,10.61 L6.0155,10.6095 Z"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="Fill" Value="#8F9598"/>
+    </Style>
+
+    <!--SVG Button 配置-->
+    <SolidColorBrush x:Key="SvgButton.Static.Foreground" Color="#8F9598"/>
+    <SolidColorBrush x:Key="SvgButton.MouseOver.Background" Color="#0A2420"/>
+    <SolidColorBrush x:Key="SvgButton.MouseOver.Foreground" Color="#00CDAD"/>
+    <SolidColorBrush x:Key="SvgButton.MouseOver.BorderBrush" Color="#136C5E"/>
+    <SolidColorBrush x:Key="SvgButton.Selected.Fill" Color="#193D37"/>
+    <SolidColorBrush x:Key="ListBoxItemSettle.SelectedActive.Background" Color="#136C5E"/>
+
+    <!--绿色列表Button-->
+    <Style TargetType="{x:Type ListBoxItem}" x:Key="ListFloatBlueButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <!--<Setter Property="Width" Value="13"/>
+        <Setter Property="Height" Value="11"/>-->
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Background="{TemplateBinding Background}">
+                            <!--<Viewbox Height="11" Width="13">-->
+                                <Path x:Name="svg_path" Style="{StaticResource list_path}"/>
+                            <!--</Viewbox>-->
+                        </Border>
+                        <Grid>
+                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <!--<Setter TargetName="svg_path" Property="Stroke" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>-->
+                            <Setter TargetName="svg_path" Property="Fill" Value="{StaticResource ListBoxItem.SelectedActive.Foreground}"/>
+                            <Setter Property="Background" Value="#315850"/>
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_listview2_selected.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <!--<Setter TargetName="border" Property="Background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>-->
+                            <Setter Property="Background" Value="#315850"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_listview2_normal.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--绿色图表模式 Button-->
+    <Style TargetType="{x:Type ListBoxItem}" x:Key="ListChatBlueButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <!--<Setter Property="Width" Value="13"/>
+        <Setter Property="Height" Value="11"/>-->
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Background="{TemplateBinding Background}">
+                            <!--<Viewbox Height="14" Width="15">-->
+                                <Path x:Name="svg_path" Style="{StaticResource chart_path}"/>
+                            <!--</Viewbox>-->
+                        </Border>
+                        <Grid>
+                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="true">
+                            <!--<Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>-->
+                            <Setter TargetName="svg_path" Property="Fill" Value="{StaticResource ListBoxItem.SelectedActive.Foreground}"/>
+                            <Setter Property="Background" Value="#315850"/>
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_chart2_selected.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <!--<Setter TargetName="border" Property="Background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>-->
+                            <Setter Property="Background" Value="#315850"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <!--<Setter TargetName="label" Property="Content">
+                                <Setter.Value>
+                                    <Image Source="/STC.Common;component/Images/stc_icon_chart2_normal.png" Height="10"/>
+                                </Setter.Value>
+                            </Setter>-->
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

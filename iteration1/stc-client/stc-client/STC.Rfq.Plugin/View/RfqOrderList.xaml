@@ -1,0 +1,492 @@
+﻿<UserControl x:Class="STC.Rfq.Plugin.View.RfqOrderList"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Rfq.Plugin.View"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:viewmodel="clr-namespace:STC.Rfq.Plugin.ViewModel"
+             xmlns:component="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="1280" Background="{DynamicResource DefaultBackgroup.ColorBrush}">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+           
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="X">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Side}" Value="Z">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Green}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="DataGridCellStyle1" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,0,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+          
+
+            <!--DefaultDataGrid 样式-->
+            <Style x:Key="QueryDataGridRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource DataGridRowStyle}">
+                <Setter Property="Height" Value="30"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="DefaultDataGridForQuery" TargetType="DataGrid" BasedOn="{StaticResource DefaultDataGrid}">
+                <Setter Property="RowStyle" Value="{DynamicResource QueryDataGridRowStyle}"/>
+            </Style>
+
+            <Style x:Key="QueryDataGridCellStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+
+            <!--全撤-->
+            <Style x:Key="SelfCancelButton" TargetType="{x:Type Button}">
+                <Setter Property="Background" Value="#282828"/>
+                <Setter Property="Foreground" Value="#D7D7D7"/>
+                <Setter Property="BorderBrush" Value="#515151"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="out_border" CornerRadius="1" BorderBrush="#1C000000" BorderThickness="0,0,0,1" Background="Transparent" SnapsToDevicePixels="true">
+                                    <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,1,0,0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                        <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                </Border>
+                                <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#515151"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#788187"/>
+                                    <!--Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource SelectItemForeground}"/-->
+                                    <!--Setter Property="Opacity" TargetName="ShineBorder" Value="0.5"/-->
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.2"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#515151"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid x:Name="RfqOrderListGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="28"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="7"></ColumnDefinition>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+            <ColumnDefinition Width="5"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="120"></ColumnDefinition>
+            <ColumnDefinition Width="14"></ColumnDefinition>
+            <ColumnDefinition Width="14"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <StackPanel  Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="22"></RowDefinition>
+                    <RowDefinition Height="2"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+            </Grid>
+        </StackPanel>
+
+        <Button x:Name="btnHistory" Grid.Row="0" Grid.Column="5" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource HistoryButton}"  Command="{Binding OpenRfqModiCommand}"  Visibility="Collapsed"/>
+        <Button x:Name="btnHistory2" Grid.Row="0" Grid.Column="6" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource ImageFullButton}"  Command="{Binding OpenRfqOrderCommand}"  Visibility="Collapsed"/>
+        
+        <StackPanel Grid.Row="0" Grid.Column="1"  Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+            <Button x:Name="SearchBtn" Width="80" Height="20" Content="一键全撤" Style="{DynamicResource BlueGreenStyle}" HorizontalAlignment="Right"  VerticalAlignment="Center" FontSize="12" FontWeight="Normal" BorderThickness="0 1 0 0" FontFamily="{DynamicResource DefaultFont}" Command="{Binding RefuseAllOrderCommand}"/>
+            <TextBlock Text="状态:" FontStyle="Normal" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#A0A0A0" FontFamily="Microsoft YaHei" FontSize="12" Margin="8,0,4,0"></TextBlock>
+            <ListBox x:Name="LstReplayStatus" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="LstReplayStatus_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="ALL" Tag="0" Style="{DynamicResource FilterListBoxItemDodgerBlueAllStyle}" IsSelected="True" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="待回复" Tag="1" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal" Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="已发送" Tag="2" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="已成交" Tag="3" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="已拒绝" Tag="4" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="已失效" Tag="5" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+            </ListBox>
+        </StackPanel>
+        
+        <!--<Rectangle Grid.Row="0" Grid.Column="2" Fill="#3C3C3C" RadiusY="1" RadiusX="1" StrokeThickness="1" Margin="4,4,0,4"/>-->
+        
+        <!--<StackPanel  Grid.Row="0" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock  FontStyle="Normal" Foreground="#A0A0A0" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="12" Margin="6,0,0,0">
+                <Run Text="共"></Run>
+                <Run Text="{Binding RowCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="White"></Run>
+                <Run Text=" 条记录， 其中Bid "></Run>
+                <Run Text="{Binding BidRowCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="White"></Run>
+                <Run Text="条，Ofr "></Run>
+                <Run Text="{Binding OfrRowCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="White"></Run>
+                <Run Text="条"></Run>
+            </TextBlock>
+        </StackPanel>-->
+
+        <!--<Component:SearchTextBox x:Name="Search_TextBox"  Grid.Row="0" Grid.Column="4" HorizontalAlignment="Left" 
+                                 SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalAlignment="Center" Width="120" Height="18" IsFuzzy="True"/>-->
+        <component:SearchTextBox x:Name="Search_TextBox" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="4"
+                                    AfterSearch="Search_TextBox_AfterSearch" SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalAlignment="Center"  Width="120" Height="18" FontSize="12"
+                                 FocusBorderBrush="{DynamicResource TextBox.Focus.Border}" MouseOverBorderBrush="{DynamicResource TextBox.MouseOver.Border}"/>
+
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4">
+            <TextBlock  FontStyle="Normal" Foreground="#A0A0A0" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="12"  Text="{Binding InSecurityId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBlock>
+        </StackPanel>
+
+        <component:ExDataGrid Grid.Row="1" Grid.ColumnSpan="10" x:Name="RfqOrderList_dg" ItemsSource="{Binding Mv.View, UpdateSourceTrigger=PropertyChanged}" FrozenColumnCount="3"
+                        VirtualizingPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="True"   EnableRowVirtualization="True" VirtualizingPanel.IsContainerVirtualizable="True" VirtualizingPanel.VirtualizationMode="Standard"
+                        RowHeaderWidth="0" Style="{StaticResource DefaultDataGridForQuery}"> 
+            <DataGrid.Columns>
+
+                <DataGridTemplateColumn Header="操作" Width="130" MinWidth="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,-4,0,0">
+                                    <Button x:Name="CancelOrderBtn" BorderThickness="0" Height="22" Width="54" Margin="0,0,0,2" Content="撤单" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{DynamicResource SelfCancelButton}" ToolTip="撤单" Visibility="{Binding IsCanChangeCancelOrder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource  visibilityConvertor}}" Command="{Binding DataContext.CancelOrderCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding QuoteReqID}" Padding="-2,0,0,0"></Button>
+                                    <Button x:Name="ChangeOrderPriceBtn" BorderThickness="0" Height="22" Width="54"  Margin="2,0,0,2" Content="改价" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{DynamicResource SelfCancelButton}" ToolTip="改价" Visibility="{Binding IsCanChangeCancelOrder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.ChangeOrderPriceCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding QuoteReqID}" Padding="-2,0,0,0"></Button>
+                                    <Button x:Name="ReplyOrderPriceBtn" BorderThickness="0" Height="22" Width="54" Margin="2,0,0,2" Content="回价" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{DynamicResource SelfCancelButton}" ToolTip="回价" Visibility="{Binding IsCanReplyRefuseOrder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.ReplyOrderPriceCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding QuoteReqID}" Padding="-2,0,0,0"></Button>
+                                    <Button x:Name="RefuseOrderBtn" BorderThickness="0" Height="22" Width="54"  Margin="2,0,0,2" Content="拒绝" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{DynamicResource SelfCancelButton}" ToolTip="拒绝" Visibility="{Binding IsCanReplyRefuseOrder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.RefuseOrderCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding QuoteReqID}" Padding="-2,0,0,0"></Button>
+                                </StackPanel>
+                            </Grid>
+                            <!--<DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="46">
+                                    <Setter TargetName="CancelOrderBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="ChangeOrderPriceBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="ReplyOrderPriceBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="RefuseOrderBtn" Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="47">
+                                    <Setter TargetName="CancelOrderBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="ChangeOrderPriceBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="ReplyOrderPriceBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="RefuseOrderBtn" Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="48">
+                                    <Setter TargetName="CancelOrderBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="ChangeOrderPriceBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="ReplyOrderPriceBtn" Property="IsEnabled" Value="False"/>
+                                    <Setter TargetName="RefuseOrderBtn" Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                             </DataTemplate.Triggers>-->
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTextColumn Header="Status" Width="30" MinWidth="30" Binding="{Binding IsOutTime}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+                <DataGridTemplateColumn  Header="状态" MinWidth="50" Width="Auto">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="rfqStatusTB" ToolTip="{Binding QuoteStatus, ConverterParameter=rfqstatus, Converter={StaticResource EnumTypeConvertor}}" Text="{Binding Status,ConverterParameter=rfqnormalstatus, Converter={StaticResource EnumTypeConvertor}}" Height="22"  Foreground="#D7D7D7"/>
+                            <DataTemplate.Triggers>
+                                <!--///待回复1 ==>30,31,32,37,42,40
+                                    ///已发送2 ==>33
+                                    ///已成交3 ==>34,36
+                                    ///已拒绝4 ==>38,44
+                                    ///已过期5 ==>39,45
+                                    ///* 报价中 46
+                                    ///* 撤单中 47
+                                    ///* 拒绝中 48-->
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="46">
+                                    <Setter TargetName="rfqStatusTB" Property="Text" Value="报价中"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="47">
+                                    <Setter TargetName="rfqStatusTB" Property="Text" Value="撤单中"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="48">
+                                    <Setter TargetName="rfqStatusTB" Property="Text" Value="拒绝中"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="38">
+                                    <Setter TargetName="rfqStatusTB" Property="Foreground" Value="#A0A0A0"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="44">
+                                    <Setter TargetName="rfqStatusTB" Property="Foreground" Value="#A0A0A0"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="39">
+                                    <Setter TargetName="rfqStatusTB" Property="Foreground" Value="#A0A0A0"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding QuoteStatus}" Value="45">
+                                    <Setter TargetName="rfqStatusTB" Property="Foreground" Value="#A0A0A0"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTemplateColumn Header="剩余请求时间" MinWidth="110" Width="Auto" HeaderStyle="{StaticResource DataGridColumnHeaderLeftStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="point_txt" Visibility="Collapsed"  Height="22" VerticalAlignment="Center">
+                                <Run Text="{Binding ShowRemainSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></Run>
+                            </TextBlock>
+                            <DataTemplate.Triggers>
+                                <MultiDataTrigger>
+                                    <!--0 30待回复 、1  32 已发送、5 34 已成交、8 36 已拒绝、C  40已过期 拒绝中 48  撤单中 47  报价中 46-->
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding QuoteStatus}" Value="30"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <!--0 待回复、1 已发送-->
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding QuoteStatus}" Value="32"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <!--0 待回复、1 已发送-->
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding QuoteStatus}" Value="31"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="33">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="34">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="35">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="44">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="36">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="40">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="46">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="47">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding QuoteStatus}" Value="48">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding ShowRemainSeconds}" Value="0">
+                                    <Setter TargetName="point_txt" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding AlertTime}" Value="1">
+                                    <Setter TargetName="point_txt" Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                                <DataTrigger  Binding="{Binding AlertTime}" Value="0">
+                                    <Setter TargetName="point_txt" Property="Foreground" Value="#FFFFFF"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="提示" MinWidth="130" Width="Auto" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding QuoteStatusDesc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" TextTrimming="CharacterEllipsis" FontSize="11">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTextColumn Header="IsSelfRfq" Binding="{Binding Info1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="10" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+                <!--<DataGridTextColumn Header="Info1" Binding="{Binding Info1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="80" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+                <!--<DataGridTextColumn Header="ValidUntilTime" Binding="{Binding ValidUntilTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="140" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+
+                <DataGridTextColumn Header="方向" Binding="{Binding Side,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}" Width="Auto" MinWidth="48" CellStyle="{StaticResource ColumnColorStyle}"/>
+
+                <DataGridTextColumn Header="代码" Binding="{Binding SecurityID, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="80" Width="Auto" CellStyle="{StaticResource QueryDataGridCellStyle}" Foreground="#C29B4E"/>
+
+                <!--<DataGridTextColumn Header="IsSelfRfq" Binding="{Binding IsSelfRfq, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="40" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="40" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+
+                <DataGridTextColumn Header="简称" Width="Auto" MinWidth="112" Binding="{Binding Symbol}"  FontWeight="SemiBold" CellStyle="{StaticResource QueryDataGridCellStyle}" Foreground="#C29B4E"/>
+
+                <DataGridTemplateColumn Header="对手方机构" Width="2*" MinWidth="88" ClipboardContentBinding="{Binding CounterPartyName}" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartyName}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="对手交易员" Width="Auto" MinWidth="88" ClipboardContentBinding="{Binding CounterPartySubName}" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartySubName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="请求量(kw)"  Width="Auto" MinWidth="66" CellStyle="{StaticResource DataGridCellStyle1}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text ="{Binding OrderQty2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,0" Height="24">
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTemplateColumn Header="回复量(kw)"  Width="Auto" MinWidth="66" CellStyle="{StaticResource DataGridCellStyle1}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text ="{Binding OrderQty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,0" Height="24">
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTextColumn Header="回复价(%)"  Binding="{Binding Price,Converter={StaticResource numConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,ConverterParameter=''}"  Width="*" MinWidth="66" CellStyle="{StaticResource ColumnColorStyle}" />
+
+                
+                <DataGridTemplateColumn  Header="清算速度" Width="Auto" MinWidth="60" CellStyle="{StaticResource DataGridCellStyle1}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="point_txt" Margin="0,0,0,0" Height="24">
+                                <Run Text="{Binding SettlType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='settletype_rfq'}"></Run>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!--<DataGridTextColumn Header="RfqSettlType" Binding="{Binding RfqSettlType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="80" Width="Auto" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+                
+                <DataGridTemplateColumn Header="请求有效时间" MinWidth="78" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ValidUntilTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}" Tag="{Binding ValidUntilTime}" ToolTip="{Binding ValidUntilTime}" TextTrimming="CharacterEllipsis">
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="回复有效时间" MinWidth="78" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Info2,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}"   ToolTip="{Binding Info2}"   TextTrimming="CharacterEllipsis">
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTemplateColumn Header="本方交易员" MinWidth="88"  CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding UserName}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn  Header="渠道" Binding="{Binding Venues,ConverterParameter=rfqvenues, Converter={StaticResource EnumTypeConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="64" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+
+                <DataGridTextColumn  Header="清算类型"  Binding="{Binding ClearingMethod, ConverterParameter=clearingmethod, Converter={StaticResource EnumTypeConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="64" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+
+                <DataGridTextColumn Header="报价编号" Width="Auto" MinWidth="140" Binding="{Binding QuoteReqID}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <!--<DataGridTextColumn Header="StatusOrder" Width="Auto" MinWidth="40"  Binding="{Binding StatusOrder}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="IsOutTime" Width="Auto" MinWidth="40"  Binding="{Binding IsOutTime}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="RemainSeconds" Width="Auto" MinWidth="40"  Binding="{Binding RemainSeconds}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="UpdateTime" Width="Auto"  MinWidth="140" Binding="{Binding UpdateTime}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+
+                <DataGridTemplateColumn Header="更新时间" Width="Auto" MinWidth="60"  CellStyle="{StaticResource QueryDataGridCellStyle}" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}" ToolTip="{Binding UpdateTime}" TextTrimming="CharacterEllipsis">
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </component:ExDataGrid>
+
+        <!--<local:PageControl x:Name="EMSPageControl" Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Right" 
+                               PageChanged="EMSPageControl_PageChanged"
+                               Visibility="{Binding EMSPageVisible,Converter={StaticResource visibilityConvertor}}"/>-->
+        <fUI:LoadingMask x:Name="positionloadMask" Visibility="Collapsed" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"></fUI:LoadingMask>
+    </Grid>
+</UserControl>

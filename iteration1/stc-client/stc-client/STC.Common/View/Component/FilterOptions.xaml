@@ -1,0 +1,44 @@
+﻿<UserControl x:Class="STC.Common.View.Component.FilterOptions"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" >
+    <!--<UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>-->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <RadioButton x:Name="Fitler_All_ToggleButton" Content="ALL" Width="40" Height="24"
+                    VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                    IsChecked="True" Style="{DynamicResource ShowAllOangleRadioButtonStyle}" Checked="Fitler_All_ToggleButton_Checked" Unchecked="Fitler_All_ToggleButton_Unchecked"/>
+        <ListBox x:Name="FilterListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" Grid.Column="1" 
+                SelectionChanged="FilterListBox_SelectionChanged">
+            <ListBox.Template>
+                <ControlTemplate>
+                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource InnerBoardFilterListBoxItemDodgerBlueStyle}">
+                    <Setter Property="MinWidth" Value="32"/>
+                    <Setter Property="Height" Value ="24"/>
+                    <Setter Property="Margin" Value ="2 0 0 0"/>
+                    <Setter Property="Padding" Value="8 0 8 0"/>
+                    <Setter Property="Content" Value="{Binding Title}"/>
+                    <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <!--<ListBoxItem Content="销交" Tag="0001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+            <ListBoxItem Content="做市" Tag="0010" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />-->
+        </ListBox>
+    </Grid>
+</UserControl>

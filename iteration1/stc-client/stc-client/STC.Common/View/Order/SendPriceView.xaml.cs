@@ -1,0 +1,615 @@
+﻿using STC.Common.Data;
+using STC.Common.Utils;
+using STC.Common.View.UI;
+using STC.Common.ViewModel.Order;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace STC.Common.View.Order
+{
+    /// <summary>
+    /// SendPriceView.xaml 的交互逻辑
+    /// </summary>
+    public partial class SendPriceView : Window
+    {
+        private SendPriceViewModel viewModel = null;
+
+        public SendPriceView()
+        {
+            InitializeComponent();
+            CommonUtils.SetIcon(TitleIcon);
+            viewModel = new SendPriceViewModel();
+
+            crossView.onTabSelectionChange += CrossView_onTabSelectionChange;
+
+        }
+
+        private void CrossView_onTabSelectionChange(int obj)
+        {
+            viewModel.SelectCrossViewTabIndex = obj;
+        }
+
+        public SendPriceView(PriceMatchParam priceMatchParam)
+        {
+            InitializeComponent();
+            CommonUtils.SetIcon(TitleIcon);
+            datePicker.BlackoutDates.AddDatesInPast();
+
+            this.Icon = LocalEnv.ServerInfo.AppImage;
+
+
+            viewModel = new SendPriceViewModel();
+            this.DataContext = viewModel;
+            viewModel.Init(this, priceMatchParam);
+
+            //            string ss = Newtonsoft.Json.JsonConvert.SerializeObject(priceMatchParam);
+            crossView.onTabSelectionChange += CrossView_onTabSelectionChange;
+            //this.Activated += SendPriceView_Activated;
+        }
+
+
+        public SendPriceView(string security, bool isBid)
+        {
+            InitializeComponent();
+            CommonUtils.SetIcon(TitleIcon);
+            datePicker.BlackoutDates.AddDatesInPast();
+
+            this.Icon = LocalEnv.ServerInfo.AppImage;
+
+            viewModel = new SendPriceViewModel();
+            this.DataContext = viewModel;
+            if (security.ToLower() == "tradebook")
+            {
+                security = "";
+                Search_TextBox.HintText = "请输入债券代码";
+            }
+
+            //请输入债券代码
+            viewModel.Init(this, security, isBid);
+            
+            crossView.onTabSelectionChange += CrossView_onTabSelectionChange;
+            //this.Activated += SendPriceView_Activated;
+        }
+
+        private void SetPriceFocus()
+        {
+            // 选择最后位数
+            int pos = PriceTxt.Text.IndexOf('.');
+            if (pos > 0)
+            {
+                int sellength = PriceTxt.Text.Length - pos + 1;
+                PriceTxt.Focus();
+                PriceTxt.SelectionStart = pos + 1;
+                PriceTxt.SelectionLength = sellength;
+            }
+            else
+            {
+                PriceTxt.Focus();
+            }
+        }
+
+        private void SendPriceView_Activated(object sender, EventArgs e)
+        {
+            SetPriceFocus();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            this.DragMove();
+        }
+
+        private void Window_Unloaded(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                viewModel.clear();
+                viewModel.Dispose();
+            });
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                //判断用户的按键是否为Enter
+                if (Keyboard.IsKeyDown(Key.Enter))
+                {
+                    if (viewModel != null && viewModel.OkCommand.CanExecute(null))
+                        viewModel.OkCommand.Execute(null);
+
+                }
+            }
+        }
+
+        private void Window_Deactivated(object sender, EventArgs e)
+        {
+            if (this.viewModel != null)
+            {
+                viewModel.onWindowActivated(1);
+            }
+        }
+
+        private void Window_Activated(object sender, EventArgs e)
+        {
+            if (this.viewModel != null)
+            {
+                viewModel.onWindowActivated(2);
+            }
+        }
+
+        private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox tb = sender as TextBox;
+            string tag = string.Empty;
+            // tag 改变用途
+            if (tb.Name == "AmountTxt")
+            {
+                tag = "1";
+            }
+            else if ((tb.Name == "PriceTxt") || (tb.Name == "netPrice"))
+            {
+                tag = "2";
+            }
+            else
+            {
+                tag = tb.Tag as string;
+            }
+
+            Regex regex = null;
+
+            if (tag == "1" || tag == "3" || tag == "4")//量
+                regex = new Regex("^[0-9]+$");
+            else if (tag == "2")
+                regex = new Regex("^[0-9.-]+$");
+
+
+            e.Handled = !regex.IsMatch(e.Text);
+
+            if (e.Handled)
+                return;
+
+
+
+            int max = 1000;
+            int min = -1;
+
+            if (tag == "1")//量
+            {
+                max = 1000;
+                min = 1;
+            }
+            else if (tag == "2")//价格
+            {
+                max = 9999;
+                min = -100;
+            }
+            else if (tag == "3")//过期时间
+            {
+                max = 120;
+                min = 1;
+            }
+            //else if (tag == "4")//随机渠道
+            //{
+            //    max = viewModel.RandomMax;
+            //    min = 1;
+            //}
+
+            string text = tb.Text;
+
+            if ((text.Contains(".") && e.Text.Equals("."))
+                || (text.Contains("-") && e.Text.Equals("-")))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            string selectTxt = tb.SelectedText;
+            decimal d = 0;
+
+            if (selectTxt.Length > 0)
+            {
+                string start = text.Substring(0, tb.SelectionStart);
+                string end = text.Substring(tb.SelectionStart + selectTxt.Length, (text.Length - tb.SelectionStart - selectTxt.Length));
+                string newNum = string.Format("{0}{1}{2}", start, e.Text, end);
+
+                if (decimal.TryParse(newNum, out d))
+                {
+                    if (d > max)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+                return;
+            }
+
+            int inputIndex = tb.SelectionStart;
+            text = text.Insert(inputIndex, e.Text);
+            if (decimal.TryParse(text, out d))
+            {
+                if (d > max)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
+                if (tag == "1") //量
+                {
+                    if (text != d.ToString())
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+
+                }
+            }
+
+            if (decimal.TryParse(text, out d) && (d > max || d < min))
+            {
+                e.Handled = true;
+                return;
+            }
+            
+            string[] arr = text.Split(new string[] { "." }, StringSplitOptions.RemoveEmptyEntries);
+            if (arr != null && arr.Length > 1)
+            {
+                if (!CommonUtils.IsBrokerSecurity(viewModel.SendPriceItem.Security) && tb.Name == "netPrice")
+                {
+                    if (decimal.TryParse(arr[1], out d) && arr[1].Length > 3)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (decimal.TryParse(arr[1], out d) && arr[1].Length > 4)
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+            }
+
+
+            e.Handled = false;
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            TextBox tBox = sender as TextBox;
+
+            if ((e.KeyboardDevice.IsKeyDown(Key.LeftCtrl) || e.KeyboardDevice.IsKeyDown(Key.RightCtrl)) && e.KeyboardDevice.IsKeyDown(Key.V) || e.KeyboardDevice.IsKeyDown(Key.Space))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            // 增加 ↑↓来改变价格
+            if (tBox.Name.ToString() == "PriceTxt")
+            {
+                if (e.KeyboardDevice.IsKeyDown(Key.Up))
+                {
+                    viewModel.AddPriceCommand.Execute(this);
+                    e.Handled = true;
+                    return;
+                }
+
+                if (e.KeyboardDevice.IsKeyDown(Key.Down))
+                {
+                    viewModel.ReducePriceCommand.Execute(this);
+                    e.Handled = true;
+                    return;
+                }
+            }
+            else if (tBox.Name.ToString() == "AmountTxt")
+            {
+
+                if (e.KeyboardDevice.IsKeyDown(Key.Up))
+                {
+                    viewModel.AddAmountCommand.Execute(this);
+                    e.Handled = true;
+                    return;
+                }
+
+                if (e.KeyboardDevice.IsKeyDown(Key.Down))
+                {
+                    viewModel.ReduceAmountCommand.Execute(this);
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            if (!(e.KeyboardDevice.IsKeyDown(Key.LeftCtrl) || e.KeyboardDevice.IsKeyDown(Key.RightCtrl)) && (e.KeyboardDevice.IsKeyDown(Key.Enter)))
+            {
+                //AmountTxt.Focus();
+                //// 选择最后位数
+                //int pos = AmountTxt.Text.Length;
+                //if (pos > 0)
+                //{
+                //    int sellength = AmountTxt.Text.Length;
+                //    AmountTxt.SelectionStart = 0;
+                //    AmountTxt.SelectionLength = sellength;
+                //}
+                e.Handled = true;
+                return;
+            }
+            // 判读是否是功能键
+            // tag 改变用途
+            string tag = string.Empty;
+
+
+            // 功能键有效性检查
+            string text = tBox.Text;
+
+            if (e.Key == Key.Delete || e.Key == Key.Back)
+            {
+                decimal d = 0;
+                if (text.Length > 0)
+                {
+                    if (!decimal.TryParse(text, out d))
+                    {
+                        return;
+                    }
+                }
+
+
+                // tag 改变用途
+                if (tBox.Name == "AmountTxt")
+                {
+                    tag = "1";
+                }
+                else if ((tBox.Name == "PriceTxt") || (tBox.Name == "netPrice"))
+                {
+                    tag = "2";
+                }
+                else
+                {
+                    tag = tBox.Tag as string;
+                }
+                int max = 1000;
+                int min = 0;
+
+                if (tag == "1")//量
+                {
+                    max = 1000;
+                    min = 0;
+                }
+                else if (tag == "2")//价格
+                {
+                    max = 9999;
+                    min = -100;
+                }
+                else if (tag == "3")//过期时间
+                {
+                    max = 120;
+                    min = 1;
+                }
+                //else if (tag == "4")//随机渠道
+                //{
+                //    max = viewModel.RandomMax;
+                //    min = 1;
+                //}
+
+                if (decimal.TryParse(text, out d) && (d > max || d < min))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        private void AmountTxt_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox tbAmount = sender as TextBox;
+            // tag 改变用途
+            string tag = "1";
+            int intAmount = 0;
+            int.TryParse(tbAmount.Text, out intAmount);
+
+            int max = 1000;
+            int min = 0;
+
+            if (tag == "1")//量
+            {
+                max = 1000;
+                min = 0;
+            }
+
+            if (intAmount > max || intAmount < min)
+            {
+                viewModel.SendPriceEnable = false;
+            }
+            else
+            {
+                viewModel.SendPriceEnable = true;
+            }
+
+            viewModel.SetAmountTxtSelectIndex(tbAmount.Text);
+            
+            viewModel.ResetQtyWarn(tag, intAmount.ToString());
+        }
+
+        private void Search_TextBox_AfterSearch(Model.Base.SimpleBondsInfoPo obj)
+        {
+            if (string.IsNullOrEmpty(Search_TextBox.SearchText))
+            {
+                Search_TextBox.SearchText = string.Empty;
+                return;
+            }
+
+            viewModel.SearchText = Search_TextBox.SearchText;
+        }
+
+        private void ValidMinute_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.KeyboardDevice.IsKeyDown(Key.LeftCtrl) || e.KeyboardDevice.IsKeyDown(Key.RightCtrl)) && e.KeyboardDevice.IsKeyDown(Key.V) || e.KeyboardDevice.IsKeyDown(Key.Space))
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        private void ValidMinute_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox tb = sender as TextBox;
+
+            Regex regex = null;
+            regex = new Regex("^[0-9]+$");
+            e.Handled = !regex.IsMatch(e.Text);
+            if (e.Handled)
+                return;
+
+            string tag = tb.Tag as string;
+            int max = 500;
+            int min = (tag == "0") ? 0 : 1;
+
+            if (tag == "0")// [0-60)
+            {
+                max = 59;
+            }
+            else if (tag == "1") // [0-500]
+            {
+                min = 0;
+                max = 500;
+            }
+            else if (tag == "2") // (0-24]
+            {
+                max = 24;
+            }
+            else if (tag == "3") // [0-60)
+            {
+                min = 0;
+                max = 59;
+            }
+            string text = tb.Text;
+
+            if ((text.Contains(".") && e.Text.Equals(".")) || (text.Contains("-") && e.Text.Equals("-")))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            string selectTxt = tb.SelectedText;
+            decimal d = 0;
+            if (selectTxt.Length == text.Length)
+            {
+                if (decimal.TryParse(e.Text, out d) && (d > max || d < min))
+                {
+                    e.Handled = true;
+                    return;
+                }
+                return;
+            }
+
+            if (selectTxt.Length > 0)
+            {
+                string start = text.Substring(0, tb.SelectionStart);
+                string end = text.Substring(tb.SelectionStart + selectTxt.Length, (text.Length - tb.SelectionStart - selectTxt.Length));
+                string newNum = string.Format("{0}{1}{2}", start, e.Text, end);
+
+                if (decimal.TryParse(newNum, out d) && (d > max || d < min))
+                {
+                    e.Handled = true;
+                    return;
+                }
+                return;
+            }
+
+            int inputIndex = tb.SelectionStart;
+            text = text.Insert(inputIndex, e.Text);
+
+
+            if (decimal.TryParse(text, out d) && (d > max || d < min))
+            {
+                e.Handled = true;
+                return;
+            }
+        }
+
+        private void PART_Button_Click(object sender, RoutedEventArgs e)
+        {
+            bool ifLeft = SystemParameters.MenuDropAlignment;
+            if (ifLeft)
+            {
+                Button btn = (Button)sender;
+                Grid g = btn.Parent as Grid;
+                if (g != null)
+                {
+                    Popup popup = g.FindName("PART_Popup") as Popup;
+                    popup.HorizontalOffset = 103;
+                }
+            }
+        }
+
+        private void bdSetleBox_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            SettlTypeCombox.IsDropDownOpen = !SettlTypeCombox.IsDropDownOpen;
+            if (viewModel != null)
+            {
+                viewModel.SettleBoxIndex = -1;
+                viewModel.AddOneOpenedTag = "1";
+            }
+        }
+
+        private void bdTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            //cbSettle2.IsDropDownOpen = !cbSettle2.IsDropDownOpen;
+        }
+
+        private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            cbSettle.IsDropDownOpen = !cbSettle.IsDropDownOpen;
+        }
+
+        private void dgPrice_Unloaded(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                Card.PriceAndOrderView po = (Card.PriceAndOrderView)dgPrice;
+                po.CloseViewModel();
+            }));
+        }
+
+        public void SetButtonEnable(string btnname, bool isenable)
+        {
+            switch (btnname.ToLower())
+            {
+                case "bidbtn":
+                    this.btnBid.IsEnabled = isenable;
+                    break;
+                case "ofrbtn":
+                    this.btnOfr.IsEnabled = isenable;
+                    break;
+                case "search_textbox":
+                    this.Search_TextBox.IsEnabled = isenable;
+                    break;
+            }
+
+        }
+
+        private void AccountUserCbc_DropDownOpened(object sender, EventArgs e)
+        {
+
+        }
+
+        private void AccountUserCbc_SourceUpdated(object sender, DataTransferEventArgs e)
+        {
+
+        }
+    }
+}

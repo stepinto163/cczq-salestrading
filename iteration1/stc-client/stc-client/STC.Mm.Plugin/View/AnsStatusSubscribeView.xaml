@@ -1,0 +1,79 @@
+﻿<UserControl x:Class="STC.Mm.Plugin.View.AnsStatusSubscribeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mm.Plugin.View"
+             mc:Ignorable="d"  Width="500">
+    <!--Border BorderBrush="#114D48" BorderThickness="2" CornerRadius="2"-->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2"/>
+                <ColumnDefinition Width="32"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="10"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            
+            <Border Background="#133F36" Grid.ColumnSpan="4">
+                <TextBlock  Text="图列说明" VerticalAlignment="Center" Margin="10 0 0 0" Foreground="LightGoldenrodYellow"></TextBlock>
+            </Border>
+
+
+            <Image Grid.Row="1" Grid.Column="1"   Source="/STC.Mm.Plugin;component/Images/已达标.png" Stretch="None" Margin="0 15 0 0" VerticalAlignment="Top"/>
+            <TextBlock Grid.Row="1" Grid.Column="2" TextWrapping="Wrap" Margin="0 15 0 0">
+            <Run Foreground="LightGoldenrodYellow" Text="[ 已达标 ]: 最低做市义务已达到"/>
+            <Run Foreground="#828282" Text=" (今日有效报价时长&gt;=4h, 且未达标之前单次断报时长均&lt;30min)"/>
+            </TextBlock>
+
+            <Image Grid.Row="2" Grid.Column="1"  Source="/STC.Mm.Plugin;component/Images/可达标.png" Stretch="None" Margin="0 15 0 0" VerticalAlignment="Top"/>
+            <TextBlock Grid.Row="2" Grid.Column="2" TextWrapping="Wrap"  Margin="0 15 0 0">
+            <Run Foreground="LightGoldenrodYellow" Text="[ 可达标 ]: 最低做市义务未达到，且今日还能30分钟以上buffer可安全达到"/>
+            <Run Foreground="#828282" Text=" (今日有效报价时长&lt;4h, 且今日有效报价时长+剩余可报时长-30min&gt;=4h)"/>
+            </TextBlock>
+
+            <Image Grid.Row="3" Grid.Column="1"  Source="/STC.Mm.Plugin;component/Images/危险.png" Stretch="None" Margin="0 15 0 0" VerticalAlignment="Top"/>
+            <TextBlock Grid.Row="3" Grid.Column="2" TextWrapping="Wrap"  Margin="0 15 0 0">
+            <Run Foreground="LightGoldenrodYellow" Text="[ 危险 ]: 最低做市义务未达到，今日还能达到，但是情况危险"/>
+            <LineBreak/>
+            <Run Foreground="#828282" Text=" (情况1: 今日还能达到，但buffer&lt;30min。即今日有效报价时长+剩余可报时长&gt;=4h且今日有效时长+剩余可报时长-30min&lt;4h"/>
+             <LineBreak/>
+            <Run Foreground="#828282" Text=" 情况2: 今日还能达到，但buffer也&gt;30min，但本次单次断报时长&gt;=15min)"/>
+            </TextBlock>
+
+            <Image Grid.Row="4" Grid.Column="1"  Source="/STC.Mm.Plugin;component/Images/失败.png" Stretch="None" Margin="0 15 0 0" VerticalAlignment="Top"/>
+            <TextBlock Grid.Row="4" Grid.Column="2" TextWrapping="Wrap"  Margin="0 15 0 0">
+            <Run Foreground="LightGoldenrodYellow" Text="[ 失败 ]: 最低做市义务未达到，且今日无法到达"/>
+            <LineBreak/>
+            <Run Foreground="#828282" Text=" (情况1: 未入围债券都为“失败”，界面不展示这些债券 *特殊情况除外；"/>
+             <LineBreak/>
+            <Run Foreground="#828282" Text=" 情况2: 对于某只已入围债券，今日有效报价时长+剩余可报时长&lt;4h"/>
+                 <LineBreak/>
+            <Run Foreground="#828282" Text=" 情况3: 对于某只已入围债券，未达标之前单次断报时长&gt;=30min)"/>
+            </TextBlock>
+
+            <Image Grid.Row="5" Grid.Column="1"  Source="/STC.Mm.Plugin;component/Images/暂停做市.png" Stretch="None" Margin="0 15 0 0" VerticalAlignment="Top"/>
+            <TextBlock Grid.Row="5" Grid.Column="2" TextWrapping="Wrap" Margin="0 15 0 0">
+            <Run Foreground="LightGoldenrodYellow" Text="[ 暂停标记 ]: 做市债券若此刻没有进行双边报价，则后加入“暂停”标志"/>
+                 <LineBreak/>
+            <Run Foreground="#828282" Text="对于某只已入围债券，未发出《有效报价》"/>
+        </TextBlock>
+
+            <TextBlock Grid.Row="6" Grid.Column="2" TextWrapping="Wrap" Margin="0 15 0 15">
+            <Run Foreground="LightGoldenrodYellow" Text="[ 安全只数 ]: 处于“已达标” “可达标” “危险中未暂停报价”的债券，为当前时刻相对安全的债券，这些债券的只数称为“安全只数”"/>
+            </TextBlock>
+        </Grid>
+        
+        
+    <!--/-->
+    
+</UserControl>

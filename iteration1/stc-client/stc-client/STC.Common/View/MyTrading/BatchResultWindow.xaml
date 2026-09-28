@@ -1,0 +1,88 @@
+﻿<comp:WindowBase x:Class="STC.Common.View.MyTrading.BatchResultWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.MyTrading"
+            xmlns:comp="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" Title="风控检查"  SizeToContent="Height"    
+             x:Name="BatchResultWin" Background="Black"
+            ResizeMode="NoResize" 
+            Width="300"
+            MinboxEnable="False" MaxboxEnable="False" 
+            WindowStartupLocation="CenterScreen"
+            >
+    <Window.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="50"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="70"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition  Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="70"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="[风险警示]" Grid.Column="1" VerticalAlignment="Center" Foreground="White"/>
+
+        <Border  Height="26"   Grid.Row="1" Grid.Column="1" >
+            <TextBlock Text="{Binding TotalCount, StringFormat={}你已提交 {0} 条订单}" VerticalAlignment="Center" Foreground="White"/>
+        </Border>
+
+        <Border  Height="26" Grid.Row="2" Grid.Column="1" x:Name="success_part" Visibility="{Binding SuccessVisibility}">
+            <TextBlock VerticalAlignment="Center" Foreground="White">
+            其中 <Run Foreground="ForestGreen" Text="{Binding SuccessCount}"/><Run Foreground="ForestGreen" Text="条"/> 已报价成功
+            </TextBlock>
+        </Border>
+
+        <StackPanel Height="26"  Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal"  Visibility="{Binding ShowExceptionLinkVisibility}">
+            <TextBlock Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Run Foreground="OrangeRed" Text="{Binding ExceptionCount}"/><Run Foreground="OrangeRed" Text="条"/> 报价失败
+            </TextBlock>
+            <TextBlock Margin="10 0 0 0" VerticalAlignment="Center">
+                <Hyperlink Foreground="#FF20D18D" Command="{Binding ShowExceptionCommand}"
+                           CommandParameter="{Binding ElementName=BatchResultWin}">查看</Hyperlink>
+            </TextBlock>
+
+        </StackPanel>
+
+        <StackPanel Height="26"  Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal"  Visibility="{Binding ShowLinkVisibility}">
+            <TextBlock Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Run Foreground="OrangeRed" Text="{Binding ProhibitCount}"/><Run Foreground="OrangeRed" Text="条"/> 报价, 触发风控禁止
+            </TextBlock>
+            <TextBlock Margin="10 0 0 0" VerticalAlignment="Center">
+                <Hyperlink Foreground="#FF20D18D" Command="{Binding ShowProhibitCommand}"
+                           CommandParameter="{Binding ElementName=BatchResultWin}">查看</Hyperlink>        
+            </TextBlock>
+
+        </StackPanel>
+
+        <StackPanel Height="26"   Grid.Row="5" Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal" Visibility="{Binding DealBtnVisibility}">
+            <TextBlock Foreground="White" VerticalAlignment="Center"> 
+             <Run Foreground="OrangeRed" Text="{Binding WarnCount}"/><Run Foreground="OrangeRed" Text="条"/> 报价, 触发风控预警
+            </TextBlock>
+            <Button Style="{StaticResource RedButtonStyle}" Width="30" Height="20" Content="处理" Margin="10 0 0 0"
+                    
+                    Command="{Binding DealCommand}"
+                    CommandParameter="{Binding ElementName=BatchResultWin}"/>
+        </StackPanel>
+      
+        <TextBlock Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" Foreground="White">
+            请检查要素
+        </TextBlock>
+    </Grid>
+</comp:WindowBase>

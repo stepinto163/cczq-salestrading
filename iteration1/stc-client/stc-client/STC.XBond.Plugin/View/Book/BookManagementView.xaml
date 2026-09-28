@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Book.BookManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:utils="clr-namespace:STC.XBond.Plugin.Utils"
+             xmlns:command ="clr-namespace:STC.XBond.Plugin.Command"
+             Background="#141414"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1420">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Margin="5,5,5,5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Background="#282828" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                <RadioButton x:Name="booksRB" 
+                             Style="{StaticResource BoxRadioButton}" Margin="5,0,5,0" 
+                             IsChecked="True"
+                             Click="booksRB_Click">今日交易包</RadioButton>
+                <RadioButton x:Name="historyBooksRB" 
+                             Style="{StaticResource BoxRadioButton}" 
+                             Margin="0,0,5,0"
+                             Click="historyBooksRB_Click">历史交易包</RadioButton>
+            </StackPanel>
+            <Button Grid.Column="2" x:Name="PopupBtn" Style="{StaticResource PopupButton}" HorizontalAlignment="Right" Width="12" Height="12" Margin="0,0,10,0"
+                    Command="{StaticResource PopupWindowCommand}" CommandParameter="{x:Static command:PopupTypeEnum.BookManagement}"/>
+        </Grid>
+        <Frame Name="bookManagetmentFrame" NavigationUIVisibility="Hidden" Grid.Row="1">
+            <Frame.Content>
+                <Grid>
+                </Grid>
+            </Frame.Content>
+        </Frame>
+    </Grid>
+</UserControl>

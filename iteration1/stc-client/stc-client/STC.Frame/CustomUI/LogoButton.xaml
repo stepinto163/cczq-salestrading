@@ -1,0 +1,146 @@
+﻿<UserControl x:Class="BDB.Frame.CustomUI.LogoButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Frame.CustomUI"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300" Width="190" Height="42">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/BDB.Common;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+
+            <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                <Setter Property="Background" Value="#000000"/>
+                <Setter Property="Height" Value="32"/>
+                <Style.Triggers>
+                    
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#000000"/>
+                        <Setter Property="BorderBrush" Value="#000000"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#000000"/>
+                        <Setter Property="BorderBrush" Value="#000000"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <!--<MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>-->
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="None"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="AlternationCount" Value="1"/>
+                <Setter Property="Height" Value="Auto"/>
+                
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell" >
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ToolTipService.ToolTip" Value="{Binding ToolText}"/>
+                            <Style.Triggers >
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#000000"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+
+
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    
+    <Grid>
+        <Button x:Name="btnMenu" Style="{StaticResource MainPageImageMenuButton}" HorizontalAlignment="Left" Width="150" Height="45"
+                Click="btnMenu_Click" PreviewMouseDown="popMenu_PreviewMouseDown" Margin="2, 0, 2, 2"/>
+
+        <!--<TextBlock x:Name="tbVersion" Foreground="{StaticResource ColorBrush.While}" Text="V1.0.0" Panel.ZIndex="1"
+                   FontSize="8" Margin="0, 25, 37, 10"
+                           Width="35" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Height="10"></TextBlock>-->
+
+        <Popup x:Name="popMenu" PlacementTarget="{Binding ElementName=btnMenu}"
+                   StaysOpen="False" Width="190" MaxHeight="420" Placement="Bottom"
+                   PopupAnimation="Slide" AllowsTransparency="False">
+            <Grid Background="#000000">
+                <DataGrid x:Name="dgMenu" Width="190"
+                                  Background="#000000"
+                                  ItemsSource="{Binding}" RowStyle="{StaticResource DataGridRowStyle}"
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"  
+                                  MouseUp="dgMenu_MouseUp"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  Style="{StaticResource DataGridStyle}"
+                          >
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+
+                        <DataGridTemplateColumn Width="190">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Width="190" BorderThickness="2, 2, 2, 0" BorderBrush="#32136C5E" Background="#000000" MouseEnter="Border_MouseEnter" MouseLeave="Border_MouseLeave">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="7"></ColumnDefinition>
+                                                <ColumnDefinition></ColumnDefinition>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Rectangle Margin="3, 0, 0, 0" MouseEnter="Rectangle_MouseEnter" MouseLeave="Rectangle_MouseLeave" Width="4" Height="32" Grid.Column="0">
+                                                
+                                            </Rectangle>
+
+                                            <TextBlock Grid.Column="1" Text="{Binding Path=Txt}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10, 0, 0, 0"
+                                                       FontFamily="{StaticResource IDCFontFamily.YaHei}" Foreground="#FFEBC8"
+                                                       FontSize="14" MouseEnter="TextBlock_MouseEnter" MouseLeave="TextBlock_MouseLeave">
+                                            </TextBlock>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                                
+                                
+                                
+                                
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Popup>
+    </Grid>
+</UserControl>

@@ -1,0 +1,321 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.Setting.View"
+             xmlns:localmodel="clr-namespace:STC.XBond.Plugin.Setting.ViewModel"
+             xmlns:commonmodel="clr-namespace:STC.Common.Model.Admin;assembly=STC.Common"
+             x:Class="STC.XBond.Plugin.Setting.View.RoleRightsAnagementView"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="300" Initialized="UserControl_Initialized" >
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/ChanelStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="commonBar" TargetType="{x:Type ScrollBar}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Style.Triggers>
+                    <Trigger Property="Orientation" Value="Horizontal">
+                        <Setter Property="Width" Value="Auto"/>
+                        <Setter Property="Height" Value="16" />
+                        <Setter Property="Template"
+                        Value="{StaticResource HorizontalScrollBar}" />
+                    </Trigger>
+                    <Trigger Property="Orientation" Value="Vertical">
+                        <Setter Property="Width" Value="16"/>
+                        <Setter Property="Height" Value="Auto" />
+                        <Setter Property="Template"
+                        Value="{StaticResource VerticalScrollBar}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="CanContentScroll" Value="true"/>
+            </Style>
+            <!-- 设置按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="lockButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="../Images/stc_icon_ranking_normal.png"/>
+                                    </Border.Background>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="../Images/stc_icon_ranking_hover.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="../Images/stc_icon_ranking_press.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <!--<Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Control.Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="../Images/stc_icon_ranking_disabled.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ListBoxStyle" TargetType="{x:Type ListBox}">
+                <Setter Property="Foreground" Value="#A0A0A0"/>
+                <Setter Property="Background" Value="#1E1E1E"/>
+                <Setter Property="BorderBrush" Value="#1E1E1E"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="ItemContainerStyle" Value="{DynamicResource ListBoxItemStyle}"/>
+                <!--<Setter Property="ItemTemplate">
+                    <Setter.Value>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock Text="{Binding Value}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>-->
+            </Style>
+            <Style x:Key="ListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!--<Setter Property="Padding" Value="0"/>-->
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <!--<Setter Property="Padding" Value="-8,-8,0,0"/>-->
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="#3C3C3C" CornerRadius="1"  Margin="2,0,0,0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="Cp" Margin="3,3,0,0" TextElement.Foreground="{TemplateBinding Foreground}" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" TextElement.FontSize="{TemplateBinding FontSize}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedActive.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedActive.Border}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+        
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="65"/>
+        </Grid.RowDefinitions>
+        <!--Margin="10,10,20,10"-->
+        <Border Padding="10,10,0,0" Margin="0,0,20,0" BorderThickness="1" BorderBrush="{StaticResource ColorBrush.Gray19}" CornerRadius="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="20"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="角色权限管理" Grid.Row="0" HorizontalAlignment="Left" FontSize="10" Foreground="#A0A0A0"/>
+                    <Button Name="btDeleteRole" Click="btDeleteRole_Click" Grid.Column="1" HorizontalAlignment="Right" Height="16" Width="16" Style="{StaticResource DeleteButton}"></Button>
+                    <!--<Button Grid.Column="2" HorizontalAlignment="Left" Margin="5, 0, 0, 0" HorizontalAlignment="Left" VerticalAlignment="Top" Content="保存" Height="24" Width="100" Foreground="#FFFFFF" Style="{StaticResource SmallConfirmBtnStyle}"></Button>-->
+                    <Button x:Name="btnAddRole" Grid.Column="2" Height="16" Width="16" Click="btnAddRole_Click" Style="{StaticResource MainPageImageAddButton}"></Button>
+                </Grid>
+                <ListBox x:Name="wrPanel" Height="24" Grid.Row="1" Grid.ColumnSpan="2" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Left" SelectionMode="Extended"
+                ScrollViewer.CanContentScroll="True"  Style="{StaticResource ListBoxStyle}"  Foreground="#A0A0A0" AlternationCount="11" SelectionChanged="wrPanel_SelectionChanged">
+                    <ListBox.Template>
+                        <ControlTemplate>
+                            <WrapPanel Background="{TemplateBinding Background}" Orientation="Vertical" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                        </ControlTemplate>
+                    </ListBox.Template>
+                </ListBox>
+               
+                <Grid Grid.Row="2" Margin="0,20,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="30"/>
+                        <ColumnDefinition Width="20"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="权限设置" Grid.Row="0" FontSize="10" HorizontalAlignment="Left" Foreground="#A0A0A0"/>
+                    <!--<Button Name="btDeleteRole" Click="btDeleteRole_Click" Grid.Column="1" HorizontalAlignment="Right" Height="16" Width="16" Style="{StaticResource DeleteButton}"></Button>
+            -->
+                    <!--<Button Grid.Column="2" HorizontalAlignment="Left" Margin="5, 0, 0, 0" HorizontalAlignment="Left" VerticalAlignment="Top" Content="保存" Height="24" Width="100" Foreground="#FFFFFF" Style="{StaticResource SmallConfirmBtnStyle}"></Button>-->
+                    <!--
+            <Button x:Name="btnAddRole" Grid.Column="2" Height="16" Width="16" Click="btnAddRole_Click" Style="{StaticResource MainPageImageAddButton}"></Button>-->
+                </Grid>
+
+                <StackPanel Grid.Row="3" Orientation="Vertical" Height="280" VerticalAlignment="Top" Grid.ColumnSpan="2">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="300"/>
+                        </Grid.ColumnDefinitions>
+                        <TreeView Name="TreeView_NodeList" HorizontalAlignment="Left"  Grid.Column="0" Width="265" Height="280" 
+                                  BorderThickness="1"  Margin="10,0,10,35"  Background="#323232" Foreground="Red" 
+                                  ScrollViewer.VerticalScrollBarVisibility="Visible" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
+                            <TreeView.Resources>
+                                <HierarchicalDataTemplate  DataType="{x:Type localmodel:Nodes}" ItemsSource="{Binding Childs,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
+                                        <!--<CheckBox x:Name="cbDefault" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" 
+                                          Click="cbDefault_Click"  Checked="cbDefault_Checked" Unchecked="cbDefault_Unchecked"
+                              Margin="10, 5, 0, 0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  
+                              Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" 
+                            IsChecked="{Binding IsSelected,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" FontSize="{StaticResource SmallContentFontSize}" Foreground="{StaticResource ColorBrush.While}" 
+                                          Content="{Binding Modulename,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Modulename,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                                </CheckBox>-->
+                                        <CheckBox x:Name="cbDefault" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" 
+                                          Click="cbDefault_Click" 
+                              Margin="10, 5, 0, 0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  
+                              Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" 
+                            IsChecked="{Binding IsSelected,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center"  
+                                       IsEnabled="{Binding IsEnabled}"  >
+                                        </CheckBox>
+                                        <TextBlock Margin="5, 5, 0, 0" Text="{Binding Modulename}" MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" FontSize="{StaticResource SmallContentFontSize}" Foreground="{StaticResource ColorBrush.While}"></TextBlock>
+                                    </StackPanel>
+                                </HierarchicalDataTemplate>
+                            </TreeView.Resources>
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="True" />
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+                        <Border Grid.Column="1" Width="1" Height="269" Background="#323232" HorizontalAlignment="Left"></Border>
+
+                        <!--ItemsSource="{Binding Actionst,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"   Margin="10,0,10,10"-->
+                        <Label Name="laRemark" Grid.Column="2" HorizontalAlignment="Left"  Visibility="Hidden"  FontSize="12" Foreground="#FFFFFF"></Label>
+                        <DataGrid Name="dgActions" Grid.Column="2"
+                                      ItemsSource="{Binding}"
+                                      FontSize="12" Foreground="#FFFFFF"
+                                     VirtualizingStackPanel.IsVirtualizing="True" 
+                              HorizontalAlignment="Left"  VerticalAlignment="Top"  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                          AllowDrop="True" Height="145" Width="290"  
+                     AutoGenerateColumns="False" RowHeaderWidth="0" BorderThickness="1" GridLinesVisibility="All" Visibility="Hidden" HorizontalGridLinesBrush="#3C3C3C" VerticalGridLinesBrush="#3C3C3C"
+                           CanUserAddRows="False"  HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow"
+                            AlternationCount="1" RowHeight="37"   >
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Height" Value="30"></Setter>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                                    <Setter Property="Background" Value="#1E1E1E"></Setter>
+                                    <Setter Property="BorderThickness" Value="1"></Setter>
+                                    <Setter Property="Foreground" Value="#A0A0A0"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+                            <DataGrid.Style>
+                                <StaticResource ResourceKey="DefaultDataGrid"/>
+                            </DataGrid.Style>
+
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn  Width="67" Header="">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox x:Name="cbRemarkAction" VerticalAlignment="Center" 
+                              Margin="10, 5, 0, 0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  
+                              FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" FontSize="{StaticResource SmallContentFontSize}" 
+                              Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" Foreground="{StaticResource ColorBrush.While}" 
+                               IsChecked="{Binding IsSelected,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Click="cbRemarkAction_Click"></CheckBox>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn  Header="描述" Width="80" CanUserSort="False" Binding="{Binding remark, Mode=OneTime}" Foreground="#FFFFFF"></DataGridTextColumn>
+                                <DataGridTextColumn  Header="简称/全称" Width="*" CanUserSort="False" Binding="{Binding actionname, Mode=OneTime}" Foreground="#FFFFFF"></DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1" Margin="0,22,0,22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="36"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="20"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="lockBtn" Grid.Column="0" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource LockButton}" Click="lockBtn_Click" Command="{Binding DataContext.LockCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+            <Button x:Name="unlockBtn" Grid.Column="0" Visibility="Hidden"  BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Left" Style="{StaticResource UnLockButton}" Click="unlockBtn_Click" ></Button>
+            <TextBlock Text="点按锁按钮以进行管理功能修改。" VerticalAlignment="Center" HorizontalAlignment="Left"  Grid.Column="1" Foreground="#FFFFFF" FontSize="12"></TextBlock>
+            <TextBlock Text="点按锁按钮以防止再次修改。" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="1" Visibility="Hidden" Foreground="#FFFFFF" FontSize="12"></TextBlock>
+
+            <Button Name="Cancel" Click="Cancel_Click" Grid.Column="3"  Command="{Binding CancelActionCommand}" HorizontalAlignment="Right" Content="取消" Height="24" Width="60" Foreground="#FFFFFF" Style="{StaticResource SmallCancelBtnStyle}"></Button>
+            <Button Name="Ok" Click="Ok_Click"  Grid.Column="4" Command="{Binding SaveActionCommand}" HorizontalAlignment="Right" Margin="5, 0, 0, 0" Content="保存" Height="24" Width="100" Foreground="#FFFFFF" Style="{StaticResource SmallConfirmBtnStyle}"></Button>
+        </Grid>
+    </Grid>
+</UserControl>

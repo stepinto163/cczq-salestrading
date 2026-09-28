@@ -1,0 +1,38 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Book.SelfEditPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.Book"
+             mc:Ignorable="d" Height="30" FontSize="12" MinWidth="600"
+             d:DesignHeight="300" d:DesignWidth="300" Background="#1E1E1E">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TextboxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+        
+
+    </UserControl.Resources>
+    <DockPanel>
+        <!--标题-->
+        <Border Background="#136C5E" CornerRadius="2" Width="40" Height="16" Margin="10,0,0,0">
+            <TextBlock Text="自营" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <!--用户名-->
+        <TextBlock Text="{Binding SubName,StringFormat={} - {0}}" Foreground="#FFFFFF" Margin="10,0,0,0" VerticalAlignment="Center" Width="180"/>
+        <!--价格-->
+        <TextBlock x:Name="fieldTB" Visibility="{Binding SelfInfoVisibility}" Width="60"  Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding Yield,StringFormat={}{0:N4}}" Foreground="{StaticResource ColorBrush.Blue10}"/>
+        <!--数量-->
+        <TextBlock x:Name="QtyTB" Visibility="{Binding SelfInfoVisibility}" Width="60" Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding Qty}" Foreground="#FFFFFF"/>
+        <!--清算速度-->
+        <TextBlock x:Name="SettleTB" Visibility="{Binding SelfInfoVisibility}" Width="80" Margin="10,0,0,0" VerticalAlignment="Center" Text="{Binding SettlType,Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_tooltip'}" Foreground="#FFFFFF"/>
+
+        <!--报价-->
+        <TextBlock VerticalAlignment="Center" Visibility="{Binding SelfInfoVisibility}" HorizontalAlignment="Right" Margin="0,0,10,0" DockPanel.Dock="Right" Foreground="#FFFFFF">
+                ( 报价：<Run Text="{Binding Yield,StringFormat={}{0:N4}}"/> )
+        </TextBlock>
+    </DockPanel>
+</UserControl>

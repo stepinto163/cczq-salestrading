@@ -1,0 +1,192 @@
+﻿<UserControl x:Class="STC.Common.View.Drp.Component.OrderComfirmView"
+              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+           xmlns:comp="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" Height="165" Width="380"
+             d:DesignHeight="450" d:DesignWidth="800" Background="Black" UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--点价 窗体背景色 -->
+            <LinearGradientBrush x:Key="BidLinearGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#66FF7D00" Offset="0"/>
+                <GradientStop Color="#00FF7D00" Offset="0.3"/>
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="OfrLinearGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#48009AFF" Offset="0"/>
+                <GradientStop Color="#00009AFF" Offset="0.3"/>
+            </LinearGradientBrush>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="1 2 1 0">
+        <!-- 程序外边框 注意 x:Name="MainBorder" 不要改 ，因为需要实现 更新时动态提醒效果-->
+        <Border x:Name="MainBorder" Background="{StaticResource MainListTitleBackgroup.ColorBrush}" Style="{DynamicResource StrongNotifyBorder}" CornerRadius="4" BorderThickness="2">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="28"/>
+                    <RowDefinition />
+                    <!--<RowDefinition Height="48"></RowDefinition>-->
+                </Grid.RowDefinitions>
+
+                <!-- 标题区 注意如果需要拖动标题栏 时拖出屏幕，在 x:Name="Border_Left1" 不要改，因为需要 在代码中注册 拖拽效果事件 Border_Left1_PreviewMouseMove -->
+                <Border BorderThickness="0" x:Name="Border_Left1" Grid.Row="0"  CornerRadius="4,4,0,0" BorderBrush="#8F9598"  Background="{StaticResource ColorBrush.Gray18}">
+                    <Grid x:Name="gTitle" Height="30" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="24"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="Title" Text="" Margin="10,0,0,2"  FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}" FontSize="14" Foreground="{StaticResource ColorBrush.White2}" Grid.Column="0" VerticalAlignment="Center" />
+                        <TextBlock  x:Name="tbMsgId" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}" FontSize="14" Foreground="SeaGreen" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0 0 25 0"/>
+                        <CheckBox x:Name="btnPop" Style="{StaticResource GrPopupRestoreButtonStyle}" IsChecked="True" Grid.Column="2" Margin="0 3 0 0" Checked="OnReturnControlClick" Unchecked="OnReturnControlClick" HorizontalAlignment="Right" VerticalAlignment="Top" Panel.ZIndex="1" ToolTip="弹出"></CheckBox>
+                        <Button x:Name="PART_CloseButton" Width="24" Height="24" Grid.Column="3" Margin="0,-4,0,0" HorizontalAlignment="Right" Click="OnCloseButtonOnClick" IsCancel="True" Style="{StaticResource DrpImageCloseButton}" />
+                    </Grid>
+                </Border>
+
+                <Border BorderThickness="0" Grid.Row="1" Margin="0 0 0 0" BorderBrush="#8F9598">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0">
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10 0 0 0">
+                                <TextBlock Text="{Binding Dealer}" Foreground="#D7D7D7" FontSize="14" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#00CDAD" FontSize="14" FontWeight="Bold"/>
+                            </StackPanel>
+                            <TextBlock Grid.Row="1" Text="{Binding CreateTime}" Foreground="#D7D7D7" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 4 0"/>
+                        </Grid>
+                        <Grid Grid.Row="1" VerticalAlignment="Center" Margin="10 0 0 0" SizeChanged="Grid_SizeChanged">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding SecurityID}" Foreground="#CEA85C" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Side, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}" Foreground="{Binding Side, Converter={StaticResource colorConverter}}" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="4 0 0 0" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="2" Text="{Binding CustomerPrice, Converter={StaticResource StringConvertor}}" Foreground="{Binding Side, Converter={StaticResource colorConverter}}" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="4 0 0 0" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Qty, Converter={StaticResource StringConvertor}}" Foreground="#D7D7D7" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="4 0 0 0" HorizontalAlignment="Left"/>
+                            <!--<TextBlock Text="(估3.25)" Foreground="{DynamicResource DefaultGridForground}" FontWeight="Bold" VerticalAlignment="Center" Margin="4 0 0 0" HorizontalAlignment="Left"/>-->
+
+                            <TextBlock x:Name="leftTB" Grid.Column="4" Text="(" Foreground="#FFFFFF" FontSize="14" VerticalAlignment="Center" Margin="4 0 0 0" Visibility="{Binding IsWX, Converter={StaticResource VisibleConverter}}" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="textTB" Grid.Column="5" Text="{Binding Text}" Foreground="#FFFFFF" FontSize="14" VerticalAlignment="Center" Margin="4 0 0 0"  Visibility="{Binding IsWX, Converter={StaticResource VisibleConverter}}" HorizontalAlignment="Left" 
+                           TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}"/>
+                            <TextBlock x:Name="rightTB" Grid.Column="6" Text=")" Foreground="#FFFFFF" FontSize="14" VerticalAlignment="Center" Margin="4 0 0 0"  Visibility="{Binding IsWX, Converter={StaticResource VisibleConverter}}" HorizontalAlignment="Left"/>
+
+                        </Grid>
+                        <!--<Border BorderThickness="2,0,2,0" Grid.Row="2"  CornerRadius="0,0,0,0" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+                            <DataGrid Grid.Row="2" ItemsSource="{Binding FQ_Text_List}"
+                                  Style="{DynamicResource DefaultDataGridNoHeadSpaceStyle}" RowHeight="32"
+                                  HeadersVisibility="None"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="代码" Width="160"  CellStyle="{DynamicResource DataGridTextRightStyle}" Foreground="{DynamicResource ColorBrush.Yellow}" FontWeight="Bold"/>
+                                    <DataGridTextColumn Header="方向" Width="40" CellStyle="{DynamicResource ColumnColorStyle}"/>
+                                    <DataGridTextColumn Header="价格" Width="*" CellStyle="{DynamicResource ColumnColorStyle}"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>-->
+                        <!--<Button Content="更多(5)▲" Grid.Row="2">
+                            <Button.Template>
+                                <ControlTemplate TargetType="{x:Type Button}">
+                                    <TextBlock x:Name="txtI" Cursor="Hand" Text="{TemplateBinding Content}" Foreground="#888C8A" VerticalAlignment="Bottom" HorizontalAlignment="Center"/>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Foreground" Value="#4587F0"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>-->
+                        <StackPanel Grid.Row="2" Orientation="Horizontal">
+                            <TextBlock Text="加点" Foreground="{DynamicResource DefaultGridForground}" VerticalAlignment="Center"  Margin="10 0 0 0"/>
+                            <comp:DrpNumericUpDown x:Name="bp1" Height="24" Width="80" NumericValue="{Binding BP, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10 0 0 0"
+                                                                TextContentAlignment="Left" TextForeground="White" Foreground="White"  VerticalAlignment ="Center" DecimalLength="2" RangeValue="0.25" MaxValue="100" MinValue="-100" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True" IsDecreaseToZero="True"/>
+                            <TextBlock Text="加点后报价" Foreground="{DynamicResource DefaultGridForground}" VerticalAlignment="Center" Margin="4 0 0 0"/>
+                            <TextBlock Text="{Binding Price, Converter={StaticResource StringConvertor}}" Foreground="{Binding Side, Converter={StaticResource colorConverter}}" VerticalAlignment="Center" Margin="4 0 0 0"/>
+                        </StackPanel>
+                        <Grid Grid.Row="4">
+                            <!--<Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>-->
+
+                            <!--<StackPanel Orientation="Horizontal" Margin="4 0 0 0">
+                                <TextBlock Text="加点" Foreground="{DynamicResource DefaultGridForground}" VerticalAlignment="Center"/>
+                                <comp:DrpNumericUpDown x:Name="bp1" Height="24" Width="80" NumericValue="{Binding BP1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10 0 0 0"
+                                                                            TextContentAlignment="Left" TextForeground="White" Foreground="White"  VerticalAlignment ="Center" DecimalLength="2" RangeValue="1" MaxValue="100" MinValue="0" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                            FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True"/>
+                            </StackPanel>-->
+
+                            <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="10 0 0 0">
+                                <CheckBox Content="急" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0" Height="24" Width="24"
+                          IsChecked="{Binding HurryFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                                <CheckBox Content="荐" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0" Height="24" Width="24"
+                          IsChecked="{Binding SuggestFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                                <CheckBox Content="火" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 10 0" Height="24" Width="24"
+                          IsChecked="{Binding FireFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+
+                                <CheckBox Content="底" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="24" Width="24" Margin="0 0 4 0"
+                          IsChecked="{Binding FloorPrice, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                                <CheckBox Content="OCO" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0" Height="24" Width="42"
+                          IsChecked="{Binding OcoFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" />
+                                <CheckBox Content="打包" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="24" Width="42"
+                          IsChecked="{Binding OcoFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}"/>
+
+                                <!--<comp:MultiSelectComboBox x:Name="a" Width="60" Height="24" Margin="4 0 0 0"/>-->
+                            </StackPanel>
+
+                            <!--<StackPanel Grid.Row="2" Orientation="Horizontal" Margin="4 0 0 0">
+                                <comp:WatermarkTextBox x:Name="mark" Style="{DynamicResource STCDefaultBoxStyle}" WaterMark="公开备注" Width="100" Height="24"/>
+                                <comp:WatermarkTextBox x:Name="memo" Style="{DynamicResource STCDefaultBoxStyle}" WaterMark="个人Memo" Width="100" Height="24" Margin="4 0 0 0"/>
+                            </StackPanel>-->
+                            <!--<Button Content="编辑" Grid.Row="4" Style="{DynamicResource SlateGrayStyle}" BorderThickness="0 1 0 0" Foreground="#D7D7D7" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0 0 56 0"
+                                    Width="48"
+                                    Command="{Binding OkCommand}"/>-->
+                            <Button x:Name="btn_Confirm" Content="确认" Grid.Row="4" Style="{DynamicResource SlateGrayStyle}" BorderThickness="0 1 0 0" Foreground="#D7D7D7" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0 0 4 0"
+                                    Width="48" Click="btn_Confirm_Click"/> 
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!--<Border BorderThickness="0" Grid.Row="2" CornerRadius="0,0,4,4" BorderBrush="#8F9598" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        --><!--上分割线--><!--
+                        <Border Grid.Row="0" BorderThickness="0,1,0,0" CornerRadius="0,0,0,0" BorderBrush="#208F9598" Background="{DynamicResource ColorBrush.Gray13}">
+                        </Border>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button  Content="取消" x:Name="btn_Cancel" FontSize="12" Click="OnCloseButtonOnClick" BorderThickness="0 1 0 0" Style="{DynamicResource GraySlateButtonStyle}" Width="64" Height="24" HorizontalAlignment="Right" Foreground="#D7D7D7"/>
+                            <Button  Content="确认" x:Name="btn_Confirm" FontSize="12" Click="btn_Confirm_Click" Margin="4,0,8,0" BorderThickness="0 1 0 0" Style="{DynamicResource BlueGreenStyle}" Width="88" Height="24" Foreground="#D7D7D7"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>-->
+            </Grid>
+        </Border>
+    </Grid>
+
+
+    
+</UserControl>

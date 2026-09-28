@@ -1,0 +1,71 @@
+﻿using STC.Common.Model.Admin;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace STC.XBond.Plugin.View.HomePage
+{
+    /// <summary>
+    /// OneHomePageView.xaml 的交互逻辑
+    /// </summary>
+    public partial class OneHomePageView : UserControl
+    {
+        public OneHomePageView()
+        {
+            InitializeComponent();
+
+            favoriteBox.OnSectionChange += FavoriteBox_OnSectionChange;
+
+            this.Unloaded += OneHomePageView_Unloaded;
+        }
+
+        private void OneHomePageView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            this.Unloaded -= OneHomePageView_Unloaded;
+            if (favoriteBox != null)
+                favoriteBox.OnSectionChange -= FavoriteBox_OnSectionChange;
+        }
+
+        private void FavoriteBox_OnSectionChange(object obj)
+        {
+            if (obj != null)
+            {
+                DataRowView dataRow = obj as DataRowView;
+                if (dataRow != null)
+                {
+                    object securityObj = dataRow["securityID"];
+                    if (securityObj != null)
+                    {
+                        string securityID = securityObj as string;
+
+                        dgPrice.Init(securityID);
+                    }
+                }
+            }
+        }
+
+        public void Init(HomeGroupInfo gi)
+        {
+            favoriteBox.Init(gi);
+            dgPrice.RemoveDbDoubleClickEvent();
+        }
+
+        public void Init(string gi)
+        {
+            favoriteBox.Init2(gi);
+            dgPrice.RemoveDbDoubleClickEvent();
+        }
+    }
+}

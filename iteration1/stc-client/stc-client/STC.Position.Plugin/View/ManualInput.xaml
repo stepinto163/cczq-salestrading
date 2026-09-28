@@ -1,0 +1,814 @@
+﻿<Window x:Class="STC.Position.Plugin.View.ManualInput"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Position.Plugin.View"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:ViewModel="clr-namespace:STC.Position.Plugin.ViewModel" 
+             mc:Ignorable="d" 
+             Title="持仓调整"  ResizeMode="NoResize" AllowsTransparency ="True"
+             WindowState="Normal" WindowStartupLocation="CenterScreen" WindowStyle="None" MouseLeftButtonDown="Window_MouseLeftButtonDown"  BorderThickness="0" Background="Transparent"  BorderBrush="Transparent"
+             Width="1080" Height="460">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/QuoteStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="TextBlockForeColor" Color="#FFFFFF"></SolidColorBrush>
+            <SolidColorBrush x:Key="ButtonSelectedActiveBorderColorBrush" Color="#2CAB97"></SolidColorBrush>
+            <SolidColorBrush x:Key="TextBlockDisableForeground" Color="#788187"/>
+            <SolidColorBrush x:Key="TextBlockForeground" Color="#FFFFFF"/>
+            <!--文本框-->
+            <SolidColorBrush x:Key="TextBox.Static.Border" Color="#3C3C3C"/>
+            <SolidColorBrush x:Key="TextBox.Static.Background" Color="#172422"/>
+            <SolidColorBrush x:Key="TextBox.Static.Foreground" Color="#FFEBC8"/>
+            <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#0F0F0F"/>
+            <SolidColorBrush x:Key="TextBox.MouseOver.Background" Color="#193D37"/>
+            <SolidColorBrush x:Key="TextBox.MouseOver.Foreground" Color="#3C3C3C"/>
+            <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#FF9300"/>
+            <SolidColorBrush x:Key="TextBox.Focus.Background" Color="#0F0F0F"/>
+            <SolidColorBrush x:Key="TextBox.Focus.Foreground" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="TextBox.Disable.Border" Color="#3C3C3C"/>
+            <SolidColorBrush x:Key="TextBox.Disable.Background" Color="#1E1E1E"/>
+            <SolidColorBrush x:Key="TextBox.Disable.Foreground" Color="#3C3C3C"/>
+
+            <SolidColorBrush x:Key="PriceButtonDefaultBackground" Color="#172422"></SolidColorBrush>
+            <SolidColorBrush x:Key="PriceDefaultComboBorder" Color="#136C5E"></SolidColorBrush>
+            <SolidColorBrush x:Key="PriceDefaultComboBackground" Color="#193D37"></SolidColorBrush>
+
+            <SolidColorBrush x:Key="ListBoxItem.MouseOver.Background" Color="#193D37"/>
+            <SolidColorBrush x:Key="ListBoxItem.MouseOver.Border" Color="#136C5E"/>
+            <SolidColorBrush x:Key="ListBoxItem.SelectedInactive.Foreground" Color="#FFEBC8"/>
+            <SolidColorBrush x:Key="ListBoxItem.SelectedInactive.Background" Color="#136C5E"/>
+            <SolidColorBrush x:Key="ListBoxItem.SelectedInactive.Border" Color="#193D37"/>
+            <SolidColorBrush x:Key="ListBoxItem.SelectedActive.Foreground" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="ListBoxItem.SelectedActive.Background" Color="#136C5E"/>
+            <SolidColorBrush x:Key="ListBoxItem.SelectedActive.Border" Color="#238F7E"/>
+            <SolidColorBrush x:Key="ListBoxItem.Normal.Border" Color="#193D37"/>
+
+            <SolidColorBrush x:Key="MainFormBackground" Color="#141414"/>
+            <SolidColorBrush x:Key="LostFocusBorderBrush" Color="#282828"/>
+            <SolidColorBrush x:Key="GetFocusBorderBrush" Color="#8F9598"/>
+
+            <Style TargetType="{x:Type Button}" x:Key="ImageButtonStyle">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Background="{TemplateBinding Background}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Common;component/Images/stc_operation_history_dark_pressed.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Common;component/Images/stc_operation_history_dark_hover.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Common;component/Images/stc_operation_history_dark_disabled.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="DatePickerTextBoxStyle" TargetType="{x:Type DatePickerTextBox}">
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <TextBox Text="{Binding SelectedDate, RelativeSource={RelativeSource AncestorType={x:Type DatePicker}}, StringFormat=yyyy-MM-dd}"
+                                     BorderThickness="0" Background="#172422" FontSize="12px"
+                                     Foreground="{StaticResource TextBlockForeground}" Padding="0, 4, 0, 0" TextAlignment="Center" FontFamily="Microsoft YaHei"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DatePickStyleBtns" TargetType="{x:Type Button}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border x:Name="Back"  BorderThickness="0" BorderBrush="Transparent">
+                                <Image x:Name="Img"  Height="16" Width="16" Stretch="UniformToFill" Source="pack://application:,,,/STC.Common;component/Images/stc_icon_calendar_normal.png"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>-->
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="Transparent"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DatePickerStyle" TargetType="{x:Type DatePicker}">
+                <Setter Property="Foreground" Value="{StaticResource TextBlockForeground}"/>
+                <Setter Property="IsTodayHighlighted" Value="True"/>
+                <Setter Property="SelectedDateFormat" Value="Short"/>
+                <Setter Property="Background" Value="#172422"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="BorderBrush">
+                    <Setter.Value>
+                        <LinearGradientBrush EndPoint=".5,0" StartPoint=".5,1">
+                            <GradientStop Color="#193D37" Offset="0"/>
+                            <GradientStop Color="#193D37" Offset="0.375"/>
+                            <GradientStop Color="#193D37" Offset="0.375"/>
+                            <GradientStop Color="#193D37" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DatePicker}">
+                            <Border x:Name="PART_Border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                <Grid x:Name="PART_Root" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid.Resources>
+                                        <SolidColorBrush x:Key="DisabledBrush" Color="#A5FFFFFF"/>
+                                        <ControlTemplate x:Key="DropDownButtonTemplate" TargetType="{x:Type Button}">
+                                            <Grid>
+                                                <VisualStateManager.VisualStateGroups>
+                                                    <VisualStateGroup x:Name="CommonStates">
+                                                        <VisualStateGroup.Transitions>
+                                                            <VisualTransition GeneratedDuration="0"/>
+                                                            <VisualTransition GeneratedDuration="0:0:0.1" To="MouseOver"/>
+                                                            <VisualTransition GeneratedDuration="0:0:0.1" To="Pressed"/>
+                                                        </VisualStateGroup.Transitions>
+                                                        <VisualState x:Name="Normal"/>
+                                                        <VisualState x:Name="MouseOver">
+                                                            <Storyboard>
+                                                                <ColorAnimation Duration="0" To="#FF448DCA" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="Background"/>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[3].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#7FFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[2].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#CCFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#F2FFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Pressed">
+                                                            <Storyboard>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="Background">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#FF448DCA"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <DoubleAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="Highlight">
+                                                                    <SplineDoubleKeyFrame KeyTime="0" Value="1"/>
+                                                                </DoubleAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#EAFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[2].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#C6FFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[3].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#6BFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[0].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#F4FFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Disabled"/>
+                                                    </VisualStateGroup>
+                                                </VisualStateManager.VisualStateGroups>
+                                                <Grid Background="#11FFFFFF" FlowDirection="LeftToRight" HorizontalAlignment="Center" Height="24" Margin="0" VerticalAlignment="Center" Width="24">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="20*"/>
+                                                        <ColumnDefinition Width="20*"/>
+                                                        <ColumnDefinition Width="20*"/>
+                                                        <ColumnDefinition Width="20*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="23*"/>
+                                                        <RowDefinition Height="19*"/>
+                                                        <RowDefinition Height="19*"/>
+                                                        <RowDefinition Height="19*"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Border x:Name="Highlight" BorderBrush="#FF45D6FA" BorderThickness="1" Grid.ColumnSpan="4" CornerRadius="0,0,1,1" Margin="-1" Opacity="0" Grid.Row="0" Grid.RowSpan="4"/>
+                                                    <Border x:Name="Background" BorderBrush="#FFFFFFFF" BorderThickness="1" Background="#FF1F3B53" Grid.ColumnSpan="4" CornerRadius=".5" Margin="0,-1,0,0" Opacity="1" Grid.Row="1" Grid.RowSpan="3"/>
+                                                    <Border x:Name="BackgroundGradient" BorderBrush="#BF000000" BorderThickness="1" Grid.ColumnSpan="4" CornerRadius=".5" Margin="0,-1,0,0" Opacity="1" Grid.Row="1" Grid.RowSpan="3">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush EndPoint=".7,1" StartPoint=".7,0">
+                                                                <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                                                                <GradientStop Color="#F9FFFFFF" Offset="0.375"/>
+                                                                <GradientStop Color="#E5FFFFFF" Offset="0.625"/>
+                                                                <GradientStop Color="#C6FFFFFF" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+                                                    <Rectangle Grid.ColumnSpan="4" Grid.RowSpan="1" StrokeThickness="1">
+                                                        <Rectangle.Fill>
+                                                            <LinearGradientBrush EndPoint="0.3,-1.1" StartPoint="0.46,1.6">
+                                                                <GradientStop Color="#FF4084BD"/>
+                                                                <GradientStop Color="#FFAFCFEA" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Rectangle.Fill>
+                                                        <Rectangle.Stroke>
+                                                            <LinearGradientBrush EndPoint="0.48,-1" StartPoint="0.48,1.25">
+                                                                <GradientStop Color="#FF494949"/>
+                                                                <GradientStop Color="#FF9F9F9F" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Rectangle.Stroke>
+                                                    </Rectangle>
+                                                    <Path Grid.ColumnSpan="4" Grid.Column="0" Data="M11.426758,8.4305077 L11.749023,8.4305077 L11.749023,16.331387 L10.674805,16.331387 L10.674805,10.299648 L9.0742188,11.298672 L9.0742188,10.294277 C9.4788408,10.090176 9.9094238,9.8090878 10.365967,9.4510155 C10.82251,9.0929432 11.176106,8.7527733 11.426758,8.4305077 z M14.65086,8.4305077 L18.566387,8.4305077 L18.566387,9.3435936 L15.671368,9.3435936 L15.671368,11.255703 C15.936341,11.058764 16.27293,10.960293 16.681133,10.960293 C17.411602,10.960293 17.969301,11.178717 18.354229,11.615566 C18.739157,12.052416 18.931622,12.673672 18.931622,13.479336 C18.931622,15.452317 18.052553,16.438808 16.294415,16.438808 C15.560365,16.438808 14.951641,16.234707 14.468243,15.826504 L14.881817,14.929531 C15.368796,15.326992 15.837872,15.525723 16.289043,15.525723 C17.298809,15.525723 17.803692,14.895514 17.803692,13.635098 C17.803692,12.460618 17.305971,11.873379 16.310528,11.873379 C15.83071,11.873379 15.399232,12.079271 15.016094,12.491055 L14.65086,12.238613 z" Fill="#FF2F2F2F" HorizontalAlignment="Center" Margin="4,3,4,3" Grid.Row="1" Grid.RowSpan="3" RenderTransformOrigin="0.5,0.5" Stretch="Fill" VerticalAlignment="Center"/>
+                                                    <Ellipse Grid.ColumnSpan="4" Fill="#FFFFFFFF" HorizontalAlignment="Center" Height="3" StrokeThickness="0" VerticalAlignment="Center" Width="3"/>
+                                                    <Border x:Name="DisabledVisual" BorderBrush="#B2FFFFFF" BorderThickness="1" Grid.ColumnSpan="4" CornerRadius="0,0,.5,.5" Opacity="0" Grid.Row="0" Grid.RowSpan="4"/>
+                                                </Grid>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Grid.Resources>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+
+
+                                    <Button x:Name="PART_Button" Grid.Column="1" Width="20" Style="{StaticResource DatePickStyleBtns}"  Click="PART_Button_Click" Foreground="{StaticResource ColorBrush.While}" BorderThickness="0" Background="Transparent"></Button>
+                                    <!--<Button x:Name="PART_Button" Grid.Column="1" Foreground="{TemplateBinding Foreground}" Focusable="False" HorizontalAlignment="Left" Margin="3,0,3,0" Grid.Row="0" Template="{StaticResource DropDownButtonTemplate}" VerticalAlignment="Center" Width="20"/>-->
+                                    <DatePickerTextBox x:Name="PART_TextBox" Grid.Column="0" BorderThickness="0" Style="{StaticResource DatePickerTextBoxStyle}"/>
+                                    <Grid x:Name="PART_DisabledVisual" Grid.ColumnSpan="2" Grid.Column="0" IsHitTestVisible="False" Opacity="0" Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Rectangle Grid.Column="0" Fill="#A5FFFFFF" RadiusY="1" Grid.Row="0" RadiusX="1"/>
+                                        <Rectangle Grid.Column="1" Fill="#A5FFFFFF" Height="24" Margin="0" RadiusY="1" Grid.Row="0" RadiusX="1" Width="19"/>
+                                        <Popup x:Name="PART_Popup" AllowsTransparency="True" Placement="Bottom" PlacementTarget="{Binding ElementName=PART_TextBox}" StaysOpen="False"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Source={x:Static SystemParameters.HighContrast}}" Value="false">
+                                    <Setter Property="Foreground" TargetName="PART_TextBox" Value="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </DataTrigger>
+
+
+                                <!--<Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="PART_Border" Value="{StaticResource ColorBrush.Gray14}"/>
+                                </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="Image" x:Key="ImageStyle">
+                <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/root_1_normal.png"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding BookType}" Value="R">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/root_1_normal.png" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding BookType}" Value="P">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/group_1_normal.png" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding BookType}" Value="A">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/leaf_normal.png" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding BookType}" Value="">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/leaf_normal.png" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition Height="370"></RowDefinition>
+            <RowDefinition Height="64"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Border BorderThickness="2,2,2,0"  Grid.Row="0"  CornerRadius="4,4,0,0" BorderBrush="#A0A0A0"  Background="{StaticResource LostFocusBorderBrush}">
+            <Grid  Background="{StaticResource LostFocusBorderBrush}" Margin="2,0,2,0" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="36"/>
+                    <ColumnDefinition Width="64"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                </Grid.ColumnDefinitions>
+                <Image x:Name="TitleIcon"  Grid.Column="0"  Width="32" Stretch="Uniform" HorizontalAlignment="Center"></Image>
+                <TextBlock Text="持仓调整" Grid.Column="1" Margin="0, 0, 0, 0" Foreground = "#FFFFFF" FontFamily="MicroSoft YaHei" FontWeight="SemiBold" FontSize="14"/>
+                <Button Width="16" Height="16" Grid.Column="3" Margin="0,0,-2,0" Command="{Binding CloseWindowCommand}" IsCancel="True" Style="{StaticResource ImageCloseButton}" />
+            </Grid>
+        </Border>
+
+        <Border BorderThickness="2,0,2,0" Grid.Row="1" CornerRadius="0,0,0,0" BorderBrush="#A0A0A0" Background="#141414">
+            <StackPanel>
+                <Border BorderThickness="1"  Margin="20,20,20,0" BorderBrush="#3C3C3C" Background="#141414"  Height="350">
+                    <DataGrid x:Name="TPDataGrid" AutoGenerateColumns="False" Style="{StaticResource DefaultDataGrid}" 
+                              ItemsSource="{Binding DataDV}"
+                            SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            SelectedIndex="{Binding SelectedIndex,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                              RowHeaderWidth="0" >
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="操作" Width="35" MinWidth="30">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                                            <Button Foreground="#A0A0A0" Width="16" Height="16" Margin="5,0,0,0" ToolTip="删除" HorizontalAlignment="Center" Style="{StaticResource DeleteButton}"
+                                                Command="{Binding DataContext.DelRecordCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                                FontSize="10"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="98" Header="代码" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  Text="{Binding Path=SecurityId}">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip Content="{Binding Path=SecurityId}"></ToolTip>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                                <comp:SettingSearchTextBox x:Name="comSecurityId"
+                                                    Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}"
+                                                                    FontSize="12" Height="22" Width="86" TextWidth="86" Margin="0,2,0,0"
+                                                                    SearchText="{Binding SecurityId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"/>
+
+                                            </Grid>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="60" Header="方向" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}" 
+                                                           Text="{Binding Side, Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}">
+                                                </TextBlock>
+                                                <ComboBox x:Name="comSide" SelectedValue="{Binding Side, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Height="22"
+                                                          Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" Padding="4,4,0,0" 
+                                                          ItemsSource="{Binding SideItem,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                          Style="{StaticResource DefaultComboBoxStyle}" 
+                                                          Width="48" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                          SelectedValuePath="Key" DisplayMemberPath="Value" >
+                                                </ComboBox>
+                                            </Grid>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="58" Header="开平" CanUserSort="False" Visibility="Collapsed">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}" 
+                                                           Text="{Binding OpenClose, Converter={StaticResource EnumTypeConvertor},ConverterParameter='openclose'}">
+                                                </TextBlock>
+                                                <ComboBox x:Name="comOpenClose" SelectedValue="{Binding OpenClose, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Height="22"
+                                                     Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" Padding="4,4,0,0" 
+                                                     ItemsSource="{x:Static ViewModel:ManualInputViewModel.LstOpenClose}"  Style="{StaticResource DefaultComboBoxStyle}" Width="48" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                     SelectedValuePath="Key" DisplayMemberPath="Value"
+                                                     IsEnabled="False">
+                                                </ComboBox>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="5">
+                                                <Setter Property="IsEnabled"  TargetName="comOpenClose" Value="True" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="4">
+                                                <Setter Property="IsEnabled"  TargetName="comOpenClose" Value="False" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="74" Header="成交量(万元)" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  
+                                                           Text="{Binding Path=Position}">
+                                                </TextBlock>
+                                                <TextBox x:Name="txtPosition" Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" 
+                                                         Text="{Binding Position, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"   
+                                                         Height="22" Padding="0,2,0,0" input:InputMethod.IsInputMethodEnabled="False" 
+                                                         Tag="Position"
+                                                         Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                         PreviewTextInput="TextBox_PreviewTextInput"
+                                                         PreviewKeyDown="TextBox_PreviewKeyDown">
+                                                </TextBox>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Position,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                <Setter TargetName="txtPosition" Property="BorderBrush" Value="red"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="74" Header="成交价(%)" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  
+                                                           Text="{Binding Path=Price}">
+                                                </TextBlock>
+                                                <TextBox x:Name="txtPrice" Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}"
+                                                         Text="{Binding Price, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Tag="Price"
+                                                         Height="22" Padding="0,2,0,0"  input:InputMethod.IsInputMethodEnabled="False" 
+                                                         Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                         PreviewTextInput="TextBox_PreviewTextInput"
+                                                         PreviewKeyDown="TextBox_PreviewKeyDown">
+                                                </TextBox>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <!--<DataTrigger Binding="{Binding MarketIndicator}" Value="5">
+                                                <Setter Property="IsEnabled"  TargetName="txtPrice" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="4">
+                                                <Setter Property="IsEnabled"  TargetName="txtPrice" Value="True" />
+                                            </DataTrigger>-->
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Price,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="txtPrice" Property="BorderBrush" Value="red"/>
+                                            </MultiDataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="80" Header="成交价(净)" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  Text="{Binding Path=NetPrice}">
+                                                </TextBlock>
+                                                <TextBox x:Name="txtNetPrice" Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" 
+                                                         Text="{Binding NetPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Tag="NetPrice"
+                                                         Height="22" Padding="0,2,0,0"  input:InputMethod.IsInputMethodEnabled="False"  
+                                                         Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                         PreviewTextInput="TextBox_PreviewTextInput"
+                                                         PreviewKeyDown="TextBox_PreviewKeyDown">
+                                                </TextBox>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding NetPrice,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                <Setter TargetName="txtNetPrice" Property="BorderBrush" Value="red"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="72" Header="渠道" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"
+                                                           Text="{Binding Venuetypegw, Converter={StaticResource EnumTypeConvertor},ConverterParameter='venuesxb'}">
+                                                </TextBlock>
+                                                <ComboBox x:Name="comVenuetypegw" SelectedValue="{Binding Venuetypegw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" 
+                                                          Height="22"                                                           
+                                                          ItemsSource="{x:Static ViewModel:ManualInputViewModel.LstVenuetypegw}"
+                                                          Style="{StaticResource DefaultComboBoxStyle}"
+                                                          Width="60" 
+                                                          Foreground="{StaticResource DefaultForegroup.ColorBrush}" 
+                                                          Background="#0F0F0F"
+                                                          SelectedValuePath="Key"
+                                                          DisplayMemberPath="Value" >
+                                                </ComboBox>
+
+                                            </Grid>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+
+                            <DataGridTemplateColumn  Width="100" Header="交易日期" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  Text="{Binding Path=TradeDate}">
+                                                </TextBlock>
+                                                <DatePicker x:Name="datePicker" Grid.Column="1" Width="90" Height="24"
+                                                            SelectedDate="{Binding TradeDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                            DisplayDateStart="{Binding CurrentDate,Mode=TwoWay}"
+                                                            Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}"  
+                                                            Style="{DynamicResource DatePickerStyle}" Foreground="{StaticResource DefaultForegroup.ColorBrush}">
+                                                    <DatePicker.Resources>
+                                                        <Style TargetType="DatePickerTextBox">
+                                                            <Setter Property="IsReadOnly" Value="True"/>
+                                                        </Style>
+                                                    </DatePicker.Resources>
+                                                </DatePicker>
+                                            </Grid>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="70" Header="清算速度" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock x:Name="txtSettleType" VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  
+                                                           Text="{Binding SettleType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_myOrder'}">
+                                                </TextBlock>
+                                                <ComboBox x:Name="comSettleType" SelectedValue="{Binding SettleType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}"
+                                                      Height="22" ItemsSource="{x:Static ViewModel:ManualInputViewModel.LstSettleType}"  
+                                                          Style="{StaticResource DefaultComboBoxStyle}" 
+                                                          Width="52" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                      SelectedValuePath="Key" DisplayMemberPath="Value">
+                                                </ComboBox>
+                                            </Grid>
+                                        </Grid>
+                                        <!--<DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="5">
+                                                <Setter Property="IsEnabled"  TargetName="comSettleType" Value="False" />
+                                                <Setter Property="Visibility"  TargetName="comSettleType" Value="Collapsed" />
+                                                <Setter Property="Visibility"  TargetName="txtSettleType" Value="Collapsed" />
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding MarketIndicator}" Value="4"/>
+                                                    <Condition Binding="{Binding EditBtnVisible}" Value="0"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="IsEnabled"  TargetName="comSettleType" Value="True" />
+                                                <Setter Property="Visibility"  TargetName="comSettleType" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </DataTemplate.Triggers>-->
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="90" Header="对手方" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  Text="{Binding Path=CounterPartyName}">
+                                                </TextBlock>
+                                                <TextBox x:Name="txtCounterPartyName" Height="22" Padding="0,2,0,0"  Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" Text="{Binding CounterPartyName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                          IsEnabled="{Binding CounterPartyNameEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                </TextBox>
+                                            </Grid>
+                                        </Grid>
+                                        <!--<DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="5">
+                                                <Setter Property="IsEnabled"  TargetName="txtCounterPartyName" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="4">
+                                                <Setter Property="IsEnabled"  TargetName="txtCounterPartyName" Value="True" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>-->
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="75" Header="对手交易员" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  Text="{Binding Path=CounterPartySubName}">
+                                                </TextBlock>
+                                                <TextBox x:Name="txtCounterPartySubName" Height="22" Padding="0,2,0,0"  Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" Text="{Binding CounterPartySubName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F">
+                                                </TextBox>
+                                            </Grid>
+                                        </Grid>
+                                        <!--<DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="5">
+                                                <Setter Property="IsEnabled"  TargetName="txtCounterPartySubName" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding MarketIndicator}" Value="4">
+                                                <Setter Property="IsEnabled"  TargetName="txtCounterPartySubName" Value="True" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>-->
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="92" Header="组合" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"
+                                                      Text="{Binding Path=BookName}">
+                                                </TextBlock>
+                                                <comp:MultiTreeComboBox  Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}"
+                                                                         Grid.Column="1" Width="80" Height="24"  Margin="0 0 0 0"
+                                                                         VerticalAlignment="Center" TreeItemStyle="{DynamicResource GreenBlueTreeViewItemStyle}" Foreground="White"
+                                                                         TreeItemsSource="{x:Static ViewModel:ManualInputViewModel.MultiTreeComboxItemsSource}" IsEnableMultiSelect="False"  
+                                                                         SelectedItem="{Binding BookId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                         SelectedTexts="{Binding BookName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                    <comp:MultiTreeComboBox.TreeItemItemTemplate>
+                                                        <HierarchicalDataTemplate ItemsSource="{Binding Nodes}">
+                                                            <StackPanel Orientation="Horizontal" Height="22">
+                                                                <Button  Margin="0, 0, 4, 0" VerticalAlignment="Center" ToolTip="{Binding Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource TreeCheckBoxButton}" Background="Transparent" Tag="{Binding Id}" Visibility="{Binding IsLeaf, Converter={StaticResource visibilityConvertor}}"/>
+                                                                <Image Style="{StaticResource ImageStyle}" Width="13" Height="13" Margin="0,0,3,0"/>
+                                                                <TextBlock Margin="0, 0, 0, 0" Text="{Binding Name}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding Checked}" Value="1">
+                                                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding IsLeaf}" Value="False">
+                                                                                    <Setter Property="Foreground" Value="{DynamicResource ColorBrush.PaleGrey}"/>
+                                                                                </DataTrigger>
+                                                                                <DataTrigger Binding="{Binding IsLeaf}" Value="True">
+                                                                                    <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                                <TextBlock Margin="6, 0, 0, 0" Text="{Binding Id}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" Foreground="#F0C49F"></TextBlock>
+                                                            </StackPanel>
+                                                        </HierarchicalDataTemplate>
+                                                    </comp:MultiTreeComboBox.TreeItemItemTemplate>
+                                                </comp:MultiTreeComboBox>
+                                                <!--<ComboBox x:Name="comBookId" SelectedValue="{Binding BookId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" 
+                                                          ItemsSource="{x:Static ViewModel:ManualInputViewModel.LstBookList}"  
+                                                          Style="{StaticResource DefaultComboBoxStyle}" 
+                                                          Width="90" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                          Height="22" SelectedValuePath="Key" DisplayMemberPath="Value" >
+                                                </ComboBox>-->
+                                            </Grid>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn  Width="60" Header="备注" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Grid.Column="0">
+                                                <TextBlock VerticalAlignment="Center" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}"  Text="{Binding Path=Remark}"
+                                                           ToolTipService.ToolTip="{Binding Path=Remark}">
+                                                </TextBlock>
+                                                <TextBox  Height="22" Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" Text="{Binding Remark, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F">
+                                                </TextBox>
+                                            </Grid>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="" Width="40" MinWidth="40">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid HorizontalAlignment="Left">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Visibility="{Binding IsAdded,Converter={StaticResource visibilityConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                <Button BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{StaticResource SaveButton}" ToolTip="验证" Visibility="{Binding EditBtnVisible,Converter={StaticResource visibilityConvertor}}" 
+                                                        Command="{Binding DataContext.SaveRecordCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                                <Button BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{StaticResource EditButton}" ToolTip="修改" Visibility="{Binding SaveBtnVisible,Converter={StaticResource visibilityConvertor}}"
+                                                        Command="{Binding DataContext.EditRecordCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </StackPanel>
+        </Border>
+        <fUI:LoadingMask x:Name="emsloadMask" Visibility="Collapsed" Grid.Row="1" Grid.ColumnSpan="3"></fUI:LoadingMask>
+
+        <Border Grid.Row="2" BorderThickness="2, 0, 2, 2"   CornerRadius="0,0,4,4" BorderBrush="#A0A0A0" Background="#141414">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20"></ColumnDefinition>
+                    <ColumnDefinition Width="30"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition Width="20"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="1" Grid.Row="0" Margin="0,0,0,0"  Content="+"  ToolTip="新增订单" IsEnabled="{Binding IsCanSave,Converter={StaticResource  booleanConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Command="{Binding AddRecordCommand}" FontSize="12" Foreground="{DynamicResource TextBlockForeground}" Style="{DynamicResource RedButtonStyle}"  Width="24" Height="24"/>
+                <StackPanel  Grid.Column="2" Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <TextBlock Foreground="#A0A0A0" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="12">
+                        <Run Text="已填写"></Run>
+                        <Run Text="{Binding RecordCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="White"></Run>
+                        <Run Text="笔成交"></Run>
+                    </TextBlock>
+                </StackPanel>
+                <Button Grid.Column="3" Grid.Row="0" Margin="0,0,0,0"  Content="取消" Command="{Binding CancelWindowCommand}" FontSize="12" Foreground="{DynamicResource TextBlockForeground}" Style="{DynamicResource DefaultButtonStyle}"  Width="60" Height="24"/>
+                <Button Grid.Column="4" Grid.Row="0" Margin="0,0,0,0" Content="确认"  ToolTip="提交保存" IsEnabled="{Binding IsCanSave,Converter={StaticResource  booleanConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Command="{Binding OkCommand}" FontSize="12" Style="{DynamicResource RedButtonStyle}" Foreground="{DynamicResource TextBlockForeground}" Width="100" Height="24"/>
+
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

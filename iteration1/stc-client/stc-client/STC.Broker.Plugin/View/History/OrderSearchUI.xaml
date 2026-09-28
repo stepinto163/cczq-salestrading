@@ -1,0 +1,1016 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.History.OrderSearchUI"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:localcomp ="clr-namespace:STC.Broker.Plugin.View.Component"
+             xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.History"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Loaded="UserControl_Loaded">
+    <UserControl.Template>
+        <ControlTemplate TargetType="{x:Type UserControl}">
+            <AdornerDecorator>
+                <ContentPresenter />
+            </AdornerDecorator>
+        </ControlTemplate>
+    </UserControl.Template>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="scbTRDPrice" Color="#67C139"/>
+            <!--Bid GVN报价颜色-->
+            <SolidColorBrush x:Key="scbBidPrice" Color="#FF9200"/>
+            <!--Offer TKN报价颜色-->
+            <SolidColorBrush x:Key="scbOfferPrice" Color="#12A1FF"/>
+
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            </Style>
+
+            <Style x:Key="ColumnHeaderGripperStyle" TargetType="Thumb">
+                <Setter Property="Width" Value="8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Cursor" Value="SizeWE"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Thumb}">
+                            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="{x:Type ItemsControl}" TargetType="{x:Type ItemsControl}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Items.Count, RelativeSource={RelativeSource Self}}" Value="0">
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <VisualBrush Stretch="None">
+                                    <VisualBrush.Visual>
+                                        <TextBlock  Foreground="#FFFFFF" Opacity="0.5" FontSize="30" Text="暂无数据 " 
+                                       />
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Setter.Value>
+                        </Setter>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Items, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <VisualBrush Stretch="None">
+                                    <VisualBrush.Visual>
+                                        <TextBlock Foreground="#FFFFFF" Opacity="0.5" FontSize="30" Text="暂无数据 " 
+                                       />
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Setter.Value>
+                        </Setter>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type ItemsControl}}">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <!--<Setter Property="Background" Value="#040B0B"/>-->
+                <Setter Property="AlternationCount" Value="2"/>
+                <Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Foreground">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Background" Value="#040B0B"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridColumnHeader">
+                                        <Grid Background="Black" x:Name="gdColumnHeader">
+                                            <!--<Themes:DataGridHeaderBorder BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" IsClickable="{TemplateBinding CanUserSort}" IsPressed="{TemplateBinding IsPressed}" IsHovered="{TemplateBinding IsMouseOver}" Padding="{TemplateBinding Padding}" SortDirection="{TemplateBinding SortDirection}" SeparatorBrush="{TemplateBinding SeparatorBrush}" SeparatorVisibility="{TemplateBinding SeparatorVisibility}">-->
+                                            <Grid >
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Line x:Name="headerLine" X1="0" Y1="7"  X2="0" Y2="21" 
+                                                      Stroke="#193D37 " StrokeThickness="1" />
+                                                <ContentPresenter Grid.Column="0" Margin="5,0,5,0"
+                                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                <Path x:Name="SortArrow"
+                                                          Grid.Column="1"
+                                                          HorizontalAlignment="Left"
+                                                          VerticalAlignment="Center"
+                                                          Width="8" Height="12" Margin="5,0,5,0"
+                                                          Stretch="Fill" Opacity="1" Fill="{TemplateBinding Foreground}"
+                                                          RenderTransformOrigin="0.5,0.4"
+                                                          Visibility="Collapsed"
+                                                          Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" />
+                                            </Grid>
+                                            <!--</Themes:DataGridHeaderBorder>-->
+                                            <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left"  Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                            <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right"  Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="SortDirection" Value="Ascending">
+                                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"></Setter>
+                                                <Setter TargetName="SortArrow" Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <RotateTransform Angle="180" />
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                            <Trigger Property="SortDirection" Value="Descending">
+                                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="headerLine" Property="Stroke" Value="#136C5E" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                            <!--<Setter Property="Background" Value="#0E0F0E"/>-->
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Style.Triggers>
+                                <Trigger Property="AlternationIndex" Value="0">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#0F0F0F" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="AlternationIndex" Value="1">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#181818" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#193D37" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#193D37" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="LabelStyle1" TargetType="{x:Type Label}">
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Label}">
+                            <Border CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="SelfLabel" TargetType="Label" BasedOn="{StaticResource LabelStyle1}">
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="#008704"></Setter>
+            </Style>
+            <Style x:Key="OtherLabel" TargetType="Label" BasedOn="{StaticResource LabelStyle1}">
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="SelectData" TargetType="DataGrid">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <Setter Property="Background" Value="#040B0B"/>
+                <Setter Property="AlternationCount" Value="1"/>
+                <Setter Property="AlternatingRowBackground" Value="#121716"/>
+                <Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Margin" Value="10,0,0,0"/>
+                            <Setter Property="Foreground">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Background" Value="#040B0B"/>
+                            <Setter Property="Height" Value="30"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                            <Setter Property="Background" Value="#0F0F0F"/>
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" Value="#172422"/>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#172422"/>
+                                    <Setter Property="Foreground" Value="#FFEBC8"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type Button}" x:Key="ImageCashButton">
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" CornerRadius="2,2,2,2" BorderThickness="0" Background="{TemplateBinding Background}" BorderBrush="#FFFFEBC8">
+                                <Image  Grid.Column="1" Width="24" Height="24"  >
+                                    <Image.Source>
+                                        <DrawingImage >
+                                            <DrawingImage.Drawing>
+                                                <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                    <DrawingGroup Opacity="1">
+                                                        <DrawingGroup Opacity="1" Transform="1,0,0,1,-1410,-120">
+                                                            <DrawingGroup Opacity="1" Transform="1,0,0,1,1353,120">
+                                                                <DrawingGroup Opacity="1" Transform="1,0,0,1,57,0">
+                                                                    <GeometryDrawing Brush="#FFA0A0A0" Geometry="F0 M24,24z M0,0z M11.75,5C15.4779221,5 18.5,8.02207794 18.5,11.75 18.5,15.4779221 15.4779221,18.5 11.75,18.5 8.02207794,18.5 5,15.4779221 5,11.75 5,8.02207794 8.02207794,5 11.75,5z M11.75,6.23958111C8.68385567,6.23958111 6.19825458,8.7251822 6.19825458,11.7913265 6.19825458,14.8574709 8.68385567,17.3430719 11.75,17.3430719 14.8161443,17.3430719 17.3017454,14.8574709 17.3017454,11.7913265 17.3017454,8.7251822 14.8161443,6.23958111 11.75,6.23958111z M12.0031261,9.00602674L12.003,12.005 15.0111809,12.0051866 15.0111809,13.0055351 11.0027776,13.0055351 11.0027776,9.00602674 12.0031261,9.00602674z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingGroup>
+                                            </DrawingImage.Drawing>
+                                        </DrawingImage>
+                                    </Image.Source>
+                                </Image>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#178674" TargetName="border"  />
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" Value="#115B4F"  TargetName="border" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--删除按钮样式-->
+            <ControlTemplate x:Key="CloseButtonTemplate"
+                             TargetType="Button">
+                <Border x:Name="border" CornerRadius="2" Background="#197162">
+
+                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="Center" 
+                                      TextBlock.Foreground="Wheat" TextBlock.FontSize="10"
+                                      RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+            <!--带背景和删除按钮的编辑框-->
+            <Style TargetType="localcomp:ClearTextBox">
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="Height" Value="25"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Width" Value="200"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Foreground" Value="AliceBlue"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="localcomp:ClearTextBox">
+                            <Border x:Name="border" Background="{TemplateBinding Background}"   CornerRadius="1" BorderThickness="1" BorderBrush="#3C3C3C" >
+                                <Grid Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="tbBG" Margin="0" Padding="5,2,0,0" Grid.RowSpan="2"  
+                                       Text="{TemplateBinding BackGroundText}"  Visibility="Visible"
+                                       Foreground="Wheat"  FontSize="12" 
+                                       VerticalAlignment="Center"  Opacity="0.5" />
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false"  
+                                          HorizontalScrollBarVisibility="Hidden" Foreground="#A0A0A0" VerticalScrollBarVisibility="Hidden"/>
+                                    <Button Name="ClearTextButton" Content="x"  Grid.Column="1" Margin="3,0,3,0"  Visibility="Hidden"
+                                            Width="17"  Height="16"  Template="{StaticResource CloseButtonTemplate}"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#0F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#00CDAD"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#0F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#00CDAD"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Image  x:Key="price_x_Image"  x:Shared="False"   Margin="2,0,0,0" Width="16"  Height="16"  >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V16 H16 V0 H0 Z">
+                                <DrawingGroup.Transform>
+                                    <TranslateTransform X="3.4125820579759984E-33" Y="0" />
+                                </DrawingGroup.Transform>
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1">
+                                        <DrawingGroup Opacity="1" Transform="1,0,0,1,3,3.7813">
+                                            <GeometryDrawing Brush="#238F7E" Geometry="F0 M16,16z M0,0z M7.2383056,0.192279871C7.39656303,-0.019569854 7.69659416,-0.0630149943 7.90844388,0.0952424339 8.13731746,0.266217136 8.19347535,0.585847063 8.03658925,0.824598428L5.705,4.371 9.5,4.37187745C9.77614237,4.37187745 10,4.59573508 10,4.87187745 10,5.14801983 9.77614237,5.37187745 9.5,5.37187745L6.166,5.371 8.03658925,8.21810397C8.19347535,8.45685533 8.13731746,8.77648526 7.90844388,8.94745996 7.69659416,9.10571739 7.39656303,9.06227225 7.2383056,8.85042252 7.23255145,8.84271978 7.22703061,8.83484547 7.22175061,8.82681029L5,5.445 2.77824939,8.82681029C2.77560939,8.83082788,2.77290918,8.83480525,2.7701497,8.83874107L2.7616944,8.85042252C2.60343697,9.06227225 2.30340584,9.10571739 2.09155612,8.94745996 1.86268254,8.77648526 1.80652465,8.45685533 1.96341075,8.21810397L3.833,5.371 0.5,5.37187745C0.223857625,5.37187745 3.38176876E-17,5.14801983 0,4.87187745 -3.38176876E-17,4.59573508 0.223857625,4.37187745 0.5,4.37187745L4.294,4.371 1.96341075,0.824598428C1.80652465,0.585847063 1.86268254,0.266217136 2.09155612,0.0952424339 2.30340584,-0.0630149943 2.60343697,-0.019569854 2.7616944,0.192279871 2.76744855,0.199982612 2.77296939,0.207856927 2.77824939,0.215892105L5,3.596 7.22175061,0.215892105C7.22439061,0.211874516,7.22709082,0.207897142,7.2298503,0.203961324z" />
+                                        </DrawingGroup>
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+
+            <Image  x:Key="price_xx_Image"  x:Shared="False"   Margin="2,0,0,0" Width="16"  Height="16"  >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V16 H16 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <GeometryDrawing Brush="#238F7E" Geometry="F1 M16,16z M0,0z M6.75019638,8.55303877C6.98934269,8.69110996 7.07128027,8.99690516 6.93320908,9.23605148 6.88152696,9.32556754 6.83585439,9.40467476 6.79199865,9.48063512L6.68808656,9.66061615C6.54096337,9.91544099,6.37636121,10.2005403,6.0335419,10.7943208L7.83359518,10.7955659C8.10973755,10.7955659 8.33359518,11.0194236 8.33359518,11.2955659 8.33359518,11.5717083 8.10973755,11.7955659 7.83359518,11.7955659L6.0322554,11.7945828C6.28368973,12.2300799 6.58045239,12.7440879 6.93320908,13.3550804 7.07128027,13.5942267 6.98934269,13.9000219 6.75019638,14.0380931 6.51105007,14.1761643 6.20525487,14.0942267 6.06718368,13.8550804 5.71442699,13.2440879 5.41766433,12.7300799 5.16622999,12.2945828 4.91606577,12.7298462 4.61924838,13.243949 4.2664115,13.8550804 4.12834031,14.0942267 3.82254511,14.1761643 3.58339879,14.0380931 3.34425248,13.9000219 3.2623149,13.5942267 3.40038609,13.3550804 3.75322297,12.743949 4.05004036,12.2298462 4.30151124,11.7942858L2.5,11.7955659C2.22385763,11.7955659 2,11.5717083 2,11.2955659 2,11.0194236 2.22385763,10.7955659 2.5,10.7955659L4.30040103,10.7949231C4.03870942,10.3416599,3.88082457,10.0681953,3.75532405,9.85082205L3.69887342,9.75304669C3.68066029,9.72150063,3.66296147,9.69084537,3.64550862,9.66061615L3.54159652,9.48063512C3.49774079,9.40467476 3.45206822,9.32556754 3.40038609,9.23605148 3.2623149,8.99690516 3.34425248,8.69110996 3.58339879,8.55303877 3.82254511,8.41496759 4.12834031,8.49690516 4.2664115,8.73605148 4.32843004,8.84347075 4.38179484,8.93590129 4.43375089,9.02589181L4.51153402,9.16061615C4.52898687,9.19084537,4.54668569,9.22150063,4.56489882,9.25304669L4.62134945,9.35082205C4.74684998,9.56819533 4.90473482,9.84165991 5.16642643,10.2949231 5.51033581,9.70054029 5.67493796,9.41544099 5.82206115,9.16061615L5.89984429,9.02589181C5.95180033,8.93590129 6.00516513,8.84347075 6.06718368,8.73605148 6.20525487,8.49690516 6.51105007,8.41496759 6.75019638,8.55303877z M12.897402,2.07554538C13.1318593,2.22143708 13.2036559,2.52977086 13.0577642,2.76422816 13.0211611,2.82305169 12.9867111,2.87841501 12.9536543,2.93153937L12.8891732,3.03516468 12.7659526,3.23318806 12.7045111,3.33192836C12.4791545,3.69409088,12.220397,4.10993082,11.6371508,5.04724475L14.2,5.04783654C14.4761424,5.04783654 14.7,5.27169416 14.7,5.54783654 14.7,5.82397891 14.4761424,6.04783654 14.2,6.04783654L11.6954817,6.04663255C12.0683414,6.64584193 12.5158597,7.3650324 13.0577642,8.23590757 13.2036559,8.47036487 13.1318593,8.77869865 12.897402,8.92459035 12.6629447,9.07048205 12.3546109,8.99868545 12.2087192,8.76422816 11.6271572,7.82962081 11.1543016,7.06971165 10.765769,6.44531485 10.3786651,7.06971165 9.90580956,7.82962081 9.32424755,8.76422816 9.17835585,8.99868545 8.87002207,9.07048205 8.63556477,8.92459035 8.40110748,8.77869865 8.32931088,8.47036487 8.47520258,8.23590757 9.01712854,7.36499789 9.46466079,6.64578494 9.83752934,6.04656133L7.5,6.04783654C7.22385763,6.04783654 7,5.82397891 7,5.54783654 7,5.27169416 7.22385763,5.04783654 7.5,5.04783654L9.89581598,5.04724475C9.15195049,3.85180534,8.93590336,3.50460378,8.64379358,3.03516468L8.57931245,2.93153937C8.54625566,2.87841501 8.51180568,2.82305169 8.47520258,2.76422816 8.32931088,2.52977086 8.40110748,2.22143708 8.63556477,2.07554538 8.87002207,1.92965368 9.17835585,2.00145028 9.32424755,2.23590757 9.37305169,2.31433895 9.41802805,2.38661884 9.46097795,2.45564207L9.5241081,2.55709626C9.53445154,2.57371882,9.54472461,2.59022831,9.55495547,2.60666995L9.61605915,2.70486748C9.86078022,3.09814989 10.1136425,3.50451575 10.7662743,4.55333678 11.338051,3.63512708 11.6029426,3.20942926 11.8241966,2.85385995L11.8863135,2.75403409C11.9067753,2.72115081,11.9270681,2.68853892,11.9474172,2.65583656L12.0088587,2.55709626C12.0709193,2.45736086 12.135513,2.35355463 12.2087192,2.23590757 12.3546109,2.00145028 12.6629447,1.92965368 12.897402,2.07554538z" />
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+
+            <Image  x:Key="price_package_Image"  x:Shared="False"   Margin="2,0,0,0" Width="16"  Height="16"  >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V16 H16 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <GeometryDrawing Brush="#238F7E" Geometry="F1 M16,16z M0,0z M8.21946309,2.55073844C11.2440269,4.0282299,12.073074,4.43321723,12.6190628,4.6999313L12.721717,4.75007764 12.8175097,4.79687209C12.8333186,4.8045947,12.8490884,4.8122982,12.8648777,4.82001126L12.9603182,4.86663367C13.0408302,4.90596356 13.1247661,4.94696605 13.2194631,4.99322528 13.4390793,5.10050723 13.5297957,5.32864174 13.4914577,5.53570906 13.4968975,5.56627314 13.5,5.59805734 13.5,5.63056617L13.5,9.8605115C13.5,10.0488072,13.3942148,10.2211359,13.2263111,10.3063627L8.22631113,12.8443299C8.0840744,12.9165283,7.9159256,12.9165283,7.77368887,12.8443299L2.77368887,10.3063627C2.60578519,10.2211359,2.5,10.0488072,2.5,9.8605115L2.5,5.63056617C2.5,5.59805734 2.50310248,5.56627314 2.50902749,5.53549349 2.47020426,5.32864174 2.56092067,5.10050723 2.78053691,4.99322528L7.78053691,2.55073844C7.91902537,2.48308719,8.08097463,2.48308719,8.21946309,2.55073844z M3.49999999,6.245L3.5,9.5544787 7.49999999,11.584 7.49999999,8.21 3.49999999,6.245z M12.5005841,6.24486191C11.9660269,6.50743552,11.0949367,6.93531365,8.50033991,8.20977535L8.49999999,11.584 12.5,9.5544787 12.5005841,6.24486191z" />
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+
+            <Image  x:Key="price_oco_Image"   x:Shared="False"  Margin="2,0,0,0" Width="16"  Height="16"  >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V16 H16 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1">
+                                        <DrawingGroup Opacity="1" Transform="1,0,0,1,2.5,3">
+                                            <GeometryDrawing Brush="#238F7E" Geometry="F1 M16,16z M0,0z M9.5,0C10.0522847,0,10.5,0.44771525,10.5,1L10.5,3.28571429C10.5,3.83799904,10.0522847,4.28571429,9.5,4.28571429L4.35714286,4.28571429C3.80485811,4.28571429,3.35714286,3.83799904,3.35714286,3.28571429L3.357,1.928 2.64285714,1.92857143C1.7355322,1.92857143,1,2.66410363,1,3.57142857L1,6.42857143C1,7.33589637,1.7355322,8.07142857,2.64285714,8.07142857L3.357,8.071 3.35714286,6.71428571C3.35714286,6.16200096,3.80485811,5.71428571,4.35714286,5.71428571L9.5,5.71428571C10.0522847,5.71428571,10.5,6.16200096,10.5,6.71428571L10.5,9C10.5,9.55228475,10.0522847,10,9.5,10L4.35714286,10C3.82913436,10,3.39670448,9.59077929,3.35970885,9.07219349L2.64285714,9.07142857C1.18324745,9.07142857,0,7.88818112,0,6.42857143L0,3.57142857C0,2.11181888,1.18324745,0.928571429,2.64285714,0.928571429L3.361,0.928 3.36387059,0.883378875C3.4216357,0.38604019,3.84430702,0,4.35714286,0L9.5,0z M9.5,6.71428571L4.35714286,6.71428571 4.35714286,9 9.5,9 9.5,6.71428571z M9.5,1L4.35714286,1 4.35714286,3.28571429 9.5,3.28571429 9.5,1z" />
+                                        </DrawingGroup>
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+
+            <Image  x:Key="ExchangeBond_Image"   x:Shared="False"  Margin="2,0,0,0" Width="16"  Height="16"  >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V16 H16 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1">
+                                        <GeometryDrawing Brush="#238F7E" Geometry="F1 M16,16z M0,0z M9.26703945,7.49990046C9.54318183,7.49990046,9.76703945,7.72375808,9.76703945,7.99990046L9.75977069,8.56461525C9.96142917,9.73433142,9.06475659,10.8922339,7.76630703,10.9999005L4.46317733,10.9989994 6.09905475,12.6475285C6.27199226,12.8217214,6.29030291,13.0912138,6.15460465,13.2855941L6.09649985,13.354633C5.90053045,13.5491853,5.58395003,13.5480404,5.38939296,13.3520757L3.41220974,11.3605347 3.3380318,11.2650743C3.04922722,10.7826228,3.09898265,10.0964803,3.35242047,9.7204526L5.38864346,7.648375C5.58278827,7.45200194 5.89936555,7.45018596 6.09575049,7.64431888 6.29212355,7.83846369 6.29393954,8.15504097 6.09980067,8.35141997L4.47017733,9.99899939 7.7243136,10.001667C8.3968431,9.94498311,8.87626262,9.32589308,8.76703945,8.64956187L8.76703945,7.99990046C8.76703945,7.72375808,8.99089708,7.49990046,9.26703945,7.49990046z M11.1446859,2.64772519L13.1218692,4.63926619 13.1960471,4.73472658C13.4848517,5.21717812,13.4350963,5.90332062,13.1816584,6.27934831L11.1454354,8.35142591C10.9512906,8.54779897 10.6347134,8.54961496 10.4383284,8.35548203 10.2419554,8.16133723 10.2401394,7.84475995 10.4342782,7.64838095L12.0641773,5.99899939 8.80976531,5.99813389C8.1372358,6.05481781,7.65781628,6.67390784,7.76703945,7.35023904L7.76703945,7.99990046C7.76703945,8.27604283 7.54318183,8.49990046 7.26703945,8.49990046 6.99089708,8.49990046 6.76703945,8.27604283 6.76703945,7.99990046L6.77430822,7.43518566C6.57264973,6.2654695,7.46932232,5.107567,8.76777187,4.99990046L12.0691773,4.99899939 10.4350242,3.35227245C10.2620866,3.17807952,10.243776,2.90858714,10.3794743,2.71420683L10.4375791,2.64516793C10.6335485,2.45061559,10.9501289,2.45176052,11.1446859,2.64772519z" />
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid x:Name="gMain">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <StackPanel x:Name="spConditions" Orientation="Horizontal" Margin="5,5,5,5" Grid.Row="0" Grid.Column="0">
+
+                <TextBox x:Name="txtb" Width="0"></TextBox>
+                <DatePicker x:Name="dpFrom" Height="25" Width="100" Margin="10,0,3,0" FontFamily="{StaticResource DefaultFont}" Style="{StaticResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" SelectedDateChanged="dpFrom_SelectedDateChanged"></DatePicker>
+                <Line X1 ="5" Y1="12"  X2="15"  Y2="12" Stroke="Wheat" />
+                <DatePicker x:Name="dpTo" Height="25" Width="100" Margin="10,0,0,0" FontFamily="{StaticResource DefaultFont}" Style="{StaticResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" SelectedDateChanged="dpTo_SelectedDateChanged"></DatePicker>
+                <TextBlock x:Name="tbOrderStatus" VerticalAlignment="Center" Visibility="Collapsed">订单状态：</TextBlock>
+                <ComboBox x:Name="cbOrderStatus" Width="60" Visibility="Collapsed"></ComboBox>
+                <!--<CheckBox x:Name="cbMyDeals"  Content="我的交易" Foreground="#A0A0A0" Width="70"  Margin="10,0,0,0"
+                              Style="{StaticResource ShowStarCheckBoxStyle}"  Click="cbMyDeals_Click" />-->
+                <CheckBox x:Name="cbMyDeals" Margin="16,0,0,0" Content="我的交易" Style="{DynamicResource CheckBoxStyle_2}"
+                              IsChecked="{Binding Path=IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BorderBrush="{DynamicResource TextBox.Static.Border}"
+                              Background="#0F0F0F" Foreground="#A0A0A0" HorizontalAlignment="Center"  VerticalAlignment="Center" 
+                              Click="cbMyDeals_Click" />
+                <TextBlock x:Name="tb_bond" Margin="16,0,0,0" Foreground="#A0A0A0" VerticalAlignment="Center">债券</TextBlock>
+                <localcomp:ClearTextBox x:Name="ctbBond" BackGroundText="" Width="100" Height="24" Margin="8,0,0,0" 
+                                           Foreground="#A0A0A0" Background="#0F0F0F"
+                                           BorderBrush="#3C3C3C"
+                                           KeyDown="ctbBond_KeyDown" PreviewKeyDown="ctbBond_PreviewKeyDown"
+                                           TextChanged="ctbBond_TextChanged" LostKeyboardFocus="ctbBond_LostKeyboardFocus"/>
+                <Popup x:Name="tbBCodePop" PlacementTarget="{Binding ElementName=ctbBond}" LostFocus="tbBCodePop_LostFocus"  StaysOpen="False" MaxHeight="300">
+                    <DataGrid x:Name="dgCodeResult"
+                                  Grid.Row="1"
+                                  Background="#0F0F0F"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="288"
+                                  MouseDoubleClick="dgCodeResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{StaticResource SelectData}">
+                        <DataGrid.Resources>
+                            <Style x:Key="tbStyle" TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding Bond_ID}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForeground}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding Short_Name}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForeground}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding RemaingingTime}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForeground}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Popup>
+                <TextBlock x:Name="tb_inst" Margin="16,0,0,0" Foreground="#A0A0A0" VerticalAlignment="Center">机构</TextBlock>
+                <localcomp:ClearTextBox x:Name="ctbBank" BackGroundText="" Width="110" Height="22" Margin="8,0,0,0" 
+                                           Foreground="#A0A0A0" Background="#0F0F0F"
+                                           KeyDown="ctbBank_KeyDown" PreviewKeyDown="ctbBank_PreviewKeyDown"
+                                           TextChanged="ctbBank_TextChanged" LostKeyboardFocus="ctbBank_LostKeyboardFocus"/>
+                <Popup x:Name="tbInstPop" PlacementTarget="{Binding ElementName=ctbBank}" MaxHeight="300" LostFocus="tbInstPop_LostFocus"  StaysOpen="False">
+                    <DataGrid x:Name="dgInstResult"
+                                  Grid.Row="1"
+                                  Background="#0F0F0F"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  MouseDoubleClick="dgInstResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{StaticResource SelectData}">
+                        <DataGrid.Resources>
+                            <Style x:Key="tbStyle" TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding TipsShortnamelist}" Width="1*" >
+                                <DataGridTextColumn.ElementStyle >
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                        <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding instcode}" Width="1*" Visibility="Collapsed">
+                                <DataGridTextColumn.ElementStyle >
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                        <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Popup>
+                <TextBlock x:Name="tb_trader" Margin="16,0,0,0" Foreground="#A0A0A0" VerticalAlignment="Center">机构(交易员)</TextBlock>
+                <localcomp:ClearTextBox x:Name="ctbBankAgent" BackGroundText="" Width="130" Height="22" Margin="8,0,0,0" 
+                                           Foreground="Red" Background="#0F0F0F"
+                                           KeyDown="ctbBankAgent_KeyDown" PreviewKeyDown="ctbBankAgent_PreviewKeyDown"
+                                           TextChanged="ctbBankAgent_TextChanged" LostKeyboardFocus="ctbBankAgent_LostKeyboardFocus"/>
+                <Popup x:Name="tbTraderPop" PlacementTarget="{Binding ElementName=ctbBankAgent}" MaxHeight="300" LostFocus="tbTraderPop_LostFocus"  StaysOpen="False">
+                    <DataGrid x:Name="dgTraderResult"
+                                  Grid.Row="1"
+                                  Background="#0F0F0F"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  MouseDoubleClick="dgTraderResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{StaticResource SelectData}">
+                        <DataGrid.Resources>
+                            <Style x:Key="tbStyle" TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding InstTraderName}" Width="1*" >
+                                <DataGridTextColumn.ElementStyle >
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                        <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding instcode}" Width="1*" Visibility="Collapsed">
+                                <DataGridTextColumn.ElementStyle >
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                        <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Popup>
+
+                <Button  x:Name="btnSelect" Margin="10,0,0,0" Style="{StaticResource ConfirmButtonStyle}" Foreground="Wheat" Width="64" Height="24" Content="查询" Click="Button_Click"/>
+            </StackPanel>
+        </Grid>
+
+
+        <Grid x:Name="gDetail" Grid.Row="1" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid Background="Black" Margin="5">
+                <TextBlock x:Name="tbInfo"  Foreground="{StaticResource DefaultForeground}" FontSize="16px" Visibility="Collapsed" Text="未查到结果，请重试！"></TextBlock>
+                <DataGrid x:Name="dgRecords"  ItemsSource="{Binding}" FontSize="12"   BorderThickness="0"  BorderBrush="#464646" 
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.CanContentScroll="True" 
+                          
+                          ColumnHeaderDragCompleted="dgRecords_ColumnHeaderDragCompleted"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Item"   >
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                            <Setter Property="FontSize" Value="14"/>
+                            <Setter Property="Margin" Value="5,0,5,0"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="Foreground" Value="#FFEBC8"/>
+                            <Setter Property="ToolTip">
+                                <Setter.Value>
+                                    <ToolTip Content="{Binding Path=Text}"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.Resources>
+
+                    <DataGrid.Columns>
+                        <DataGridTextColumn x:Name="dtg_seq" Header="内码"  Width="*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" Foreground="#FFEBC8"  FontWeight="Bold" Binding="{Binding Sequence}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcTimeToMaturity" Header="剩余期限" Width="80" MinWidth="75" ElementStyle="{StaticResource tbStyle}" CanUserSort="True" SortMemberPath="timeToMaturity" Foreground="#FFEBC8" FontWeight="Bold"  Binding="{Binding TimeToMaturity}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcGoodsCode" Header="代码" Width="*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" Foreground="#FFEBC8"  FontWeight="Bold" Binding="{Binding SecurityID}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcGoodsShortName" Header="简称" Width="*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsShortName" Foreground="#FFEBC8" FontWeight="Bold"  Binding="{Binding Symbol}"></DataGridTextColumn>
+                        <!--<DataGridTextColumn x:Name="dgtcPriceFormat" Header="Px" Width="2*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" Foreground="#F9C66E"  FontWeight="Bold"  Binding="{Binding PriceFormat}"></DataGridTextColumn>-->
+
+                        <DataGridTemplateColumn x:Name="dgtcPriceFormat" Header="Px"  Width="*" CanUserSort="False" SortMemberPath="PriceFormat">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel x:Name="spPrice" Orientation="Horizontal" VerticalAlignment="Center" Loaded="spPrice_Loaded">
+                                        <TextBlock x:Name="tbContentDisplay" Foreground="#F9C66E"  FontWeight="Bold"  Style ="{StaticResource tbStyle}"  Text="{Binding PriceFormat}"></TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn x:Name="dgFandian" Header="价格备注" Width="*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="FandianShow" Foreground="#F9C66E" FontWeight="Bold"  Binding="{Binding FandianShow}"></DataGridTextColumn>
+
+                        <DataGridTemplateColumn x:Name="dgTecTag" Header="结算方式"  Width="*" CanUserSort="False" SortMemberPath="ContentDisplay">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel x:Name="spTag" Orientation="Horizontal" VerticalAlignment="Center" Loaded="spTag_Loaded">
+                                        <StackPanel x:Name="spTagChild"></StackPanel>
+                                        <TextBlock x:Name="tbContentDisplay" Foreground="#FFEBC8" FontSize="14"  Margin="5,0,0,0" FontFamily="{StaticResource DefaultFont}" Text="{Binding ContentDisplay}"></TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:Name="dgtcVolDisplay" Header="Vol" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="qty" Foreground="#F9C66E" Width="*" FontWeight="Bold"  Binding="{Binding LastQty}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcTraderAInfo" Header="点价/ofr方"  Width="1.2*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="TraderAInfo" Foreground="#FFEBC8"  Binding="{Binding TraderAInfo}" ></DataGridTextColumn>
+                        <DataGridTemplateColumn x:Name="dgTecTraderA"  Header="点价/ofr方Broker" Width="1.3*" CanUserSort="False" SortMemberPath="brokerNameA" >
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:Name="dTeTraderA" >
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="24"></ColumnDefinition>
+                                            <ColumnDefinition Width="4"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="tbBrokerNameA" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14"  Text="{Binding PartySubName}">
+                                            <TextBlock.ToolTip>
+                                                <ToolTip x:Name="ttTraderAText" Content="{Binding Path=Text}">
+                                                </ToolTip>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                        <Image  x:Name="im_brokerA_TBC" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#C29B4E" Geometry="F0 M24,24z M0,0z M11.9007063,14.9497681C12.1419829,14.9493548 12.3545349,15.0339476 12.5245518,15.1992898 12.6957647,15.3657952 12.7845226,15.5756436 12.7845226,15.8141703 12.7845226,16.0526971 12.6957647,16.2625455 12.5245518,16.4290509 12.3545349,16.5943931 12.1419829,16.6789859 11.900703,16.6785726 11.6599843,16.678154 11.4479691,16.5937748 11.2781793,16.4294958 11.106604,16.2634894 11.0177497,16.0534132 11.0177497,15.8141703 11.0177497,15.5749275 11.106604,15.3648513 11.2781793,15.1988448 11.4479691,15.0345659 11.6599843,14.9501867 11.9007063,14.9497681z M11.9892636,6.75C12.9486213,6.75 13.7592958,7.08080408 14.4068887,7.73846026 15.0153373,8.35982078 15.29726,9.09087368 15.2437584,9.91185841 15.2221585,10.3378912 15.1120612,10.7440861 14.914252,11.1281773 14.7173832,11.5104426 14.3121526,11.9951504 13.695428,12.593388 13.0504528,13.2190292 12.7178056,13.6831674 12.6936913,13.9504969 12.6652684,14.14218 12.5773673,14.3056637 12.4341505,14.4307841 12.2898556,14.5568464 12.1134167,14.6209705 11.9162168,14.6209705L11.840798,14.6204248C11.6266483,14.6062513 11.4435093,14.5155714 11.3060997,14.3544558 11.1664261,14.1906856 11.1088274,13.9929843 11.1374963,13.786754 11.1814964,13.3811119 11.3323433,12.9978392 11.5872545,12.6400725 11.827642,12.30269 12.1637711,11.9251711 12.5962503,11.5056562 12.9394736,11.1733127 13.1945835,10.8870008 13.3607444,10.6492459 13.5216311,10.4190378 13.6147549,10.2576514 13.6342307,10.1887155 13.6581373,10.1040969 13.6753348,9.98318609 13.6842424,9.82639673 13.7091118,9.44144098 13.5787292,9.10552556 13.2840277,8.80345564 12.9387554,8.45165321 12.5171847,8.27811416 12.0043442,8.27811416L11.9897349,8.27811416C11.5242572,8.27811416 11.1325791,8.43621316 10.8013609,8.75750273 10.4716261,9.07735332 10.3103568,9.45329166 10.3103568,9.89965679 10.3103568,10.1102981 10.2313762,10.2964585 10.079847,10.4434454 9.92980593,10.5889888 9.74204951,10.6639424 9.53017839,10.6639424 9.31830727,10.6639424 9.13055086,10.5889888 8.98050977,10.4434454 8.82898059,10.2964585 8.75,10.1102981 8.75,9.89965679 8.75,9.03170691 9.0696552,8.28379512 9.70202366,7.67038268 10.3329072,7.05841068 11.0997975,6.75 11.9892636,6.75z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image x:Name="im_brokerA_PartOk" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20"  Visibility="Collapsed">
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,6,6">
+                                                                        <GeometryDrawing Brush="#874EB9" Geometry="F1 M24,24z M0,0z M11.6722126,0C11.8758352,0 12.0649585,0.0718880982 12.2129941,0.211156718 12.3675065,0.356518532 12.450658,0.551209409 12.4502387,0.763288578 12.4497997,0.981905633 12.3594092,1.18087782 12.210632,1.30893299L8.55537243,4.76988019C8.40820946,4.92122463,8.21337214,5,8.00228425,5L7.94915793,4.99738886C7.91950747,4.99543182,7.89904234,4.99246313,7.87189008,4.9850083L7.85890481,4.981 7.81535566,4.97439065C7.64457422,4.93540244,7.4970622,4.8427177,7.3904993,4.70762009L7.33161689,4.62156225 6.21865857,2.78531027C6.11809421,2.60732993 6.09049793,2.40551213 6.14285481,2.20793856 6.19789749,2.00022986 6.33348313,1.83425503 6.52383151,1.73515219 6.70206904,1.64235474 6.90096353,1.62089367 7.09524503,1.67257999 7.28423609,1.72285886 7.44360883,1.83413087 7.56819804,2.01822124L8.17190481,3.015 11.1191245,0.230119815C11.2368548,0.109044261,11.3850968,0.0344129118,11.5477614,0.00940339427L11.6722126,0z M2.61690481,1.5C3.72147431,1.5 4.61690481,2.3954305 4.61690481,3.5 4.61690481,4.6045695 3.72147431,5.5 2.61690481,5.5 1.51233531,5.5 0.616904811,4.6045695 0.616904811,3.5 0.616904811,2.3954305 1.51233531,1.5 2.61690481,1.5z M8.11690481,7.5L11.1169048,7.5C11.3930472,7.5,11.6169048,7.72385763,11.6169048,8L11.6169048,11C11.6169048,11.2761424,11.3930472,11.5,11.1169048,11.5L8.11690481,11.5C7.84076244,11.5,7.61690481,11.2761424,7.61690481,11L7.61690481,8C7.61690481,7.72385763,7.84076244,7.5,8.11690481,7.5z M3.04565127,7.21457744L5.16255608,10.7427521C5.30463016,10.9795423 5.22784763,11.2866724 4.9910575,11.4287465 4.9133498,11.4753711 4.82443159,11.5 4.73380962,11.5L0.5,11.5C0.223857625,11.5 3.73590048E-14,11.2761424 3.73034936E-14,11 3.73034936E-14,10.909378 0.0246289167,10.8204598 0.0712535371,10.7427521L2.18815835,7.21457744C2.33023243,6.97778731 2.63736256,6.90100477 2.87415269,7.04307885 2.94452749,7.08530373 3.00342639,7.14420264 3.04565127,7.21457744z" />
+                                                                    </DrawingGroup>
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image x:Name="im_brokerA_Refuse" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#C5585A" Geometry="F0 M24,24z M0,0z M15.5086685,7.59999891C15.7515268,7.59953205 15.9698252,7.68909727 16.1405196,7.86026717 16.3107092,8.03093085 16.4000011,8.2485591 16.4000011,8.4905595 16.4000011,8.73873974 16.3035733,8.95961882 16.1343166,9.11433318L13.259,12 16.1212844,14.8731616C16.2728858,15.0121971,16.365035,15.1885738,16.3918196,15.3870516L16.4000011,15.5086685C16.400468,15.7515268 16.3109027,15.9698252 16.1397328,16.1405196 15.9690691,16.3107092 15.7514409,16.4000011 15.5094405,16.4000011 15.2612603,16.4000011 15.0403812,16.3035733 14.8851151,16.1337659L12,13.248 9.12683843,16.1212844C8.98780295,16.2728858,8.81142625,16.365035,8.6129484,16.3918196L8.49133147,16.4000011C8.24847321,16.400468 8.03017484,16.3109027 7.85948041,16.1397328 7.68929079,15.9690691 7.59999891,15.7514409 7.59999891,15.5094405 7.59999891,15.2612603 7.69642674,15.0403812 7.8656834,14.8856668L10.74,11.999 7.87871556,9.12683843C7.72711419,8.98780295,7.63496503,8.81142625,7.60818045,8.6129484L7.59999891,8.49133147C7.59953205,8.24847321 7.68909727,8.03017484 7.86026717,7.85948041 8.03093085,7.68929079 8.2485591,7.59999891 8.4905595,7.59999891 8.73873974,7.59999891 8.95961882,7.69642674 9.11433318,7.8656834L12,10.74 14.8731616,7.87871556C15.0121971,7.72711419,15.1885738,7.63496503,15.3870516,7.60818045L15.5086685,7.59999891z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image  x:Name="im_brokerA_ROK" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#42B574" Geometry="F1 M24,24z M0,0z M16.530832,8.5C16.7911256,8.5 17.0275559,8.5921744 17.2124366,8.77056577 17.4012167,8.95271981 17.5005093,9.19116478 17.500001,9.45493572 17.4994718,9.72519736 17.3922779,9.96720843 17.2076147,10.1303985L11.0290954,16.1308937C10.8469458,16.323022,10.605664,16.4230769,10.3378278,16.4230769L10.2446963,16.4168492C10.1827333,16.4083562,10.1216136,16.3908016,10.0618987,16.3619119L10.151,16.397 10.1149094,16.3914937C9.88816933,16.3429745,9.69658481,16.219703,9.56048966,16.0360531L9.49716034,15.9392631 7.6246151,12.7708961C7.50110404,12.5466994 7.46801381,12.2984982 7.53153656,12.0526428 7.59809171,11.7950509 7.7612377,11.5902177 7.99706249,11.4642899 8.22332001,11.3434709 8.47393031,11.3157362 8.72189283,11.3833952 8.9630295,11.4491917 9.16219991,11.5918156 9.31405963,11.8216229L10.551,13.918 15.8395644,8.79218319C15.9913557,8.63207627,16.184211,8.53590922,16.3992776,8.50830096L16.530832,8.5z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger  Value="1" Binding="{Binding BrokerARole }">
+                                            <Setter TargetName="tbBrokerNameA" Property="Foreground" Value="#00CDAD"></Setter>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerAStatus}" Value="0">
+                                            <!--<Setter  TargetName="im_brokerA_OK" Property="Visibility" Value="Visible"/>-->
+                                            <Setter  TargetName="im_brokerA_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_ROK" Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerAStatus}" Value="1">
+                                            <!--<Setter  TargetName="im_brokerA_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerA_TBC" Property="Visibility" Value="Visible"/>
+                                            <Setter  TargetName="im_brokerA_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_ROK" Property="Visibility" Value="Collapsed"/>
+
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerAStatus}" Value="2">
+                                            <!--<Setter  TargetName="im_brokerA_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerA_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_PartOk" Property="Visibility" Value="Visible"/>
+                                            <Setter  TargetName="im_brokerA_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_ROK" Property="Visibility" Value="Collapsed"/>
+
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerAStatus}" Value="3">
+                                            <!--<Setter  TargetName="im_brokerA_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerA_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_Refuse" Property="Visibility" Value="Visible"/>
+                                            <Setter  TargetName="im_brokerA_ROK" Property="Visibility" Value="Collapsed"/>
+
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerAStatus}" Value="4">
+                                            <!--<Setter  TargetName="im_brokerA_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerA_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerA_ROK" Property="Visibility" Value="Visible"/>
+
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn x:Name="dgTecSideDisplay" Width="50"  CanUserSort="False" SortMemberPath="SideDisplay">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:Name="dTeSideDisplay">
+                                    <TextBlock x:Name="lbSide" Text="{Binding SideDisplay}" FontFamily="{StaticResource DefaultFont}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger  Value="GVN" Binding="{Binding SideDisplay }">
+                                            <Setter TargetName="lbSide" Property="Foreground" Value="#FF9200"></Setter>
+                                        </DataTrigger>
+                                        <DataTrigger  Value="出给" Binding="{Binding SideDisplay }">
+                                            <Setter TargetName="lbSide" Property="Foreground" Value="#FF9200"></Setter>
+                                        </DataTrigger>
+                                        <DataTrigger  Value="TKN" Binding="{Binding SideDisplay }">
+                                            <Setter TargetName="lbSide" Property="Foreground" Value="#12A1FF"></Setter>
+                                        </DataTrigger>
+                                        <DataTrigger  Value="TRD" Binding="{Binding SideDisplay }">
+                                            <Setter TargetName="lbSide" Property="Foreground" Value="#008704"></Setter>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:Name="dgtcTraderBInfo" Header="被点/bid方" Width="1.2*" CanUserSort="False" SortMemberPath="TraderBInfo" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}"  Binding="{Binding TraderBInfo}"></DataGridTextColumn>
+                        <DataGridTemplateColumn x:Name="dgtcTraderB" Header="被点/bid方Broker"  Width="1.3*" CanUserSort="False" SortMemberPath="brokerNameB">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:Name="dTeTraderB">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="24"></ColumnDefinition>
+                                            <ColumnDefinition Width="4"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="tbBrokerNameB" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"  FontSize="14" Text="{Binding CounterPartySubName}">
+                                            <TextBlock.ToolTip>
+                                                <ToolTip x:Name="ttTraderBText" Content="{Binding Path=Text}">
+                                                </ToolTip>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                        <Image  x:Name="im_brokerB_TBC" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#C29B4E" Geometry="F0 M24,24z M0,0z M11.9007063,14.9497681C12.1419829,14.9493548 12.3545349,15.0339476 12.5245518,15.1992898 12.6957647,15.3657952 12.7845226,15.5756436 12.7845226,15.8141703 12.7845226,16.0526971 12.6957647,16.2625455 12.5245518,16.4290509 12.3545349,16.5943931 12.1419829,16.6789859 11.900703,16.6785726 11.6599843,16.678154 11.4479691,16.5937748 11.2781793,16.4294958 11.106604,16.2634894 11.0177497,16.0534132 11.0177497,15.8141703 11.0177497,15.5749275 11.106604,15.3648513 11.2781793,15.1988448 11.4479691,15.0345659 11.6599843,14.9501867 11.9007063,14.9497681z M11.9892636,6.75C12.9486213,6.75 13.7592958,7.08080408 14.4068887,7.73846026 15.0153373,8.35982078 15.29726,9.09087368 15.2437584,9.91185841 15.2221585,10.3378912 15.1120612,10.7440861 14.914252,11.1281773 14.7173832,11.5104426 14.3121526,11.9951504 13.695428,12.593388 13.0504528,13.2190292 12.7178056,13.6831674 12.6936913,13.9504969 12.6652684,14.14218 12.5773673,14.3056637 12.4341505,14.4307841 12.2898556,14.5568464 12.1134167,14.6209705 11.9162168,14.6209705L11.840798,14.6204248C11.6266483,14.6062513 11.4435093,14.5155714 11.3060997,14.3544558 11.1664261,14.1906856 11.1088274,13.9929843 11.1374963,13.786754 11.1814964,13.3811119 11.3323433,12.9978392 11.5872545,12.6400725 11.827642,12.30269 12.1637711,11.9251711 12.5962503,11.5056562 12.9394736,11.1733127 13.1945835,10.8870008 13.3607444,10.6492459 13.5216311,10.4190378 13.6147549,10.2576514 13.6342307,10.1887155 13.6581373,10.1040969 13.6753348,9.98318609 13.6842424,9.82639673 13.7091118,9.44144098 13.5787292,9.10552556 13.2840277,8.80345564 12.9387554,8.45165321 12.5171847,8.27811416 12.0043442,8.27811416L11.9897349,8.27811416C11.5242572,8.27811416 11.1325791,8.43621316 10.8013609,8.75750273 10.4716261,9.07735332 10.3103568,9.45329166 10.3103568,9.89965679 10.3103568,10.1102981 10.2313762,10.2964585 10.079847,10.4434454 9.92980593,10.5889888 9.74204951,10.6639424 9.53017839,10.6639424 9.31830727,10.6639424 9.13055086,10.5889888 8.98050977,10.4434454 8.82898059,10.2964585 8.75,10.1102981 8.75,9.89965679 8.75,9.03170691 9.0696552,8.28379512 9.70202366,7.67038268 10.3329072,7.05841068 11.0997975,6.75 11.9892636,6.75z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image x:Name="im_brokerB_PartOk" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,6,6">
+                                                                        <GeometryDrawing Brush="#874EB9" Geometry="F1 M24,24z M0,0z M11.6722126,0C11.8758352,0 12.0649585,0.0718880982 12.2129941,0.211156718 12.3675065,0.356518532 12.450658,0.551209409 12.4502387,0.763288578 12.4497997,0.981905633 12.3594092,1.18087782 12.210632,1.30893299L8.55537243,4.76988019C8.40820946,4.92122463,8.21337214,5,8.00228425,5L7.94915793,4.99738886C7.91950747,4.99543182,7.89904234,4.99246313,7.87189008,4.9850083L7.85890481,4.981 7.81535566,4.97439065C7.64457422,4.93540244,7.4970622,4.8427177,7.3904993,4.70762009L7.33161689,4.62156225 6.21865857,2.78531027C6.11809421,2.60732993 6.09049793,2.40551213 6.14285481,2.20793856 6.19789749,2.00022986 6.33348313,1.83425503 6.52383151,1.73515219 6.70206904,1.64235474 6.90096353,1.62089367 7.09524503,1.67257999 7.28423609,1.72285886 7.44360883,1.83413087 7.56819804,2.01822124L8.17190481,3.015 11.1191245,0.230119815C11.2368548,0.109044261,11.3850968,0.0344129118,11.5477614,0.00940339427L11.6722126,0z M2.61690481,1.5C3.72147431,1.5 4.61690481,2.3954305 4.61690481,3.5 4.61690481,4.6045695 3.72147431,5.5 2.61690481,5.5 1.51233531,5.5 0.616904811,4.6045695 0.616904811,3.5 0.616904811,2.3954305 1.51233531,1.5 2.61690481,1.5z M8.11690481,7.5L11.1169048,7.5C11.3930472,7.5,11.6169048,7.72385763,11.6169048,8L11.6169048,11C11.6169048,11.2761424,11.3930472,11.5,11.1169048,11.5L8.11690481,11.5C7.84076244,11.5,7.61690481,11.2761424,7.61690481,11L7.61690481,8C7.61690481,7.72385763,7.84076244,7.5,8.11690481,7.5z M3.04565127,7.21457744L5.16255608,10.7427521C5.30463016,10.9795423 5.22784763,11.2866724 4.9910575,11.4287465 4.9133498,11.4753711 4.82443159,11.5 4.73380962,11.5L0.5,11.5C0.223857625,11.5 3.73590048E-14,11.2761424 3.73034936E-14,11 3.73034936E-14,10.909378 0.0246289167,10.8204598 0.0712535371,10.7427521L2.18815835,7.21457744C2.33023243,6.97778731 2.63736256,6.90100477 2.87415269,7.04307885 2.94452749,7.08530373 3.00342639,7.14420264 3.04565127,7.21457744z" />
+                                                                    </DrawingGroup>
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image x:Name="im_brokerB_Refuse" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#C5585A" Geometry="F0 M24,24z M0,0z M15.5086685,7.59999891C15.7515268,7.59953205 15.9698252,7.68909727 16.1405196,7.86026717 16.3107092,8.03093085 16.4000011,8.2485591 16.4000011,8.4905595 16.4000011,8.73873974 16.3035733,8.95961882 16.1343166,9.11433318L13.259,12 16.1212844,14.8731616C16.2728858,15.0121971,16.365035,15.1885738,16.3918196,15.3870516L16.4000011,15.5086685C16.400468,15.7515268 16.3109027,15.9698252 16.1397328,16.1405196 15.9690691,16.3107092 15.7514409,16.4000011 15.5094405,16.4000011 15.2612603,16.4000011 15.0403812,16.3035733 14.8851151,16.1337659L12,13.248 9.12683843,16.1212844C8.98780295,16.2728858,8.81142625,16.365035,8.6129484,16.3918196L8.49133147,16.4000011C8.24847321,16.400468 8.03017484,16.3109027 7.85948041,16.1397328 7.68929079,15.9690691 7.59999891,15.7514409 7.59999891,15.5094405 7.59999891,15.2612603 7.69642674,15.0403812 7.8656834,14.8856668L10.74,11.999 7.87871556,9.12683843C7.72711419,8.98780295,7.63496503,8.81142625,7.60818045,8.6129484L7.59999891,8.49133147C7.59953205,8.24847321 7.68909727,8.03017484 7.86026717,7.85948041 8.03093085,7.68929079 8.2485591,7.59999891 8.4905595,7.59999891 8.73873974,7.59999891 8.95961882,7.69642674 9.11433318,7.8656834L12,10.74 14.8731616,7.87871556C15.0121971,7.72711419,15.1885738,7.63496503,15.3870516,7.60818045L15.5086685,7.59999891z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image  x:Name="im_brokerB_ROK" Grid.Column="1" Margin="4,0,0,0" Width="20"  Height="20" Visibility="Collapsed" >
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#42B574" Geometry="F1 M24,24z M0,0z M16.530832,8.5C16.7911256,8.5 17.0275559,8.5921744 17.2124366,8.77056577 17.4012167,8.95271981 17.5005093,9.19116478 17.500001,9.45493572 17.4994718,9.72519736 17.3922779,9.96720843 17.2076147,10.1303985L11.0290954,16.1308937C10.8469458,16.323022,10.605664,16.4230769,10.3378278,16.4230769L10.2446963,16.4168492C10.1827333,16.4083562,10.1216136,16.3908016,10.0618987,16.3619119L10.151,16.397 10.1149094,16.3914937C9.88816933,16.3429745,9.69658481,16.219703,9.56048966,16.0360531L9.49716034,15.9392631 7.6246151,12.7708961C7.50110404,12.5466994 7.46801381,12.2984982 7.53153656,12.0526428 7.59809171,11.7950509 7.7612377,11.5902177 7.99706249,11.4642899 8.22332001,11.3434709 8.47393031,11.3157362 8.72189283,11.3833952 8.9630295,11.4491917 9.16219991,11.5918156 9.31405963,11.8216229L10.551,13.918 15.8395644,8.79218319C15.9913557,8.63207627,16.184211,8.53590922,16.3992776,8.50830096L16.530832,8.5z" />
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger  Value="1" Binding="{Binding BrokerBRole }">
+                                            <Setter TargetName="tbBrokerNameB" Property="Foreground" Value="#00CDAD"></Setter>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerBStatus}" Value="0">
+                                            <!--<Setter  TargetName="im_brokerB_OK" Property="Visibility" Value="Visible"/>-->
+                                            <Setter  TargetName="im_brokerB_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_ROK" Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerBStatus}" Value="1">
+                                            <!--<Setter  TargetName="im_brokerB_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerB_TBC" Property="Visibility" Value="Visible"/>
+                                            <Setter  TargetName="im_brokerB_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_ROK" Property="Visibility" Value="Collapsed"/>
+                                           
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerBStatus}" Value="2">
+                                            <!--<Setter  TargetName="im_brokerB_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerB_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_PartOk" Property="Visibility" Value="Visible"/>
+                                            <Setter  TargetName="im_brokerB_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_ROK" Property="Visibility" Value="Collapsed"/>
+                                           
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerBStatus}" Value="3">
+                                            <!--<Setter  TargetName="im_brokerB_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerB_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_Refuse" Property="Visibility" Value="Visible"/>
+                                            <Setter  TargetName="im_brokerB_ROK" Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding BrokerBStatus}" Value="4">
+                                            <!--<Setter  TargetName="im_brokerB_OK" Property="Visibility" Value="Collapsed"/>-->
+                                            <Setter  TargetName="im_brokerB_TBC" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_PartOk" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_Refuse" Property="Visibility" Value="Collapsed"/>
+                                            <Setter  TargetName="im_brokerB_ROK" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:Name="dgtcCTime" Header="创建时间" Width="1.4*" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}" CanUserSort="False"  SortMemberPath="createTime"  FontWeight="Bold"  Binding="{Binding CreateTimeDisplay}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcUpdateTime" Header="更新时间" Width="1.4*"  CanUserSort="False"  SortMemberPath="updateTime" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}"   FontWeight="Bold"  Binding="{Binding UpdateTimeDisplay}"></DataGridTextColumn>
+                        <DataGridTemplateColumn x:Name="dgtcCash" Header="操作记录" Width="60" MinWidth="50">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:Name="dTeCash">
+                                    <Button x:Name="btnCash" Margin="5" Width="20" HorizontalAlignment="Left" Height="20" Style="{StaticResource ImageCashButton}" Click="btnCash_Click"></Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <!--等待-->
+                <fUI:LoadingMask x:Name="positionloadMask"  Grid.Row="1" Grid.ColumnSpan="2"></fUI:LoadingMask>
+            </Grid>
+            <commComp:PageControl x:Name="pageControl"  HorizontalAlignment="Right" Grid.Row="1" PageChanged="EMSPageControl_PageChanged" />
+        </Grid>
+    </Grid>
+</UserControl>

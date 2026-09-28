@@ -1,0 +1,202 @@
+﻿<component:WindowBase x:Class="STC.XBond.Plugin.View.Book.BookUnderlineView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.XBond.Plugin.View.Book"
+                xmlns:component="clr-namespace:STC.XBond.Plugin.View.Component"
+        xmlns:book="clr-namespace:STC.XBond.Plugin.View.Book"
+        xmlns:selecotr="clr-namespace:STC.XBond.Plugin.View.TemplateSelector"
+        mc:Ignorable="d"
+                Title="{Binding ExecID, StringFormat='{}交易包  {0}'}" MinHeight="374" Width="1200"  SizeToContent="Height" >
+    <component:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <LinearGradientBrush x:Key="BuyBGBrush" EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="#095789" Offset="0"/>
+                <GradientStop Color="#141414" Offset="1"/>
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="BuyColor" Color="#009AFF"/>
+            <SolidColorBrush x:Key="BuyInnerColor" Color="#89C9FF"/>
+
+            <LinearGradientBrush x:Key="SellBGBrush" EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="#ED6D00" Offset="0"/>
+                <GradientStop Color="#141414" Offset="1"/>
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SellColor" Color="#ED6D00"/>
+            <SolidColorBrush x:Key="SellInnerColor" Color="#ED6D00"/>
+
+            <!--Side RadioButton Style-->
+            <SolidColorBrush x:Key="RadioButton.Static.Background" Color="#3C3C3C"/>
+            <SolidColorBrush x:Key="RadioButton.Static.Border" Color="#515151"/>
+            <Style x:Key="SideRadioButtonStyle" TargetType="{x:Type RadioButton}">
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{StaticResource RadioButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RadioButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RadioButton}">
+                            <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                                <Border x:Name="out_border" CornerRadius="1" BorderBrush="#4C000000" BorderThickness="0,0,0,1" Background="Transparent">
+                                    <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,1,0,0" Background="{TemplateBinding Background}">
+                                    </Border>
+                                </Border>
+                                <ContentPresenter x:Name="contentPresenter"  Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RadioButton.Static.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RadioButton.Static.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </component:WindowBase.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition MinHeight="240"/>
+            <RowDefinition Height="45"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+
+
+        <!-- 本方 -->
+        <Border Grid.Row="1" Grid.Column="0" BorderBrush="#323232" BorderThickness="1,1,0,1">
+            <Grid Background="#141414">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="38"/>
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <DockPanel>
+                    <TextBlock Text="本方" VerticalAlignment="Center" Foreground="#FFFFFF" Margin="10,0,0,0" />
+                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{Binding SelfQtyBrush}" Margin="0,0,10,0" >
+                        已补充 : <Run Text="{Binding SelfQty}"/>/<Run Text="{Binding Qty}"/>
+                    </TextBlock>
+                </DockPanel>
+                <!--本方列表-->
+                <ItemsControl x:Name="SelfItemsControl"   Grid.Row="1"  ItemsSource="{Binding SelfList}">
+                    <ItemsControl.Resources>
+                        <DataTemplate x:Key="IDB_PART">
+                            <book:IDBEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="MARKET_PART">
+                            <book:MarketEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="BROKER_PART">
+                            <book:BrokerEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="SELF_PART">
+                            <book:SelfEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="IDB_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="MARKET_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="BROKER_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="SELF_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                    </ItemsControl.Resources>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Vertical" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplateSelector>
+                        <selecotr:BookEditControlTemplateSelector/>
+                    </ItemsControl.ItemTemplateSelector>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <!-- 对手方 -->
+        <Border Grid.Row="1" Grid.Column="1" BorderBrush="#323232" BorderThickness ="1">
+            <Grid Background="#141414">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="38"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <DockPanel>
+                    <TextBlock Text="对手方" VerticalAlignment="Center" Foreground="#FFFFFF" Margin="10,0,0,0" />
+                    <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{Binding CounterPartyQtyBrush}" Margin="0,0,10,0" >
+                        已补充 : <Run Text="{Binding CounterPartQty}"/>/<Run Text="{Binding Qty}"/>
+                    </TextBlock>
+                </DockPanel>
+
+
+                <ItemsControl x:Name="CounterParttemsControl"  ItemsSource="{Binding CounterPartList}" Grid.Row="1">
+                    <ItemsControl.Resources>
+                        <DataTemplate x:Key="IDB_PART">
+                            <book:IDBEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="MARKET_PART">
+                            <book:MarketEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="BROKER_PART">
+                            <book:BrokerEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="SELF_PART">
+                            <book:SelfEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="IDB_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="MARKET_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="BROKER_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="SELF_UNDERLINE_PART">
+                            <book:IDBUnderlineEditPanel/>
+                        </DataTemplate>
+                    </ItemsControl.Resources>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Vertical" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplateSelector>
+                        <selecotr:BookEditControlTemplateSelector/>
+                    </ItemsControl.ItemTemplateSelector>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="#323232" BorderThickness="1,0,1,1">
+            <Grid x:Name="Bottom_Part" Background="#141414">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="btnCancel" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}" 
+                                Click="btnCancel_Click">取消</Button>
+                    <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource RedButtonStyle}" 
+                            Click="btnOK_Click" IsDefault="True" >提交</Button>
+                </StackPanel>
+                <TextBlock Text="最后更新  08-11  16:00" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+</component:WindowBase>

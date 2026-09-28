@@ -1,0 +1,464 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.Setting.View.DefaultRiskDesiView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.Setting.View"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800" Initialized="UserControl_Initialized" Loaded="UserControl_Loaded">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/ChanelStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridTextLeftStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontFamily" Value="{StaticResource NotoSansDisplya-SemiBold}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Background="{StaticResource MainBackgroup.ColorBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray19}" CornerRadius="1" Grid.ColumnSpan="2" >
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="报价设置"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}" FontSize="10"></TextBlock>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Border Grid.Column="1" Height="auto" BorderBrush="{StaticResource ColorBrush.Gray19}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="120"></ColumnDefinition>
+                                    <ColumnDefinition Width="30"></ColumnDefinition>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="120"></ColumnDefinition>
+                                    <ColumnDefinition Width="30"></ColumnDefinition>
+                                    <ColumnDefinition Width="20"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <TextBlock  Text="单笔报价量:" Margin="0,0,5,0" Grid.Column="0" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Margin="2,0,0,0" PreviewTextInput="TextBox_PreviewTextInput" Grid.Column="1" 
+                                         Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                         Text="{Binding DefaultRiskItem.IQtyMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                         Background="{StaticResource ColorBrush.Black9}"
+                                         ></TextBox>
+                                <StackPanel Grid.Column="2" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Command="{Binding AddCommand}" Style="{StaticResource SignButton}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Command="{Binding DownCommand}" Style="{StaticResource SignButton}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Column="3" Text="万 ≤ 利率债 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"/>
+
+                                <TextBox Grid.Column="4" Margin="2,0,0,0" PreviewTextInput="TextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.IQtyMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+
+                                <StackPanel Grid.Column="5" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddIQtyMaxCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIQtyMaxCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="0" Grid.Column="6" Text="万"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="2" Grid.Column="1" Margin="2,0,0,0" PreviewTextInput="TextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CQtyMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="2" Grid.Column="2" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCQtyMinCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCQtyMinCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="2" Grid.Column="3" Text="万 ≤ 信用债 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBox Grid.Row="2" Grid.Column="4" Margin="2,0,0,0" PreviewTextInput="TextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CQtyMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="2" Grid.Column="5" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCQtyMaxCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCQtyMaxCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" Grid.Column="6" Text="万"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                <Rectangle Grid.Row="1" Width="auto" Margin="10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Height="1" Fill="{StaticResource Separator.ColorBrush}" />
+                <Grid Grid.Row="2" Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="估值偏离"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}" FontSize="10"></TextBlock>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Border Grid.Column="1" Height="auto" BorderThickness="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="120"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <TextBlock  Text="利率债:" Margin="0,0,5,0" Grid.Column="0" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <CheckBox IsChecked="{Binding DefaultRiskItem.IBidDefautlCheck, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"                                               
+                                          VerticalAlignment="Center" Grid.Row="0" 
+                                          Margin="0, 5, 0, 0" Grid.Column="1" 
+                                          BorderThickness="2" 
+                                          BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  
+                                          FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" 
+                                          FontSize="{StaticResource SmallContentFontSize}" 
+                                          Style="{StaticResource CommonCheckBoxStyle}" 
+                                          Background="{StaticResource ColorBrush.Transparent}" 
+                                          Foreground="{StaticResource ColorBrush.While}" Content="默认" ></CheckBox>
+                                <TextBlock  Text="中债估值 Bid 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Grid.Column="2" Grid.Row="0" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Margin="2,0,0,0" 
+                                         Grid.Column="3" Style="{StaticResource RiskTextBox}" 
+                                         input:InputMethod.IsInputMethodEnabled="False"
+                                         Text="{Binding DefaultRiskItem.IBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" 
+                                         PreviewTextInput="DeviationTextBox_PreviewTextInput" ></TextBox>
+                                <StackPanel Grid.Row="0" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}" 
+                                                Command="{Binding AddIBidCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIBidCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="0" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <CheckBox Grid.Row="2" Grid.Column="1" 
+                                          IsChecked="{Binding DefaultRiskItem.IOfrDefautlCheck,  Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"                                               
+                                           VerticalAlignment="Center" Margin="0, 5, 0, 0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" FontSize="{StaticResource SmallContentFontSize}" Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" Foreground="{StaticResource ColorBrush.While}" Content="默认" ></CheckBox>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="中债估值 Ofr 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="2" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.IOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="2" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddIOfrCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIOfrCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,5,0" Text="信用债:" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <CheckBox Grid.Row="4" Grid.Column="1"  
+                                          IsChecked="{Binding DefaultRiskItem.CBidDefautlCheck, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"                                               
+                                           VerticalAlignment="Center" Margin="0, 5, 0, 0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" FontSize="{StaticResource SmallContentFontSize}" Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" Foreground="{StaticResource ColorBrush.While}" Content="默认" ></CheckBox>
+                                <TextBlock Grid.Row="4" Grid.Column="2" Text="中债估值 Bid 最大偏离度 ≤  "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="4" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="4" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCBidCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCBidCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="4" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <CheckBox Grid.Row="6" Grid.Column="1" 
+                                          IsChecked="{Binding DefaultRiskItem.COfrDefautlCheck, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"                                               
+                                            VerticalAlignment="Center" Margin="0, 5, 0, 0" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray15}" Height="20"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" FontSize="{StaticResource SmallContentFontSize}" Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" Foreground="{StaticResource ColorBrush.While}" Content="默认" ></CheckBox>
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="中债估值 Ofr 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="6" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.COfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="6" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCOfrCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCOfrCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="6" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                            </Grid>
+
+
+                        </Border>
+                    </StackPanel>
+                </Grid>
+                <Rectangle Grid.Row="3" Width="auto" Margin="10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Height="1" Fill="{StaticResource Separator.ColorBrush}" />
+                <Grid Grid.Row="4" Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="中间价偏离"  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}" FontSize="10"></TextBlock>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Border Grid.Column="1" Height="auto" BorderBrush="{StaticResource ColorBrush.Gray19}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="120"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="120"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                    <RowDefinition Height="30"></RowDefinition>
+                                    <RowDefinition Height="5"></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Column="0" Margin="0,0,5,0" Text="利率债:" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="市场中间价 Bid 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="0" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.IMarketBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="0" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddIMarketBidCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIMarketBidCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="0" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBlock Grid.Row="0" Grid.Column="6" Text="倒挂偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="20,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="0" Grid.Column="8" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.IDropAwayFromBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="0" Grid.Column="9" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddIDropAwayFromBidCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIDropAwayFromBidCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="0" Grid.Column="10" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="市场中间价 Ofr 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="2" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.IMarketOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="2" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddIMarketOfrCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIMarketOfrCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBlock Grid.Row="2" Grid.Column="6" Text="倒挂偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="20,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="2" Grid.Column="8" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.IDropAwayFromOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="2" Grid.Column="9" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddIDropAwayFromOfrCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownIDropAwayFromOfrCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="2" Grid.Column="10" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,5,0" Text="信用债:" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <TextBlock Grid.Row="4" Grid.Column="2" Text="市场中间价 Bid 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="4" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CMarketBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="4" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCMarketBidCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCMarketBidCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="4" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBlock Grid.Row="4" Grid.Column="6" Text="倒挂偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="20,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="4" Grid.Column="8" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CDropAwayFromBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="4" Grid.Column="9" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCDropAwayFromBidCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCDropAwayFromBidCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="4" Grid.Column="10" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                                <TextBlock Grid.Row="6" Grid.Column="2" Text="市场中间价 Ofr 最大偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="1,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="6" Grid.Column="3" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CMarketOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="6" Grid.Column="4" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCMarketOfrCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCMarketOfrCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="6" Grid.Column="5" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+
+                                <TextBlock Grid.Row="6" Grid.Column="6" Text="倒挂偏离度 ≤ "  FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" Margin="20,0,1,0" VerticalAlignment="Center"></TextBlock>
+                                <TextBox Grid.Row="6" Grid.Column="8" Margin="2,0,0,0" PreviewTextInput="DeviationTextBox_PreviewTextInput" Style="{StaticResource RiskTextBox}" input:InputMethod.IsInputMethodEnabled="False"
+                                                    Text="{Binding DefaultRiskItem.CDropAwayFromOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,Converter={StaticResource decimalConverter}}" Background="{StaticResource ColorBrush.Black9}"></TextBox>
+                                <StackPanel Grid.Row="6" Grid.Column="9" Height="32" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition Height="0"/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0" Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="︿" Style="{StaticResource SignButton}"
+                                                Command="{Binding AddCDropAwayFromOfrCommand}"/>
+                                        <Button Grid.Row="2"  Width="30" Height="15" Background="{StaticResource ColorBrush.Gray15}" Foreground="{StaticResource ColorBrush.While}" Content="﹀" Style="{StaticResource SignButton}"
+                                                Command="{Binding DownCDropAwayFromOfrCommand}"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Grid.Row="6" Grid.Column="10" Text="%" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.White2}" VerticalAlignment="Center"></TextBlock>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+        <!--<Button x:Name="DefaultImportBtn" Grid.Row="1" Content="导入" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Left" Width="60" Height="24" Margin="10,0,0,0"/>
+        <Button x:Name="DefaultExportBtn" Grid.Row="1" Content="导出" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Left" Width="60" Height="24" Margin="80,0,0,0"/>-->
+        <Button x:Name="DefaultOKBtn" Grid.Row="1" Content="确定" Style="{DynamicResource RedButtonStyle}" HorizontalAlignment="Right" Width="60" Height="24" Margin="10,0,10,0" 
+                Command="{Binding OkCommand}"/>
+        <Button x:Name="DefaultCancelBtn" Grid.Row="1" Content="取消" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Right" Width="60" Height="24" Margin="0,0,80,0"
+                Command="{Binding CancelCommand}"/>
+
+    </Grid>
+</UserControl>

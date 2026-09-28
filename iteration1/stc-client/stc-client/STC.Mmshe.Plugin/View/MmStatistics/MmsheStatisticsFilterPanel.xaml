@@ -1,0 +1,68 @@
+﻿<UserControl x:Class="STC.Mmshe.Plugin.View.MmsheStatisticsFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mmshe.Plugin.View"
+             xmlns:comp="clr-namespace:STC.Mmshe.Plugin.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="24" Width="Auto">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Column="0">
+            <TextBlock Text="筛选：" Margin="10,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Width="36" Height="Auto"/>
+            <ListBox x:Name="TimeSpanType" Background="Transparent" VerticalAlignment="Center" SelectionMode="Single" SelectionChanged="TimeSpanType_SelectionChanged" Width="Auto">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="今日" Style="{StaticResource CommonFilterListBoxItemStyle}" IsSelected="True" Width="Auto" Height="16" />
+                <ListBoxItem Content="最近一周" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+                <ListBoxItem Content="最近一月" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+                <ListBoxItem Content="最近一季" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+            </ListBox>
+            <DatePicker x:Name="dpFrom" Width="100px" Height="20" Style="{StaticResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" Margin="10,0,0,0" SelectedDateChanged="dpFrom_SelectedDateChanged"/>
+            <TextBlock Text="-" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Width="Auto" Height="Auto"/>
+            <DatePicker x:Name="dpTo" Width="100px" Height="20" Style="{StaticResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" Margin="5,0,0,0" SelectedDateChanged="dpTo_SelectedDateChanged"/>
+            <comp:SearchTextBox x:Name="bond_txt" Width="120" AfterSearch="bond_txt_AfterSearch" Margin="10,0,0,0" Visibility="Collapsed" ValueChanged="bond_txt_ValueChanged"/>
+            <Button x:Name="search_btn" Style="{StaticResource DefaultButtonStyle}" Content="搜查" Width="60" Height="18" Margin="5,0,0,0" Foreground="#FFFFFF" Click="search_btn_Click" Visibility="Collapsed"/>
+        </StackPanel>
+
+        <ListBox x:Name="BondType" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"  
+                 HorizontalAlignment="Right" Grid.Column="1" SelectionChanged="BondType_SelectionChanged" Visibility="Collapsed">
+            <ListBox.Template>
+                <ControlTemplate>
+                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBoxItem Content="全部" Style="{StaticResource CommonFilterListBoxItemStyle}" IsSelected="True" Width="Auto" Height="16" />
+            <ListBoxItem Content="利率债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+            <ListBoxItem Content="信用债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+        </ListBox>
+    </Grid>
+</UserControl>

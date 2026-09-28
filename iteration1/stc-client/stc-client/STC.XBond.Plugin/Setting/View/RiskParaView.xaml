@@ -1,0 +1,51 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.Setting.View" 
+             xmlns:Component="clr-namespace:STC.XBond.Plugin.View.Component" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             x:Class="STC.XBond.Plugin.Setting.View.RiskParaView" 
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1200" Width="auto" Height="auto" Initialized="UserControl_Initialized" Margin="10,10,10,10">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/XBondDataGrid.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/QuoteStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/ChanelStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridTextLeftStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontFamily" Value="{StaticResource NotoSansDisplya-SemiBold}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <TabControl x:Name="riskTabControl" TabStripPlacement="Top" Style="{StaticResource TabControlStyle2}" Background="{StaticResource MainBackgroup.ColorBrush}" SelectionChanged="riskTabControl_SelectionChanged">
+            <TabItem x:Name="tab1" Header="债券指定" Width="80" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <local:RiskDesignatedView/>
+            </TabItem>
+            <TabItem x:Name="tab2" Header="债券缺省" Width="80" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <local:DefaultRiskDesiView/>
+            </TabItem>
+            <TabItem x:Name="traderPositionTab" Header="交易员头寸" Width="80" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <local:PartyPositionRiskView/>
+            </TabItem>
+            <TabItem x:Name="riskHistoryTab" Header="风控记录查询" Width="90" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <local:RiskHistoryView/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

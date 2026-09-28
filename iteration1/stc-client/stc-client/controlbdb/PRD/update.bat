@@ -1,0 +1,1 @@
+MDT.Tools.AutoUpdater.Config.exe -u https://qb3.idbhost.com:28886/ -uc https://qb3.idbhost.com:28886/prd/ -v %Version%.%BUILD_NUMBER% -m %Version%.%BUILD_NUMBER% -p prd/ -t \\STC.Setup\\salt-formula\\configbdb.yaml -e %env% -ae %AppExe% -ap %AppName%

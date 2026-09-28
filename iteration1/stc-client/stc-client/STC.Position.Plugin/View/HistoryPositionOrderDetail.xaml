@@ -1,0 +1,435 @@
+﻿<UserControl x:Class="STC.Position.Plugin.View.HistoryPositionOrderDetail"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Position.Plugin.View"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:viewmodel="clr-namespace:STC.Position.Plugin.ViewModel"
+             xmlns:CommonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="1400">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+
+            <fcon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <!--Button样式-->
+            <Style x:Key="RedButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{StaticResource RedButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RedButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{StaticResource RedButton.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="1"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="80"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Pressed.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Pressed.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource RedButton.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="X">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Side}" Value="Z">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Green}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="DataGridCellStyle1" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,0,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 删除按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SelfDeleteButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_newdelete_normal.png"/>
+                                    </Border.Background>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_newdelete_hover.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_newdelete_hover.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_newdelete_normal.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataType}" Value="1">
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding DataType}" Value="2">
+                        <Setter Property="IsEnabled" Value="True" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- 已关联按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SelfRelatedButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_related_normal.png"/>
+                                    </Border.Background>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_related_normal.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_related_disable.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Style.Triggers>
+                    <DataTrigger Binding="{Binding DataType}" Value="1">
+                        <Setter Property="Control.IsEnabled" Value="false" />
+                    </DataTrigger>
+                </Style.Triggers>-->
+            </Style>
+
+            <!-- 未关联按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SelfNotRelatedButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_notrelated_normal.png"/>
+                                    </Border.Background>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_notrelated_hover.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Control.Background" TargetName="background">
+                                        <Setter.Value>
+                                            <ImageBrush ImageSource="/STC.Position.Plugin;component/Images/stc_icon_notrelated_normal.png"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!--DefaultDataGrid 样式-->
+            <Style x:Key="QueryDataGridRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource DataGridRowStyle}">
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="DefaultDataGridForQuery" TargetType="DataGrid" BasedOn="{StaticResource DefaultDataGrid}">
+                <Setter Property="RowStyle" Value="{DynamicResource QueryDataGridRowStyle}"/>
+            </Style>
+
+            <Style x:Key="QueryDataGridCellStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid x:Name="mainPositionDetailGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+            <ColumnDefinition Width="7"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="24"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <StackPanel  Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="22"></RowDefinition>
+                    <RowDefinition Height="2"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0"  Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="9,0,0,0">
+                    <Button x:Name="RefreshBtn" Width="24" Height="24" Style="{DynamicResource RefreshButton_24}" Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding RefreshCommand}" Visibility="Collapsed"/>
+                    <TextBlock Text="成交流水" FontStyle="Normal" Margin="0,4,0,0" Foreground="{DynamicResource RedButton.Static.Foreground}" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="12"></TextBlock>
+                </StackPanel>
+                <Border BorderBrush="#136C5E " BorderThickness="2" Width="72"  Background="#136C5E " Grid.Row="1" Grid.Column="0" Margin="9,0,0,0"></Border>
+            </Grid>
+        </StackPanel>
+        <Rectangle Grid.Row="0" Grid.Column="1" Fill="#3C3C3C" RadiusY="1" RadiusX="1" StrokeThickness="1" Margin="3,4,3,4"/>
+        <Button x:Name="btnFullScreen" Grid.Row="0" Grid.Column="3" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource ExportButton}" Command="{Binding ExportCsvCommand}"/>
+        <StackPanel  Grid.Row="0" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock  FontStyle="Normal" Foreground="#A0A0A0" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="12">
+                <Run Text="共"></Run>
+                <Run Text="{Binding RowCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="White"></Run>
+                <Run Text=" 条记录 ( Bid "></Run>
+                <Run Text="{Binding BidRowCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></Run>
+                <Run Text=" / Ofr "></Run>
+                <Run Text="{Binding OfrRowCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></Run>
+                <Run Text=") "></Run>
+            </TextBlock>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4">
+            <TextBlock  FontStyle="Normal" Foreground="#A0A0A0" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="12"  Text="{Binding InSecurityId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></TextBlock>
+        </StackPanel>
+
+        <CommonComp:ExDataGrid Grid.Row="1" Grid.ColumnSpan="4" x:Name="HistoryPostionOrderDetail_dg" ItemsSource="{Binding Mv.View, UpdateSourceTrigger=PropertyChanged}"
+             EnableRowVirtualization="True" EnableColumnVirtualization="True"
+             VirtualizingStackPanel.VirtualizationMode="Standard"
+             VirtualizingStackPanel.IsVirtualizing="True"
+             Style="{StaticResource DefaultDataGridForQuery}"  HorizontalScrollBarVisibility="Auto"
+             LoadingRow="emsDataGrid_LoadingRow" RowHeaderWidth="0">
+            <DataGrid.Columns>
+                <!--<DataGridTemplateColumn Header="操作" Width="48" MinWidth="24">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Left">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Visibility="{Binding IsAdded,Converter={StaticResource visibilityConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                    <Button BorderThickness="0" Height="24" Width="24" Margin="0,-5,0,0" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{StaticResource SelfRelatedButton}" ToolTip="已关联"  Visibility="{Binding RelatedButtonVisible,Converter={StaticResource visibilityConvertor}}"  Command="{Binding DataContext.SelfRelatedCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding ExecID}"></Button>
+
+                                    <Button BorderThickness="0" Height="24" Width="24"  Margin="0,-5,0,0"  VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                                        Style="{StaticResource SelfNotRelatedButton}" ToolTip="未关联" Visibility="{Binding NotRelatedButtonVisible,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.SelfNotRelatedCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding ExecID}"></Button>
+
+                                    <Button Foreground="#A0A0A0" Width="20" Height="20" Margin="-4,-5,0,0" VerticalContentAlignment="Center" ToolTip="删除" HorizontalAlignment="Center" 
+                                                        Style="{StaticResource SelfDeleteButton}" Visibility="{Binding DelBtnVisible,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.DelBtnCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" CommandParameter="{Binding ExecID}"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+
+                <DataGridTextColumn Binding="{Binding SecurityID, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="代码" MinWidth="80" Width="Auto" MaxWidth="300" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Binding="{Binding Symbol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="简称" MinWidth="80" Width="Auto" MaxWidth="300" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+
+                <DataGridComboBoxColumn ItemsSource="{x:Static viewmodel:HistoryPositionOrderDetailViewModel.SideItemSource}" 
+                                                SelectedValueBinding="{Binding Side, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                ClipboardContentBinding="{Binding Side, Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" 
+                                                SelectedValuePath="Key" DisplayMemberPath="Value"  
+                                                Header="方向" Width="40" CellStyle="{StaticResource ColumnColorStyle}" IsReadOnly="True" />
+
+                <DataGridTextColumn Binding="{Binding LastPx,Converter={StaticResource numConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,ConverterParameter=''}" Header="成交价(%)" Width="110" CellStyle="{StaticResource ColumnColorStyle}"/>
+                <DataGridTextColumn Binding="{Binding NetPrice,StringFormat={}{0:N4}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="成交净价" Width="120" SortMemberPath="NetPrice1" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <!--<DataGridTextColumn Binding="{Binding Qty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="报量(万元)" Width="2*" CellStyle="{StaticResource DataGridCellStyle1}"/>-->
+                <DataGridTextColumn Binding="{Binding Qty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="成交量（万元）" Width="150" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+
+                <DataGridTextColumn Binding="{Binding Veneues,ConverterParameter=venues_exe, Converter={StaticResource EnumTypeConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="渠道" Width="125" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <!--<DataGridTextColumn Binding="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_myOrder'}" 
+                                                    ClipboardContentBinding="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_myOrder'}" 
+                                                    Header="清算速度" Width="Auto" MinWidth="60" CellStyle="{StaticResource QueryDataGridCellStyle}">-->
+                <DataGridTextColumn  Binding="{Binding SettlType,ConverterParameter=settletype_myorder,Converter={StaticResource EnumTypeConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Header="清算速度" Width="Auto" MinWidth="60" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Header="创建日期" Width="Auto" Binding="{Binding CreateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatYYYYMMDD}}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+
+                <DataGridTextColumn Header="交易日期" Width="Auto" Binding="{Binding TradeDate,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatYYYYMMDD}}" CellStyle="{StaticResource QueryDataGridCellStyle}" />
+                <!--<DataGridTextColumn Binding="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatYYYYMMDD}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="交易日期" Width="3*"/>
+                <DataGridTextColumn Binding="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="成交时间" Width="3*"/>-->
+                <DataGridTextColumn Header="成交时间" Width="150" Binding="{Binding ExecutionTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter='yyyy-MM-dd HH:mm:ss'}" CellStyle="{StaticResource QueryDataGridCellStyle}" />
+
+                <DataGridTemplateColumn Header="对手方" Width="100" MinWidth="50" ClipboardContentBinding="{Binding CounterPartyName}" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartyName}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="对手交易员" Width="100" MinWidth="70" ClipboardContentBinding="{Binding CounterPartySubName}" CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartySubName}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!--<DataGridTemplateColumn Header="同步状态" Width="2*" ClipboardContentBinding="{Binding SyncStatus, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='synchflag'}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock x:Name="syncStatusTB" Text="{Binding SyncStatus, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='synchflag'}"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding SyncStatus}" Value="C">
+                                    <Setter TargetName="syncStatusTB" Property="Foreground" Value="#FB943C"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SyncStatus}" Value="S">
+                                    <Setter TargetName="syncStatusTB" Property="Foreground" Value="#E63034"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+                <DataGridTextColumn Header="成交编号" Width="250"  MinWidth="60"  Binding="{Binding ExecID}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="外部成交编号" Width="250"  MinWidth="60"  Binding="{Binding Venueexecid}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="订单编号" Width="250" MinWidth="60" Binding="{Binding StrategyOrderId}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+
+                <DataGridTextColumn Header="组合" Width="Auto"  MinWidth="30" Binding="{Binding BookName}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="组合ID" Width="Auto" MinWidth="30" Binding="{Binding BookID}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTemplateColumn Header="备注" Width="100" MinWidth="40" ClipboardContentBinding="{Binding Remark}" 
+                                        CellStyle="{StaticResource QueryDataGridCellStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Remark}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTextColumn Header="来源" Width="2*" MinWidth="40" Binding="{Binding DataType, Mode=TwoWay , UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="未关联" Width="2*" MinWidth="40" Binding="{Binding NotRelatedButtonVisible, Mode=TwoWay , UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="已关联" Width="2*" MinWidth="40" Binding="{Binding RelatedButtonVisible, Mode=TwoWay , UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>
+                <DataGridTextColumn Header="删除" Width="2*" MinWidth="40" Binding="{Binding DelBtnVisible, Mode=TwoWay , UpdateSourceTrigger=PropertyChanged}" CellStyle="{StaticResource QueryDataGridCellStyle}"/>-->
+                
+                
+            </DataGrid.Columns>
+        </CommonComp:ExDataGrid>
+
+        <local:PageControl x:Name="EMSPageControl" Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Right" 
+                               PageChanged="EMSPageControl_PageChanged"
+                               Visibility="{Binding EMSPageVisible,Converter={StaticResource visibilityConvertor}}"/>
+        <fUI:LoadingMask x:Name="positionloadMask" Visibility="Collapsed" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"></fUI:LoadingMask>
+    </Grid>
+</UserControl>

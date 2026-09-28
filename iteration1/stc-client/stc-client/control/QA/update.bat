@@ -1,0 +1,1 @@
+MDT.Tools.AutoUpdater.Config.exe -u http://10.100.5.39:80/ -uc http://10.100.5.39:80/qa/ -v %Version%.%BUILD_NUMBER% -m %Version%.%BUILD_NUMBER% -p qa/ -t \\STC.Setup\\salt-formula\\config.yaml -e %env% -ae %exeName% -ap %AppName%

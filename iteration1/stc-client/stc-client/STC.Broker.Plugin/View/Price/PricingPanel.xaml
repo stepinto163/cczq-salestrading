@@ -1,0 +1,528 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Price.PricingPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Price"
+             xmlns:homepage="clr-namespace:STC.Broker.Plugin.View.HomePage"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             mc:Ignorable="d" 
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <fcon:MultiBindingConverter x:Key="MultiBindingConverter"/>
+            <fcon:NumberConvertor x:Key="numConvertor"/>
+            <fcon:StringIsNullOrEmptyConvertor x:Key="StringIsNullOrEmptyConvertor"/>
+            <fcon:VenuesColorConvertor x:Key="venuesColorConvertor"/>
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="{x:Static GridView.GridViewScrollViewerStyleKey}" TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultGridViewScrollViewerStyle}"/>
+
+            <!-- 弹出按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SvgBtn">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource Button.Static.Foreground}"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Width" Value="24"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Content" Value=">"/>
+                <Setter Property="Padding" Value="0 -2 0 0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}" Margin="{TemplateBinding Padding}">
+                                        <Path x:Name="svg_path" Data="{TemplateBinding Content}" UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}" />
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="svg_path" Value="0.6"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource Button.Disabled.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            
+            <!-- Broker 页码 -->
+            <Style x:Key="PageItemStyle"  TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource SelfFilterListBoxItemStyle}">
+                <Setter Property="Width" Value="20"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Padding" Value="-1 0 0 0"/>
+                <Setter Property="Margin" Value="0 0 4 0"/>
+            </Style>
+            
+            <Style x:Key="ListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+                <Setter Property="Width" Value="18"/>
+                <Setter Property="Margin" Value="1, 0, 0, 0"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border Name="border" Background="Transparent" CornerRadius="2">
+                                <ContentPresenter Name="content" TextBlock.FontSize="12" TextBlock.Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#FF9200" />
+                                    <Setter TargetName="content" Property="TextBlock.Foreground" Value="#000000" />
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsSelected" Value="False"></Condition>
+                                        <Condition Property="IsMouseOver" Value="True"></Condition>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="Background" Value="#70FF9200" />
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="CurTabControlStyle" TargetType="{x:Type TabControl}">
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource RedButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource RedButton.Static.Border}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabControl}">
+                            <Grid x:Name="templateRoot" ClipToBounds="True" SnapsToDevicePixels="True" KeyboardNavigation.TabNavigation="Local">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="ColumnDefinition0"/>
+                                    <ColumnDefinition x:Name="ColumnDefinition1" Width="0"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition x:Name="RowDefinition0" Height="Auto"/>
+                                    <RowDefinition x:Name="RowDefinition1" Height="*"/>
+                                </Grid.RowDefinitions>
+                                <UniformGrid x:Name="HeaderPanel" Rows="1" Background="Transparent" Grid.Column="0" IsItemsHost="True" Margin="0" Grid.Row="0" KeyboardNavigation.TabIndex="1" Panel.ZIndex="1"/>
+                                <Line X1="0" X2="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Stroke="White" StrokeThickness="0.1" VerticalAlignment="Bottom" Margin="0 0 0 0" SnapsToDevicePixels="True"/>
+                                <Border x:Name="ContentPanel" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.Column="0" KeyboardNavigation.DirectionalNavigation="Contained" Grid.Row="1" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Local">
+                                    <ContentPresenter x:Name="PART_SelectedContentHost" ContentTemplate="{TemplateBinding SelectedContentTemplate}" Content="{TemplateBinding SelectedContent}" ContentStringFormat="{TemplateBinding SelectedContentStringFormat}" ContentSource="SelectedContent" Margin="0" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="TabStripPlacement" Value="Bottom">
+                                    <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="1"/>
+                                    <Setter Property="Grid.Row" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Height" TargetName="RowDefinition0" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition1" Value="Auto"/>
+                                </Trigger>
+                                <Trigger Property="TabStripPlacement" Value="Left">
+                                    <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="0"/>
+                                    <Setter Property="Grid.Row" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Grid.Column" TargetName="HeaderPanel" Value="0"/>
+                                    <Setter Property="Grid.Column" TargetName="ContentPanel" Value="1"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition0" Value="Auto"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition1" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition0" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition1" Value="0"/>
+                                </Trigger>
+                                <Trigger Property="TabStripPlacement" Value="Right">
+                                    <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="0"/>
+                                    <Setter Property="Grid.Row" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Grid.Column" TargetName="HeaderPanel" Value="1"/>
+                                    <Setter Property="Grid.Column" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition0" Value="*"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition1" Value="Auto"/>
+                                    <Setter Property="Height" TargetName="RowDefinition0" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition1" Value="0"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="templateRoot" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="TabItemStyle" TargetType="{x:Type TabItem}">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="{DynamicResource MainBackgroup.ColorBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource RedButton.Static.Border}"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabItem}">
+                            <Grid x:Name="templateRoot"  SnapsToDevicePixels="True" Background="Transparent" Margin="1,0,1,0" Height="{TemplateBinding Height}">
+                                <TextBlock x:Name="txt" Visibility="Visible" VerticalAlignment="Center" HorizontalAlignment="Center" Text="{TemplateBinding Header}" ToolTip="{TemplateBinding Header}" Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Foreground" TargetName="txt" Value="#FFFFFF"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Left"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Bottom"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Right"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Panel.ZIndex" Value="1"/>
+                                    <Setter Property="Foreground" TargetName="txt" Value="#FFFFFF"/>
+                                    <Setter Property="Background" TargetName="templateRoot" Value="#136C5E"/>
+                                </MultiDataTrigger>
+
+
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Panel.ZIndex" Value="1"/>
+                                    <Setter Property="Foreground" TargetName="txt" Value="#FFFFFF"/>
+                                    <Setter Property="Background" TargetName="templateRoot" Value="{StaticResource MainBackgroup.ColorBrush}"/>
+                                </MultiDataTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Left 按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="LeftPageBtn">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="Width" Value="16"/>
+                <Setter Property="MinHeight" Value="16"/>
+                <Setter Property="MinWidth" Value="16"/>
+                <Setter Property="Foreground" Value="#D7D7D7"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                               BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}">
+                                        <Path x:Name="svg_path" Margin="12 -3 -4 0" Data="M4.86266866,6.81697051 C4.9643541,6.93899017 5.08958246,7 5.23835376,7 C5.38712506,7 5.51235343,6.93899017 5.61403886,6.81697051 L10.3687094,0.853487205 C10.5097166,0.690881047 10.5371416,0.507981639 10.4509845,0.304788984 C10.3648274,0.101596328 10.212174,0 9.99302435,0 L0.506975648,0 C0.287826008,0 0.13517263,0.101596328 0.0490155145,0.304788984 C-0.0371416011,0.507981639 -0.00971658902,0.690881047 0.131290551,0.853487205 L4.86266866,6.81697051 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}">
+                                            <Path.RenderTransform>
+                                                <RotateTransform Angle="90"/>
+                                            </Path.RenderTransform>
+                                        </Path>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.8"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- Right 按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="RightPageBtn">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="Width" Value="16"/>
+                <Setter Property="MinHeight" Value="16"/>
+                <Setter Property="MinWidth" Value="16"/>
+                <Setter Property="Foreground" Value="#D7D7D7"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                               BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}">
+                                        <Path x:Name="svg_path" Margin="3 14 0 -4" Data="M4.86266866,6.81697051 C4.9643541,6.93899017 5.08958246,7 5.23835376,7 C5.38712506,7 5.51235343,6.93899017 5.61403886,6.81697051 L10.3687094,0.853487205 C10.5097166,0.690881047 10.5371416,0.507981639 10.4509845,0.304788984 C10.3648274,0.101596328 10.212174,0 9.99302435,0 L0.506975648,0 C0.287826008,0 0.13517263,0.101596328 0.0490155145,0.304788984 C-0.0371416011,0.507981639 -0.00971658902,0.690881047 0.131290551,0.853487205 L4.86266866,6.81697051 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}">
+                                            <Path.RenderTransform>
+                                                <RotateTransform Angle="-90"/>
+                                            </Path.RenderTransform>
+                                        </Path>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.8"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="Card_ListViewItemStyle" TargetType="{x:Type ListViewItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="Background" Value="#181818"/>
+                <Setter Property="BorderBrush" Value="#181818"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" CornerRadius="4" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#3C3C3C"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#3C3C3C"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#3C3C3C"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--增加 + -->
+            <Style TargetType="{x:Type Button}" x:Key="SelfAddPlusButton">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource GraySlateButton.Static.Foreground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Border}"/>
+                <Setter Property="BorderThickness" Value="0 1 0 0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="Width" Value="32"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2 2 2 2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}">
+                                        <Path x:Name="svg_path"  Data="M5.5,5.5V1c0-0.1,0-0.3-0.1-0.4C5.2,0.6,5.1,0.5,5,0.5S4.7,0.6,4.6,0.7S4.4,0.9,4.4,1v4.5H0	c-0.1,0-0.3,0.1-0.4,0.2C-0.4,5.7-0.5,5.8-0.5,6c0,0.1,0.1,0.3,0.2,0.4S-0.1,6.5,0,6.5h4.4V11c0,0.1,0,0.3,0.1,0.4
+			                              c0.1,0.1,0.2,0.2,0.4,0.2c0.1,0,0.3-0.1,0.4-0.2c0.1-0.1,0.1-0.2,0.1-0.4V6.5H10c0.1,0,0.3-0.1,0.4-0.2c0.1-0.1,0.1-0.2,0.1-0.4 s0-0.3-0.1-0.4c-0.1-0.1-0.2-0.2-0.4-0.2H5.5z" UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                          Fill="{TemplateBinding Foreground}" />
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="background" Value="{DynamicResource GraySlateButton.Static.Border}"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="BorderThickness" TargetName="background" Value="0"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="781*"></ColumnDefinition>
+            <ColumnDefinition Width="19*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Top -->
+        <StackPanel Name="spItemsHost" Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Focusable="False" Width="Auto" HorizontalAlignment="Right" Panel.ZIndex="0" VerticalAlignment="Top" Margin="0 -26 0 0" Grid.ColumnSpan="2">
+            <Button x:Name="btLeft" Margin="0,0,5,0"  Focusable="False" IsTabStop="False"  Style="{DynamicResource LeftPageBtn}" 
+                    VerticalAlignment="Center" VerticalContentAlignment="Center" FontWeight="Medium" IsEnabled="{Binding PrevPageEnable}" Command="{Binding PrevPageCommand}">
+            </Button>
+            <ListBox x:Name="lbButton" SelectionMode="Single" Focusable="False" IsTabStop="False" HorizontalAlignment="Center" VerticalAlignment="Center" ItemsSource="{Binding PageButtonList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ItemContainerStyle="{StaticResource PageItemStyle}" BorderThickness="0" Padding="0" BorderBrush="Transparent" Background="Transparent"  SelectedIndex="{Binding PageSelectIndex, Mode=TwoWay}">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+            </ListBox>
+            <Button x:Name="btAdd" Margin="0,1,0,0" Width="18" Height="18" MinWidth="10" MinHeight="10" Focusable="False" IsTabStop="False" Background="Transparent" Foreground="#D7D7D7" BorderThickness="0" Style="{DynamicResource SelfAddPlusButton}" Visibility="{Binding AddPageVisisble, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Command="{Binding AddPageCommand}"/>
+            <Button x:Name="btRight" Margin="0,0,0,0" Focusable="False" IsTabStop="False" Style="{DynamicResource RightPageBtn}" 
+                    VerticalAlignment="Center" VerticalContentAlignment="Center" FontWeight="Medium" IsEnabled="{Binding NextPageEnable}" Command="{Binding NextPageCommand}">
+            </Button>
+            <!-- 测试强提醒消息 -->
+            <Button Margin="10,0 0,0" Content="Test" Command="{Binding TestCommand}" Style="{StaticResource DrpExpandButton}" Visibility="Collapsed"/>
+        </StackPanel>
+        <!-- Center -->
+        <Border Background="{DynamicResource MainBackgroup.ColorBrush}" BorderThickness="0" Grid.Row="0"  Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,-0.4">
+            <TabControl BorderBrush="Transparent"  TabStripPlacement ="Top"  Background="Transparent" x:Name="Tab_DgPanel" SelectedIndex="{Binding CurPageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource CurTabControlStyle}" BorderThickness="0" Margin="0" SelectionChanged="Tab_DgPanel_SelectionChanged" PreviewKeyDown="Tab_DgPanel_PreviewKeyDown">
+            </TabControl>
+            <!--<ListView x:Name="FavoriteListBox"
+                      SelectionMode="Single"
+                      Background="{DynamicResource MainBackgroup.ColorBrush}"
+                      BorderThickness="0"
+                      BorderBrush="Red"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                      VerticalContentAlignment="Stretch" 
+                      HorizontalContentAlignment="Stretch"
+                      ScrollViewer.CanContentScroll ="False"
+                      VirtualizingPanel.IsVirtualizing ="true" 
+                      ItemsSource="{Binding}"
+                      ItemContainerStyle="{StaticResource Card_ListViewItemStyle}" >
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding Cols}" Rows="{Binding Rows}"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Viewbox Stretch="Fill" StretchDirection="Both">
+                                <Frame NavigationUIVisibility="Hidden" Content="{Binding CurCardPriceView}"/>
+                            </Viewbox>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>-->
+        </Border>
+    </Grid>
+</UserControl>

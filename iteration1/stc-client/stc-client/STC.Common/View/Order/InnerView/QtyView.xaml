@@ -1,0 +1,225 @@
+﻿<UserControl x:Class="STC.Common.View.Order.InnerView.QtyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Order.InnerView"
+             mc:Ignorable="d" Width="105"
+             d:DesignHeight="65" d:DesignWidth="95">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/View/Order/SendPriceDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+
+            <!--价格和数量-->
+            <Style x:Key="CustomQtyTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="{StaticResource TextBlockForeground}"/>
+                <Setter Property="FontFamily" Value="Roboto"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderBrush" Value="#0B0C0C"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="#0B0C0C" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="1"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="0"/>
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="true"/>
+                                        <!--<Condition Property="Tag" Value="1"/>-->
+                                    </MultiTrigger.Conditions>
+
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>-->
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding BorderBH}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                    <Setter Property="SelectionBrush" Value="#009AFF"/>
+                                </MultiTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <!-- 2 ,3, 5 按钮-->
+            <Style x:Key="BtnAmountListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!--<Setter Property="Padding" Value="0"/>-->
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{StaticResource TextBlockForeground}"/>
+                <Setter Property="Background" Value="{StaticResource TextBox.Disable.Background}"/>
+                <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+                <Setter Property="Width" Value="48"/>
+                <Setter Property="Margin" Value="2, 0, 0, 0"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                                BorderBrush="{TemplateBinding Background}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}"
+                                SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" 
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource TextBox.Disable.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource TextBox.Disable.Background}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <!--Condition Property="Selector.IsSelectionActive" Value="True"/-->
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{Binding BorderBH}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding QtyBorderBH}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource ListBoxItem.SelectedActive.Foreground}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+
+    <!--量-->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <ListBox  Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"  x:Name="ConstAmount"  SelectionMode="Single"
+                                     ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                     Height="20" 
+                                     Background="Transparent" MinWidth="110"
+                                     BorderThickness="0"
+                                     FontSize="12"  SelectedIndex="{Binding SetAmountTxtIndex, Mode=TwoWay}"
+                                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                     BorderBrush="Transparent" IsTabStop="False">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBoxItem Width="32" Height="20" x:Name="ConstAmount2" Content="{Binding OneShowAmount}" Style="{DynamicResource BtnAmountListBoxItemStyle}" FontFamily="Roboto" FontStyle="Italic" Background="{DynamicResource MainFormBackground}" IsEnabled="{Binding IsBtnEnable,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsTabStop="False"/>
+                <ListBoxItem Width="32" Height="20" x:Name="ConstAmount3" Content="{Binding TwoShowAmount}" Style="{DynamicResource BtnAmountListBoxItemStyle}"  FontFamily="Roboto" FontStyle="Italic" Background="{DynamicResource MainFormBackground}" IsEnabled="{Binding IsBtnEnable,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsTabStop="False"/>
+                <ListBoxItem Width="32" Height="20" x:Name="ConstAmount5" Content="{Binding FiveShowAmount}" Style="{DynamicResource BtnAmountListBoxItemStyle}"  FontFamily="Roboto" FontStyle="Italic" Background="{DynamicResource MainFormBackground}" IsEnabled="{Binding IsBtnEnable,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsTabStop="False"/>
+            </ListBox>
+        </Grid>
+
+
+        <Border Grid.Row="1" Margin="2, 0, 0, 0" BorderBrush="{StaticResource ColorBrush.Gray15}" BorderThickness="1" 
+                                    CornerRadius="2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="24"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBox  Grid.Column="0" x:Name="AmountTxt" Grid.ColumnSpan="2" Width="78"  Height="40" FontSize="24" input:InputMethod.IsInputMethodEnabled="False"
+                          KeyDown="AmountTxt_KeyDown" LostFocus="AmountTxt_LostFocus"
+                                     PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" TextChanged="AmountTxt_TextChanged"
+                                     BorderBrush="{Binding BorderBH, Mode=TwoWay}"  Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      Margin="0,0,0,0" Tag="{Binding OfrOrBid, Mode=TwoWay}" Style="{DynamicResource CustomQtyTextBox}" Foreground="White" HorizontalContentAlignment="Center"  
+                                      HorizontalAlignment="Left" Padding="0, 4, 18, 0" IsReadOnly="{Binding IsReadOnly,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <TextBlock Grid.Column="0" x:Name="AmountTxtKw" Text="{Binding QtyTxt}"  Foreground="{StaticResource ColorBrush.Gray14}"  Background="Transparent" 
+                                            FontSize="9" Margin="52,23,2,0" HorizontalAlignment="Right"/>
+
+
+                <Grid Grid.Column="1" Margin="1,1,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="20"></RowDefinition>
+                        <RowDefinition Height="20"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Button x:Name="btnAddAmout" Padding="0,0,0,0" Margin="1,0,0,1" Grid.Row="0" TabIndex="-1" Width="24" Height="20" Content="+" 
+                                        Command="{Binding AddAmountCommand}" Style="{DynamicResource AddAmountButtonStyle}" IsEnabled="{Binding IsBtnEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontSize="12" IsTabStop="False"/>
+                    <Button x:Name="btnReduceAmout" Padding="0,0,0,0"  Margin="1,0,0,0"  Grid.Row="1" TabIndex="-1" Width="24" Height="20" Content="-"
+                                        Command="{Binding ReduceAmountCommand}" Style="{DynamicResource DecreaseAmountButtonStyle}" IsEnabled="{Binding IsBtnEnable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontSize="12" IsTabStop="False"/>
+                </Grid>
+
+            </Grid>
+        </Border>
+
+
+
+
+    </Grid>
+</UserControl>

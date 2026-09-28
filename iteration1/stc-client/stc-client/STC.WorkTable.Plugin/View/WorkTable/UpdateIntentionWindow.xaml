@@ -1,0 +1,156 @@
+﻿<base:WindowBase x:Class="STC.WorkTable.Plugin.View.WorkTable.UpdateIntentionWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkTable.Plugin.View.WorkTable"
+             xmlns:localcomp="clr-namespace:STC.WorkTable.Plugin.View.Component"
+             xmlns:base="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" MinboxEnable="False" MaxboxEnable="False" Title="需求录入"  ResizeMode="NoResize"
+             Width="376" Padding="0" SizeToContent="Height">
+    <base:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkTable.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.WorkTable.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="STCDefaultBoxStyle_Ex" TargetType="TextBox" BasedOn="{StaticResource STCDefaultBoxStyle}">
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{StaticResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </base:WindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="72"/>
+            <RowDefinition Height="96"/>
+            <RowDefinition/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="76"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <!--第一行-->
+        <Border Grid.ColumnSpan="2" BorderBrush="#232323" BorderThickness="1" />
+        <TextBlock Text="{Binding Orignal.CreateTime, Converter={StaticResource FormatDateTimeConvertor}, ConverterParameter={StaticResource TimeFormatHHMMSS}}" Foreground="#A0A0A0" Margin="0 16 8 0" HorizontalAlignment="Right"/>
+        <StackPanel  Grid.Column="1" Orientation="Horizontal" Margin="0 16 0 0">
+            <TextBlock Text="{Binding Orignal.InstitutionName}" Foreground="#F9C152"/>
+            <TextBlock Text="{Binding Orignal.TraderName}" Foreground="#F9C152" Margin="3 0 0 0"/>
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding Orignal.Text}" Width="280" Foreground="#F9C152" Margin="0 40 0 0" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" ToolTip="{Binding Orignal.Text}"/>
+        <!--第二行-->
+        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#232323" BorderThickness="1" />
+        <TextBlock Grid.Row="1" Text="From:" Foreground="#A0A0A0" Margin="0 12 8 0" HorizontalAlignment="Right"/>
+        <localcomp:AutoCompleteComboBox x:Name="InsNameCb_edit" Grid.Row="1" Grid.Column="1"  Height="24" Width="160"
+                                        Margin="0 8 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" VerticalContentAlignment="Center"
+                                                       DisplayValuePath="shortnamecn"
+                                                       SelectedItem="{Binding SelectedInstintuion_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding InstitutionName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                                                       BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                                                       MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                                                       Watermark="客户机构" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                          PatternChanged="SelectedInstitutionCB_PatternChanged">
+            <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                <DataGridTemplateColumn  Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="Transparent">
+                                <TextBlock Grid.Column="0" Height="22" Text="{Binding shortnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Content="{Binding Text}"/>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </localcomp:AutoCompleteComboBox.AutoCompColumns>
+        </localcomp:AutoCompleteComboBox>
+        <localcomp:AutoCompleteComboBox x:Name="TrdNameCb_edit" Grid.Row="1" Grid.Column="1"  Height="24" Width="98" 
+                                        Margin="164 8 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" VerticalContentAlignment="Center"
+                                                       DisplayValuePath="namecn"
+                                                       SelectedItem="{Binding SelectedTrader_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding TraderName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                                                       BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                                                       MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                                                       Watermark="客户名" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                          PatternChanged="SelectedUserIDCB_PatternChanged">
+            <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                <DataGridTemplateColumn MinWidth="100" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="Transparent">
+                                <TextBlock Grid.Column="0" Height="22" Text="{Binding namecn}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Content="{Binding Text}"/>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </localcomp:AutoCompleteComboBox.AutoCompColumns>
+        </localcomp:AutoCompleteComboBox>
+        <base:SearchTextBox x:Name="SecurityID_TextBox" Grid.Row="1" Grid.Column="1"
+                                 SearchText="{Binding Securityid_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,ValidatesOnExceptions=True}"
+                                 Margin="0 36 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="96" Height="24"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" Margin="100 36 0 0" VerticalAlignment="Top" HorizontalAlignment="Left"
+                  Style="{StaticResource NonEditableBorderComboBoxStyle}" Width="60" Height="24"  VerticalContentAlignment="Center"
+                  ItemsSource="{Binding SideDic}" DisplayMemberPath="Value"  SelectedValuePath="Key" SelectedValue="{Binding Side_Edit}"/>
+        <TextBox x:Name="Price_TextBox" Grid.Row="1" Grid.Column="1" Text="{Binding Price_Edit,StringFormat={}{0:0.00##}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                 Margin="164 36 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource  STCDefaultBoxStyle_Ex}" Width="60" Height="24"/>
+        <TextBox x:Name="Qty_TextBox" Grid.Row="1" Grid.Column="1" Text="{Binding DisplayQty_Edit, StringFormat={}{0:0}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True,ValidatesOnExceptions=True}" Margin="230 36 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource  STCDefaultBoxStyle_Ex}" Width="32" Height="24"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="kw" Margin="265 40 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#A0A0A0"/>
+        <DatePicker x:Name="settleTypeDate_dp" Grid.Row="1" Grid.Column="1" Margin="0 64 0 0" VerticalAlignment="Top" HorizontalAlignment="Left" 
+                    Style="{StaticResource DefaultDatePickerStyle}" Width="96" Height="24"
+                    SelectedDate="{Binding EditSettleTypeDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}"/>
+        <ComboBox x:Name="settleTypeMode_ccb" Grid.Row="1" Grid.Column="1" Margin="100 64 0 0" VerticalAlignment="Top" HorizontalAlignment="Left"  
+                  Style="{StaticResource NonEditableBorderComboBoxStyle}" Width="60" Height="24" VerticalContentAlignment="Center"
+                  ItemsSource="{Binding SettleTypeDic}" DisplayMemberPath="Value"  SelectedValuePath="Key"
+                  SelectedValue="{Binding EditSettleTypeMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}"/>
+        <!--第四行-->
+        <Border Grid.Row="4" Grid.ColumnSpan="2" BorderBrush="#232323" BorderThickness="1" >
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="btnCancel" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}"
+                            Click="btnCancel_Click">忽略</Button>
+                <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource RedButtonStyle}"
+                        Click="btnOK_Click">确认
+                    <Button.IsEnabled>
+                        <MultiBinding Converter="{StaticResource multiAndConverter}">
+                            <MultiBinding.Bindings>
+                                <Binding ElementName="InsNameCb_edit" Path="(Validation.HasError)"/>
+                                <Binding ElementName="TrdNameCb_edit" Path="(Validation.HasError)"/>
+                                <Binding ElementName="SecurityID_TextBox" Path="(Validation.HasError)"/>
+                                <Binding ElementName="Price_TextBox" Path="(Validation.HasError)"/>
+                                <Binding ElementName="Qty_TextBox" Path="(Validation.HasError)"/>
+                                <Binding ElementName="settleTypeDate_dp" Path="(Validation.HasError)"/>
+                                <Binding ElementName="settleTypeMode_ccb" Path="(Validation.HasError)"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Button.IsEnabled>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</base:WindowBase>

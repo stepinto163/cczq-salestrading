@@ -1,0 +1,205 @@
+﻿<UserControl x:Class="STC.WorkTable.Plugin.InnerOrders.View.InnerBoardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkTable.Plugin.InnerOrders.View"
+             xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:localComp="clr-namespace:STC.WorkTable.Plugin.InnerOrders.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="1000">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/RadioButtonStyleDictionary.xaml"/>
+
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+       
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <localComp:InnerBoardFilterPanel x:Name="InnerBoardFilterPanel" FilterDicChanged="InnerBoardFilterPanel_FilterDicChanged"/>
+        <Button x:Name="SearchBtn" Width="60" Height="18" Content="筛选" Style="{StaticResource GrayButtonStyle}" HorizontalAlignment="Right" Margin="0,0,300,0" VerticalAlignment="Center" Click="SearchBtn_Click" />
+        <commComp:PopupEx x:Name="FilterPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SearchBtn}" StaysOpen="True"
+                               PopupAnimation="Slide" AllowsTransparency="False" MouseLeave="FilterPopup_MouseLeave">
+            <Border Width="410" Height="180" BorderBrush="#A0A0A0" BorderThickness="1" Background="#3C3C3C">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="24"/>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                   
+                    <TextBlock Text="筛选条件" Foreground="#FFFFFF" FontWeight="Bold" VerticalAlignment="Center" FontSize="12" Margin="10,0,0,0"/>
+                   
+                    <Grid Grid.Row="1" Background="#1E1E1E">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="75"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto"/>
+                            <RowDefinition Height="auto"/>
+                            <RowDefinition Height="auto"/>
+                            <RowDefinition Height="auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <!--债券类型-->
+                        <TextBlock Text="债券类型:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                        <Grid Grid.Column="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <RadioButton x:Name="ShowAll_ToggleButton" Width="40" Height="18" Margin="0,0,0,0"  
+                                         VerticalContentAlignment="Top" HorizontalContentAlignment="Center"
+                                          IsChecked="True" Content="全部" Foreground="White" Style="{StaticResource ShowAllRadioStyle}" 
+                                          Checked="ShowAll_ToggleButton_Checked"
+                                             Unchecked="ShowAll_ToggleButton_Unchecked"
+                                             Click="ShowAll_ToggleButton_Click"/>
+                            <ListBox x:Name="InterestRateDebtListBox" Grid.Column="1" Grid.Row="0"  FontSize="10" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="5" ItemsSource="{Binding InterestRateDebtList}"
+                                     SelectionChanged="InterestRateDebtListBox_SelectionChanged">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource FilterListBoxItemStyle}">
+                                        <Setter Property="Content" Value="{Binding itemText}"/>
+                                        <Setter Property="IsSelected" Value="{Binding itemIsSelected}"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                            </ListBox>
+                            <ListBox x:Name="CreditBondListBox" Grid.Column="1" Grid.Row="1"  FontSize="10" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="10" ItemsSource="{Binding CreditBondList}"
+                                     SelectionChanged="CreditBondListBox_SelectionChanged">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource FilterListBoxItemStyle}">
+                                        <Setter Property="Content" Value="{Binding itemText}"/>
+                                        <Setter Property="IsSelected" Value="{Binding itemIsSelected}"/>
+                                        <Setter Property="Margin" Value="{Binding Itemmargin}"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                            </ListBox>
+                        </Grid>
+
+
+                        <!--剩余期限-->
+                        <TextBlock Grid.Row="2" Text="剩余期限:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                        <ListBox x:Name="RemaingingTimeFilterListBox" Grid.Row="2" Grid.Column="1" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="11" FontSize="10" ItemsSource="{Binding RemaingingTimeList}"
+                                     SelectionChanged="RemaingingTimeFilterListBox_SelectionChanged">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource FilterListBoxItemStyle}">
+                                    <Setter Property="Content" Value="{Binding itemText}"/>
+                                    <Setter Property="IsSelected" Value="{Binding itemIsSelected}"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+
+                        </ListBox>
+
+                       
+
+                        <!--主题评级-->
+                        <TextBlock Grid.Row="4" Text="主体评级:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                        <ListBox x:Name="Rating_CurrentFilterListBox" Grid.Row="4" Grid.Column="1" FontSize="10" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="11" ItemsSource="{Binding RatingList}"
+                                     SelectionChanged="Rating_CurrentFilterListBox_SelectionChanged">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource FilterListBoxItemStyle}">
+                                    <Setter Property="Content" Value="{Binding itemText}"/>
+                                    <Setter Property="IsSelected" Value="{Binding itemIsSelected}"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+
+                        </ListBox>
+
+                    </Grid>
+                </Grid>
+            </Border>
+        </commComp:PopupEx>
+        <commComp:SearchTextBox x:Name="Search_TextBox" HintText="搜索..." ToolTip="可模糊查询债券代码、债券简称、角色、本方交易员" SearchText="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" Margin="0,0,170,0" VerticalAlignment="Center"  Width="120" Height="18" IsFuzzy="True"/>
+        <Button x:Name="RefreshBtn" Width="60" Height="18" Content="刷新" Style="{StaticResource GrayButtonStyle}" HorizontalAlignment="Right" Margin="0,0,100,0" VerticalAlignment="Center" Command="{Binding RefreshCommand}" />
+        <CheckBox x:Name="autoChk" IsChecked="{Binding AutoEnable,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Style="{StaticResource  SwitchMMCheckBoxStyle}" Height="16" Width="34" Foreground="#3C3C3C"
+                                   HorizontalAlignment="Right" Margin="0,0,60,0" VerticalAlignment="Center" ToolTip="每隔5秒自动刷新"/>
+        <TextBlock Text="自动刷新" HorizontalAlignment="Right" Margin="0 0 10 0" VerticalAlignment="Center" Foreground="{StaticResource QuotationList.SubTitle.Foreground}" ToolTip="每隔5秒自动刷新"/>
+
+        <commComp:ExDataGrid x:Name="InnerBoard_dataGrid" ItemsSource="{Binding ViewSource.View}" Grid.Row="1"
+                                  SelectedItem="{Binding SelectedItem_MyInnerOrders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Style="{StaticResource DefaultDataGrid}" MouseDoubleClick="InnerBoard_dataGrid_MouseDoubleClick">
+            <DataGrid.ContextMenu>
+                <ContextMenu x:Name="dgMenu" Style="{StaticResource DefaultContextMenu}">
+                    <MenuItem x:Name="SearchMenu" Header="搜索该券" Style="{StaticResource DefaultMenuItem}" Click="SearchMenu_Click"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding RemainingTime}" Header="剩余期限" Width="Auto" MinWidth="85" FontWeight="SemiBold"  ClipboardContentBinding="{Binding RemainingDate}" SortMemberPath="RemaingingTime_convert"/>
+                <DataGridTextColumn Binding="{Binding Side,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"
+                                                    ClipboardContentBinding="{Binding Side, Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" 
+                                                    Header="方向" Width="Auto" MinWidth="40" CellStyle="{StaticResource ColumnColorStyle}"/>
+                <DataGridTextColumn Binding="{Binding SecurityID}" Header="代码" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding SecurityID}"/>
+                <DataGridTextColumn Binding="{Binding Symbol}" Header="简称" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding Symbol}"/>
+                <DataGridTextColumn Binding="{Binding Price,Converter={StaticResource numConvertor},ConverterParameter=''}" Header="报价(%)" Width="Auto" MinWidth="60" CellStyle="{StaticResource ColumnColorStyle}"/>
+                <DataGridTextColumn Binding="{Binding Qty}" Header="报量(万元)" Width="Auto" MinWidth="80" ClipboardContentBinding="{Binding Qty}" />
+                <DataGridTextColumn Binding="{Binding FirmFlag,Converter={StaticResource EnumTypeConvertor},ConverterParameter='firmflag'}" Header="意向" Width="Auto" MinWidth="50" HeaderStyle="{StaticResource DataGridColumnHeaderLeftStyle}"/>
+                <DataGridTextColumn Binding="{Binding SettleType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_myOrder'}" 
+                                                    ClipboardContentBinding="{Binding SettleType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_myOrder'}" 
+                                                    Header="清算速度" Width="Auto" MinWidth="40" SortMemberPath="SettlDate">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="ToolTip" Value="{Binding SettleType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_tooltip'}" />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding PartySubName}" Header="本方交易员" Width="Auto" MinWidth="80"/>
+                <DataGridTextColumn Binding="{Binding RoleName}" Header="角色" Width="Auto" MinWidth="60"/>
+                <DataGridTextColumn Binding="{Binding UpdateTime}" Header="最后更新时间" Width="Auto" MinWidth="80"/>
+            </DataGrid.Columns>
+        </commComp:ExDataGrid>
+            
+    </Grid>
+</UserControl>

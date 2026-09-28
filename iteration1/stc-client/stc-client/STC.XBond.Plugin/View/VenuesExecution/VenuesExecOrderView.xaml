@@ -1,0 +1,182 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.VenuesExecOrderView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300" Height="50">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="DefalutTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray14}"/>
+                <Setter Property="FontSize" Value="10"/>
+                <Setter Property="VerticalAlignment" Value="Bottom"/>
+            </Style>
+
+            <Style x:Key="DataTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <!--下拉按钮-->
+            <Style TargetType="ToggleButton" x:Key="ComboxStyleBtn">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border x:Name="Back"  BorderThickness="0" BorderBrush="Transparent" >
+                                <Border.Background>
+                                    <ImageBrush ImageSource="../Images/stc_button_dropdownarrow_normal.png"/>
+                                </Border.Background>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>-->
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+          
+            <VisualBrush x:Key="HintInstText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="客户机构名"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <VisualBrush x:Key="HintYieldText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="收益率(%)"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <VisualBrush x:Key="HintExchangeText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="客户交易员"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <ControlTemplate x:Key="InstTextBoxControlTemplate1" TargetType="{x:Type TextBox}">
+                <Border x:Name="border" CornerRadius="1" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{StaticResource ColorBrush.Gray15}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray15}"/>
+                    </Trigger>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="Text" Value=""/>
+                        </MultiTrigger.Conditions>
+                        <Setter TargetName="border" Property="Background" Value="{StaticResource HintInstText}"/>
+                    </MultiTrigger>
+
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="YieldTextBoxControlTemplate1" TargetType="{x:Type TextBox}">
+                <Border x:Name="border" CornerRadius="1" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{StaticResource ColorBrush.Gray15}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray15}"/>
+                    </Trigger>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="Text" Value=""/>
+                        </MultiTrigger.Conditions>
+                        <Setter TargetName="border" Property="Background" Value="{StaticResource HintYieldText}"/>
+                    </MultiTrigger>
+
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="ExTextBoxControlTemplate1" TargetType="{x:Type TextBox}">
+                <Border x:Name="border" CornerRadius="1" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{StaticResource ColorBrush.Gray15}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray15}"/>
+                    </Trigger>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="Text" Value=""/>
+                        </MultiTrigger.Conditions>
+                        <Setter TargetName="border" Property="Background" Value="{StaticResource HintExchangeText}"/>
+                    </MultiTrigger>
+
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="10*"></ColumnDefinition>
+            <ColumnDefinition Width="15*"></ColumnDefinition>
+            <ColumnDefinition Width="15*"></ColumnDefinition>
+            <ColumnDefinition Width="20*"></ColumnDefinition>
+            <ColumnDefinition Width="20*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="方向" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,-8,0,0" Text="{Binding Side}" Foreground="{Binding SideBrush}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+        <TextBlock Grid.Row="0" Grid.Column="1" Text="成交价(%)" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,-8,0,0" Text="{Binding Price}" Foreground="{Binding SideBrush}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+        <TextBlock Grid.Row="0" Grid.Column="2" Text="成交量(万元)" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+        <TextBlock Grid.Row="1" Grid.Column="2" Margin="0,-8,0,0" Text="{Binding Amount}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+        <TextBlock Grid.Row="0" Grid.Column="3" Text="对手方" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+        <TextBlock Grid.Row="1" Grid.Column="3" Margin="0,-8,0,0" Text="{Binding Counterparty}" TextTrimming="CharacterEllipsis" Style="{StaticResource DataTextBlockStyle}" Height="14">
+            <TextBlock.ToolTip>
+                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+
+        <TextBlock Grid.Row="0" Grid.Column="4" Text="对手交易员" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+        <TextBlock Grid.Row="1" Grid.Column="4" Margin="0,-8,0,0" Text="{Binding CounterpartyExchanger}" TextTrimming="CharacterEllipsis" Style="{StaticResource DataTextBlockStyle}" Height="14">
+            <TextBlock.ToolTip>
+                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+
+
+
+    </Grid>
+</UserControl>

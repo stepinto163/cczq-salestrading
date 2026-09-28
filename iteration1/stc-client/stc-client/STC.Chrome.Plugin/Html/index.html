@@ -1,0 +1,575 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+    <title>C# Js Call</title>
+    <meta http-equiv='Content-Type' content='text/html; charset=utf8' />
+    <meta HTTP-EQUIV='Pragma' CONTENT='no-cache'>
+    <style>
+
+        body {
+            margin: 0px;
+            padding: 0px;
+            background: #EFF1EE;
+            font-size: 12px;
+            color: #E36813;
+            font-family: "宋体",Arial;
+            line-height: 170%;
+            text-align: center;
+            vertical-align: middle;
+            padding-top: 100px;
+        }
+
+        .ct_text {
+            width: 115px;
+            border: 1px #87a6c3 solid;
+            background: #edeced;
+        }
+
+        .buttonX {
+            margin: 2px;
+            FONT-SIZE: 12px;
+            WIDTH: 70px;
+            COLOR: #1F3E81;
+            FONT-FAMILY: "Arial", "Helvetica";
+            height: 22px;
+            *padding-top: 3px;
+            padding-bottom: 3px;
+            TEXT-ALIGN: center;
+            border: 1px solid #BACFEB;
+            background-color: #CADAF4;
+            text-decoration: none;
+            event: expression( onmouseover = function(){this.className='buttonX_over';}, onmouseout = function(){this.className='buttonX';} )
+        }
+
+        .buttonX_over {
+            margin: 2px;
+            FONT-SIZE: 12px;
+            WIDTH: 70px;
+            COLOR: #ffffff;
+            FONT-FAMILY: "Arial", "Helvetica";
+            height: 22px;
+            *padding-top: 3px;
+            padding-bottom: 3px;
+            TEXT-ALIGN: center;
+            border: 1px solid #90B1DF;
+            background-color: #A3C0E8;
+        }
+
+        .code-box {
+            color: green; /* 文字颜色改为绿色 */
+            background-color: #f4f4f4; /* 设置背景色为淡灰色 */
+            padding: 10px; /* 内边距 */
+            border-radius: 5px; /* 圆角边框 */
+            display: block; /* 让 <code> 像块级元素一样换行 */
+            white-space: pre-wrap; /* 保持换行格式 */
+            font-family: monospace; /* 代码风格字体 */
+        }
+
+        textarea {
+            scrollbar-width: thin; /* Firefox */
+        }
+
+            textarea::-webkit-scrollbar {
+                width: 8px; /* WebKit 浏览器 */
+            }
+
+            textarea::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+
+            textarea::-webkit-scrollbar-thumb {
+                background-color: #888;
+                border-radius: 10px;
+            }
+
+                textarea::-webkit-scrollbar-thumb:hover {
+                    background: #555;
+                }
+    </style>
+    <!--jQuery v1.12.3 -->
+    <script type="text/javascript" src="Scripts/jquery-1.12.3.min.js"></script>
+    <!--jQuery Cookie Plugin v1.4.1-->
+    <script type="text/javascript" src="Scripts/jquery.cookie.js"></script>
+    <script type="text/javascript">
+
+        $(function () {
+            $("#txtUsername").focus();
+
+            //Set行情小窗
+            $("#btnpriceWin").click(function () {
+                $("#txtUsername").val("priceWin");
+                $("#txtPassword").val("210210.IB");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+        //Set用户信息
+            $("#btngetUserInfo").click(function () {
+                $("#txtUsername").val("getUserInfo");
+                $("#txtPassword").val("");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+        //Set查询债券
+            $("#btngetBondsInfo").click(function () {
+                $("#txtUsername").val("getBondsInfo");
+                $("#txtPassword").val("210");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+            
+         //Set消息提醒
+            $("#btnsendNotification").click(function () {
+                $("#txtUsername").val("sendNotification");
+                document.getElementById("txtResult").value = "";
+                cef.pubClient("getTestAlertMsg", "")
+                        .then(function (res) {
+                            //c#方法返回消息
+                            console.log(res);
+                            document.getElementById("txtPassword").value  = res;
+                     });
+            });
+       
+           //Get最优
+           $("#btngetGroupDeal").click(function () {
+                $("#txtUsername").val("getGroupDeal");
+                $("#txtPassword").val("买入国债");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+
+            //批量识别
+            $("#btnshowRecognizeIntentionWin").click(function () {
+                $("#txtUsername").val("showRecognizeIntentionWin");
+                $("#txtPassword").val("BID 200210 0.23% 3000w");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+            
+            //发行人识别
+            $("#btnshowIssueRecogizationWin").click(function () {
+                $("#txtUsername").val("showIssueRecogizationWin");
+                $("#txtPassword").val("银行");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+            
+         //Set最优
+            $("#btnsetGroupDeal").click(function () {
+                $("#txtUsername").val("setGroupDeal");
+                document.getElementById("txtResult").value = "";
+                cef.pubClient("getGroupDealMsg", "")
+                        .then(function (res) {
+                            //c#方法返回消息
+                            console.log(res);
+                            document.getElementById("txtPassword").value  = res;
+                     });
+            });
+            
+           //获取测试Getway消息
+            $("#btngetTestRequestsyncMsg").click(function () {
+                $("#txtUsername").val("requestsync");
+                  document.getElementById("txtResult").value = "";
+                  cef.pubClient("getTestRequestsyncMsg", "")
+                                .then(function (res) {
+                                    //c#方法返回消息
+                                    console.log(res);
+                                    document.getElementById("txtPassword").value  = res;
+                             });
+            });		
+            
+      //获取订阅Getway消息
+      $("#btngetTestSubscribesyncMsg").click(function () {
+                $("#txtUsername").val("subscribe");
+                  document.getElementById("txtResult").value = "";
+                  cef.pubClient("getTestSubscribesyncMsg", "")
+                                .then(function (res) {
+                                    //c#方法返回消息
+                                    console.log(res);
+                                    document.getElementById("txtPassword").value  = res;
+                             });
+            });	
+    
+            //获取退阅Getway消息
+            $("#btngetTestUnSubscribesyncMsg").click(function () {
+                $("#txtUsername").val("unsubscribe");
+                  document.getElementById("txtResult").value = "";
+                  cef.pubClient("getTestUnSubscribesyncMsg", "")
+                                .then(function (res) {
+                                    //c#方法返回消息
+                                    console.log(res);
+                                    document.getElementById("txtPassword").value  = res;
+                             });
+            });	
+    
+    
+            
+            //订阅组
+            $("#btnsubscribeTagGroup").click(function () {
+                $("#txtUsername").val("subscribeTagGroup");
+                $("#txtPassword").val("C# Js Call");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+            
+            //退订组
+            $("#btnunsubscribeTagGroup").click(function () {
+                $("#txtUsername").val("unsubscribeTagGroup");
+                $("#txtPassword").val("C# Js Call");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+            
+           // 通知客户端更新订阅组
+           $("#btnpublishTagGroup").click(function () {
+                $("#txtUsername").val("publishTagGroup");
+                $("#txtPassword").val("");
+                document.getElementById("txtResult").value = "***用于通知客户端更新订阅组***";
+                $("#txtPassword").focus();
+            });
+             
+           //Clear
+           $("#btnClear").click(function () {
+                $("#txtPassword").val("");
+                document.getElementById("txtResult").value = "";
+                $("#txtPassword").focus();
+            });
+
+
+            //js直接调用 c#
+            $("#btnCallc").click(function () {
+                try {
+                    // 调用 C# 提供的 JSON 数据
+                    var txtKey = $("#txtUsername").val();
+            
+                    if (txtKey == "") {
+                        //document.getElementById("txtResult").innerHTML  = "key为空，请输入！";
+                        alert("key为空，请输入！");
+                        $("#txtUsername").focus();
+                        return;
+                    }
+                    var txtValue = $("#txtPassword").val();
+                    if (txtKey == "fq_setActionData" || txtKey == "fq_changeBond"){
+                               if (txtValue == "") {
+                                alert("value为空，请输入！");
+                                return;
+                               }
+                          txtValue = txtValue.replace(/\r\n/g, "" ); 
+                          txtValue = txtValue.replace(/\n/g, "" ); 
+                    }
+                    
+                    cef.pubClient(txtKey, txtValue).then(msg => {
+                        // 调用 C# 提供的 JSON 数据
+                        console.log(msg);
+                        document.getElementById("txtResult").value = msg.replace(/\r\n/g, "<br>");
+                    }).catch(error => {
+                        console.error("调用失败:", error);
+                        document.getElementById("txtResult").value = error.replace(/\r\n/g, "<br>");
+                    });
+                } catch (error) {
+                    document.getElementById("txtResult").value = error.replace(/\r\n/g, "<br>");
+                    alert(error);
+                }
+            });
+            
+            // FQ测试代码段
+          $("#btnpage_ready").click(function () {
+                     $("#txtUsername").val("fq_page_ready");
+                 document.getElementById("txtResult").value = "";
+                  cef.pubClient("fq_page_ready", '[{"req": "ZnEudG9rZW4uYmluZA=="",callback": "ZnFfdG9rZW5fYmluZF9jYWxsYmFjaw=="}]').then(msg => {
+                            console.log(msg);
+                            document.getElementById("txtResult").value = msg.replace(/\r\n/g, "<br>");
+                            }).catch(error => {
+                            console.error("调用失败:", error);
+                            document.getElementById("txtResult").value = error.replace(/\r\n/g, "<br>");
+                        });
+                    });
+        
+                  $("#btnfq_token_bind").click(function () {
+                     $("#txtUsername").val("fq_token_bind");
+                 document.getElementById("txtResult").value = "";
+                  cef.pubClient("fq_token_bind", '[{"req": "ZnEudG9rZW4uYmluZA=="",callback": "ZnFfdG9rZW5fYmluZF9jYWxsYmFjaw=="}]').then(msg => {
+                            console.log(msg);
+                            document.getElementById("txtResult").value = msg.replace(/\r\n/g, "<br>");
+                            }).catch(error => {
+                            console.error("调用失败:", error);
+                            document.getElementById("txtResult").value = error.replace(/\r\n/g, "<br>");
+                        });
+                    });
+        
+              $("#btnfq_page_close").click(function () {
+                 $("#txtUsername").val("fq_page_close");
+             document.getElementById("txtResult").value = "";
+              cef.pubClient("fq_page_close", '[{"req": "ZnEudG9rZW4uYmluZA==", "callback": "ZnFfdG9rZW5fYmluZF9jYWxsYmFjaw=="}]').then(msg => {
+                        console.log(msg);
+                        document.getElementById("txtResult").value = msg.replace(/\r\n/g, "<br>");
+                        }).catch(error => {
+                        console.error("调用失败:", error);
+                        document.getElementById("txtResult").value = error.replace(/\r\n/g, "<br>");
+                    });
+                });
+                
+                //订阅回调
+            $("#btnfq_subscribe").click(function () {
+                     $("#txtUsername").val("subscribe");
+              $("#txtPassword").val('{"srvid":"Local","topic":"finQrInit,fq_token_bind_callback,setActionData,changeBond,getRemainTime,fq_token_fanout,IssueRecogizationCallBack,GroupDealCallBack,TagGroupSelection","paras":"C# Js Call"}');
+                 document.getElementById("txtResult").value = "";
+              });
+            
+            //请求发送盘口数据
+            $("#btnfq_getFQSetAction").click(function () {
+                     $("#txtUsername").val("fq_getFQSetAction");
+                     $("#txtPassword").val('[{"req": "ZnEudG9rZW4uYmluZA=="",callback": "ZnFfdG9rZW5fYmluZF9jYWxsYmFjaw=="}]');
+                     document.getElementById("txtResult").value = "";
+                     $("#txtPassword").focus();
+             });
+             
+          //请求发送全量更新数据
+            $("#btnfq_getFQChangeBond").click(function () {
+                     $("#txtUsername").val("fq_getFQChangeBond");
+                     $("#txtPassword").val('[{"req": "ZnEudG9rZW4uYmluZA=="",callback": "ZnFfdG9rZW5fYmluZF9jYWxsYmFjaw=="}]');
+                     document.getElementById("txtResult").value = "";
+                     $("#txtPassword").focus();
+             });
+          
+           //重置fq_page_ready状态
+           $("#btnfq_page_reset").click(function () {
+                     $("#txtUsername").val("fq_page_reset");
+                     $("#txtPassword").val('[{"req": "ZnEudG9rZW4uYmluZA=="",callback": "ZnFfdG9rZW5fYmluZF9jYWxsYmFjaw=="}]');
+                     document.getElementById("txtResult").value = "";
+                     $("#txtPassword").focus();
+             });
+             
+            //获取发行人识别结果
+            $("#btngetIssueRecogization").click(function () {
+              $("#txtUsername").val("getIssueRecogizationResult");
+              const param = JSON.stringify({
+                code: "中国银行",
+                pageIndex: 0,    // 第 1 页
+                pageSize: 200
+              });
+              $("#txtPassword").val(param);
+              document.getElementById("txtResult").value = "";
+              $("#txtPassword").focus();
+            }); 
+        });
+        
+        //用户客户端发布消息给网页。
+        function pubJS(param1, param2) {
+            //$("#txtUsername").val(param1);
+            $("#txtPassword").val(param1);
+            document.getElementById("txtResult").value = param2;
+            console.log("收到来自客户端发送的消息！\n param1: " + param1 + "\n参数2: " + param2);
+        }
+    
+    // 等待对象注入
+    function waitForBridge(callback) {
+        const interval = setInterval(() => {
+            if (typeof cef !== 'undefined') {
+                clearInterval(interval);
+                callback(cef);
+            }
+        }, 100);
+    }
+    waitForBridge((cef) => {
+        console.log("cef 已注入");
+         // 订阅FQ回调
+           /*cef.pubClient("subscribe", '{"srvid":"Local","topic":"finQrInit,fq_token_bind_callback,setActionData,changeBond,fq_token_fanout,finQreConnect","paras":"WebFQ"}').then(msg => {
+                          console.log(msg);
+                         document.getElementById("txtResult").value = msg.replace(/\r\n/g, "<br>");
+                        }).catch(error => {
+                           console.error("调用失败:", error);
+                            document.getElementById("txtResult").value = error.replace(/\r\n/g, "<br>");
+               });
+              cef.pubClient("subscribe", '{"srvid":"Local","topic":"IssueRecogizationCallBack,GroupDealCallBack","paras":"市场最优"}').then(msg => {           	  console.log(msg);
+                        }).catch(error => {
+                       console.error("调用失败:", error);
+               });
+               */
+        // 定义一个全局变量，用于保存回调函数
+        window.cefCallback= function (json) {
+            try {
+              const jsondata = JSON.parse(json);
+              // 获取 Topic 值，移除前后空白
+              const topic = (jsondata.Topic || "").trim();
+
+              if (!topic) {
+                    console.warn("⚠️ Topic 为空或全是空白");
+                    console.warn("完整 JSON 对象:", jsondata);
+                    return;
+                }
+
+                switch (topic) {
+                case "finQrInit":
+                    console.log("处理初始化逻辑");
+                    // do something...
+                    break;
+                case "fq_token_bind_callback":
+                    console.log("处理token");
+                    // do something...
+                    break;
+                case "setActionData":
+                    console.log("处理数据逻辑");
+                    // do something...
+                    break;
+                case "changeBond":
+                    console.log("处理数据更新逻辑");
+                    // do something...
+                    break;
+                case "fq_token_fanout":
+                    console.log("处理fq_token_fanout逻辑");
+                    // do something...
+                    break;
+               case "getRemainTime":
+                    console.log(jsondata.Data);
+                    break;
+               case "IssueRecogizationCallBack":
+                    console.log("收到发行人识别处理结果");
+                    console.log(JSON.parse(jsondata.Data));
+                    break;
+               case "GroupDealCallBack":
+                    console.log("收到消息提醒中“市场最优”提醒消息状态 订阅");
+                    console.log(JSON.parse(jsondata.Data));
+                    break;
+              case "TagGroupSelection":
+                    console.log("收到设置市场最优Group焦点的消息");
+                    console.log(JSON.parse(jsondata.Data));
+                    break;
+                default:
+                    console.log("收到回调:", jsondata);
+                    break;
+            }
+            } catch (error) {
+                console.error("❌ window.cefCallback 执行出错:", error.message);
+                console.error("错误堆栈:", error.stack);
+            }
+        };
+
+        // 注册回调到 C# 桥接对象, 方法名，窗口名
+        cef.subscribeCallback("window.cefCallback","C# Js Call");
+    });
+    </script>
+</head>
+
+<body leftmargin="0" topmargin="0" bgcolor="EFF1EE">
+    <table width="700" height="180" border="0" cellpadding="0" cellspacing="0" align="left">
+        <tr>
+            <td width="20" align="left">
+            <td>
+                <table>
+                    <tr id="loginname">
+                        <td width="40" align="left">key</td>
+                        <td><input type="text" tabindex="901" name="txtUsername" value="priceWin" id="txtUsername" maxlength="600" style="width:300px;" align="left" placeholder="priceWin,getUserInfo,getBondsInfo" /></td>
+                    </tr>
+                    <tr>
+                        <td width="40" align="left">value</td>
+                        <td>
+                            <textarea name="txtPassword" id="txtPassword" value="210210.IB" style="width: 590px; height: 180px; border: 1px solid #ccc; padding: 5px; font-size: 12px;color:blue;">
+                        </textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="40" align="left">Result</td>
+                        <td>
+                            <textarea name="txtResult" id="txtResult" style="width: 590px; height: 180px; border: 1px solid #ccc; padding: 5px; font-size: 12px;color:green;">
+                        </textarea>
+                        </td>
+                    </tr>
+                    <tr height="15">
+                        <td colspan=2></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2>
+                            <input class="buttonX" type="button" id="btnpriceWin" value="Set行情小窗" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btngetUserInfo" value="Set用户信息" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btngetBondsInfo" value="Set查询债券" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btnsendNotification" value="Set消息提醒" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btngetGroupDeal" value="Get最优" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btnsetGroupDeal" value="Set最优" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btnshowRecognizeIntentionWin" value="批量识别" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btnshowIssueRecogizationWin" value="发行人识别" style="width: 80px;" />
+                            
+                            <input class="buttonX" type="button" id="btnsubscribeTagGroup" value="订阅组" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btnunsubscribeTagGroup" value="退订组" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btnpublishTagGroup" value="通知客户端" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btngetTestRequestsyncMsg" value="GetGateWay" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btngetTestSubscribesyncMsg" value="Get订阅" style="width: 80px;" />
+                            <input class="buttonX" type="button" id="btngetTestUnSubscribesyncMsg" value="Get退阅" style="width: 80px;" />
+                
+                            <input class="buttonX" type="button" id="btnfq_subscribe" value="subscribe" style="width: 94px;" />
+                            <input class="buttonX" type="button" id="btnpage_ready" value="fq_page_ready" style="width: 88px;" />
+                            <input class="buttonX" type="button" id="btnfq_token_bind" value="fq_token_bind" style="width: 88px;" />
+                            <input class="buttonX" type="button" id="btnfq_page_close" value="fq_page_close" style="width: 88px;" />
+                            <input class="buttonX" type="button" id="btnfq_getFQSetAction" value="fq_getFQSetAction" style="width: 94px;" />
+                            <input class="buttonX" type="button" id="btnfq_getFQChangeBond" value="fq_getFQChangeBond" style="width: 94px;" />
+                            <input class="buttonX" type="button" id="btnfq_page_reset" value="fq_page_reset" style="width: 94px;" />
+                            <input class="buttonX" type="button" id="btngetIssueRecogization" value="Get发行人" style="width: 80px;" />
+                                        <input class="buttonX" type="button" id="btnClear" value="Clear" style="width: 80px;background:orange;color:#FFFFFF;" />
+                            <input class="buttonX" type="button" id="btnCallc" value="JsCallC# cef.pubClient" style="width: 140px;background:#136C5E;color:#FFFFFF;" />
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    <table height="15" width="760" border="1" cellpadding="0" cellspacing="0" bgcolor="#ffffff" align="left">
+        <tr>
+            <td>
+                1.  js 调用C# 注意：方法固定cef.pubClient, 以下代码：实现网页吊起客户端行情小窗代码功能
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <pre><code class="code-box">
+&lt;script type="text/javascript"&gt;
+    try {
+     var txtKey = "priceWin";
+     var txtValue = "210210.IB";
+     //调用C#后台方法
+     cef.pubClient(txtKey, txtValue)
+         .then(function (res) {
+             //c#方法返回消息
+             console.log(msg);
+         });
+    } catch (e) {
+                console.error("Result:", e);
+   }
+&lt;/script&gt;
+</code></pre>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                2.  c# 调用js网页 注意： 方法固定cef.subscribeCallback ，用于获得订阅回调
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <pre><code class="code-box">
+&lt;script type="text/javascript"&gt;
+    // 等待对象注入
+    function waitForBridge(callback) {
+        const interval = setInterval(() => {
+            if (typeof cef !== 'undefined') {
+                clearInterval(interval);
+                callback(cef);
+            }
+        }, 100);
+    }
+    waitForBridge((cef) => {
+        console.log("cef 已注入");
+        window.cefCallback= function (json) {
+            const data = JSON.parse(json);
+            console.log("收到回调:", data);
+            //document.getElementById("price").innerText = data.price;
+        };
+         // 注册回调到 C# 桥接对象,WebFinq 第二个参数固定为 WebFQ
+            cef.subscribeCallback("window.cefCallback","C# Js Call");
+    });
+ &lt;/script&gt;	
+      </code></pre>
+            </td>
+        </tr>		
+
+    </table>
+</body>
+</html>

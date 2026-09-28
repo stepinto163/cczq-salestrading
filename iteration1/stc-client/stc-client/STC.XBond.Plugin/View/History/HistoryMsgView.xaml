@@ -1,0 +1,175 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.HistoryMsgView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:ViewModel="clr-namespace:STC.XBond.Plugin.ViewModel" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore" 
+             xmlns:customeUI="clr-namespace:STC.XBond.Plugin.CustomeUI"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:CommonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:utils="clr-namespace:STC.XBond.Plugin.Utils"
+             xmlns:command ="clr-namespace:STC.XBond.Plugin.Command"
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="1200" Initialized="UserControl_Initialized" Loaded="UserControl_Loaded"
+             xmlns:Component="clr-namespace:STC.XBond.Plugin.View.Component">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="CanContentScroll" Value="true"/>
+            </Style>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Level}" Value="C">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Red7}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Level}" Value="A">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridCellStyle1" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" MouseEnter="ContentPresenter_MouseEnter">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,0,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="textBlock" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Gray14}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="VGridSplitterStyle2" TargetType="{x:Type GridSplitter}">
+                <Setter Property="PreviewStyle" Value="{DynamicResource GridSplitterPreviewStyle}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GridSplitter}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel VerticalAlignment="Center" Orientation="Vertical">
+                                    <Rectangle Width="12" Height="1" Stroke="{DynamicResource DefaultForegroup.ColorBrush}" Margin="0,2,0,2"/>
+                                    <Rectangle Width="12" Height="1" Stroke="{DynamicResource DefaultForegroup.ColorBrush}" Margin="0,0,0,2"/>
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+    <Grid Background="#141414">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <local:HistoryMsgFilterPanel x:Name="historyMsgFilter" MsgFilterDicChanged="historyMsgFilter_MsgFilterDicChanged"/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <!--<ComboBox x:Name="comboBox" Margin="20,0,0,0" Width="90"  Height="18" 
+                          VerticalAlignment="Center" SelectedIndex="0" 
+                          Style="{StaticResource NonEditableComboBoxStyle}"
+                          SelectionChanged="comboBox_SelectionChanged">
+                    <ComboBoxItem Content="STC订单号" Tag="1"/>
+                    <ComboBoxItem Content="债券代码" Tag="2"/>
+                    <ComboBoxItem Content="消息类型" Tag="3"/>
+                </ComboBox>-->
+                <!--<TextBox Width="130" Height="18" Padding="5, 0, 0, 0" 
+                         Style="{StaticResource HistoryTextBoxStyle}" 
+                         x:Name="textBox"
+                         Margin="5,0"
+                         KeyDown="textBox_KeyDown"
+                         TextChanged="textBox_TextChanged"
+                         input:TextCompositionManager.PreviewTextInput="textBox_PreviewTextInput"
+                         input:TextCompositionManager.PreviewTextInputUpdate="textBox_PreviewTextInputUpdate"/>-->
+                <Component:MsgSearchTextBox x:Name="textBox" Width="130" Height="18" Padding="5, 0, 0, 0" Margin="5,0" 
+                                            KeyDown="textBox_KeyDown" SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                    
+                </Component:MsgSearchTextBox>
+                <Button x:Name="btnFullScreen" Width="24" Height="24" HorizontalAlignment="Left"
+                        VerticalAlignment="Center" Style="{DynamicResource ExportButton}" 
+                        Command="{Binding ExportCommand}"/>
+            </StackPanel>
+        </Grid>
+        <CommonComp:ExDataGrid Grid.Row="1" x:Name="Msg_dataGrid" Style="{DynamicResource DefaultDataGrid}"
+                ItemsSource="{Binding MsgDV}" VirtualizingStackPanel.VirtualizationMode="Standard"
+                  LoadingRow="Msg_dataGrid_LoadingRow" RowHeaderWidth="0">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="50" Header="序号" MinWidth="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type DataGridRow}}, Path=Header}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="日期" Width="50" Binding="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatYYYYMMDD}}"
+                                            />
+                <DataGridTextColumn Header="更新时间" Width="50" Binding="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}"
+                                            CanUserSort="True"/>
+
+                <DataGridTextColumn Header="消息类型" Width="50" Binding="{Binding ContentType,Converter={StaticResource EnumTypeConvertor},ConverterParameter='contenttype'}"  FontWeight="SemiBold"/>
+                <DataGridTextColumn Header="程度" Width="50" 
+                                    Binding="{Binding Level,Converter={StaticResource EnumTypeConvertor},ConverterParameter='level', Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  
+                                    FontWeight="SemiBold"
+                                    CellStyle="{StaticResource ColumnColorStyle}"/>
+                <DataGridTextColumn Header="债券代码" Width="50" Binding="{Binding SecurityID}" 
+                                    FontWeight="SemiBold"
+                                    CanUserSort="True"/>
+                <DataGridTextColumn Header="消息标题" Width="100" Binding="{Binding HeaderTitle}" 
+                                    FontWeight="SemiBold"/>
+                <DataGridTemplateColumn Header="消息内容" Width="150" ClipboardContentBinding="{Binding Content}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Content}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="来源" Width="75" Binding="{Binding Source}"  
+                                    FontWeight="SemiBold"
+                                    CanUserSort="True"/>
+                <DataGridTextColumn Header="STC订单号" Width="100"
+                                    Binding="{Binding StrategyOrderId}"
+                                    CanUserSort="True"/>
+            </DataGrid.Columns>
+        </CommonComp:ExDataGrid>
+        <CommonComp:PageControl x:Name="pageControl" Grid.Row="2" HorizontalAlignment="Right" 
+                               PageChanged="pageControl_PageChanged" 
+                               Visibility="{Binding PageVisible,Converter={StaticResource visibilityConvertor}}"/>
+        <fUI:LoadingMask x:Name="loadMask" Visibility="Collapsed" Grid.RowSpan="3" Grid.Row="0"></fUI:LoadingMask>
+    </Grid>
+</UserControl>

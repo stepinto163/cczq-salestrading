@@ -1,0 +1,303 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.Frame"
+        xmlns:CustomUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+        xmlns:cmp="clr-namespace:STC.Frame.CustomUI.TabPage"
+        xmlns:UI="clr-namespace:STC.Frame.UI" x:Class="STC.Frame.Window1"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:CusThemes="clr-namespace:Dragablz.Themes;assembly=MDT.ThirdParty.Control"
+        xmlns:dragablz="clr-namespace:Dragablz;assembly=MDT.ThirdParty.Control"
+        xmlns:dockablz="clr-namespace:Dragablz.Dockablz;assembly=MDT.ThirdParty.Control"
+        AllowsTransparency ="True"
+        mc:Ignorable="d"
+        d:DesignHeight="660" d:DesignWidth="1000"
+    x:Name="mainWindow"
+    ResizeMode="CanResize"  WindowStyle="None"
+    WindowStartupLocation="CenterScreen" 
+   WindowState="Normal" 
+   BorderThickness="1" BorderBrush="#A0A0A0" Loaded="mainWindow_Loaded" UseLayoutRounding="True" SnapsToDevicePixels="True"
+   StateChanged="mainWindow_StateChanged" Activated="mainWindow_Activated" Deactivated="mainWindow_Deactivated">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/MDT.ThirdParty.Control;component/Themes/MainThemes.xaml"/>
+                <!--以下代码必须注释，否则无法应用皮肤-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="SvrCheckBox" TargetType="{x:Type CheckBox}">
+                <Style.Resources>
+                    <SolidColorBrush x:Key="OptionMark.Static.Background" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="OptionMark.Static.Border" Color="#E63034"/>
+                    <Style x:Key="OptionMarkFocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="14,0,0,0" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <SolidColorBrush x:Key="OptionMark.MouseOver.Background" Color="#FF9200"/>
+                    <SolidColorBrush x:Key="OptionMark.MouseOver.Border" Color="#FF5593FF"/>
+                    <SolidColorBrush x:Key="OptionMark.MouseOver.Glyph" Color="#FF212121"/>
+                    <SolidColorBrush x:Key="OptionMark.Disabled.Background" Color="#FFE6E6E6"/>
+                    <SolidColorBrush x:Key="OptionMark.Disabled.Border" Color="#FFBCBCBC"/>
+                    <SolidColorBrush x:Key="OptionMark.Disabled.Glyph" Color="#FF707070"/>
+                    <SolidColorBrush x:Key="OptionMark.Pressed.Background" Color="Transparent"/>
+                    <SolidColorBrush x:Key="OptionMark.Pressed.Border" Color="#FF3C77DD"/>
+                    <SolidColorBrush x:Key="OptionMark.Pressed.Glyph" Color="#FF212121"/>
+                    <SolidColorBrush x:Key="OptionMark.Static.Glyph" Color="#FF212121"/>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{StaticResource OptionMark.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource OptionMark.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type CheckBox}">
+                            <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="checkBoxBorder" Margin="0, 3, 3, 3" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid x:Name="markGrid">
+                                        <Path x:Name="optionMark" Data="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z " Fill="{StaticResource OptionMark.Static.Glyph}" Margin="1" Opacity="0" Stretch="None"/>
+                                        <Rectangle x:Name="indeterminateMark" Fill="{StaticResource OptionMark.Static.Glyph}" Margin="0" Opacity="0"/>
+                                    </Grid>
+                                </Border>
+                                <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="statusBarTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="10,0,0,0"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Regular}"/>
+                <Setter Property="Foreground" Value="#F4E1C0"/>
+            </Style>
+
+
+            <Style x:Key="newMaterialDesignDragableTabItemStyle"  TargetType="{x:Type dragablz:DragablzItem}" BasedOn="{StaticResource BaseTabItemStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type dragablz:DragablzItem}">
+                            <Grid x:Name="templateRoot" SnapsToDevicePixels="true" >
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Border x:Name="selectBorder"
+                                Background="Transparent"  BorderThickness="0"                           
+                                Margin="0 0 0 0">
+                                    <CusThemes:Ripple HorizontalContentAlignment="Stretch" VerticalAlignment="Stretch">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ContentPresenter Content="{TemplateBinding ContentControl.Content}" ContentTemplate="{TemplateBinding ContentControl.ContentTemplate}" TextBlock.Foreground="#8F9598"
+                                                      ContentStringFormat="{TemplateBinding ContentControl.ContentStringFormat}" HorizontalAlignment="{TemplateBinding Control.HorizontalContentAlignment}" 
+                                                      VerticalAlignment="{TemplateBinding Control.VerticalContentAlignment}" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}"
+                                                      x:Name="contentPresenter"                                                                                            
+                                                      Margin="{TemplateBinding Control.Padding}" TextBlock.FontSize="14"
+                                                      Opacity=".87"/>
+                                            <Thumb Grid.Column="0" HorizontalAlignment="Stretch" VerticalContentAlignment="Stretch" 
+                                           x:Name="PART_Thumb"
+                                           Style="{StaticResource MaterialDesignInvisibleThumbStyle}" />
+                                            <Button Grid.Column="1" x:Name="btnTabClose" Width="10" Height="10"
+                                            Style="{DynamicResource ImageTagCloseButton}"                                           
+                                            Command="{x:Static dragablz:TabablzControl.CloseItemCommand}" Visibility="Collapsed">
+                                            </Button>
+                                        </Grid>
+                                    </CusThemes:Ripple>
+                                </Border>
+                                <Border x:Name="SelectionHighlightBorder"  Height="2"
+                                Grid.Row="1"
+                                Visibility="Hidden"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="dragablz:TabablzControl.IsWrappingTabItem" Value="True">
+                                    <Setter TargetName="contentPresenter" Property="Content" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DataContext.Header}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="contentPresenter" Property="Opacity" Value="1"/>
+                                    <Setter TargetName="contentPresenter" Property="TextBlock.Foreground" Value="#FFFFFF"/>
+                                    <Setter TargetName="contentPresenter" Property="TextBlock.FontFamily" Value="NotoSansCJKsc-Bold"/>
+                                    <Setter TargetName="SelectionHighlightBorder" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="selectBorder" Property="Background" Value="Transparent"/>
+                                    <Setter TargetName="selectBorder" Property="BorderThickness" Value="0, 0, 0, 2"/>
+                                    <Setter TargetName="selectBorder" Property="BorderBrush" Value="{DynamicResource TabItem.Selected.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DeleteButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#A0A0A0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" CornerRadius="2,2,2,2" BorderThickness="0" Background="{TemplateBinding Background}" BorderBrush="#A0A0A0">
+                                <Image  Grid.Column="1" Width="16" Height="20"  >
+                                    <Image.Source>
+                                        <DrawingImage >
+                                            <DrawingImage.Drawing>
+                                                <DrawingGroup ClipGeometry="M0,0 V12 H13 V0 H0 Z">
+                                                    <DrawingGroup.Transform>
+                                                        <TranslateTransform X="5.6857174058677629E-05" Y="0" />
+                                                    </DrawingGroup.Transform>
+                                                    <DrawingGroup Opacity="1">
+                                                        <DrawingGroup Opacity="1">
+                                                            <GeometryDrawing Brush="{ Binding BorderBrush, RelativeSource={ RelativeSource Mode=FindAncestor, AncestorType=Border} }" Geometry="F1 M13,12z M0,0z M12.000183,8L12.000183,11C12.000183,11.639569,11.673143,12,12.000183,12L12.000183,12 9.000183,12C8.324415,12,8.000183,11.639569,8.000183,11L8.000183,11 8.000183,8 12.000183,8z M9.00012,0C9.679153,0,10.06858,0.118507,10.042252,0.047403L10.028,0.027 10.148509,0.141079C10.757354,0.734611,10.930161,1.110911,10.988593,1.828172L11.000194,2 11.000194,3 10.00012,3 10.00012,2C9.664241,1.36376,9.525913,1.233187,9.00012,1L9.00012,1 2.00012,1C1.483954,1.298474 1.411948,1.352879 1.00012,1 1.343732,1.418165 1.286885,1.488892 1.00012,2L1.00012,2 1.00012,10C1.37026,10.638053,1.508588,10.768626,2.00012,11L2.00012,11 6.00012,11 6.00012,12 2.00012,12C1.250882,12,0.852953,11.842225,1.00012,12L0.998,11.998 0.848552,11.849157C0.276299,11.264491,0.103653,10.88931,0.019448,10.18362L-2.66454094E-08,10 -2.66454094E-08,2C-0.003062,1.303995,0.118924,0.922419,0.047771,0.955125L0.039,0.961 0.157327,0.843829C0.766793,0.254995,1.155014,0.087327,1.82615,0.01601L2.00012,0 9.00012,0z M6.000183,7L6.000183,8 6.000183,8 3.000183,8 3.000183,7 6.000183,7z M11.000183,5C10.945581,5,11.154018,5.17687,11.000183,6L11.000183,6 12.000183,6C12.791745,5.799997,13.000183,5.976883,13.000183,6L13.000183,6 13,6.997 12.997295,6.968409C12.971789,6.851071,12.771097,6.978886,12.15087,6.997743L12.000183,7 8.000183,7C7.204823,7,7.000183,6.818674,7.000183,7L7,6.997 7.000183,6C7.000183,5.978417,7.178643,5.822897,7.848912,5.964867L8.000183,6 9.000183,6 8.974014,5.843852C8.872516,5.154074,9.047802,5,9.000183,5L9.000183,5 11.000183,5z M6.000183,5L6.000183,6 6.000183,6 3.000183,6 3.000183,5 6.000183,5z M8.000183,3L8.000183,4 8.000183,4 3.000183,4 3.000183,3 8.000183,3z" />
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingGroup>
+                                            </DrawingImage.Drawing>
+                                        </DrawingImage>
+                                    </Image.Source>
+                                </Image>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsRefreshOrderEnable}" Value="false">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#8F9598">
+                                    </Setter>
+                                </DataTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#178674" TargetName="border"  />
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" Value="#115B4F"  TargetName="border" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid Background="{DynamicResource MainBackgroup.ColorBrush}" x:Name="gridMain">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="46"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <!--<RowDefinition ></RowDefinition>-->
+            <RowDefinition Height="60*" x:Name="Row0"></RowDefinition>
+            <RowDefinition Height="8"></RowDefinition>
+            <RowDefinition Height="40*" x:Name="Row2"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Button x:Name="btnHor" Grid.Row="3" Grid.Column="0" Width="40" Height="6" Content="∨" Padding="0, -3, 0, 0" FontSize="9" Style="{DynamicResource SplitButtonStyle}"
+                Margin="0, 1, 0, 1" Panel.ZIndex="1" Click="BtnHor_Click"></Button>
+        <GridSplitter x:Name="gridSplitter" Grid.Row="3" Background="{DynamicResource BackgroundBrush}" Style="{DynamicResource VGridSplitterStyle2}" DragCompleted="gridSplitter_DragCompleted"/>
+
+        <Grid x:Name="gridCommon" Grid.Row="4">
+
+        </Grid>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="1" x:Name="greadHeader" Panel.ZIndex="2">
+                <TextBlock x:Name="tbMove" MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"></TextBlock>
+            </Grid>
+
+            <CustomUI:LogoButton x:Name="btnLogo" Grid.Column="0"></CustomUI:LogoButton>
+            <CustomUI:LogoInfoGrid x:Name="logoInfo" Grid.Column="2" HorizontalAlignment="Right"></CustomUI:LogoInfoGrid>
+        </Grid>
+
+
+
+        <Grid Grid.Row="1" Grid.RowSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+
+            <dragablz:TabablzControl x:Name="tcPlugin" ConsolidateOrphanedItems="True"  Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" ShowDefaultAddButton="True" 
+                                      ItemContainerStyle="{DynamicResource newMaterialDesignDragableTabItemStyle}"  Foreground="#7F8587" Background="{DynamicResource MainBackgroup.ColorBrush}" BorderThickness="0"  
+                             ShowDefaultCloseButton="True"  SelectionChanged="tcPlugin_SelectionChanged" Style="{DynamicResource TabablzControlStyle1}">
+
+                <!--<TabItem IsSelected="True" Header="Tab No.1">
+                </TabItem>
+                <TabItem Header="Tab No. 2" Foreground="#7F8587">
+                </TabItem>
+
+                <TabItem Header="Tab No. 3" Foreground="#7F8587">
+                </TabItem>-->
+
+            </dragablz:TabablzControl>
+
+            <StackPanel  Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top" x:Name="btn_GrFileter" Content="明细" Width="64" Focusable="False" Height="24" Margin="0,6,4,0" BorderThickness="0 1 0 0"  Visibility="Collapsed" Style="{DynamicResource BlueGreenStyle}" Click="btn_GrFileter_Click"/>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"  x:Name="btn_GrBridge" Content="过桥" Width="64" Focusable="False" Height="24" Margin="0,6,4,0" BorderThickness="0 1 0 0"  Visibility="Collapsed" Style="{DynamicResource OrangeStyle}" Click="btn_GrBridge_Click"/>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"  x:Name="btn_Grdelete" Content="已拒绝" Foreground="#C5585A" Width="24" Focusable="False" Height="24" Margin="0,4,4,0" Visibility="Collapsed" BorderThickness="0 1 0 0" Style="{DynamicResource DeleteButtonStyle}" Click="btn_Grdelete_Click"/>
+                
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top" Name="btn_RefreshChrome" Width="16" Height="16" Margin="0,6,6,0" Visibility="Collapsed" Style="{DynamicResource RefreshButton}" Click="btn_RefreshChrome_Click"></Button>
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top" Name="btn_PopupWindow" Width="16" Height="16" Margin="0,6,6,0" Visibility="Collapsed" Style="{DynamicResource PopupButton}" Click="btn_PopupWindow_Click"></Button>
+            </StackPanel>
+
+
+            <!--<cmp:HomePageTabControl x:Name="tcPlugin" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Background="Transparent" BorderThickness="0"  
+                        FontFamily="{StaticResource DefaultFont}" FontSize="12px"  SelectionChanged="tcPlugin_SelectionChanged">
+                <cmp:HomePageTabItemWithClose Header="活跃券-1">
+
+                </cmp:HomePageTabItemWithClose>
+                <cmp:HomePageTabItemWithClose Header="活跃券-2">
+
+                </cmp:HomePageTabItemWithClose>
+
+            </cmp:HomePageTabControl>-->
+
+            <!--<TabControl x:Name="tcPlugin" Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Background="Transparent" BorderThickness="0"  
+                        FontFamily="{StaticResource DefaultFont}" FontSize="12px" SelectionChanged="tcPlugin_SelectionChanged">
+                <TabItem Name="tiDealProcess" Header="交易处理" >
+                    <UI:PricingPanel />
+                </TabItem>
+                <TabItem Name="tiDealProcess2" Header="交易处理2" Foreground="#FFEBC8"/>
+            </TabControl>-->
+
+            <!--<Button x:Name="btnAdd" Grid.Column="0" Height="24" Width="24" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.ColumnSpan="2"
+                    Style="{StaticResource MainPageImageAddButton}" Margin="400, 3, 0, 0"></Button>-->
+
+            <Grid x:Name="gridCustome" Margin="0, 10, 15, 0" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Grid.RowSpan="2">
+                <!--<CustomUI:MsgUI x:Name="btnMsg" Margin="0, 10, 15, 0" Grid.ColumnSpan="3" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Width="65" Height="65" Grid.RowSpan="2"></CustomUI:MsgUI>-->
+            </Grid>
+
+
+        </Grid>
+
+        <Grid x:Name="FixMsgPart" Grid.Row="2" Grid.RowSpan="3" >
+
+        </Grid>
+    </Grid>
+
+</Window>

@@ -1,0 +1,107 @@
+﻿<Window x:Class="STC.Common.View.WorkTable.AssignVenuesWindow"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            xmlns:local="clr-namespace:STC.Common.View.WorkTable"
+            xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+            xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+             mc:Ignorable="d" 
+             Window.SizeToContent="WidthAndHeight" Background="{DynamicResource MainBackgroup.ColorBrush}"
+        Title="请指定渠道" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" AllowsTransparency ="True"
+        WindowState="Normal" WindowStyle="None" MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <!--<Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>-->
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+    <Border BorderThickness="2" BorderBrush="{DynamicResource MainBorderBrush}" CornerRadius="4">
+        
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="23"/>
+            <RowDefinition/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Background="{DynamicResource MainSplitterBackgroup.ColorBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="24"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="请指定渠道" Margin="10, 4, 0, 0" FontWeight="Bold"
+                       Foreground="{DynamicResource ColorBrush.While}" FontSize="{DynamicResource SmallContentFontSize}"/>
+
+            <Button Width="16" Height="16" Grid.Column="2" IsCancel="True" Style="{DynamicResource DrpImageCloseButton}" />
+        </Grid>
+
+        <!-- 设置部分-->
+        <Grid Grid.Row="1" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="46"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="请选择渠道，按Ctrl支持多选*" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="20 0 0 0"/> 
+            
+            <!--利率债-->
+            <Grid x:Name="Interest_Part" Visibility="{Binding IsShowInterestRateDebt}" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.ColumnSpan="2" BorderThickness="0, 1, 0, 1" BorderBrush="{DynamicResource ColorBrush.Gray20}"></Border>
+                <Border Grid.Column="0" Width="4" Margin="0,10,0,10" Background="{DynamicResource OperationBar.BorderBrush}" HorizontalAlignment="Right"></Border>
+                <TextBlock Text="利率债" Width="20" Height="50" Foreground="White" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <local:ElectronicChannelView x:Name="InterestRateDebt" Grid.Column="2" SecurityType="BNC" />
+            </Grid>
+
+            <!--信用债-->
+            <Grid x:Name="Credit_Part" Grid.Row="2" Visibility="{Binding IsShowCreditDebt}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.ColumnSpan="2" BorderThickness="0, 1, 0, 1" BorderBrush="{DynamicResource ColorBrush.Gray20}"></Border>
+                <TextBlock  Width="20" Height="50" Grid.Column="0" Text="信用债" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                <Border Grid.Column="0" Width="4" Margin="0,10,0,10" Background="{DynamicResource OperationBar.BorderBrush}" HorizontalAlignment="Right"></Border>
+                <local:ElectronicChannelView  x:Name="CreditDebt" Grid.Column="2" SecurityType="BCO" />
+            </Grid>
+
+        </Grid>
+        
+
+        <Border Height="45" Grid.Row="3" BorderThickness="0, 1, 0, 1" BorderBrush="{DynamicResource ColorBrush.Gray20}" Background="{DynamicResource ColorBrush.Gray13}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="65"></ColumnDefinition>
+                    <ColumnDefinition Width="125"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="1" Content="取消" IsCancel="True" Width="60" Height="24" FontSize="12" Background="#3C3C3C" Foreground="#FFFFFF" Style="{StaticResource SmallCancelBtnStyle}"/>
+                <Button Grid.Column="3" Content="确定" Click="Button_Click" Width="100" Height="24" Margin="0, 0, 20, 0" FontSize="12" Style="{StaticResource BlueGreenStyle}">
+                    <Button.IsEnabled>
+                        <MultiBinding Converter="{StaticResource multiOrConverter}">
+                            <MultiBinding.Bindings>
+                                <Binding ElementName="InterestRateDebt" Path="SelfSelectVenues" Converter="{StaticResource StringIsNullOrEmptyConvertor}"/>
+                                <Binding ElementName="CreditDebt" Path="SelfSelectVenues"  Converter="{StaticResource StringIsNullOrEmptyConvertor}"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Button.IsEnabled>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+    </Border>
+</Window>

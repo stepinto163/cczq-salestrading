@@ -1,0 +1,136 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Component.PopTextBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Component"
+             xmlns:Custom="clr-namespace:STC.Broker.Plugin.Utils"
+             xmlns:dd="clr-namespace:STC.Broker.Plugin.Utils.wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="TBBigStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="FontSize" Value="14px"></Setter>
+                <Setter Property="Foreground" Value="#F9C152"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FontWeight" Value="Bold"/>
+            </Style>
+
+            <Style x:Key="TextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#121A19"/>
+                <Setter Property="BorderBrush" Value="#193D37"/>
+                <Setter Property="Foreground" Value="#F9C152"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#172422"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FFFF"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFEBC8"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#FF7D00"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#000"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource UserControlBorderStyle}"    Width="210">
+            <TextBlock x:Name="TBName" MouseDown="TBName_MouseDown" TextTrimming="CharacterEllipsis"  Width="210" Style="{StaticResource TBBigStyle}" />
+        </Border>
+        <TextBox x:Name="TBoxName" Grid.Row="0" Grid.Column="0"  FontFamily="{StaticResource DefaultFont}" Width="210"
+                 Visibility="Collapsed"  HorizontalAlignment="Left" Style="{StaticResource TextBoxStyle}"
+                KeyDown="TBoxName_KeyDown" 
+                PreviewKeyDown="TBoxName_PreviewKeyDown"
+                TextChanged="TBoxName_TextChanged"
+                LostKeyboardFocus="TBoxName_LostKeyboardFocus"
+                ContextMenu="{x:Null}" Grid.RowSpan="2"
+                 PreviewMouseDoubleClick="TBoxName_PreviewMouseDoubleClick">
+        </TextBox>
+        <Popup x:Name="PopName" PlacementTarget="{Binding ElementName=TBoxName}" Custom:PopopHelper.PopupPositionTarget="{Binding ElementName=TBoxName}"
+               StaysOpen="False" MaxHeight="300" Width="158"
+               Grid.ColumnSpan="2" Margin="0,0,67,0"
+               PopupAnimation="Slide" AllowsTransparency="False">
+            <DataGrid x:Name="PopData" Grid.Row="1" Background="#193D37" ItemsSource="{Binding}" HeadersVisibility="None" BorderThickness="0" Margin="0" 
+                      MouseUp="PopData_MouseUpClick" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                      Style="{StaticResource DataGridDefaultStyle}"
+                      dd:DragDrop.IsDragSource="False"
+                      dd:DragDrop.IsDropTarget="False"
+                       DataGridRow.PreviewMouseDown="PopData_PreviewMouseDown"
+                      >
+                <DataGrid.Resources>
+                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding PopShow}" Width="1*" >
+                        <DataGridTextColumn.ElementStyle >
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <!--<DataGridTextColumn Binding="{Binding IdbKey}" Width="1*" Visibility="Collapsed">
+                        <DataGridTextColumn.ElementStyle >
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>-->
+                </DataGrid.Columns>
+            </DataGrid>
+
+        </Popup>
+    </Grid>
+</UserControl>
+

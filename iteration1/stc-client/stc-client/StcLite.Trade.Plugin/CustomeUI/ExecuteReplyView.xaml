@@ -1,0 +1,405 @@
+﻿<Window x:Class="BDB.Trade.Plugin.CustomeUI.ExecuteReplyView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BDB.Trade.Plugin.CustomeUI"
+        mc:Ignorable="d"
+         Title="成交回报" Height="260" Width="570" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" AllowsTransparency ="True"
+        WindowState="Normal" WindowStyle="None" BorderThickness="0" BorderBrush="#A0A0A0">
+    <Window.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="DefalutTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray14}"/>
+                <Setter Property="FontWeight" Value="Normal"/>
+                <Setter Property="FontSize" Value="10"/>
+                <Setter Property="VerticalAlignment" Value="Bottom"/>
+            </Style>
+
+            <Style x:Key="DataTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <!--下拉按钮-->
+            <Style TargetType="ToggleButton" x:Key="ComboxStyleBtn">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border x:Name="Back"  BorderThickness="0" BorderBrush="Transparent" >
+                                <Border.Background>
+                                    <ImageBrush ImageSource="/STC.Common;component/Images/stc_button_dropdownarrow_normal.png"/>
+                                </Border.Background>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>-->
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="ComboBox" x:Key="ComboBoxStyle">
+                <Setter Property="IsEditable" Value="False"></Setter>
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <!--ComBoxItem-->
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="MinHeight" Value="24"></Setter>
+                            <Setter Property="MinWidth" Value="60"></Setter>
+                            <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"></Setter>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="FontWeight" Value="Normal"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ComboBoxItem">
+                                        <Border Name="Back" Background="{StaticResource ColorBrush.Gray15}"  BorderThickness="0,0,0,0" Padding="2, 0, 0, 0">
+                                            <ContentPresenter ContentSource="{Binding Source}" VerticalAlignment="Center" HorizontalAlignment="Left"></ContentPresenter>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                                <Setter TargetName="Back" Property="BorderThickness" Value="1"></Setter>
+                                                <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid Background="#3C3C3C">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="0.7*"/>
+                                    <ColumnDefinition Width="0.3*" MaxWidth="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox  Grid.Column="0" BorderThickness="0" Background="{StaticResource ColorBrush.Gray15}"
+                                  Text="{TemplateBinding Text}" Foreground="{StaticResource ColorBrush.While}" FontSize="12" Padding="2, 5, 0, 0">
+                                </TextBox>
+                                <Border  Grid.Column="0" BorderThickness="0" BorderBrush="#3C3C3C" CornerRadius="1">
+                                    <TextBlock MouseDown="TextBlock_MouseDown"></TextBlock>
+                                </Border>
+                                <Border Grid.Column="1" BorderThickness="0" BorderBrush="#3C3C3C" CornerRadius="1">
+                                    <ToggleButton Style="{StaticResource ComboxStyleBtn}" IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press"></ToggleButton>
+                                </Border>
+                                <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" x:Name="Popup" Focusable="False" AllowsTransparency="True" PopupAnimation="Slide">
+                                    <Border CornerRadius="1" MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{TemplateBinding ActualWidth}" x:Name="DropDown" SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="0" Opacity="0.5"/>
+                                        </Border.Effect>
+                                        <ScrollViewer Style="{DynamicResource ScrollViewerStyle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True" 
+                                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                                            <!-- StackPanel 用于显示子级，方法是将 IsItemsHost 设置为 True -->
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" Background="{StaticResource ColorBrush.Green3}"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <VisualBrush x:Key="HintInstText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="客户机构名"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <VisualBrush x:Key="HintYieldText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="收益率(%)"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <VisualBrush x:Key="HintExchangeText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="客户交易员"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <ControlTemplate x:Key="InstTextBoxControlTemplate1" TargetType="{x:Type TextBox}">
+                <Border x:Name="border" CornerRadius="1" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{StaticResource ColorBrush.Gray15}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray15}"/>
+                    </Trigger>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="Text" Value=""/>
+                        </MultiTrigger.Conditions>
+                        <Setter TargetName="border" Property="Background" Value="{StaticResource HintInstText}"/>
+                    </MultiTrigger>
+
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="YieldTextBoxControlTemplate1" TargetType="{x:Type TextBox}">
+                <Border x:Name="border" CornerRadius="1" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{StaticResource ColorBrush.Gray15}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray15}"/>
+                    </Trigger>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="Text" Value=""/>
+                        </MultiTrigger.Conditions>
+                        <Setter TargetName="border" Property="Background" Value="{StaticResource HintYieldText}"/>
+                    </MultiTrigger>
+
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="ExTextBoxControlTemplate1" TargetType="{x:Type TextBox}">
+                <Border x:Name="border" CornerRadius="1" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="{StaticResource ColorBrush.Gray15}">
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray15}"/>
+                    </Trigger>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="Text" Value=""/>
+                        </MultiTrigger.Conditions>
+                        <Setter TargetName="border" Property="Background" Value="{StaticResource HintExchangeText}"/>
+                    </MultiTrigger>
+
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+
+
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Border BorderThickness="1" BorderBrush="#136C5E">
+
+
+        <Grid Background="#171F1F">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24"/>
+                <RowDefinition Height="188"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="50"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Background="#0C4F44">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="24"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="1" MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"></TextBlock>
+                <TextBlock Text="成交回报" Width="48" Margin="10, 4, 0, 0" FontWeight="Bold"
+                       Foreground="{StaticResource ColorBrush.While}" FontSize="{StaticResource SmallContentFontSize}"/>
+                <Button Width="16" Height="16" Grid.Column="2" Command="{Binding CloseCommand}" IsCancel="True" Style="{StaticResource ImageCloseButton}" />
+            </Grid>
+
+            <Border  Grid.Row="1" BorderThickness="0, 0, 0, 0" BorderBrush="{StaticResource ColorBrush.Gray20}" Margin="20, 0, 20, 0">
+                <Grid>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="39"/>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition />
+                        <RowDefinition Height="40"/>
+                        <RowDefinition/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20*"></ColumnDefinition>
+                        <ColumnDefinition Width="20*"></ColumnDefinition>
+                        <ColumnDefinition Width="20*"></ColumnDefinition>
+                        <ColumnDefinition Width="30*"></ColumnDefinition>
+                        <ColumnDefinition Width="30*"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="代码：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="1" Margin="0,-8,0,0" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding GoodsCode}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="简称：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Column="1" Grid.Row="1" Margin="0,-8,0,0" Grid.ColumnSpan="2" Text="{Binding Shortname}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+                    <TextBlock Grid.Row="0" Grid.Column="3" Text="清算速度：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Column="3" Grid.Row="1" Margin="0,-8,0,0" Text="{Binding SettleType}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+                    
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="方向：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,-8,0,0" Text="{Binding Side}" Foreground="{Binding SideForeground}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="成交价(%)：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,-8,0,0" Text="{Binding Price}" Foreground="{Binding PriceForeground}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="2" Text="成交量(万元)：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="3" Grid.Column="2" Margin="0,-8,0,0" Text="{Binding Amount}" Style="{StaticResource DataTextBlockStyle}" Height="14"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="3" Text="成交时间：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="3" Grid.Column="3" Margin="0,-8,0,0" Text="{Binding ExecTime}" TextTrimming="CharacterEllipsis" Style="{StaticResource DataTextBlockStyle}" Height="14">
+                        <TextBlock.ToolTip>
+                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="2" Grid.Column="4" Text="成交编号：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="3" Grid.Column="4" Margin="0,-8,0,0" Text="{Binding ExecId}" TextTrimming="CharacterEllipsis" Style="{StaticResource DataTextBlockStyle}" Height="14">
+                        <TextBlock.ToolTip>
+                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+
+
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="成交渠道：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <Border Grid.Row="5" Grid.Column="0" Margin="0,-5,0,11" CornerRadius="2" Background="{Binding Venueoreground}" MinWidth="40" HorizontalAlignment="Left" Width="60" Height="16">
+                        <TextBlock  Text="{Binding Venue}" Style="{StaticResource DataTextBlockStyle}" Width="Auto" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="对手方：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,-15,0,0" Text="{Binding Counterparty}" TextTrimming="CharacterEllipsis" Style="{StaticResource DataTextBlockStyle}" Height="14">
+                        <TextBlock.ToolTip>
+                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="4" Grid.Column="2" Text="对手交易员：" Style="{StaticResource DefalutTextBlockStyle}" Height="12"/>
+                    <TextBlock Grid.Row="5" Grid.Column="2" Margin="0,-15,0,0" Text="{Binding CounterpartyExchanger}" TextTrimming="CharacterEllipsis" Style="{StaticResource DataTextBlockStyle}" Height="14">
+                        <TextBlock.ToolTip>
+                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                </Grid>
+
+            </Border>
+
+
+            <Border Grid.Row="2" BorderThickness="0, 0, 0, 1" BorderBrush="{StaticResource ColorBrush.Gray20}" Visibility="{Binding IDBBorderVisibility}">
+
+                <!--<Grid>-->
+                <!--<Grid.RowDefinitions>
+                    <RowDefinition Height="71*"></RowDefinition>
+                    <RowDefinition Height="68*"></RowDefinition>
+                </Grid.RowDefinitions>-->
+
+
+
+                <ScrollViewer SnapsToDevicePixels="True"  x:Name="scrList"
+                                              HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                    <WrapPanel x:Name="spValet" Width="570" ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                           ScrollViewer.HorizontalScrollBarVisibility="Hidden"/>
+                </ScrollViewer>
+
+                <!--<ScrollViewer SnapsToDevicePixels="True" 
+                                              HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                <StackPanel x:Name="spValet" Grid.Row="0" Orientation="Vertical" Margin="20, 0, 20, 0">
+                  
+                </StackPanel>
+            </ScrollViewer>-->
+
+                <!--<Grid Grid.Row="0" Margin="20, 10, 20, 0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <TextBlock Text="操作：" Style="{StaticResource DefalutTextBlockStyle}" VerticalAlignment="Center"/>
+                        <CheckBox IsChecked="{Binding PriceCheck, Mode=TwoWay}" Margin="5, 0, 20, 0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="2"  BorderBrush="{StaticResource ColorBrush.Gray15}" 
+                                      
+                                      FontSize="{StaticResource SmallContentFontSize}" Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" Foreground="{StaticResource ColorBrush.While}"></CheckBox>
+                        <ComboBox x:Name="cbIDB" IsEnabled="{Binding PriceCheck}" Grid.Column="2" Width="324"  Height="24" Padding="0, 3, 0, 0" SelectedItem="{Binding ComboxSelectedItem, Mode=TwoWay}"
+                                          Style="{DynamicResource ComboBoxStyle}" ItemsSource="{Binding ComboxDatas}"
+                                          DisplayMemberPath="ShowTxt" SelectedValuePath="NoMDEntry">
+                            -->
+                <!--<ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                    <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>-->
+                <!--
+                        </ComboBox>
+
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0, 5, 0, 0">
+
+                        <TextBox IsEnabled="{Binding IdbRemarksCheck}" Width="80" Height="24" Margin="106, 0, 10, 0" Padding="0, 3, 0, 0" Template="{DynamicResource InstTextBoxControlTemplate1}"
+                               Text="{Binding IdbClientInstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Foreground="{StaticResource ColorBrush.While}" Background="{StaticResource ColorBrush.Black8}" >
+                        </TextBox>
+
+                        <TextBox IsEnabled="{Binding IdbRemarksCheck}" Width="80" Height="24" Margin="10, 0, 10, 0" Padding="0, 3, 0, 0" Template="{DynamicResource YieldTextBoxControlTemplate1}"
+                              Text="{Binding IdbYield, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"   Foreground="{StaticResource ColorBrush.While}" Background="{StaticResource ColorBrush.Black8}"/>
+
+                        <TextBox IsEnabled="{Binding IdbRemarksCheck}" Width="80" Height="24" Margin="10, 0, 10, 0" Padding="0, 3, 0, 0" Template="{DynamicResource ExTextBoxControlTemplate1}"
+                              Text="{Binding IdbClientExchanger, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"   Foreground="{StaticResource ColorBrush.While}" Background="{StaticResource ColorBrush.Black8}"/>
+                    </StackPanel>
+
+                </Grid>
+
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <CheckBox IsChecked="{Binding RemarksCheck, Mode=TwoWay}" Margin="55, 0, 20, 0" HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="2"  BorderBrush="{StaticResource ColorBrush.Gray15}" 
+                               FontSize="{StaticResource SmallContentFontSize}" Style="{StaticResource CommonCheckBoxStyle}" Background="{StaticResource ColorBrush.Transparent}" Foreground="{StaticResource ColorBrush.While}"></CheckBox>
+                    <TextBlock Text="备注" Style="{StaticResource DataTextBlockStyle}" VerticalAlignment="Center"/>
+                    <TextBox IsEnabled="{Binding RemarksCheck}" Width="80" Height="24" Margin="10, 0, 10, 0" Padding="0, 3, 0, 0" Template="{DynamicResource InstTextBoxControlTemplate1}"
+                               Text="{Binding ClientInstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Foreground="{StaticResource ColorBrush.While}" Background="{StaticResource ColorBrush.Black8}" >
+                    </TextBox>
+
+                    <TextBox IsEnabled="{Binding RemarksCheck}" Width="80" Height="24" Margin="10, 0, 10, 0" Padding="0, 3, 0, 0" Template="{DynamicResource YieldTextBoxControlTemplate1}"
+                              Text="{Binding Yield, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"   Foreground="{StaticResource ColorBrush.While}" Background="{StaticResource ColorBrush.Black8}"/>
+
+                    <TextBox IsEnabled="{Binding RemarksCheck}" Width="80" Height="24" Margin="10, 0, 10, 0" Padding="0, 3, 0, 0" Template="{DynamicResource ExTextBoxControlTemplate1}"
+                              Text="{Binding ClientExchanger, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"   Foreground="{StaticResource ColorBrush.While}" Background="{StaticResource ColorBrush.Black8}"/>
+                </StackPanel>-->
+
+                <!--</Grid>-->
+
+
+            </Border>
+
+            <Button Grid.Row="3" Content="+" Visibility="Collapsed" Command="{Binding AddCommand}" Width="30" Height="24" Margin="20, 0, 0, 0" FontSize="12" Background="#E63034" Foreground="#FFFFFF" 
+                Style="{StaticResource SmallConfirmBtnStyle}" HorizontalAlignment="Left"/>
+
+
+            <Button Grid.Row="3" Content="确定" Command="{Binding OkCommand}" Width="100" Height="24" Margin="0, 0, 20, 0" FontSize="12" Background="#136C5E" Foreground="#FFFFFF" Style="{StaticResource CommonButtonStyle}"/>
+
+        </Grid>
+
+
+    </Border>
+</Window>

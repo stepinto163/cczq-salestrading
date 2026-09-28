@@ -1,0 +1,137 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.View.Trade.Card.NewCardPriceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Trade.Card"
+             xmlns:trade="clr-namespace:STC.Common.View;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <!--<Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>-->
+
+            <!-- Card 样式 -->
+            <DataTemplate x:Key="Card_DataTemplate">
+
+                <!--<TextBlock Text="{Binding Security}"/>-->
+                <local:PriceAndOrderView x:Name="cpvCard" Margin="-3, 0, -3, 0"></local:PriceAndOrderView>
+
+            </DataTemplate>
+
+
+            <Style x:Key="Card_ListViewItemStyle" TargetType="{x:Type ListViewItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!--<Setter Property="Padding" Value="5"/>-->
+                <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="Background" Value="#1E1E1E"/>
+                <Setter Property="BorderBrush" Value="#1A2E2C"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <!--<Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>-->
+                <Setter Property="Margin" Value="3"/>
+
+                <Setter Property="Width" Value="283"/>
+                <!--<Setter Property="Width" Value="{Binding ActualWidth, ConverterParameter=5, Converter={StaticResource WidthConvertor}, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}, Mode=FindAncestor}}"/>-->
+                <Setter Property="Height" Value="366"/>
+                <!--<Setter Property="ContextMenu">
+                    <Setter.Value>
+                        <ContextMenu  Style="{StaticResource DefaultContextMenu}" Foreground="White">
+                            <MenuItem Header="复制 &lt;bid&gt;" Command="{x:Static homepage:FavoriteBondsListBoxViewModel.CopyBidCommand}"/>
+                            <MenuItem Header="复制 &lt;ofr&gt;" Command="{x:Static homepage:FavoriteBondsListBoxViewModel.CopyOfrCommand}"/>
+                            <MenuItem Header="复制 &lt;双边&gt;" Command="{x:Static homepage:FavoriteBondsListBoxViewModel.CopyDoubleCommand}"/>
+                        </ContextMenu>
+                    </Setter.Value>
+                </Setter>-->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" CornerRadius="4" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <!--<Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>-->
+                                    <!--<Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>-->
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <!--<Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>-->
+                                    <Setter TargetName="Bd" Property="BorderBrush"  Value="Orange"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <!--<Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>-->
+                                    <Setter TargetName="Bd" Property="BorderBrush"  Value="Orange"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+
+            </Style>
+
+            <trade:PlainView x:Key="cardView"
+                   ItemTemplate="{StaticResource Card_DataTemplate}" 
+                   ItemContainerStyle="{StaticResource Card_ListViewItemStyle}"></trade:PlainView>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+
+
+
+
+
+    <Grid>
+        <ListView x:Name="FavoriteBondslistBox" Grid.Row="1" 
+                  SelectionMode="Single" Background="#141414"
+                  BorderThickness="0"
+                  VerticalContentAlignment="Stretch" 
+                  HorizontalContentAlignment="Stretch"
+                  ScrollViewer.CanContentScroll ="True"
+                  VirtualizingPanel.IsVirtualizing ="True"
+                  VirtualizingPanel.ScrollUnit="Pixel" 
+                  ItemsSource="{Binding CollectionView}"
+                  AlternationCount="2" 
+                  AllowDrop="True"
+                  
+                  ItemContainerStyle="{StaticResource Card_ListViewItemStyle}"
+                  ItemTemplate="{StaticResource Card_DataTemplate}"
+                  View="{StaticResource cardView}"
+                  
+                  >
+        </ListView>
+
+        <Popup  x:Name="popup1" IsHitTestVisible="False" Placement="RelativePoint"  AllowsTransparency="True">
+            <Border BorderBrush="#0C4F44"  BorderThickness="1" Background="#193D37" Opacity="0.95">
+                <StackPanel  Orientation="Horizontal" Margin="4,3,8,3">
+                    <TextBlock  FontSize="12" VerticalAlignment="Center" Foreground="#F9C152"
+                            Text="{Binding DragTxt}"  />
+                </StackPanel>
+            </Border>
+        </Popup>
+
+    </Grid>
+</UserControl>

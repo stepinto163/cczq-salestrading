@@ -1,0 +1,99 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Book.IDBUnderlineEditPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.Book"
+              xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+              xmlns:component="clr-namespace:STC.XBond.Plugin.View.Component"
+              mc:Ignorable="d"
+             FontSize="12" MinWidth="600" Height="204" 
+             d:DesignHeight="300" d:DesignWidth="300" Background="#141414">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Background="#1E1E1E">
+            <!--标题-->
+            <ComboBox x:Name="panelTypeCbc" ItemsSource="{Binding PanelTypeDic}" 
+                      SelectedValue="{Binding PanelType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      SelectedValuePath="Key"
+                      DisplayMemberPath="Value"
+                      Style="{StaticResource NonEditableComboBoxStyle}" 
+                      Width="80" Height="24" Margin="10,0,0,0" VerticalContentAlignment="Center"
+                      DockPanel.Dock="Left">
+                <ComboBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel />
+                    </ItemsPanelTemplate>
+                </ComboBox.ItemsPanel>
+                <!--让SelectionChanged事件触发ChangePanelTypeCommand命令-->
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="SelectionChanged">
+                        <i:InvokeCommandAction Command="{Binding DataContext.ChangePanelTypeCommand, RelativeSource={RelativeSource AncestorType={x:Type ListBox}, Mode=FindAncestor}}" 
+                                               CommandParameter="{Binding ElementName=panelTypeCbc}"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </ComboBox>
+            <!--idb 账号-->
+            <ComboBox x:Name="idbCbc" ItemsSource="{Binding SalesSource}" Style="{StaticResource NonEditableComboBoxStyle}" 
+                      SelectedItem="{Binding SaleItem}"
+                      DisplayMemberPath="Name"
+                      ItemStringFormat="{} - {0}"
+                      Width="160" Height="24" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                      DockPanel.Dock="Left" DropDownOpened="idbCbc_DropDownOpened"
+                      SourceUpdated="idbCbc_SourceUpdated">
+            </ComboBox>
+            
+            <!--对手方时才显示 成交价格输入框-->
+            <component:WatermarkTextBox x:Name="ExePriceTxt" Width="50" Height="24" Margin="4,0,0,0" 
+                     Text="{Binding Yield,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     PreviewTextInput="TextBox_PreviewTextInput" Tag="2" PreviewKeyDown="TextBox_PreviewKeyDown" input:InputMethod.IsInputMethodEnabled="False"
+                     WaterMark="成交价" Visibility="{Binding DelBtnVisibility}"/>
+
+            <!--清算速度-->
+            <DatePicker x:Name="datePicker" Grid.Column="1" Width="90" Height="24" Margin="4, 0, 0, 0"
+                                SelectedDate="{Binding SelectDate,Mode=TwoWay}" Style="{DynamicResource SettlTypeDatePickerStyle}"
+                        Visibility="{Binding DelBtnVisibility}">
+                <DatePicker.Resources>
+                    <Style TargetType="DatePickerTextBox">
+                        <Setter Property="IsReadOnly" Value="True"/>
+                    </Style>
+                </DatePicker.Resources>
+            </DatePicker>
+            <ComboBox x:Name="cbSettle" Grid.Column="2" Width="50"  Height="24" VerticalContentAlignment="Center" Margin="1,0,0,0" 
+                  SelectedIndex="{Binding ComboBoxSelectIndex,Mode=TwoWay}" 
+                   Style="{StaticResource NonEditableComboBoxStyle}" Visibility="{Binding DelBtnVisibility}">
+                <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+            </ComboBox>
+
+            <!--删除按钮-->
+            <Button x:Name="delBtn" Width="18" Height="18" Margin="0,0,10,0" DockPanel.Dock="Right" Style="{StaticResource DeleteButton}"  Visibility="{Binding DelBtnVisibility}"
+                    Command="{Binding DataContext.DelCounterPartCommand, RelativeSource={RelativeSource AncestorType={x:Type ListBox}, Mode=FindAncestor}}"
+                    CommandParameter="{Binding ElementName=delBtn}"/>
+
+            <!--占位-->
+            <TextBlock/>
+        </DockPanel>
+
+        <local:IDBEditSubPanel Grid.Row="1"/>
+    </Grid>
+</UserControl>

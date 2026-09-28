@@ -57,6 +57,7 @@ deployment 下的说明参与服务打包，保留独立副本供离线部署使
 
 ## 工具与客户端
 
+- [STC 原生销售交易客户端](../iteration1/stc-client/README.zh-CN.md)
 - [Python 请求与订阅最小示例](../examples/python/README.zh-CN.md)
 - [标准 GW 接入销售交易平台](../iteration1/GW/README.zh-CN.md)
 - [标准运行库](../iteration1/GW/javalib/README.zh-CN.md)

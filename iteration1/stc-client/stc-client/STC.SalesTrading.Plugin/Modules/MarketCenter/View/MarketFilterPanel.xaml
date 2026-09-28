@@ -1,0 +1,78 @@
+<UserControl x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.MarketFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:STC.SalesTrading.Plugin.Shared.Converters"
+             xmlns:views="clr-namespace:STC.SalesTrading.Plugin.Modules.MarketCenter.View"
+             xmlns:model="clr-namespace:STC.SalesTrading.Plugin.Modules.MarketCenter.Model">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <!-- 行情中心左侧筛选面板（384px）：顶部清除/搜索 + 按子页切换的四套筛选面板 + 右侧细长收起竖条。
+         折叠时（40px）内容整体隐藏，只留细长展开按钮；收起/展开按钮在面板内部，对齐原型 sidebar-toggle。 -->
+    <Grid Background="{DynamicResource PanelBgBrush}">
+        <!-- 展开态 -->
+        <Grid Visibility="{Binding IsFilterPanelExpanded, Converter={x:Static conv:ConverterLocator.BoolToVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- 顶部 sticky：清除过滤 + 搜索（原型 .filter-section-sticky padding 10px 10px 8px；flex gap 6px） -->
+            <Border Grid.Row="0" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1"
+                    Padding="10,10,10,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Content="清除过滤" Style="{DynamicResource StcFilterButton}"
+                            Command="{Binding ClearFiltersCommand}" Click="OnClearFilters" />
+                    <TextBox Grid.Column="1" Margin="6,0,0,0" Style="{DynamicResource StcTextBox}" FontSize="13"
+                             Text="{Binding FilterSearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="{Binding SearchPlaceholder}"
+                             ToolTip="{Binding SearchPlaceholder}" />
+                </Grid>
+            </Border>
+
+            <!-- 按子页切换的筛选面板 -->
+            <!-- 四套筛选面板常驻（预实例 + Visibility 切换），避免切子页重建数百个筛选 tag -->
+            <Grid Grid.Row="1">
+                <views:CreditFilterPanel x:Name="CreditHost"
+                    Visibility="{Binding FilterPanel, Converter={x:Static conv:ConverterLocator.KeyToVis}, ConverterParameter={x:Static model:MarketFilterPanelType.Credit}}" />
+                <views:RateFilterPanel x:Name="RateHost"
+                    Visibility="{Binding FilterPanel, Converter={x:Static conv:ConverterLocator.KeyToVis}, ConverterParameter={x:Static model:MarketFilterPanelType.Rate}}" />
+                <views:IntentFilterPanel x:Name="IntentHost"
+                    Visibility="{Binding FilterPanel, Converter={x:Static conv:ConverterLocator.KeyToVis}, ConverterParameter={x:Static model:MarketFilterPanelType.Intent}}" />
+                <views:AlertFilterPanel x:Name="AlertHost"
+                    Visibility="{Binding FilterPanel, Converter={x:Static conv:ConverterLocator.KeyToVis}, ConverterParameter={x:Static model:MarketFilterPanelType.Alert}}" />
+            </Grid>
+
+            <!-- 收起竖条（原型 sidebar-toggle：12×48 细长、贴面板右缘内侧；收起箭头朝右=收起方向） -->
+            <Button Grid.RowSpan="2" Width="12" Height="48" Padding="0"
+                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,1,0"
+                    Style="{DynamicResource StcSidebarToggle}" Panel.ZIndex="10"
+                    ToolTip="收起筛选面板" Command="{Binding ToggleFilterPanelCommand}">
+                <Path Data="{StaticResource GeoChevronRight}" Stretch="Uniform"
+                      Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="14" Height="14"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+
+        <!-- 折叠态：40px 竖条（原型 collapsed：24px 宽右缘圆角，展开箭头朝左=展开方向） -->
+        <Grid Visibility="{Binding IsFilterPanelExpanded, Converter={x:Static conv:ConverterLocator.BoolToVis}, ConverterParameter=invert}">
+            <Button Width="24" Height="48" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Style="{DynamicResource StcSidebarToggleRight}"
+                    ToolTip="展开筛选面板" Command="{Binding ToggleFilterPanelCommand}">
+                <Path Data="{StaticResource GeoChevronLeft}" Stretch="Uniform"
+                      Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="14" Height="14"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

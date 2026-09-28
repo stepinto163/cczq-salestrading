@@ -1,0 +1,217 @@
+﻿<UserControl x:Class="STC.WorkBench.Plugin.View.WorkTable.TradeRequestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkBench.Plugin.View.WorkTable"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="200">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--ListView样式-->
+            <Style x:Key="ListViewStyle" TargetType="{x:Type ListBox}">
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="BorderBrush" Value="Gray"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource MainFrame.Background}"/>
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+            </Style>
+            <!--ItemContainerStyle样式-->
+            <Style x:Key="ListViewItemContainerStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True" />
+                <Setter Property="Background" Value="#193D37"/>
+                <Setter Property="Height" Value="72" />
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property ="IsHitTestVisible" Value="True"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border Name="Bd"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Padding="{TemplateBinding Padding}"
+                                        SnapsToDevicePixels="true">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="ListView.AlternationIndex" Value="0"></Condition>
+                            <Condition Property="IsMouseOver" Value="False"></Condition>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#141414"></Setter>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="ListView.AlternationIndex" Value="1"></Condition>
+                            <Condition Property="IsMouseOver" Value="False"></Condition>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#141414"></Setter>
+                    </MultiTrigger>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <TabControl x:Name="TradeInfo_tabControl" Style="{StaticResource TabControlStyle1}"  Background="{StaticResource MainBackgroup.ColorBrush}" SelectionChanged="TradeInfo_tabControl_SelectionChanged" MinHeight="60">
+            <!--待处理-->
+            <TabItem x:Name="Working_TabItem" Header="待处理" Width="66">
+                <ListView AlternationCount="2" x:Name="working_lv" Background="Black" VirtualizingPanel.IsVirtualizing="True"  ScrollViewer.CanContentScroll="True"  
+                 ItemsSource="{Binding WorkingViewSource.View}" Style="{DynamicResource ListViewStyle}"  ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"  ItemContainerStyle="{DynamicResource ListViewItemContainerStyle}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Height="72" Width="200">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="SecurityID_TB" Text="{Binding SecurityId}" Foreground="#F9C152" FontSize="12" Width="64" TextTrimming="CharacterEllipsis" ToolTip="{Binding SecurityID}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="Side_TB" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" Foreground="#FB943C" FontSize="12" Width="24" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="Price_TB" Text="{Binding Price}" Foreground="#FFFFFF" FontSize="14" Width="44"/>
+                                    <TextBlock x:Name="Qty_TB" Text="{Binding Qty, StringFormat={}{0}km}" Foreground="#FFFFFF" FontSize="14" Width="44" TextAlignment="Right"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="InstitutionName_TB" Text="{Binding InstitutionName}" Foreground="#A0A0A0" FontSize="12" Width="64" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding InstitutionName}"/>
+                                    <TextBlock x:Name="TradeName_TB" Text="{Binding TraderName}" Foreground="#A0A0A0" FontSize="12" Width="56" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding TradeName}"/>
+                                    <Button x:Name="Cancel_BTN" Margin="8 0 0 0" Width="20" Height="20" Style="{StaticResource EditCloseButton}"  Command="{Binding DataContext.ConfirmCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}, Mode=FindAncestor}}"/>
+                                    <Button x:Name="OK_BTN" Margin="8 0 0 0" Width="20" Height="20"  Style="{StaticResource MainPageNoticeDealButton}" Command="{Binding DataContext.ConfirmCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}, Mode=FindAncestor}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock Text="原:" Foreground="#A0A0A0" FontSize="12" />
+                                    <TextBlock x:Name="Text_TB" Text="{Binding Text}" Foreground="#A0A0A0" FontSize="12" Width="150" TextTrimming="CharacterEllipsis"  ToolTip="{Binding Text}"/>
+                                </StackPanel>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="2">
+                                    <Setter TargetName="Side_TB" Property="Foreground" Value="#58B3FF" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+
+                    </ListView.ItemTemplate>
+                    <!--隐藏列头-->
+                    <ListView.Resources>
+                        <Style TargetType="{x:Type GridViewColumnHeader}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </Style>
+                    </ListView.Resources>
+                </ListView>
+            </TabItem>
+            <!--已处理-->
+            <TabItem x:Name="Worked_TabItem" Header="已处理" Width="66" >
+                <ListView AlternationCount="2" x:Name="worked_lv" Background="Black" VirtualizingPanel.IsVirtualizing="True"  ScrollViewer.CanContentScroll="True"  
+                 ItemsSource="{Binding WorkedViewSource.View}" Style="{DynamicResource ListViewStyle}"  ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"  ItemContainerStyle="{DynamicResource ListViewItemContainerStyle}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Height="72" Width="200">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="SecurityID_TB" Text="{Binding SecurityId}" Foreground="#F9C152" FontSize="12" Width="64" TextTrimming="CharacterEllipsis" ToolTip="{Binding SecurityID}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="Side_TB" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" Foreground="#FB943C" FontSize="12" Width="24" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="Price_TB" Text="{Binding Price}" Foreground="#FFFFFF" FontSize="14" Width="44"/>
+                                    <TextBlock x:Name="Qty_TB" Text="{Binding Qty, StringFormat={}{0}km}" Foreground="#FFFFFF" FontSize="14" Width="44" TextAlignment="Right"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="InstitutionName_TB" Text="{Binding InstitutionName}" Foreground="#A0A0A0" FontSize="12" Width="64" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding InstitutionName}"/>
+                                    <TextBlock x:Name="TradeName_TB" Text="{Binding TraderName}" Foreground="#A0A0A0" FontSize="12" Width="56" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding TradeName}"/>
+                                    <Button x:Name="Cancel_BTN" Margin="8 0 0 0" Width="20" Height="20" Style="{StaticResource EditCloseButton}"  Command="{Binding DataContext.ConfirmCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}, Mode=FindAncestor}}"/>
+                                    <Button x:Name="OK_BTN" Margin="8 0 0 0" Width="20" Height="20"  Style="{StaticResource MainPageNoticeDealButton}" Command="{Binding DataContext.ConfirmCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}, Mode=FindAncestor}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock Text="原:" Foreground="#A0A0A0" FontSize="12" />
+                                    <TextBlock x:Name="Text_TB" Text="{Binding Text}" Foreground="#A0A0A0" FontSize="12" Width="150" TextTrimming="CharacterEllipsis"  ToolTip="{Binding Text}"/>
+                                </StackPanel>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="2">
+                                    <Setter TargetName="Side_TB" Property="Foreground" Value="#58B3FF" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+
+                    </ListView.ItemTemplate>
+                    <!--隐藏列头-->
+                    <ListView.Resources>
+                        <Style TargetType="{x:Type GridViewColumnHeader}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </Style>
+                    </ListView.Resources>
+                </ListView>
+            </TabItem>
+            <!--待忽略-->
+            <TabItem x:Name="Ignore_TabItem" Header="待忽略" Width="66" >
+                <ListView AlternationCount="2" x:Name="ignore_lv" Background="Black" VirtualizingPanel.IsVirtualizing="True"  ScrollViewer.CanContentScroll="True"  
+                 ItemsSource="{Binding IgnoreViewSource.View}" Style="{DynamicResource ListViewStyle}"  ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"  ItemContainerStyle="{DynamicResource ListViewItemContainerStyle}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Height="72" Width="200">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="SecurityID_TB" Text="{Binding SecurityId}" Foreground="#F9C152" FontSize="12" Width="64" TextTrimming="CharacterEllipsis" ToolTip="{Binding SecurityID}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="Side_TB" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" Foreground="#FB943C" FontSize="12" Width="24" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="Price_TB" Text="{Binding Price}" Foreground="#FFFFFF" FontSize="14" Width="44"/>
+                                    <TextBlock x:Name="Qty_TB" Text="{Binding Qty, StringFormat={}{0}km}" Foreground="#FFFFFF" FontSize="14" Width="44" TextAlignment="Right"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock x:Name="InstitutionName_TB" Text="{Binding InstitutionName}" Foreground="#A0A0A0" FontSize="12" Width="64" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding InstitutionName}"/>
+                                    <TextBlock x:Name="TradeName_TB" Text="{Binding TraderName}" Foreground="#A0A0A0" FontSize="12" Width="56" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding TradeName}"/>
+                                    <Button x:Name="OK_BTN" Margin="36 0 0 0" Width="20" Height="20"  Style="{StaticResource MainPageNoticeDealButton}" Command="{Binding DataContext.ConfirmCommand, RelativeSource={RelativeSource AncestorType={x:Type ListView}, Mode=FindAncestor}}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Margin="8 0 8 0" VerticalAlignment="Center" Orientation="Horizontal">
+                                    <TextBlock Text="原:" Foreground="#A0A0A0" FontSize="12" />
+                                    <TextBlock x:Name="Text_TB" Text="{Binding Text}" Foreground="#A0A0A0" FontSize="12" Width="150" TextTrimming="CharacterEllipsis"  ToolTip="{Binding Text}"/>
+                                </StackPanel>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="2">
+                                    <Setter TargetName="Side_TB" Property="Foreground" Value="#58B3FF" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+
+                    </ListView.ItemTemplate>
+                    <!--隐藏列头-->
+                    <ListView.Resources>
+                        <Style TargetType="{x:Type GridViewColumnHeader}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </Style>
+                    </ListView.Resources>
+                </ListView>
+            </TabItem>
+        </TabControl>
+       
+    </Grid>
+</UserControl>

@@ -1,0 +1,363 @@
+﻿<UserControl x:Class="STC.Common.View.Drp.Component.Broker.IntentionDetailUI"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Drp.Component.Broker"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor"
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="390" MinWidth="445">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <fcon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <fcon:FormatDateTimeConvertor x:Key="FormatDateTimeConvertor"/>
+            <fcon:BrokerSettleTypeConverter x:Key="BrokerSettleTypeConverter"/>
+            <!--点价 窗体背景色 -->
+            <LinearGradientBrush x:Key="BidLinearGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#66FF7D00" Offset="0"/>
+                <GradientStop Color="#00FF7D00" Offset="0.65"/>
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="OfrLinearGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#48009AFF" Offset="0"/>
+                <GradientStop Color="#00009AFF" Offset="0.65"/>
+            </LinearGradientBrush>
+            <!-- 打包按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="packageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="12"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Foreground" Value="#238F7E"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                               BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}"  Margin="-10 -6 0 0">
+                                        <Path x:Name="svg_path" Data="M8.21946309,2.55073844 C11.2440269,4.0282299 12.073074,4.43321723 12.6190628,4.6999313 L12.721717,4.75007764 L12.8175097,4.79687209 C12.8333186,4.8045947 12.8490884,4.8122982 12.8648777,4.82001126 L12.9603182,4.86663367 C13.0408302,4.90596356 13.1247661,4.94696605 13.2194631,4.99322528 C13.4390793,5.10050723 13.5297957,5.32864174 13.4914577,5.53570906 C13.4968975,5.56627314 13.5,5.59805734 13.5,5.63056617 L13.5,9.8605115 C13.5,10.0488072 13.3942148,10.2211359 13.2263111,10.3063627 L8.22631113,12.8443299 C8.0840744,12.9165283 7.9159256,12.9165283 7.77368887,12.8443299 L2.77368887,10.3063627 C2.60578519,10.2211359 2.5,10.0488072 2.5,9.8605115 L2.5,5.63056617 C2.5,5.59805734 2.50310248,5.56627314 2.50902749,5.53549349 C2.47020426,5.32864174 2.56092067,5.10050723 2.78053691,4.99322528 L7.78053691,2.55073844 C7.91902537,2.48308719 8.08097463,2.48308719 8.21946309,2.55073844 Z M3.49999999,6.245 L3.5,9.5544787 L7.49999999,11.584 L7.49999999,8.21 L3.49999999,6.245 Z M12.5005841,6.24486191 C11.9660269,6.50743552 11.0949367,6.93531365 8.50033991,8.20977535 L8.49999999,11.584 L12.5,9.5544787 L12.5005841,6.24486191 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}"/>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- oco按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="ocoButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="12"/>
+                <Setter Property="MinHeight" Value="10"/>
+                <Setter Property="MinWidth" Value="10"/>
+                <Setter Property="Foreground" Value="#238F7E"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                     BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}"  Margin="0 0 0 0">
+                                        <Path x:Name="svg_path" Data="M9.5,0 C10.0522847,0 10.5,0.44771525 10.5,1 L10.5,3.28571429 C10.5,3.83799904 10.0522847,4.28571429 9.5,4.28571429 L4.35714286,4.28571429 C3.80485811,4.28571429 3.35714286,3.83799904 3.35714286,3.28571429 L3.357,1.928 L2.64285714,1.92857143 C1.7355322,1.92857143 1,2.66410363 1,3.57142857 L1,6.42857143 C1,7.33589637 1.7355322,8.07142857 2.64285714,8.07142857 L3.357,8.071 L3.35714286,6.71428571 C3.35714286,6.16200096 3.80485811,5.71428571 4.35714286,5.71428571 L9.5,5.71428571 C10.0522847,5.71428571 10.5,6.16200096 10.5,6.71428571 L10.5,9 C10.5,9.55228475 10.0522847,10 9.5,10 L4.35714286,10 C3.82913436,10 3.39670448,9.59077929 3.35970885,9.07219349 L2.64285714,9.07142857 C1.18324745,9.07142857 0,7.88818112 0,6.42857143 L0,3.57142857 C0,2.11181888 1.18324745,0.928571429 2.64285714,0.928571429 L3.361,0.928 L3.36387059,0.883378875 C3.4216357,0.38604019 3.84430702,0 4.35714286,0 L9.5,0 Z M9.5,6.71428571 L4.35714286,6.71428571 L4.35714286,9 L9.5,9 L9.5,6.71428571 Z M9.5,1 L4.35714286,1 L4.35714286,3.28571429 L9.5,3.28571429 L9.5,1 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}"/>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 换券按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="exchangeButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="12"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Foreground" Value="#238F7E"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}"  Margin="-8 -4 0 0">
+                                        <Path x:Name="svg_path" Data="M9.26703945,7.49990046 C9.54318183,7.49990046 9.76703945,7.72375808 9.76703945,7.99990046 L9.75977069,8.56461525 C9.96142917,9.73433142 9.06475659,10.8922339 7.76630703,10.9999005 L4.46317733,10.9989994 L6.09905475,12.6475285 C6.27199226,12.8217214 6.29030291,13.0912138 6.15460465,13.2855941 L6.09649985,13.354633 C5.90053045,13.5491853 5.58395003,13.5480404 5.38939296,13.3520757 L3.41220974,11.3605347 L3.3380318,11.2650743 C3.04922722,10.7826228 3.09898265,10.0964803 3.35242047,9.7204526 L5.38864346,7.648375 C5.58278827,7.45200194 5.89936555,7.45018596 6.09575049,7.64431888 C6.29212355,7.83846369 6.29393954,8.15504097 6.09980067,8.35141997 L4.47017733,9.99899939 L7.7243136,10.001667 C8.3968431,9.94498311 8.87626262,9.32589308 8.76703945,8.64956187 L8.76703945,7.99990046 C8.76703945,7.72375808 8.99089708,7.49990046 9.26703945,7.49990046 Z M11.1446859,2.64772519 L13.1218692,4.63926619 L13.1960471,4.73472658 C13.4848517,5.21717812 13.4350963,5.90332062 13.1816584,6.27934831 L11.1454354,8.35142591 C10.9512906,8.54779897 10.6347134,8.54961496 10.4383284,8.35548203 C10.2419554,8.16133723 10.2401394,7.84475995 10.4342782,7.64838095 L12.0641773,5.99899939 L8.80976531,5.99813389 C8.1372358,6.05481781 7.65781628,6.67390784 7.76703945,7.35023904 L7.76703945,7.99990046 C7.76703945,8.27604283 7.54318183,8.49990046 7.26703945,8.49990046 C6.99089708,8.49990046 6.76703945,8.27604283 6.76703945,7.99990046 L6.77430822,7.43518566 C6.57264973,6.2654695 7.46932232,5.107567 8.76777187,4.99990046 L12.0691773,4.99899939 L10.4350242,3.35227245 C10.2620866,3.17807952 10.243776,2.90858714 10.3794743,2.71420683 L10.4375791,2.64516793 C10.6335485,2.45061559 10.9501289,2.45176052 11.1446859,2.64772519 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}"/>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 1星 按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="onestarButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="12"/>
+                <Setter Property="MinHeight" Value="10"/>
+                <Setter Property="MinWidth" Value="10"/>
+                <Setter Property="Foreground" Value="#238F7E"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}"  Margin="0 0 0 0">
+                                        <Path x:Name="svg_path" Data="M7.2383056,0.192279871 C7.39656303,-0.019569854 7.69659416,-0.0630149943 7.90844388,0.0952424339 C8.13731746,0.266217136 8.19347535,0.585847063 8.03658925,0.824598428 L5.705,4.371 L9.5,4.37187745 C9.77614237,4.37187745 10,4.59573508 10,4.87187745 C10,5.14801983 9.77614237,5.37187745 9.5,5.37187745 L6.166,5.371 L8.03658925,8.21810397 C8.19347535,8.45685533 8.13731746,8.77648526 7.90844388,8.94745996 C7.69659416,9.10571739 7.39656303,9.06227225 7.2383056,8.85042252 C7.23255145,8.84271978 7.22703061,8.83484547 7.22175061,8.82681029 L5,5.445 L2.77824939,8.82681029 C2.77560939,8.83082788 2.77290918,8.83480525 2.7701497,8.83874107 L2.7616944,8.85042252 C2.60343697,9.06227225 2.30340584,9.10571739 2.09155612,8.94745996 C1.86268254,8.77648526 1.80652465,8.45685533 1.96341075,8.21810397 L3.833,5.371 L0.5,5.37187745 C0.223857625,5.37187745 3.38176876e-17,5.14801983 0,4.87187745 C-3.38176876e-17,4.59573508 0.223857625,4.37187745 0.5,4.37187745 L4.294,4.371 L1.96341075,0.824598428 C1.80652465,0.585847063 1.86268254,0.266217136 2.09155612,0.0952424339 C2.30340584,-0.0630149943 2.60343697,-0.019569854 2.7616944,0.192279871 C2.76744855,0.199982612 2.77296939,0.207856927 2.77824939,0.215892105 L5,3.596 L7.22175061,0.215892105 C7.22439061,0.211874516 7.22709082,0.207897142 7.2298503,0.203961324 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}"/>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 2星 按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="twostarButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="MinHeight" Value="14"/>
+                <Setter Property="MinWidth" Value="14"/>
+                <Setter Property="Foreground" Value="#238F7E"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}"  Margin="0 -2 0 0">
+                                        <Path x:Name="svg_path" Data="M6.75019638,8.55303877 C6.98934269,8.69110996 7.07128027,8.99690516 6.93320908,9.23605148 C6.88152696,9.32556754 6.83585439,9.40467476 6.79199865,9.48063512 L6.68808656,9.66061615 C6.54096337,9.91544099 6.37636121,10.2005403 6.0335419,10.7943208 L7.83359518,10.7955659 C8.10973755,10.7955659 8.33359518,11.0194236 8.33359518,11.2955659 C8.33359518,11.5717083 8.10973755,11.7955659 7.83359518,11.7955659 L6.0322554,11.7945828 C6.28368973,12.2300799 6.58045239,12.7440879 6.93320908,13.3550804 C7.07128027,13.5942267 6.98934269,13.9000219 6.75019638,14.0380931 C6.51105007,14.1761643 6.20525487,14.0942267 6.06718368,13.8550804 C5.71442699,13.2440879 5.41766433,12.7300799 5.16622999,12.2945828 C4.91606577,12.7298462 4.61924838,13.243949 4.2664115,13.8550804 C4.12834031,14.0942267 3.82254511,14.1761643 3.58339879,14.0380931 C3.34425248,13.9000219 3.2623149,13.5942267 3.40038609,13.3550804 C3.75322297,12.743949 4.05004036,12.2298462 4.30151124,11.7942858 L2.5,11.7955659 C2.22385763,11.7955659 2,11.5717083 2,11.2955659 C2,11.0194236 2.22385763,10.7955659 2.5,10.7955659 L4.30040103,10.7949231 C4.03870942,10.3416599 3.88082457,10.0681953 3.75532405,9.85082205 L3.69887342,9.75304669 C3.68066029,9.72150063 3.66296147,9.69084537 3.64550862,9.66061615 L3.54159652,9.48063512 C3.49774079,9.40467476 3.45206822,9.32556754 3.40038609,9.23605148 C3.2623149,8.99690516 3.34425248,8.69110996 3.58339879,8.55303877 C3.82254511,8.41496759 4.12834031,8.49690516 4.2664115,8.73605148 C4.32843004,8.84347075 4.38179484,8.93590129 4.43375089,9.02589181 L4.51153402,9.16061615 C4.52898687,9.19084537 4.54668569,9.22150063 4.56489882,9.25304669 L4.62134945,9.35082205 C4.74684998,9.56819533 4.90473482,9.84165991 5.16642643,10.2949231 C5.51033581,9.70054029 5.67493796,9.41544099 5.82206115,9.16061615 L5.89984429,9.02589181 C5.95180033,8.93590129 6.00516513,8.84347075 6.06718368,8.73605148 C6.20525487,8.49690516 6.51105007,8.41496759 6.75019638,8.55303877 Z M12.897402,2.07554538 C13.1318593,2.22143708 13.2036559,2.52977086 13.0577642,2.76422816 C13.0211611,2.82305169 12.9867111,2.87841501 12.9536543,2.93153937 L12.8891732,3.03516468 L12.7659526,3.23318806 L12.7045111,3.33192836 C12.4791545,3.69409088 12.220397,4.10993082 11.6371508,5.04724475 L14.2,5.04783654 C14.4761424,5.04783654 14.7,5.27169416 14.7,5.54783654 C14.7,5.82397891 14.4761424,6.04783654 14.2,6.04783654 L11.6954817,6.04663255 C12.0683414,6.64584193 12.5158597,7.3650324 13.0577642,8.23590757 C13.2036559,8.47036487 13.1318593,8.77869865 12.897402,8.92459035 C12.6629447,9.07048205 12.3546109,8.99868545 12.2087192,8.76422816 C11.6271572,7.82962081 11.1543016,7.06971165 10.765769,6.44531485 C10.3786651,7.06971165 9.90580956,7.82962081 9.32424755,8.76422816 C9.17835585,8.99868545 8.87002207,9.07048205 8.63556477,8.92459035 C8.40110748,8.77869865 8.32931088,8.47036487 8.47520258,8.23590757 C9.01712854,7.36499789 9.46466079,6.64578494 9.83752934,6.04656133 L7.5,6.04783654 C7.22385763,6.04783654 7,5.82397891 7,5.54783654 C7,5.27169416 7.22385763,5.04783654 7.5,5.04783654 L9.89581598,5.04724475 C9.15195049,3.85180534 8.93590336,3.50460378 8.64379358,3.03516468 L8.57931245,2.93153937 C8.54625566,2.87841501 8.51180568,2.82305169 8.47520258,2.76422816 C8.32931088,2.52977086 8.40110748,2.22143708 8.63556477,2.07554538 C8.87002207,1.92965368 9.17835585,2.00145028 9.32424755,2.23590757 C9.37305169,2.31433895 9.41802805,2.38661884 9.46097795,2.45564207 L9.5241081,2.55709626 C9.53445154,2.57371882 9.54472461,2.59022831 9.55495547,2.60666995 L9.61605915,2.70486748 C9.86078022,3.09814989 10.1136425,3.50451575 10.7662743,4.55333678 C11.338051,3.63512708 11.6029426,3.20942926 11.8241966,2.85385995 L11.8863135,2.75403409 C11.9067753,2.72115081 11.9270681,2.68853892 11.9474172,2.65583656 L12.0088587,2.55709626 C12.0709193,2.45736086 12.135513,2.35355463 12.2087192,2.23590757 C12.3546109,2.00145028 12.6629447,1.92965368 12.897402,2.07554538 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}"/>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 详情 按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="detailButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="22"/>
+                <Setter Property="MinHeight" Value="22"/>
+                <Setter Property="MinWidth" Value="22"/>
+                <Setter Property="Foreground" Value="#A0A0A0 "/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                    <Viewbox Width="{TemplateBinding MinWidth}" Height="{TemplateBinding MinHeight}"  Margin="0 -2 0 0">
+                                        <Path x:Name="svg_path" Data="M17.0357143,6.85714286 L15.4285714,6.85714286 L15.4285714,6.48214286 C15.4285714,6.34814286 15.3817143,6.23428571 15.288,6.14057143 C15.1942857,6.04685714 15.0804286,6 14.9464286,6 C14.8124286,6 14.6985714,6.04685714 14.6048571,6.14057143 C14.5111429,6.23428571 14.4642857,6.34814286 14.4642857,6.48214286 L14.4642857,6.85714286 L9.53571429,6.85714286 L9.53571429,6.48214286 C9.53571429,6.34814286 9.48885714,6.23428571 9.39514286,6.14057143 C9.30142857,6.04685714 9.18757143,6 9.05357143,6 C8.91957143,6 8.80571429,6.04685714 8.712,6.14057143 C8.61828571,6.23428571 8.57142857,6.34814286 8.57142857,6.48214286 L8.57142857,6.85714286 L6.96428571,6.85714286 C6.69628571,6.85714286 6.46857143,6.95085714 6.28114286,7.13828571 C6.09371429,7.32571429 6,7.55342857 6,7.82142857 L6,17.0357143 C6,17.3037143 6.09371429,17.5314286 6.28114286,17.7188571 C6.46857143,17.9062857 6.69628571,18 6.96428571,18 L17.0357143,18 C17.3037143,18 17.5314286,17.9062857 17.7188571,17.7188571 C17.9062857,17.5314286 18,17.3037143 18,17.0357143 L18,7.82142857 C18,7.55342857 17.9062857,7.32571429 17.7188571,7.13828571 C17.5314286,6.95085714 17.3037143,6.85714286 17.0357143,6.85714286 Z M6.96428571,7.82142857 L8.57142857,7.82142857 L8.57142857,8.08928571 C8.57142857,8.22328571 8.61828571,8.33714286 8.712,8.43085714 C8.80571429,8.52457143 8.91957143,8.57142857 9.05357143,8.57142857 C9.18757143,8.57142857 9.30142857,8.52457143 9.39514286,8.43085714 C9.48885714,8.33714286 9.53571429,8.22328571 9.53571429,8.08928571 L9.53571429,7.82142857 L14.4642857,7.82142857 L14.4642857,8.08928571 C14.4642857,8.22328571 14.5111429,8.33714286 14.6048571,8.43085714 C14.6985714,8.52457143 14.8124286,8.57142857 14.9464286,8.57142857 C15.0804286,8.57142857 15.1942857,8.52457143 15.288,8.43085714 C15.3817143,8.33714286 15.4285714,8.22328571 15.4285714,8.08928571 L15.4285714,7.82142857 L17.0357143,7.82142857 L17.0357143,9.32142857 L6.96428571,9.32142857 L6.96428571,7.82142857 Z M17.0357143,17.0357143 L6.96428571,17.0357143 L6.96428571,10.2857143 L17.0357143,10.2857143 L17.0357143,17.0357143 Z M9,12 L9.85714286,12 C9.97314286,12 10.0735714,12.0424286 10.1584286,12.1272857 C10.2432857,12.2121429 10.2857143,12.3125714 10.2857143,12.4285714 C10.2857143,12.5445714 10.2432857,12.645 10.1584286,12.7298571 C10.0735714,12.8147143 9.97314286,12.8571429 9.85714286,12.8571429 L9,12.8571429 C8.884,12.8571429 8.78357143,12.8147143 8.69871429,12.7298571 C8.61385714,12.645 8.57142857,12.5445714 8.57142857,12.4285714 C8.57142857,12.3125714 8.61385714,12.2121429 8.69871429,12.1272857 C8.78357143,12.0424286 8.884,12 9,12 Z M11.5714286,12 L12.4285714,12 C12.5445714,12 12.645,12.0424286 12.7298571,12.1272857 C12.8147143,12.2121429 12.8571429,12.3125714 12.8571429,12.4285714 C12.8571429,12.5445714 12.8147143,12.645 12.7298571,12.7298571 C12.645,12.8147143 12.5445714,12.8571429 12.4285714,12.8571429 L11.5714286,12.8571429 C11.4554286,12.8571429 11.355,12.8147143 11.2701429,12.7298571 C11.1852857,12.645 11.1428571,12.5445714 11.1428571,12.4285714 C11.1428571,12.3125714 11.1852857,12.2121429 11.2701429,12.1272857 C11.355,12.0424286 11.4554286,12 11.5714286,12 Z M14.1428571,12 L15,12 C15.116,12 15.2164286,12.0424286 15.3012857,12.1272857 C15.3861429,12.2121429 15.4285714,12.3125714 15.4285714,12.4285714 C15.4285714,12.5445714 15.3861429,12.645 15.3012857,12.7298571 C15.2164286,12.8147143 15.116,12.8571429 15,12.8571429 L14.1428571,12.8571429 C14.0268571,12.8571429 13.9264286,12.8147143 13.8415714,12.7298571 C13.7567143,12.645 13.7142857,12.5445714 13.7142857,12.4285714 C13.7142857,12.3125714 13.7567143,12.2121429 13.8415714,12.1272857 C13.9264286,12.0424286 14.0268571,12 14.1428571,12 Z M9,14.5984286 L9.85714286,14.5984286 C9.97314286,14.5984286 10.0735714,14.6408571 10.1584286,14.7257143 C10.2432857,14.8105714 10.2857143,14.911 10.2857143,15.027 C10.2857143,15.143 10.2432857,15.2434286 10.1584286,15.3282857 C10.0735714,15.4131429 9.97314286,15.4555714 9.85714286,15.4555714 L9,15.4555714 C8.884,15.4555714 8.78357143,15.4131429 8.69871429,15.3282857 C8.61385714,15.2434286 8.57142857,15.143 8.57142857,15.027 C8.57142857,14.911 8.61385714,14.8105714 8.69871429,14.7257143 C8.78357143,14.6408571 8.884,14.5984286 9,14.5984286 Z M11.5714286,14.5984286 L12.4285714,14.5984286 C12.5445714,14.5984286 12.645,14.6408571 12.7298571,14.7257143 C12.8147143,14.8105714 12.8571429,14.911 12.8571429,15.027 C12.8571429,15.143 12.8147143,15.2434286 12.7298571,15.3282857 C12.645,15.4131429 12.5445714,15.4555714 12.4285714,15.4555714 L11.5714286,15.4555714 C11.4554286,15.4555714 11.355,15.4131429 11.2701429,15.3282857 C11.1852857,15.2434286 11.1428571,15.143 11.1428571,15.027 C11.1428571,14.911 11.1852857,14.8105714 11.2701429,14.7257143 C11.355,14.6408571 11.4554286,14.5984286 11.5714286,14.5984286 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}"/>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <!--<Setter Property="Background" TargetName="background" Value=""/>-->
+                                    <!--<Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.Static.Foreground}"/>-->
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource  SvgButton.MouseOver.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource  SvgButton.Static.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource ImageButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid x:Name="gGrid" Margin="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="auto"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="gFirst" Margin="0,25,0,5" Visibility="Visible" VerticalAlignment="Center" Grid.Row="0" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"></ColumnDefinition>
+                <ColumnDefinition Width="60"></ColumnDefinition>
+                <ColumnDefinition Width="50"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="50"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="tbBTraderInfo"  Grid.Column="0" Style="{DynamicResource PTInstBrokerTextBlockStyle}"  HorizontalAlignment="Left"
+                                TextTrimming="CharacterEllipsis" Text="{Binding CounterPartyInstitutionName}" MaxWidth="180">
+                <TextBlock.ToolTip>
+                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
+            <TextBlock x:Name="tbBBroker" Grid.Column="1" Text="{Binding CounterPartyTraderName}"  
+                                Margin="10,0,0,0" HorizontalAlignment="Left"
+                                TextTrimming="CharacterEllipsis">
+                <TextBlock.ToolTip>
+                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                </TextBlock.ToolTip>
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="Foreground" Value="#FFFFFF"/>
+                        <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                        <Setter Property="FontSize" Value="14px"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding BrokerAIsMe}" Value="1">
+                                <Setter Property="Foreground" Value="#00CDAD"></Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock x:Name="tbQuoteQty" Foreground="{StaticResource ColorBrush.Yellow}" Grid.Column="2" Text="{Binding DayOrderQty}"
+                    FontFamily="{StaticResource DefaultFont}" FontSize="14" FontWeight="Bold" Margin="0,0,5,0" VerticalAlignment="Center"></TextBlock>
+            <TextBlock x:Name="tbClickBSettlType" Margin="0,0,5,0" Grid.Column="3"  Text="{Binding DaySettlType, Converter={StaticResource BrokerSettleTypeConverter},ConverterParameter='popup'}" 
+                            FontFamily="{StaticResource DefaultFont}" Foreground="{StaticResource ColorBrush.White-1}" 
+                            FontSize="14" HorizontalAlignment="Left" VerticalAlignment="Center"></TextBlock>
+            <StackPanel  x:Name="spQuoteTag" Margin="0,0,5,0" Grid.Column="4"  VerticalAlignment="Center" Orientation="Horizontal">
+                <Button x:Name="ocoflagshowbtn" BorderThickness="0" Margin="2 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                                        Style="{StaticResource ocoButton}" Visibility="{Binding OCOVisible, Converter={StaticResource visibilityConvertor}}" ToolTip="oco">
+                </Button>
+
+                <Button x:Name="packageflagshowbtn" BorderThickness="0" Margin="2 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                                            Style="{StaticResource packageButton}" Visibility="{Binding PackageVisible, Converter={StaticResource visibilityConvertor}}" ToolTip="打包">
+                </Button>
+
+                <Button x:Name="onestarButtonshowbtn" BorderThickness="0" Margin="2 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                                                    Style="{StaticResource onestarButton}" Visibility="{Binding XVisible, Converter={StaticResource visibilityConvertor}}" ToolTip="需请示">
+                </Button>
+
+                <Button x:Name="twostarButtonshowbtn" BorderThickness="0" Margin="2 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                                                    Style="{StaticResource twostarButton}" Visibility="{Binding XXVisible, Converter={StaticResource visibilityConvertor}}" ToolTip="必须请示">
+                </Button>
+
+                <Button x:Name="switchbtn" BorderThickness="0" VerticalAlignment="Center" Margin="2 0 0 0" HorizontalAlignment="Left"
+                                                                        Style="{StaticResource exchangeButton}" Visibility="{Binding SwitchVisible, Converter={StaticResource visibilityConvertor}}" ToolTip="换券">
+                </Button>
+            </StackPanel>
+            <TextBlock x:Name="tbContent" Grid.Column="5"
+                            Margin="0,0,50,0" FontFamily="{StaticResource IDCFontFamily.YaHei}" 
+                            Foreground="{StaticResource ColorBrush.Gray14}" FontSize="14" 
+                            VerticalAlignment="Center" 
+                            Text="{Binding DayComment}" MaxWidth="100" TextAlignment="Left" TextTrimming="CharacterEllipsis">
+                <TextBlock.ToolTip>
+                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
+        </Grid>
+        <Border Grid.Row="1" CornerRadius="0,0,0,0" BorderBrush="#8F9598" Background="{DynamicResource ColorBrush.Gray13}"  Margin="0 15 0 0">
+            <Border BorderThickness="0,0,0,0" BorderBrush="{DynamicResource Main.BorderBrush}"></Border>
+        </Border>
+    </Grid>
+</UserControl>

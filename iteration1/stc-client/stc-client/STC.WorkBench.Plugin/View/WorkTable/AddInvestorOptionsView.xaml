@@ -1,0 +1,53 @@
+﻿<comp:WindowBase x:Class="STC.WorkBench.Plugin.View.WorkTable.AddInvestorOptionsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkBench.Plugin.View.WorkTable"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" Title="新增投资经理筛选"
+             d:DesignHeight="450" d:DesignWidth="800"
+                 Width="300" Height="160">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition/>
+            <RowDefinition Height="48"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="tb" Text="投资经理:" VerticalAlignment="Center" Margin="10 0 0 0"/>
+
+        <comp:AutoCompleteComboBox x:Name="InvestorsCb_edit" Height="20" Width="270" Margin="10 0 0 0" Grid.Row="1" HorizontalAlignment="Left"
+                                                       DisplayValuePath="Name"
+                                                       SelectedItem="{Binding SelectedInstintuion_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding InstitutionName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       PreviewMouseDown="InsNameCb_edit_PreviewMouseDown"
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="投资经理"
+                                                       PatternChanged="InvestorsCb_edit_PatternChanged">
+            <comp:AutoCompleteComboBox.AutoCompColumns>
+                <DataGridTemplateColumn  Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="Transparent">
+                                <TextBlock Grid.Column="0" Height="22" Text="{Binding Name }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Content="{Binding Text}"/>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </comp:AutoCompleteComboBox.AutoCompColumns>
+        </comp:AutoCompleteComboBox>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button x:Name="CancelBtn" Content="取消" Width="100" Height="24" Grid.Column="1" Margin="4 0 4 0" Style="{DynamicResource BlueGreenStyle}" Foreground="#D7D7D7" BorderThickness="0 1 0 0" Click="CancelBtn_Click"/>
+            <Button x:Name="OkBtn" Content="确定" Width="100" Height="24" Grid.Column="2" Margin="4 0 4 0" Style="{DynamicResource BlueGreenStyle}" Foreground="#D7D7D7" BorderThickness="0 1 0 0" Click="OkBtn_Click"/>
+        </StackPanel>
+    </Grid>
+</comp:WindowBase>

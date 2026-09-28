@@ -1,0 +1,320 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Book.BrokerEditSubPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.Book"
+             xmlns:component="clr-namespace:STC.XBond.Plugin.View.Component"
+              xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+                        mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <FrameworkElement x:Key="Proxy" DataContext="{Binding}"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Background="#141414">
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="54"/>
+        </Grid.RowDefinitions>
+        <ContentControl Visibility="Collapsed" Content="{StaticResource Proxy}"/>
+        <DataGrid x:Name="dg" ColumnHeaderHeight="0" ItemsSource="{Binding Datas}" SelectedItem="{Binding SelectedRow, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DefaultDataGrid}" 
+                  PreviewMouseWheel="DataGrid_PreviewMouseWheel">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="操作" Width="Auto" MinWidth="44" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+                                <Button x:Name="DeleteBtn" Height="18" Width="18" Content="-" Style="{StaticResource GrayButtonStyle2}" FontSize="10"
+                                                 Command="{Binding DataContext.DelRowCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                        CommandParameter="{Binding ElementName=DeleteBtn}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="来源" Width="Auto" MinWidth="50"  CanUserSort="True" SortMemberPath="SourceTrader">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border x:Name="SourceTraderBorder" Background="{StaticResource TPSC.ColorBrush}" CornerRadius="2" Height="16" Width="40" HorizontalAlignment="Left">
+                                <TextBlock x:Name="SourceTraderText" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Text="IDB" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding SourceTrader}" Value="TPSC">
+                                    <Setter Property="Background" TargetName="SourceTraderBorder" Value="{StaticResource TPSC.ColorBrush}" />
+                                    <Setter Property="Text" TargetName="SourceTraderText" Value="国利"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SourceTrader}" Value="CTTJ">
+                                    <Setter Property="Background" TargetName="SourceTraderBorder" Value="{StaticResource CTTJ.ColorBrush}" />
+                                    <Setter Property="Text" TargetName="SourceTraderText" Value="信唐"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SourceTrader}" Value="CNEX">
+                                    <Setter Property="Background" TargetName="SourceTraderBorder" Value="{StaticResource CNEX.ColorBrush}" />
+                                    <Setter Property="Text" TargetName="SourceTraderText" Value="国际"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SourceTrader}" Value="CCTB">
+                                    <Setter Property="Background" TargetName="SourceTraderBorder" Value="{StaticResource CCTB.ColorBrush}" />
+                                    <Setter Property="Text" TargetName="SourceTraderText" Value="中诚"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SourceTrader}" Value="PTCN">
+                                    <Setter Property="Background" TargetName="SourceTraderBorder" Value="{StaticResource PTCN.ColorBrush}" />
+                                    <Setter Property="Text" TargetName="SourceTraderText" Value="平安"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SourceTrader}" Value="UEDA">
+                                    <Setter Property="Background" TargetName="SourceTraderBorder" Value="{StaticResource UEDA.ColorBrush}" />
+                                    <Setter Property="Text" TargetName="SourceTraderText" Value="上田"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="报价方式" Width="75">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="tradeM_TB" VerticalAlignment="Center" 
+                                           Text="{Binding TradeMethod}"
+                                           Foreground="{StaticResource DefaultForegroup.ColorBrush}">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                                <StackPanel x:Name="tradeMethodSP" Orientation="Horizontal" Visibility="Collapsed">
+                                    <component:WatermarkTextBox Visibility="{Binding DataContext.PositionVisibility,Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged,
+                                        Converter={StaticResource visibilityConvertor}, RelativeSource={RelativeSource AncestorType={x:Type UserControl}, Mode=FindAncestor}}"
+                                                                VerticalAlignment="Center" Margin="5,0,0,0"
+                                                                Text="{Binding edit_TradeMethod, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                PreviewTextInput="WatermarkTextBox_PreviewTextInput"
+                                                                PreviewKeyDown="WatermarkTextBox_PreviewKeyDown"
+                                                                input:InputMethod.IsInputMethodEnabled="False" ContextMenu="{x:Null}" WaterMark="席位号"
+                                                                HorizontalAlignment="Stretch" Width="65"/>
+
+                                    <ComboBox x:Name="comTradeMethod" 
+                                              Text="{Binding edit_TradeMethod, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"  
+                                              Visibility="{Binding DataContext.SendPriceTypeVisibility,Mode=TwoWay,
+                                        UpdateSourceTrigger=PropertyChanged,
+                                        Converter={StaticResource visibilityConvertor}, RelativeSource={RelativeSource AncestorType={x:Type UserControl}, Mode=FindAncestor}}"
+                                              Style="{StaticResource NonEditableComboBoxStyle}"
+                                              SelectedItem="{Binding TradeMethodItem, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                              VerticalContentAlignment="Center" Width="65"  Height="24"  Margin="1,0,0,0" SelectedIndex="0">
+                                        <ComboBoxItem Content="待定" Tag="60"/>
+                                        <ComboBoxItem Content="发对话" Tag="1"/>
+                                        <ComboBoxItem Content="收对话" Tag="30"/>
+                                        <ComboBoxItem Content="发请求" Tag="4"/>
+                                        <ComboBoxItem Content="收请求" Tag="50"/>
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="SelectionChanged">
+                                                <i:InvokeCommandAction Command="{Binding DataContext.TradeMethodChangeCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit}" Value="0">
+                                    <Setter TargetName="tradeM_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="tradeMethodSP" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="机构名称" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="partyname_TB" Text="{Binding counterpartyname}" VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding counterpartyname}"/>
+                                <component:WatermarkTextBox x:Name="counterpartyname_txt" Text="{Binding edit_counterpartyname, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="Collapsed" VerticalAlignment="Center" Margin="5,0,0,0" WaterMark="机构名" >
+
+                                </component:WatermarkTextBox></Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit}" Value="0">
+                                    <Setter TargetName="partyname_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="counterpartyname_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="交易员" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="username_TB" Text="{Binding counterpartysubname}" VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding counterpartysubname}"/>
+                                <component:WatermarkTextBox x:Name="counterpartysubname_txt"  Text="{Binding edit_counterpartysubname, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="Collapsed" VerticalAlignment="Center" Margin="5,0,0,0" WaterMark="交易员"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit_publicaccount}" Value="0">
+                                    <Setter TargetName="username_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="counterpartysubname_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="价格" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="px_TB" Text="{Binding yield}" VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="Bold" Foreground="{StaticResource ColorBrush.Blue10}"/>
+                                <component:WatermarkTextBox x:Name="yield_txt" Text="{Binding edit_yield, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="Collapsed" VerticalAlignment="Center" Margin="5,0,0,0" WaterMark="收益率"
+                                         PreviewTextInput="TextBox_PreviewTextInput" Tag="2" PreviewKeyDown="TextBox_PreviewKeyDown" input:InputMethod.IsInputMethodEnabled="False"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit_TradeMethod}" Value="0">
+                                    <Setter TargetName="px_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="yield_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding PriceWarnBg}" Value="1">
+                                    <Setter TargetName="px_TB" Property="Foreground" Value="#DF201F"/>
+                                </DataTrigger>
+
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="数量" Width="Auto" MinWidth="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="qty_TB" Text="{Binding qty,Converter={StaticResource numConvertor}}" VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="Bold"/>
+                                <component:WatermarkTextBox x:Name="qty_txt"  Text="{Binding edit_qty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="Collapsed" VerticalAlignment="Center" Margin="5,0,0,0" WaterMark="成交量"                                        
+                                                            PreviewTextInput="TextBox_PreviewTextInput" Tag="1" PreviewKeyDown="TextBox_PreviewKeyDown" 
+                                                            input:InputMethod.IsInputMethodEnabled="False"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit}" Value="0">
+                                    <Setter TargetName="qty_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="qty_txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="清算速度" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="settltype_TB" Text="{Binding settltype, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_tooltip'}" VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="Bold"/>
+                                <StackPanel x:Name="settltype_panel" Orientation="Horizontal" Visibility="Collapsed">
+                                    <DatePicker x:Name="datePicker" Grid.Column="1" Width="60" Height="24" 
+                                                
+                                        SelectedDate="{Binding edit_settltype_date,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                Style="{StaticResource SettlTypeDatePickerStyle}">
+                                        <DatePicker.Resources>
+                                            <Style TargetType="DatePickerTextBox">
+                                                <Setter Property="IsReadOnly" Value="True"/>
+                                            </Style>
+                                        </DatePicker.Resources>
+                                    </DatePicker>
+                                    <ComboBox x:Name="cbSettle" Grid.Column="2" Width="50"  Height="24"  Margin="1,0,0,0" VerticalContentAlignment="Center"
+                                              SelectedIndex="{Binding edit_settletype,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                              Style="{StaticResource NonEditableComboBoxStyle}">
+                                        <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                        <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit_TradeMethod}" Value="0">
+                                    <Setter TargetName="settltype_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="settltype_panel" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding SettleWarnBg}" Value="1">
+                                    <Setter TargetName="settltype_TB" Property="Foreground" Value="#DF201F"/>
+                                </DataTrigger>
+
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="备注" Width="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="remarks_TB" Text="{Binding BrokerRemark}" VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="Bold" TextTrimming="CharacterEllipsis"
+                                        ToolTip="{Binding BrokerRemark}"/>
+                                <component:WatermarkTextBox  x:Name="remarks" VerticalAlignment="Center" Margin="5,0,0,0" Visibility="Collapsed"
+                                        Text="{Binding EditBrokerRemark, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" WaterMark="备注"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit}" Value="0">
+                                    <Setter TargetName="remarks_TB" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="remarks" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="内码" Binding="{Binding BrokerExecId}" Width="50"/>
+                <DataGridTextColumn Header="最后发送时间" Binding="{Binding createdate,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatYYYYMMDD}}"
+                                        Width="Auto" MinWidth="80" Visibility="Visible">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridTextLeftStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding createdateVis}" Value="0">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTemplateColumn Header="编辑" Width="Auto" MinWidth="44" 
+                                        Visibility="{Binding DataContext.NotDcsBrokerVis,Source={StaticResource Proxy}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button x:Name="EditBtn" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                        Style="{StaticResource EditButton}" 
+                                        Visibility="Visible"
+                                        Command="{Binding DataContext.EditRowCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"                                       
+                                        CommandParameter="{Binding ElementName=EditBtn}">
+                                </Button>
+                                <Button x:Name="OKBtn" Width="20" Height="20" Grid.Column="1" Style="{StaticResource SaveButton}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                        Visibility="Collapsed"
+                                        Command="{Binding DataContext.SaveRowCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                        CommandParameter="{Binding ElementName=OKBtn}"/>
+                                <Button x:Name="CancelBtn" Width="20" Height="20" Grid.Column="1" Style="{StaticResource EditCloseButton}" 
+                                        HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                        Visibility="Collapsed"
+                                        Command="{Binding DataContext.CancelRowCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding isEdit}" Value="0">
+                                    <Setter Property="Visibility" TargetName="EditBtn" Value="Collapsed"/>
+                                    <Setter Property="Visibility" TargetName="OKBtn" Value="Visible" />
+                                    <Setter Property="Visibility" TargetName="CancelBtn" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn MinWidth="44" Width="Auto" Visibility="{Binding DataContext.DcsBrokerVis,Source={StaticResource Proxy}}"></DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <Button x:Name="AddBtn" Height="18" Width="18" Content="+" 
+                Grid.Row="1" HorizontalAlignment="Left" Margin="15,0,0,0"
+                Style="{StaticResource GrayButtonStyle2}" FontSize="10"
+                 Command="{Binding AddBrokerRowCommand}"
+                CommandParameter="{Binding ElementName=AddBtn}"  Visibility="{Binding DcsBrokerVis}"/>
+            <Button x:Name="AddNoDcsBtn" Content="+手工" Width="60" Height="24" Style="{StaticResource GrayButtonStyle2}" 
+                    HorizontalAlignment="Left" Margin="10,0,0,0" Command="{Binding AddNonDcsRowCommand}"  Visibility="{Binding NotDcsBrokerVis}"
+                     CommandParameter="{Binding ElementName=AddNoDcsBtn}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

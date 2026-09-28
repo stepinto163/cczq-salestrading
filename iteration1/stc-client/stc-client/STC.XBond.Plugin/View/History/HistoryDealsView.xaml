@@ -1,0 +1,330 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.HistoryDealsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:ViewModel="clr-namespace:STC.XBond.Plugin.ViewModel" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore" 
+             xmlns:customeUI="clr-namespace:STC.XBond.Plugin.CustomeUI"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:utils="clr-namespace:STC.XBond.Plugin.Utils"
+             xmlns:command ="clr-namespace:STC.XBond.Plugin.Command"
+             xmlns:CommonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:fcon="clr-namespace:STC.XBond.Plugin.Convertor"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="1500" Initialized="UserControl_Initialized" Loaded="UserControl_Loaded">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+            <sys:String x:Key="TimeFormatHHMMSS">HH:mm:ss</sys:String>
+            <sys:String x:Key="TimeFormatYYYYMMDD">yyyy-MM-dd</sys:String>
+            <!--yyyy-MM-dd-->
+            <sys:String x:Key="TimeFormatMMDDHHMM">MM-dd HH:mm</sys:String>
+            <!--MM-dd HH:mm-->
+            <sys:String x:Key="TimeFormatYYYYMMDD2">yyyyMMdd</sys:String>
+            <fcon:NumberConvertor x:Key="numConvertor"/>
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <fcon:SettleTypeConvertor x:Key="settleTypeConvertor"/>
+            <fcon:TreasuryFutureConvertor x:Key="treasuryFutureConverter"/>
+            <fcon:BondFieldConvertor x:Key="bondFieldConverter"/>
+            <fcon:FormatDateTimeConvertor x:Key="FormatDateTimeConvertor"/>
+            <fcon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="CanContentScroll" Value="true"/>
+            </Style>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridCellStyle1" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" MouseEnter="ContentPresenter_MouseEnter">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,0,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="VenueColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Venues}" Value="ODM">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.XBond.ColorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Venues}" Value="TPSC">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.TPSC.ColorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Venues}" Value="CTTJ">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.CTTJ.ColorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Venues}" Value="CNEX">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.CNEX.ColorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Venues}" Value="CCTB">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.CCTB.ColorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Venues}" Value="PTCN">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.PTCN.ColorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Venues}" Value="UEDA">
+                        <Setter Property="Foreground" Value="{DynamicResource Deal.UEDA.ColorBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="textBlock" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray14}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="VGridSplitterStyle2" TargetType="{x:Type GridSplitter}">
+                <Setter Property="PreviewStyle" Value="{DynamicResource GridSplitterPreviewStyle}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GridSplitter}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel VerticalAlignment="Center" Orientation="Vertical">
+                                    <Rectangle Width="12" Height="1" Stroke="{DynamicResource DefaultForegroup.ColorBrush}" Margin="0,2,0,2"/>
+                                    <Rectangle Width="12" Height="1" Stroke="{DynamicResource DefaultForegroup.ColorBrush}" Margin="0,0,0,2"/>
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+    <Grid Background="#141414">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <local:HistoryDealFilterPanel x:Name="historyDealsFilter" DealsFilterDicChanged="historyDealsFilter_FilterDicChanged"/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <ComboBox x:Name="comboBox" Margin="20,0,0,0" Width="110"  Height="18" 
+                          VerticalAlignment="Center" SelectedIndex="0" 
+                          Style="{DynamicResource NonEditableComboBoxStyle}"
+                          SelectionChanged="comboBox_SelectionChanged">
+                    <ComboBoxItem Content="STC成交单号" Tag="1"/>
+                    <ComboBoxItem Content="STC订单号" Tag="2"/>
+                    <ComboBoxItem Content="债券代码" Tag="3"/>
+                    <ComboBoxItem Content="对手方" Tag="4"/>
+                </ComboBox>
+                <TextBox Width="130" Height="18" Padding="5, 0, 0, 0" 
+                         Style="{DynamicResource HistoryTextBoxStyle}" 
+                         x:Name="textBox"
+                         Margin="5,0"
+                         KeyDown="textBox_KeyDown"
+                         TextChanged="textBox_TextChanged"
+                         LostFocus="textBox_LostFocus"
+                         input:TextCompositionManager.PreviewTextInput="textBox_PreviewTextInput"
+                         input:TextCompositionManager.PreviewTextInputUpdate="textBox_PreviewTextInputUpdate"/>
+                <Button x:Name="btnFullScreen" Width="24" Height="24" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{DynamicResource ExportButton}" Command="{Binding ExportCommand}"/>
+            </StackPanel>
+        </Grid>
+        <CommonComp:ExDataGrid Grid.Row="1" x:Name="History_Executions_dataGrid" Style="{DynamicResource DefaultDataGrid}"
+                ItemsSource="{Binding ExecutionsDV,UpdateSourceTrigger=PropertyChanged}" VirtualizingStackPanel.VirtualizationMode="Standard"
+                LoadingRow="Executions_dataGrid_LoadingRow" RowHeaderWidth="0" DefaultHideColumns="成交价(权%)">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="50" Header="序号" MinWidth="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type DataGridRow}}, Path=Header}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="STC成交单号" Width="Auto" MinWidth="200" Binding="{Binding ExecID}"/>
+                <DataGridTextColumn Header="渠道" Width="Auto" MinWidth="80" CellStyle="{StaticResource VenueColumnColorStyle}">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource treasuryFutureConverter}" ConverterParameter="venues_exe" >
+                            <Binding Path="Venues"/>
+                            <Binding Path="MarketIndicator"/>
+                            <Binding Source="venues_exe"/>
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                </DataGridTextColumn>
+                <!--<DataGridComboBoxColumn ItemsSource="{x:Static ViewModel:HistoryDealsViewModel.VenuesItemSource}" 
+                                                SelectedValueBinding="{Binding Venues}" 
+                                                SelectedValuePath="Key" DisplayMemberPath="Value"  
+                                                Header="渠道" Width="1.5*"/>-->
+                <DataGridTextColumn Header="外部成交单号" Width="Auto" MinWidth="200" Binding="{Binding ClOrdID}"/>
+                <DataGridTemplateColumn ClipboardContentBinding="{Binding Side, Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" Header="方向" Width="Auto" MinWidth="60">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="countTB_Side" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"  FontWeight="Bold" Foreground="{DynamicResource ColorBrush.Orange}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="2">
+                                    <Setter Property="Foreground" TargetName="countTB_Side" Value="{DynamicResource ColorBrush.Blue}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="债券代码" Width="Auto" MinWidth="120" Binding="{Binding SecurityID}" FontWeight="SemiBold"/>
+                <DataGridTextColumn Header="债券简称" Width="Auto" MinWidth="160" Binding="{Binding Symbol}"  FontWeight="SemiBold"/>
+                <DataGridTextColumn Header="组合" Binding="{Binding BookName}" Width="Auto" MinWidth="100" FontWeight="SemiBold"/>
+
+                <DataGridTextColumn Header="成交价(%)" Width="Auto" MinWidth="80" Binding="{Binding LastPx,Converter={StaticResource numConvertor},ConverterParameter=''}" CellStyle="{StaticResource ColumnColorStyle}"/>
+                <DataGridTextColumn Header="成交价(权%)" Width="Auto" MinWidth="80" Binding="{Binding YieldToExecution,Converter={StaticResource numConvertor},ConverterParameter=''}" CellStyle="{StaticResource ColumnColorStyle}"/>
+                <DataGridTextColumn Header="净价(元)" Width="Auto" MinWidth="80" Binding="{Binding NetPrice,StringFormat={}{0:N4}}" FontWeight="SemiBold" SortMemberPath="NetPrice1"/>
+                <DataGridTextColumn Header="成交量(万元)" Width="Auto" MinWidth="80">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource bondFieldConverter}" ConverterParameter="Amount">
+                            <Binding Path="LastQty" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Amount" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="成交量(手)" Width="Auto" MinWidth="80">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource treasuryFutureConverter}" ConverterParameter="Amount">
+                            <Binding Path="LastQty" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Amount" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding OffsetFlag}" Header="开平标志" Width="Auto" MinWidth="80"/>
+                <DataGridTextColumn Binding="{Binding HedgeFlag}" Header="投机套保" Width="Auto" MinWidth="80"/>
+                <DataGridTextColumn Binding="{Binding CapAccount}" Header="资金账号" Width="Auto" MinWidth="80"/>
+                
+                <DataGridTextColumn Header="创建日期" Binding="{Binding createDate,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatYYYYMMDD}}"
+                                         Width="Auto" MinWidth="70"/>
+
+                <DataGridTextColumn Header="交易日期" Width="Auto" MinWidth="70"  Binding="{Binding TradeDate}"
+                                            />
+                <DataGridTextColumn ClipboardContentBinding="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}" 
+                                    Header="清算速度" Width="Auto" MinWidth="70">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="ToolTip" Value="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_tooltip'}" />
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource settleTypeConvertor}" ConverterParameter="settletype" >
+                            <Binding Path="MarketIndicator"/>
+                            <Binding Path="SettlType"/>
+                            <Binding Path="SecurityID"/>
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                </DataGridTextColumn>
+                <DataGridTemplateColumn Header="对手方" Width="Auto" MinWidth="120" ClipboardContentBinding="{Binding CounterPartyName}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartyName}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="对手交易员" Width="Auto" MinWidth="120" ClipboardContentBinding="{Binding CounterPartySubName}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartySubName}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="成交时间" Width="Auto" MinWidth="70" Binding="{Binding ExecutionTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}"
+                                            />
+                <DataGridTemplateColumn Header="同步状态" Width="Auto" MinWidth="70" ClipboardContentBinding="{Binding SyncStatus, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='synchflag'}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock x:Name="syncStatusTB">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource treasuryFutureConverter}" ConverterParameter="synchflag" >
+                                            <Binding Path="SyncStatus"/>
+                                            <Binding Path="MarketIndicator"/>
+                                            <Binding Source="synchflag"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding SyncStatus}" Value="C">
+                                    <Setter TargetName="syncStatusTB" Property="Foreground" Value="#FB943C"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SyncStatus}" Value="S">
+                                    <Setter TargetName="syncStatusTB" Property="Foreground" Value="#E63034"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTextColumn Header="全价(元)" Width="Auto" MinWidth="80" Binding="{Binding DirtyPrice,StringFormat={}{0:N4}}"/>-->
+                
+                <!--<DataGridTextColumn Header="结算金额(元)" Width="Auto" MinWidth="80" Binding="{Binding DeliveryAmount,StringFormat={}{0:N2}}"/>
+                
+                <DataGridTextColumn Header="成交编号" Width="Auto" MinWidth="150" Binding="{Binding ExecID}"/>
+                
+                <DataGridTextColumn Header="本方交易员" Width="Auto" MinWidth="80" Binding="{Binding PartySubName}"/>-->
+                <DataGridTextColumn Header="策略名" Width="Auto" MinWidth="100" Binding="{Binding QuantID}"/>
+                <DataGridTextColumn Header="STC订单号" Width="Auto" MinWidth="200" Binding="{Binding StrategyOrderId}"/>
+                <DataGridTextColumn Header="对手订单号" Width="Auto" MinWidth="200" Binding="{Binding RefOrderID}"/>
+                <DataGridTextColumn Header="备注" Width="Auto" MinWidth="120" Binding="{Binding Remark}"/>
+                <DataGridTemplateColumn Header="投组账户" Width="Auto" MinWidth="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Foreground="#FFFFFF" 
+                                               TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource self}, Path=Text}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0}-{1}">
+                                        <Binding Path="AccountId"/>
+                                        <Binding Path="AccountName"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </CommonComp:ExDataGrid>
+        <CommonComp:PageControl x:Name="pageControl" Grid.Row="2" HorizontalAlignment="Right" 
+                               PageChanged="pageControl_PageChanged" 
+                               Visibility="{Binding PageVisible,Converter={StaticResource visibilityConvertor}}"/>
+
+        <fUI:LoadingMask x:Name="loadMask" Visibility="Collapsed" Grid.RowSpan="3" Grid.Row="0"></fUI:LoadingMask>
+    </Grid>
+</UserControl>

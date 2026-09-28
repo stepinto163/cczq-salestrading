@@ -1,0 +1,47 @@
+<Window x:Class="STC.SalesTrading.Plugin.Shared.Components.ConfirmDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="确认" Width="360" Height="200"
+        WindowStartupLocation="Manual" ShowInTaskbar="False"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" FontFamily="Segoe UI" UseLayoutRounding="True"
+        SnapsToDevicePixels="True" PreviewKeyDown="OnWindowPreviewKeyDown">
+    <!--
+        深色二次确认对话框（原型 _fbmConfirm：360px 全屏遮罩 + #161b22 对话框，
+        取消/确认两键，确认键红底 #ef4444，点遮罩取消）。替代系统 MessageBox
+        —— 系统白底对话框与深色主题观感割裂。
+        用于：关注债券/筛选分组弹窗删除非空分组、筛选分组删除非空子分组。
+    -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <!-- 宿主客户区（铺满后在 OnLoaded 对齐；内部分两层：遮罩 / 对话框） -->
+    <Grid>
+        <!-- 遮罩：原型 rgba(0,0,0,.45)，点击空白处取消 -->
+        <Border Background="#73000000" MouseLeftButtonDown="OnBackdropMouseDown" />
+
+        <Border x:Name="DialogShell" Width="360" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="{DynamicResource PanelBgBrush}"
+                BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1" CornerRadius="8">
+            <StackPanel>
+                <!-- 文案：原型 .fbm-confirm-msg 13px #c9d1d9 -->
+                <TextBlock x:Name="MessageText" Margin="20,22,20,0" TextWrapping="Wrap"
+                           FontSize="13" LineHeight="22"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                <!-- 页脚：取消（灰底描边）/ 确认（红底白字） -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,20,20">
+                    <Button Content="取消" Style="{DynamicResource StcButton}" Height="26"
+                            Click="OnCancelClick" />
+                    <Button Content="确认" Style="{DynamicResource StcButtonDanger}" Height="26"
+                            Padding="14,0" Margin="8,0,0,0" Click="OnConfirmClick" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,114 @@
+﻿<UserControl x:Class="STC.Rfq.Plugin.View.Component.NumericUpDown"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:localomponents="clr-namespace:STC.Rfq.Plugin.View.Component"
+             mc:Ignorable="d" SizeChanged="UserControl_SizeChanged" x:Name="numericUpDown">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- 默认文本框 -->
+            <Style x:Key="NumTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0F0F0F"/>
+                <Setter Property="BorderBrush" Value="#136C5E"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="Bd" SnapsToDevicePixels="true" CornerRadius="2"  BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                                <ScrollViewer x:Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="Bd" Value="#1E1E1E"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#3C3C3C"/>
+                                    <Setter Property="Foreground" Value="#3C3C3C"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- 按钮 -->
+            <Style x:Key="UpDownButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="out_border" CornerRadius="1" BorderBrush="#4C000000" BorderThickness="0,0,0,0" Background="Transparent" SnapsToDevicePixels="true">
+                                    <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                        <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                </Border>
+                                <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.5"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.2"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid x:Name="_grid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="8*"/>
+                <ColumnDefinition Width="14"/>
+            </Grid.ColumnDefinitions>
+
+            <localomponents:NumericTextBox Grid.RowSpan="2" Grid.ColumnSpan="2" x:Name="NumericTextBox" MouseWheel="TextBox_MouseWheel" PreviewKeyDown="TextBox_PreviewKeyDown" 
+                                       NumericValue="{Binding NumericValue, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       DecimalLength="{Binding DecimalLength, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       MinValue="{Binding MinValue, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       MaxValue="{Binding MaxValue, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       IsCommaSeparatedValue="{Binding IsCommaSeparatedValue, ElementName=numericUpDown, Mode=TwoWay}" AllowDrop="False"
+                                       IsGotFocusSelectAll="{Binding IsGotFocusSelectAll, ElementName=numericUpDown, Mode=TwoWay}"
+                                       TextBackground="{Binding TextBackground, ElementName=numericUpDown, Mode=OneWay}"
+                                       TextForeground="{Binding TextForeground, ElementName=numericUpDown, Mode=OneWay}"
+                                       AdjustDecimalLength="{Binding AdjustDecimalLength, ElementName=numericUpDown, Mode=TwoWay}"
+                                       TextContentAlignment="{Binding TextContentAlignment, ElementName=numericUpDown, Mode=TwoWay}"
+                                       Background="#0F0F0F" BorderThickness="{Binding UpDownBorderThickness, ElementName=numericUpDown, Mode=TwoWay}"
+                                       BorderBrush="{Binding NumBorderBrush, ElementName=numericUpDown, Mode=TwoWay}" Style="{StaticResource NumTextBoxStyle}"/>
+        <Button Grid.Row="0" Grid.Column="1" x:Name="UpButton" FocusManager.IsFocusScope="True" Click="BtnUp_Click" IsTabStop="False" Background="{Binding UpDownBackground, ElementName=numericUpDown, Mode=TwoWay}" Foreground="#FFFFFF" BorderBrush="{Binding UpDownBorderBrush, ElementName=numericUpDown, Mode=TwoWay}" Margin="{Binding UpMargin, ElementName=numericUpDown, Mode=TwoWay}" Style="{StaticResource UpDownButtonStyle}">
+                <Path Grid.Row="1" Grid.Column="1" x:Name="UpArrow" Data="M 1,5 L 4.5,1 L 8,5" SnapsToDevicePixels="false" Stroke="#FFFFFF" StrokeThickness="1" Margin="0,1,0,0"/>
+        </Button>
+        <Button Grid.Row="1" Grid.Column="1" x:Name="DownButton" FocusManager.IsFocusScope="True" Click="BtnDown_Click" IsTabStop="False" Background="{Binding UpDownBackground, ElementName=numericUpDown, Mode=TwoWay}" Foreground="#FFFFFF" BorderBrush="{Binding UpDownBorderBrush, ElementName=numericUpDown, Mode=TwoWay}" Margin="{Binding DownMargin, ElementName=numericUpDown, Mode=TwoWay}"  Style="{StaticResource UpDownButtonStyle}">
+            <Path Grid.Row="1" Grid.Column="1" x:Name="DownArrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" SnapsToDevicePixels="false" Stroke="#FFFFFF" StrokeThickness="1" Margin="0,0,0,0"/>
+            </Button>
+        </Grid>
+
+</UserControl>

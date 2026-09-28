@@ -1,0 +1,1049 @@
+﻿<UserControl x:Class="STC.Mm.Plugin.View.Component.MMOrderControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mm.Plugin.View.Component"
+             xmlns:conv ="clr-namespace:STC.Mm.Plugin.Convertor"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:utils="clr-namespace:STC.Mm.Plugin.Utils;assembly=STC.Mm.Plugin"
+             xmlns:command ="clr-namespace:STC.Mm.Plugin.Command"
+             xmlns:card="clr-namespace:STC.Common.View.Card;assembly=STC.Common"
+             xmlns:comp ="clr-namespace:STC.Mm.Plugin.View.Component"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" FontSize="12" DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             Loaded="OrderControlMain_Loaded" Initialized="OrderControlMain_Initialized" SizeChanged="OrderControlMain_SizeChanged"
+             BorderThickness="0" Background="Transparent"  BorderBrush="#0C4F44" x:Name="OrderControlMain"
+             >
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>-->
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--<FrameworkElement x:Key="Proxy" DataContext="{Binding}"/>-->
+
+            <SolidColorBrush x:Key="MainFrame.Background" Color="#0A0F0E"/>
+
+            <!--边框-->
+            <SolidColorBrush x:Key="Border.Background" Color="#1A2E2C"/>
+            <SolidColorBrush x:Key="Border.Bottom.Background" Color="#172422"/>
+            <!--默认边框颜色-->
+            <SolidColorBrush x:Key="Border.Background.NoData" Color="#121A19"/>
+            <SolidColorBrush x:Key="Border.Background.UpSide" Color="#311615"/>
+            <SolidColorBrush x:Key="Window.Backgroud" Color="#171F1F"/>
+            <SolidColorBrush x:Key="Border.Brush.Resverse" Color="#9B2125"/>
+            <!--倒挂边框颜色-->
+            <SolidColorBrush x:Key="Border.Background.Resverse" Color="#370F11"/>
+            <!--倒挂背景颜色-->
+
+            <Style x:Key="defaultTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <!--<Setter Property="Foreground" Value="#FFFFFF "/>-->
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                    <!--<DataTrigger Binding="{Binding enable}" Value="false">
+                        <Setter Property="Foreground" Value="#8F9598 "/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding enable}" Value="true">
+                        <Setter Property="Foreground" Value="#FB943C "/>
+                    </DataTrigger>-->
+                    <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="0">
+                        <Setter Property="Foreground" Value="#8F9598 "/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="1">
+                        <Setter Property="Foreground" Value="#FB943C "/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="">
+                        <Setter Property="Foreground" Value="Red"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="OfrDefaultTextBox" TargetType="{x:Type TextBox}" BasedOn="{StaticResource defaultTextBox}">
+                <Style.Triggers>
+                    <!--<DataTrigger Binding="{Binding enable}" Value="false">
+                        <Setter Property="Foreground" Value="#8F9598"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding enable}" Value="true">
+                        <Setter Property="Foreground" Value="#58B3FF"/>
+                    </DataTrigger>-->
+                    <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="0">
+                        <Setter Property="Foreground" Value="#8F9598 "/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="1">
+                        <Setter Property="Foreground" Value="#58B3FF"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="">
+                        <Setter Property="Foreground" Value="Red"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="defaultQtyTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <!--<Setter Property="Foreground" Value="#FFFFFF "/>-->
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="0" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="#ED6D00"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="#ED6D00"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="TabControlStyle" TargetType="{x:Type TabControl}">
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{StaticResource RedButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RedButton.Static.Border}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabControl}">
+                            <Grid x:Name="templateRoot" ClipToBounds="True" SnapsToDevicePixels="True" KeyboardNavigation.TabNavigation="Local">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="ColumnDefinition0"/>
+                                    <ColumnDefinition x:Name="ColumnDefinition1" Width="0"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition x:Name="RowDefinition0" Height="Auto"/>
+                                    <RowDefinition x:Name="RowDefinition1" Height="*"/>
+                                </Grid.RowDefinitions>
+                                <UniformGrid x:Name="HeaderPanel" Rows="1" Background="Transparent" Grid.Column="0" IsItemsHost="True" Margin="0" Grid.Row="0" KeyboardNavigation.TabIndex="1" Panel.ZIndex="1"/>
+                                <Line X1="0" X2="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" Stroke="White" StrokeThickness="0.1" VerticalAlignment="Bottom" Margin="0 0 0 0" SnapsToDevicePixels="True"/>
+                                <Border x:Name="ContentPanel" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.Column="0" KeyboardNavigation.DirectionalNavigation="Contained" Grid.Row="1" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Local">
+                                    <ContentPresenter x:Name="PART_SelectedContentHost" ContentTemplate="{TemplateBinding SelectedContentTemplate}" Content="{TemplateBinding SelectedContent}" ContentStringFormat="{TemplateBinding SelectedContentStringFormat}" ContentSource="SelectedContent" Margin="0" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="TabStripPlacement" Value="Bottom">
+                                    <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="1"/>
+                                    <Setter Property="Grid.Row" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Height" TargetName="RowDefinition0" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition1" Value="Auto"/>
+                                </Trigger>
+                                <Trigger Property="TabStripPlacement" Value="Left">
+                                    <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="0"/>
+                                    <Setter Property="Grid.Row" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Grid.Column" TargetName="HeaderPanel" Value="0"/>
+                                    <Setter Property="Grid.Column" TargetName="ContentPanel" Value="1"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition0" Value="Auto"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition1" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition0" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition1" Value="0"/>
+                                </Trigger>
+                                <Trigger Property="TabStripPlacement" Value="Right">
+                                    <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="0"/>
+                                    <Setter Property="Grid.Row" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Grid.Column" TargetName="HeaderPanel" Value="1"/>
+                                    <Setter Property="Grid.Column" TargetName="ContentPanel" Value="0"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition0" Value="*"/>
+                                    <Setter Property="Width" TargetName="ColumnDefinition1" Value="Auto"/>
+                                    <Setter Property="Height" TargetName="RowDefinition0" Value="*"/>
+                                    <Setter Property="Height" TargetName="RowDefinition1" Value="0"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="templateRoot" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="TabItemStyle" TargetType="{x:Type TabItem}">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="{StaticResource RedButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RedButton.Static.Border}"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabItem}">
+                            <Grid x:Name="templateRoot"  SnapsToDevicePixels="True" Background="Transparent" Margin="1,0,1,0" Height="{TemplateBinding Height}">
+                                <TextBlock x:Name="txt" Visibility="Visible" VerticalAlignment="Center" HorizontalAlignment="Center" Text="{TemplateBinding Header}" ToolTip="{TemplateBinding Header}" Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Foreground" TargetName="txt" Value="#FFFFFF"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Left"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Bottom"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Right"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="templateRoot" Value="0.56"/>
+                                </MultiDataTrigger>
+
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Panel.ZIndex" Value="1"/>
+                                    <Setter Property="Foreground" TargetName="txt" Value="#FFFFFF"/>
+                                    <Setter Property="Background" TargetName="templateRoot" Value="#136C5E"/>
+                                </MultiDataTrigger>
+
+
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource FindAncestor, AncestorLevel=1, AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Panel.ZIndex" Value="1"/>
+                                    <Setter Property="Foreground" TargetName="txt" Value="#FFFFFF"/>
+                                    <Setter Property="Background" TargetName="templateRoot" Value="{StaticResource GrayButton.Static.Background}"/>
+                                </MultiDataTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ofrBorderStyle" TargetType="{x:Type Border}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Params.IsResverse}" Value="false">
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Bottom.Background}"/>
+                        <Setter Property="Background" Value="#102A3B"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Params.IsResverse}" Value="true">
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Brush.Resverse}"/>
+                        <Setter Property="Background" Value="{StaticResource Border.Background.Resverse}"/>
+                    </DataTrigger>
+                    <!--<DataTrigger Binding="{Binding enable}" Value="false">
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Bottom.Background}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </DataTrigger>-->
+                    <!--<MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding enable}" Value="false"/>
+                            <Condition Binding="{Binding Params.IsResverse}" Value="true"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Brush.Resverse}"/>
+                        <Setter Property="Background" Value="{StaticResource Border.Background.Resverse}"/>
+                    </MultiDataTrigger>-->
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding enable}" Value="false"/>
+                            <Condition Binding="{Binding Params.IsResverse}" Value="false"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Bottom.Background}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="bidBorderStyle" TargetType="{x:Type Border}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Params.IsResverse}" Value="false">
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Bottom.Background}"/>
+                        <Setter Property="Background" Value="#392512"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Params.IsResverse}" Value="true">
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Brush.Resverse}"/>
+                        <Setter Property="Background" Value="{StaticResource Border.Background.Resverse}"/>
+                    </DataTrigger>
+                    <!--<DataTrigger Binding="{Binding enable}" Value="false">
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Bottom.Background}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </DataTrigger>-->
+                    <!--<MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding enable}" Value="false"/>
+                            <Condition Binding="{Binding Params.IsResverse}" Value="true"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Brush.Resverse}"/>
+                        <Setter Property="Background" Value="{StaticResource Border.Background.Resverse}"/>
+                    </MultiDataTrigger>-->
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding enable}" Value="false"/>
+                            <Condition Binding="{Binding Params.IsResverse}" Value="false"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="BorderBrush" Value="{StaticResource Border.Bottom.Background}"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ComboBoxButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="Height" Value="24"/>
+                <Style.Triggers>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="IsTabStop" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,5,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ComboBoxPopDataGridStyle" TargetType="DataGrid">
+                <!--<Setter Property="CanUserSortColumns" Value="False"/>-->
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="None"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Extended"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <!-- 不需要虚拟模式 -->
+                <!--<Setter Property="EnableRowVirtualization" Value="False"/>-->
+                <!-- 不需要边框 -->
+                <Setter Property="BorderThickness" Value="0"/>
+
+                <Setter Property="EnableColumnVirtualization" Value="True"/>
+                <Setter Property="EnableRowVirtualization" Value="True"/>
+                <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+                <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+                <Setter Property="VirtualizingPanel.IsContainerVirtualizable" Value="True"/>
+                <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+                <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <!--<Setter Property="ColumnHeaderStyle" Value="{StaticResource DataGridColumnHeaderStyle}"/>-->
+                <Setter Property="RowStyle" Value="{StaticResource DataGridRowStyle}"/>
+                <Setter Property="CellStyle" Value="{StaticResource DataGridCellStyle}"/>
+                <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+            </Style>
+
+            <Style x:Key="FixFloatButtonStyle" TargetType="CheckBox">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Border Name="border" CornerRadius="2" Background="Transparent">
+                                <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Label.Content>
+                                        <Image Source="/STC.Frame;component/Images/stc_icon_top_normal.png" Width="14" Height="14" ToolTip="置顶" />
+                                    </Label.Content>
+                                </Label>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#136C5E" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#172422" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.Frame;component/Images/stc_icon_toppressed_normal.png" Width="14" Height="14" ToolTip="取消置顶" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="IsSyncToggleBoxStyle" TargetType="{x:Type ToggleButton}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border Name="border" CornerRadius="10" BorderThickness="1" BorderBrush="#3C3C3C" Background="#3C3C3C ">
+                                <Image x:Name="img" Source="/STC.Mm.Plugin;component/Images/link.png"  Width="14" Height="14"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#3C3C3C"/>
+                                    <Setter TargetName="border" Property="Background" Value="#3C3C3C"/>
+                                    <Setter TargetName="border" Property="ToolTip" Value="打开可允许Bid Ofr 策略同时切换"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="Background" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="ToolTip" Value="关闭可允许 Bid Ofr 策略分别切换"/>
+                                </Trigger>
+                                
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                        
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <conv:QuoteModelConverter x:Key="QuoteModelConverter"/>
+            <conv:TenThousandToMillionConverter x:Key="TenThousandToMillionConverter"/>
+            <conv:FormatZeroConverter x:Key="FormatZeroConverter"/>
+            <conv:AllMmConverter x:Key="AllMmConverter"/>
+            <conv:FormatDigitConverter x:Key="FormatDigitConverter"/>
+           
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border CornerRadius="2" BorderBrush="{StaticResource Border.Bottom.Background}" BorderThickness="1, 1, 1, 0" Background="{StaticResource MainFrame.Background}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="0"/>
+                <RowDefinition Height="28"/>
+                <RowDefinition Height="25"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="50*"/>
+                <ColumnDefinition Width="50*"/>
+            </Grid.ColumnDefinitions>
+
+            <!--<ContentControl Visibility="Collapsed" Content="{StaticResource Proxy}"/>-->
+
+            <Border x:Name="Title_bd" Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="{StaticResource Border.Bottom.Background}" BorderThickness="1,1,1,1" Padding="0,0,10,0">
+                <DockPanel Width="Auto">
+                    <!--Text="{Binding SECURITY_ID_FIELD,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"-->
+                    <TextBlock x:Name="securityID_tb" Text="{Binding securityID,Mode=OneWay}"  Background="Transparent" Foreground="#F9C152" FontWeight="Bold" Height="18" FontSize="14"
+                               Margin="3,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="symbol_tb" Text="{Binding symbol,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="#F9C152" FontWeight="Bold" Height="18" FontSize="14"
+                               Margin="5,0,0,0" VerticalAlignment="Center" Width="80" TextTrimming="CharacterEllipsis" ToolTip="{Binding symbol}"/>
+                    <!--<TextBlock x:Name="LastOperation_tb" Text="{Binding LastOperation,Mode=OneWay}" Background="Transparent" Foreground="#8F9598"  FontWeight="Bold" Height="14" FontSize="12"
+                               Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="LastOperationTime_tb" Text="{Binding LastOperationTime,Mode=OneWay}" Background="Transparent" Foreground="#8F9598"  FontWeight="Bold" Height="14" FontSize="12"
+                               Margin="1,0,0,0" VerticalAlignment="Center"/>-->
+                    <TextBlock x:Name="baseSettleType_tb" Background="Transparent" Foreground="#8F9598"  FontWeight="Bold" Height="14" FontSize="12"
+                               Margin="1,0,0,0" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Params.baseSettleType,Mode=OneWay}" Value="1">
+                                        <Setter Property="Text" Value="T+0"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Params.baseSettleType,Mode=OneWay}" Value="2">
+                                        <Setter Property="Text" Value="T+1"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <DockPanel HorizontalAlignment="Right">
+
+                        <Button x:Name="configBtn"  Width="16" Height="16"  Margin="2,0,5,0" Style="{StaticResource MainPageImageSettingButton}"  Click="configBtn_Click"
+                                Visibility="Collapsed"/>
+                        <Button x:Name ="popupBtn" Width="16" Height="16" Style="{StaticResource PopupButton}"
+                                HorizontalAlignment="Right"
+                                Command="{StaticResource PopupWindowCommand}" 
+                                Visibility="Collapsed">
+                            <Button.CommandParameter>
+                                <MultiBinding Converter="{StaticResource MultiBindingConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Source="{x:Static command:PopupTypeEnum.OrderControl}" Mode="OneWay"/>
+                                        <Binding ElementName="OrderControlMain"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.CommandParameter>
+                        </Button>
+                        <CheckBox  Visibility="Collapsed" Margin="0,0,0,2" x:Name="btnFixFloatButton" Width="16" Height="16" Style="{StaticResource FixFloatButtonStyle}" Checked="btnFixFloatButton_Checked" Unchecked="btnFixFloatButton_Checked"></CheckBox>
+                        <Button  Visibility="Collapsed" Width="14" Height="14" x:Name="btnShutDown" Margin="5, 0, 0, 2" Click="btnShutDown_Click"
+                                IsCancel="True" Style="{StaticResource ImageCloseButton}" ToolTip="关闭" />
+                    </DockPanel>
+                </DockPanel>
+            </Border>
+
+            <!--BorderBrush="{StaticResource Border.Bottom.Background}"-->
+            <Border Grid.Row="1"  Grid.Column="0" BorderThickness="1,1,0,0" Style="{StaticResource bidBorderStyle}">
+                <Grid>
+                    <!--<RadioButton x:Name="Params_bidQuoteModel_1" Content="手"
+                                 Style="{StaticResource BoxRadioButton}" FontSize="10"
+                                 VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0" Width="16" Height="16"
+                                 IsChecked="{Binding Params.bidQuoteModel, Mode=OneWay,Converter={StaticResource QuoteModelConverter}, ConverterParameter=1}"
+                                 PreviewMouseLeftButtonDown="Params_bidQuoteModel_cb_PreviewMouseLeftButtonDown">
+
+                    </RadioButton>
+                    <RadioButton x:Name="Params_bidQuoteModel_2"  Content="自" FontSize="10"
+                                 Style="{StaticResource BoxRadioButton}"
+                                 VerticalAlignment="Center" HorizontalAlignment="Left" Margin="22,0,0,0" Width="16" Height="16"
+                                 IsChecked="{Binding Params.bidQuoteModel, Mode=OneWay,Converter={StaticResource QuoteModelConverter}, ConverterParameter=2}"
+                                 PreviewMouseLeftButtonDown="Params_bidQuoteModel_cb_PreviewMouseLeftButtonDown">
+
+                    </RadioButton>-->
+                    <!--<ComboBox x:Name="bidStrategyMode_cbx" Style="{StaticResource NonEditableComboBoxStyle}" ItemsSource="{Binding Params.bidStrategyModeList}"
+                              Width="52" Height="16" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" SelectedValue="{Binding Params.bidQuoteModel,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"
+                              SelectedValuePath="Key" DisplayMemberPath="Value" SelectionChanged="bidStrategyMode_cbx_SelectionChanged" DropDownClosed="bidStrategyMode_cbx_DropDownClosed"/>-->
+
+
+                    <TextBlock Text="Bid" Foreground="#FB943C" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Width="24" Height="16" Margin="5,0,0,0"/>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Grid.Column="0" BorderThickness="1,0,0,0" Style="{StaticResource bidBorderStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <Grid  Margin="4,0,0,0" Height="30" Width="16">
+
+                        <Button x:Name="BidBasePricePlus_btn"  Style="{StaticResource   DefaultButtonStyle}" Width="14" Height="14" HorizontalAlignment="Center" Margin="1,0" Foreground="#FFFFFF" Background="#3C3C3C"
+                            Click="BidBasePricePlus_btn_Click" VerticalAlignment="Top">
+                            <WrapPanel>
+                                <Image Source="/STC.Mm.Plugin;component/Images/mm_plus_40.png" Height="7" Width="7" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                            <Button.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                                        <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.IsEnabled>
+                        </Button>
+                        <Button x:Name="BidBasePriceMinus_btn"  Style="{StaticResource   DefaultButtonStyle}" Width="14" Height="14" HorizontalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF" Background="#3C3C3C"
+                            Click="BidBasePriceMinus_btn_Click" VerticalAlignment="Bottom">
+                            <WrapPanel>
+                                <Image Source="/STC.Mm.Plugin;component/Images/mm_minus_40.png" Height="7" Width="7" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                            <Button.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                                        <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.IsEnabled>
+                        </Button>
+                    </Grid>
+
+                    <TextBox  x:Name="BidBasePrice_tb"  PreviewTextInput="TextBox_PreviewTextInput"  Width="71" Height="30" Padding="0, 0, 0, 0" input:InputMethod.IsInputMethodEnabled="False"
+                             PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
+                             FontSize="20" Text="{Binding Params.bidBasePrice,Mode=OneWay,Converter={StaticResource FormatDigitConverter}}" IsReadOnly="True" ToolTip="{Binding ElementName=BidBasePrice_tb, Path=Text}"
+                             FontWeight="Bold" BorderThickness="1" BorderBrush="Gray" Focusable="True"
+                             GotFocus="BidBasePrice_tb_GotFocus" LostFocus="BidBasePrice_tb_LostFocus" MouseEnter="BidBasePrice_tb_MouseEnter" MouseLeave="BidBasePrice_tb_MouseLeave"
+                             Margin="2, 0, 0, 0" Style="{StaticResource defaultTextBox}" Tag="Price">
+                    </TextBox>
+
+                </StackPanel>
+            </Border>
+            
+            <Border Grid.Row="4" Grid.Column="0" BorderThickness="1,0,0,0" Style="{StaticResource bidBorderStyle}" Margin="0">
+                <DockPanel>
+                    <Border x:Name="BidBaseQty_bd" Width="71" Height="20" HorizontalAlignment="Left" Margin="22,0,0,0" BorderThickness="1" BorderBrush="#3C3C3C" CornerRadius="1" VerticalAlignment="Center">
+                        <StackPanel Background="Black" Orientation="Horizontal">
+                            <TextBlock x:Name="BidBaseQty_tb" Text="{Binding Params.displayBidQty,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatZeroConverter}}" 
+                                     Padding="5,0,0,0" Width="50" Height="Auto"  Focusable="True" ToolTip="{Binding ElementName=BidBaseQty_tb,Path=Text}"
+                                     GotFocus="BidBaseQty_tb_GotFocus" LostFocus="BidBaseQty_tb_LostFocus" MouseEnter="BidBaseQty_tb_MouseEnter" MouseLeave="BidBaseQty_tb_MouseLeave" Tag="Qty" Margin="0,0,0,2" VerticalAlignment="Bottom"
+                                     input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" HorizontalAlignment="Left">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Style.Triggers>
+                                            <!--<DataTrigger Binding="{Binding enable}" Value="false">
+                                                <Setter Property="Foreground" Value="#8F9598 "/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding enable}" Value="true">
+                                                <Setter Property="Foreground" Value="#FFFFFF "/>
+                                            </DataTrigger>-->
+                                            <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="0">
+                                                <Setter Property="Foreground" Value="#8F9598 "/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="1">
+                                                <Setter Property="Foreground" Value="#FFFFFF "/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="KW" Foreground="#8F9598" Height="Auto" Width="Auto"  Margin="0,1,2,0" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
+            </Border>
+            <Image x:Name="bidAPIWarn_Img" Grid.Row="4" Grid.Column="0" Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="98,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+            <Border Grid.Row="5" Grid.Column="0" Style="{StaticResource bidBorderStyle}" BorderThickness="1,0,0,0">
+                <DockPanel Margin="22.5,0,0,0">
+                    <Button x:Name="bidStrategyMode_btn" HorizontalAlignment="Left" Width="71" Height="20" Margin="0,0,0,0" Click="bidStrategyMode_btn_Click" Style="{StaticResource ComboBoxButtonStyle}"
+                            IsEnabled="{Binding IsUnify, Converter={StaticResource reversebooleanConvertor}}">
+                        <!--Click="bidStrategyMode_btn_Click"-->
+                        <Button.Content>
+                            <Grid >
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56"/>
+                                    <ColumnDefinition Width="15"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="#FFFFFF" HorizontalAlignment="Left" Margin="5,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Params.bidQuoteModel}" Value="Manual">
+                                                    <Setter Property="Text" Value="手动"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Params.bidQuoteModel}" Value="Defend">
+                                                    <Setter Property="Text" Value="防守"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Params.bidQuoteModel}" Value="Algorithm">
+                                                    <Setter Property="Text" Value="算法"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Params.bidQuoteModel}" Value="API">
+                                                    <Setter Property="Text" Value="接口"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <Image Grid.Column="1" Source="/STC.Mm.Plugin;component/Images/ComboBoxDownButton.png" Width="15" Height="13" />
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+                    <commonComp:PopupEx x:Name="popBidStrategyList" PlacementTarget="{Binding ElementName=bidStrategyMode_btn}" StaysOpen="False" PopupAnimation="Slide" AllowsTransparency="False" Panel.ZIndex="111" VerticalOffset="1">
+                        <DataGrid x:Name="bidStrategyList_dg" AutoGenerateColumns="False" BorderThickness="0"
+                                              ItemsSource="{Binding Params.bidStrategyModeList}" HeadersVisibility="None" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
+                                              MouseUp="bidStrategyList_dg_MouseUp" LostFocus="bidStrategyList_dg_LostFocus"  Style="{StaticResource ComboBoxPopDataGridStyle}" VerticalContentAlignment="Center">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Value}" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </commonComp:PopupEx>
+                    <commonComp:PopupEx x:Name="popAllStrategyList" PlacementTarget="{Binding ElementName=bidStrategyMode_btn}" StaysOpen="False" PopupAnimation="Slide" AllowsTransparency="False" Panel.ZIndex="111" VerticalOffset="1"
+                                        Opened="popAllStrategyList_Opened">
+                        <DataGrid x:Name="AllStrategyList_dg" AutoGenerateColumns="False" BorderThickness="0" Width="234"
+                                              ItemsSource="{Binding Params.quoteModelList}" HeadersVisibility="None" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
+                                              MouseUp="AllStrategyList_dg_MouseUp" LostFocus="AllStrategyList_dg_LostFocus"  Style="{StaticResource ComboBoxPopDataGridStyle}" VerticalContentAlignment="Center">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="127">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding bid}" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" ToolTip="{Binding bid}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Width="Auto">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ofr}" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" ToolTip="{Binding ofr}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </commonComp:PopupEx>
+
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="5" Grid.Column="1" Style="{StaticResource ofrBorderStyle}" BorderThickness="0,0,1,0">
+                <DockPanel Margin="46,0,0,0">
+                    <Button x:Name="ofrStrategyMode_btn" HorizontalAlignment="Right" Width="70" Height="20" Margin="0,0,7,0" Click="ofrStrategyMode_btn_Click" Style="{StaticResource ComboBoxButtonStyle}"
+                            IsEnabled="{Binding IsUnify, Converter={StaticResource reversebooleanConvertor}}">
+                        <Button.Content>
+                            <Grid >
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="55"/>
+                                    <ColumnDefinition Width="15"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="#FFFFFF" HorizontalAlignment="Left" Margin="5,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Params.ofrQuoteModel}" Value="Manual">
+                                                    <Setter Property="Text" Value="手动"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Params.ofrQuoteModel}" Value="Defend">
+                                                    <Setter Property="Text" Value="防守"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Params.ofrQuoteModel}" Value="Algorithm">
+                                                    <Setter Property="Text" Value="算法"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Params.ofrQuoteModel}" Value="API">
+                                                    <Setter Property="Text" Value="接口"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <Image Grid.Column="1" Source="/STC.Mm.Plugin;component/Images/ComboBoxDownButton.png" Width="15" Height="13" />
+                            </Grid>
+                        </Button.Content>
+                    </Button>
+                    <commonComp:PopupEx x:Name="popOfrStrategyList" PlacementTarget="{Binding ElementName=ofrStrategyMode_btn}" StaysOpen="False" PopupAnimation="Slide" AllowsTransparency="False" Panel.ZIndex="111" VerticalOffset="1">
+                        <DataGrid x:Name="ofrStrategyList_dg" AutoGenerateColumns="False" BorderThickness="0"
+                                              ItemsSource="{Binding Params.ofrStrategyModeList}" HeadersVisibility="None" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
+                                              MouseUp="ofrStrategyList_dg_MouseUp" LostFocus="ofrStrategyList_dg_LostFocus"  Style="{StaticResource ComboBoxPopDataGridStyle}" VerticalContentAlignment="Center">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Value}" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </commonComp:PopupEx>
+
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="6" Grid.Column="0" Style="{StaticResource bidBorderStyle}" BorderThickness="1,0,0,1"/>
+            <Border Grid.Row="6" Grid.Column="1" Style="{StaticResource ofrBorderStyle}" BorderThickness="0,0,1,1"/>
+
+            <ToggleButton x:Name="IsSyncQuoteModel_ToggleButton" Grid.Row="5" Grid.ColumnSpan="2"  Style="{StaticResource IsSyncToggleBoxStyle}" Width="40" Height="20"
+                          IsEnabled="{Binding IsUnify, Converter={StaticResource reversebooleanConvertor}}"/>
+
+            <Border Grid.Row="1" Grid.Column="1" BorderThickness="0,1,1,0" Style="{StaticResource ofrBorderStyle}">
+                <Grid>
+                    <TextBlock Text="Ofr" Foreground="#58B3FF " FontWeight="Bold" FontSize="14" Height="18"
+                               VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,7,0"/>
+                </Grid>
+            </Border>
+            <Border Grid.Row="2" Grid.Column="1" BorderThickness="0,0,1,0" Style="{StaticResource ofrBorderStyle}">
+                <DockPanel>
+                    <TextBox x:Name="OfrBasePrice_tb"  PreviewTextInput="TextBox_PreviewTextInput"  Width="71" Height="30" Padding="0, 0, 0, 0" input:InputMethod.IsInputMethodEnabled="False"
+                             PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"
+                             FontSize="20" Text="{Binding Params.ofrBasePrice,Mode=OneWay,Converter={StaticResource FormatDigitConverter}}" IsReadOnly="True"
+                             FontWeight="Bold" BorderThickness="1" BorderBrush="Gray" Focusable="True"  
+                             GotFocus="OfrBasePrice_tb_GotFocus" LostFocus="OfrBasePrice_tb_LostFocus" ToolTip="{Binding ElementName=OfrBasePrice_tb, Path=Text}"
+                             MouseEnter="OfrBasePrice_tb_MouseEnter" MouseLeave="OfrBasePrice_tb_MouseLeave"
+                             Margin="46, 0, 0, 0" Style="{StaticResource OfrDefaultTextBox}" Tag="Price" TextChanged="bidPrice_tb_TextChanged">
+
+                    </TextBox>
+                    <Grid Margin="1,0,0,0" Height="30" Width="16" HorizontalAlignment="Left">
+                        <!--<Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>-->
+
+                        <Button x:Name="OfrBasePricePlus_btn" Grid.Row="0" Style="{StaticResource   DefaultButtonStyle}" Width="14" Height="14" HorizontalAlignment="Right" Foreground="#FFFFFF" Background="#3C3C3C" 
+                                Click="OfrBasePricePlus_btn_Click" VerticalAlignment="Top">
+                            <WrapPanel>
+                                <Image Source="/STC.Mm.Plugin;component/Images/mm_plus_40.png" Height="7" Width="7" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                            <Button.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                                        <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.IsEnabled>
+                        </Button>
+                        <Button x:Name="OfrBasePriceMinus_btn" Grid.Row="1"  Style="{StaticResource   DefaultButtonStyle}" Width="14" Height="14" HorizontalAlignment="Left" Margin="2,0,0,0" Foreground="#FFFFFF" Background="#3C3C3C"
+                                VerticalAlignment="Bottom" Click="OfrBasePriceMinus_btn_Click">
+                            <WrapPanel>
+                                <Image Source="/STC.Mm.Plugin;component/Images/mm_minus_40.png" Height="7" Width="7" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </WrapPanel>
+                            <Button.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                                        <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.IsEnabled>
+                        </Button>
+
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="4" Grid.Column="1" BorderThickness="0,0,1,0" Style="{StaticResource ofrBorderStyle}" Margin="0">
+                <DockPanel>
+                    <Border x:Name="OfrBaseQty_bd" Width="71" Height="20" HorizontalAlignment="Left" Margin="46,0,0,0" BorderThickness="1" BorderBrush="#3C3C3C" CornerRadius="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Background="Black">
+                            <TextBlock x:Name="OfrBaseQty_tb" Tag="Qty" Text="{Binding Params.displayOfrQty, Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatZeroConverter}}" Padding="5,0,0,0" Width="50" Height="Auto"
+                                     Focusable="True" GotFocus="OfrBaseQty_tb_GotFocus" LostFocus="OfrBaseQty_tb_LostFocus" MouseEnter="OfrBaseQty_tb_MouseEnter" MouseLeave="OfrBaseQty_tb_MouseLeave" input:InputMethod.IsInputMethodEnabled="False"
+                                     PreviewKeyDown="TextBox_PreviewKeyDown" PreviewTextInput="TextBox_PreviewTextInput"  HorizontalAlignment="Left" VerticalAlignment="Center" ToolTip="{Binding ElementName=OfrBaseQty_tb,Path=Text}">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Style.Triggers>
+                                            <!--<DataTrigger Binding="{Binding enable}" Value="false">
+                                                <Setter Property="Foreground" Value="#8F9598 "/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding enable}" Value="true">
+                                                <Setter Property="Foreground" Value="#FFFFFF "/>
+                                            </DataTrigger>-->
+                                            <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="0">
+                                                <Setter Property="Foreground" Value="#8F9598 "/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="1">
+                                                <Setter Property="Foreground" Value="#FFFFFF "/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Params.isQuoteSuccess,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="KW" Foreground="#8F9598 " Height="Auto" Width="Auto"  Margin="0,1,2,0" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
+            </Border>
+            <Image x:Name="ofrAPIWarn_Img" Grid.Row="4" Grid.Column="1" Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="27,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+            <Border Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Blue"  BorderThickness="0,0,0,0" Width="40" Height="25" CornerRadius="10" Background="Black" HorizontalAlignment="Center" Margin="0,-40,0,0" ToolTip="{Binding Params.bidOfrDiffToolTip}">
+                <Grid VerticalAlignment="Center" Width="40" HorizontalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="PriceAdjustValue_tb" Grid.Column="0" Text="{Binding Params.bidOfrDiff,Mode=OneWay,Converter={StaticResource FormatZeroConverter},StringFormat={}{0}bp}" 
+                               Foreground="#8F9598" FontSize="10" Height="Auto" HorizontalAlignment="Center" Width="Auto" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <Button x:Name="PricePlus_btn" Style="{StaticResource   DefaultButtonStyle}" Grid.Row="2" Grid.ColumnSpan="2" Grid.RowSpan="2" FontSize="16" 
+                    Width="20" Height="40" HorizontalAlignment="Center" Margin="-65,-10,0,0" Content="+" Foreground="#FFFFFF" VerticalContentAlignment="Center" Background="#3C3C3C" 
+                    Click="PricePlus_btn_Click">
+                <Button.IsEnabled>
+                    <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                        <MultiBinding.Bindings>
+                            <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                            <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                        </MultiBinding.Bindings>
+                    </MultiBinding>
+                </Button.IsEnabled>
+            </Button>
+
+            <Button x:Name="PriceMinus_btn" Style="{StaticResource   DefaultButtonStyle}" Grid.Row="2" Grid.ColumnSpan="2" Grid.RowSpan="2" FontSize="16" 
+                    Width="20" Height="40" HorizontalAlignment="Center" Margin="65,-10,0,0" Content="-" Foreground="#FFFFFF" VerticalContentAlignment="Center" Background="#3C3C3C"
+                    Click="PriceMinus_btn_Click">
+                <Button.IsEnabled>
+                    <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                        <MultiBinding.Bindings>
+                            <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                            <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                        </MultiBinding.Bindings>
+                    </MultiBinding>
+                </Button.IsEnabled>
+            </Button>
+
+            <Button x:Name="PriceWiden_btn" Style="{StaticResource   DefaultButtonStyle}" Grid.Row="2" Grid.ColumnSpan="2" Grid.RowSpan="2" FontSize="10"
+                    Width="40" Height="20" HorizontalAlignment="Center" Margin="0,-60,0,0" Content="拉宽" Foreground="#FFFFFF" VerticalContentAlignment="Center" Background="#3C3C3C"
+                    Click="PriceWiden_btn_Click">
+                <Button.IsEnabled>
+                    <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                        <MultiBinding.Bindings>
+                            <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                            <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                        </MultiBinding.Bindings>
+                    </MultiBinding>
+                </Button.IsEnabled>
+            </Button>
+
+            <Button x:Name="PriceNarrow_btn" Style="{StaticResource   DefaultButtonStyle}" Grid.Row="2" Grid.ColumnSpan="2" Grid.RowSpan="3" FontSize="10"
+                    Width="40" Height="20" HorizontalAlignment="Center" Margin="0,15,0,0" Content="收窄" Foreground="#FFFFFF" VerticalContentAlignment="Center" Background="#3C3C3C"
+                    Click="PriceNarrow_btn_Click">
+                <Button.IsEnabled>
+                    <MultiBinding Converter="{StaticResource multiAndNormalConverter}">
+                        <MultiBinding.Bindings>
+                            <Binding Path="Params.IsEnabledClick" Converter="{StaticResource booleanConvertor}"/>
+                            <Binding Path="IsUnify" Converter="{StaticResource reversebooleanConvertor}"/>
+                        </MultiBinding.Bindings>
+                    </MultiBinding>
+                </Button.IsEnabled>
+            </Button>
+
+            <Border  Grid.Row="7" Grid.ColumnSpan="2" x:Name="Pnl_dgPrice"  Margin="0,1,0,0" HorizontalAlignment="Center" VerticalAlignment="Top" BorderThickness="1,0,0,1" Visibility="Visible">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="224" x:Name="Row3"></RowDefinition>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Margin="0" x:Name="TitleBar">
+                        <TabControl BorderBrush="Transparent" x:Name="Tab_DgPrice" BorderThickness="0,0,0,0" Style="{DynamicResource TabControlStyle}" TabIndex="{Binding CurTabIndex, Mode=TwoWay}">
+                            <TabItem Header="全市场" BorderThickness="0" BorderBrush="Transparent" Style="{DynamicResource TabItemStyle}" Height="16">
+                                <card:PriceAndOrderViewMm x:Name="dgPrice" TitleBarVisible="Collapsed"/>
+                            </TabItem>
+                            <TabItem Header="仅双边" BorderThickness="0"  BorderBrush="Transparent"  Style="{DynamicResource TabItemStyle}"  Height="16">
+                                <card:PriceAndOrderViewQDMESP  x:Name="dgPriceQdmesp" VenuesFilterString="1"/>
+                            </TabItem>
+                        </TabControl>
+                    </Border>
+                    <Border Grid.Row="1" Margin="0,0,0,1" BorderBrush="#3C3C3C" BorderThickness="0,0,0,0">
+                        <card:MarketCardOrderView x:Name="dgMarketCard" HorizontalAlignment="Center" VerticalAlignment="Top" Width="348"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+
+</UserControl>

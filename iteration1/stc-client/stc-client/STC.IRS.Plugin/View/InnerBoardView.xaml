@@ -1,0 +1,1343 @@
+﻿<UserControl x:Class="STC.IRS.Plugin.View.InnerBoardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.IRS.Plugin.View"
+             xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:localComp="clr-namespace:STC.IRS.Plugin.View.Component"
+              xmlns:card="clr-namespace:STC.Common.View.Card;assembly=STC.Common"
+             xmlns:command="clr-namespace:STC.IRS.Plugin.Command"
+              xmlns:utils="clr-namespace:STC.IRS.Plugin.Utils"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             mc:Ignorable="d" Name="innerBoard"
+             d:DesignHeight="450" d:DesignWidth="1500" Unloaded="UserControl_Unloaded"
+             DataContextChanged="InnerBoardView_DataContextChanged" Loaded="innerBoard_Loaded"
+             xmlns:con="clr-namespace:STC.IRS.Plugin.Convertor">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <con:ColorConvertor x:Key="colorCon"/>
+            <fcon:StringIsNullOrEmptyConvertor x:Key="StringIsNullOrEmptyConvertor"/>
+            <con:RemainingTimeAndDaysOffStrConvetor x:Key="remainingTimeAndDaysOffStrConvetor"/>
+            <fcon:StrContainsConvertor x:Key="strContainsConvertor"/>
+            <fcon:NumberConvertor x:Key="numConvertor"/>
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <fcon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <fcon:ReverseVisibilityConvertor x:Key="reversevisibilityConvertor"/>
+            <fcon:StringConvertor x:Key="StringConvertor"/>
+            <fcon:IsInnerConvertor x:Key="IsInnerConvertor"/>
+            <SolidColorBrush x:Key="YellowForground" Color="#FFEBC8"/>
+            <fcon:MultiBindingConverter x:Key="MultiBindingConverter"/>
+            <con:PriceStringConverter x:Key="priceStringConverter"/>
+            <con:WidthConverter x:Key="widthConverter"/>
+            <con:WidthAddConverter x:Key="widthAddConverter"/>
+            <fcon:GreaterThanZeroConverter x:Key="greaterThanZeroConverter"/>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="SinglePointPriceStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <EventSetter Event="MouseDoubleClick" Handler="Single_DataGridCell_MouseDoubleClick"/>
+            </Style>
+            <Style x:Key="BestPriceStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <EventSetter Event="MouseDoubleClick" Handler="InnerBest_DataGridCell_MouseDoubleClick"/>
+            </Style>
+            <Style x:Key="InnerBidPointPriceStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <!--<EventSetter Event="MouseDoubleClick" Handler="InnerBid_DataGridCell_MouseDoubleClick"/>-->
+                <!--<EventSetter Event="MouseEnter" Handler="InnerBid_DataGridCell_MouseEnter"/>-->
+            </Style>
+
+            <Style x:Key="InnerOfrPointPriceStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <!--<EventSetter Event="MouseDoubleClick" Handler="InnerOfr_DataGridCell_MouseDoubleClick"/>-->
+                <!--<EventSetter Event="MouseEnter" Handler="InnerOfr_DataGridCell_MouseEnter"/>-->
+            </Style>
+
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource SinglePointPriceStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+                
+            </Style>
+
+            <!-- FrimButton样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SelfFirmButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="0" Background="Transparent">
+                                    <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Label.Content>
+                                            <Polygon Fill="#FFB60E" Points="6 -5.31777997e-15 0 7.42857143 4 7.42857143 2 13 8 5.57142857 3.99658203 5.57142857"/>
+                                        </Label.Content>
+                                    </Label>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- NoFrimButton样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SelfNonFirmButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="0" Background="Transparent">
+                                    <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center" Content="NF" Foreground="White">
+                                    </Label>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--内部看板-->
+            <Style x:Key="TagGroupListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.Static.Foreground}"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="MinWidth" Value="40"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Margin" Value="4 0 0 4"/>
+                <Setter Property="Padding" Value="10,0,10,0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                                <Border.ContextMenu>
+                                    <ContextMenu Style="{DynamicResource DefaultContextMenu}">
+                                        <MenuItem x:Name="TagGroupMenu" Header="{Binding IfSubscribe, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='ifsubscribe_menu'}" Style="{StaticResource DefaultMenuItem}" Click="TagGroupMenu_Click"/>
+                                        <MenuItem x:Name="EditGroupMenu" Header="编辑" Style="{DynamicResource DefaultMenuItem}" Click="EditGroupMenu_Click"/>
+                                        <MenuItem x:Name="DelGroupMenu" Header="删除" Style="{DynamicResource DefaultMenuItem}" Click="DelGroupMenu_Click"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Path x:Name="svg_path" Style="{DynamicResource subscrib_path}" Visibility="{Binding IfSubscribe, Converter={StaticResource visibilityConvertor}}" Margin="0 0 4 0"/>
+                                    <!--<Image x:Name="subscribeImage" Source="/STC.Common;component/Images/订阅.png" Width="24" Height="24" Visibility="{Binding IfSubscribe, Converter={StaticResource visibilityConvertor}}"/>-->
+                                    <ContentPresenter Grid.Column="1" x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.MouseOver.Foreground}"/>
+                                    <Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                    <!--<Setter TargetName="subscribeImage" Property="Source" Value="/STC.Common;component/Images/订阅选中.png"/>-->
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.MouseOver.Foreground}"/>
+                                    <Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                    <!--<Setter TargetName="subscribeImage" Property="Source" Value="/STC.Common;component/Images/订阅选中.png"/>-->
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+    <Grid x:Name="innerBorderGrid"  Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="Row0"/>
+            <ColumnDefinition Width="9" x:Name="Row1"/>
+            <ColumnDefinition x:Name="Row2" Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+
+        <TabControl x:Name="InnerBoard_IRS_CT" Grid.RowSpan="2" Background="{DynamicResource MainTitleBackgroup.ColorBrush}" Style="{DynamicResource TabControlStyle1}" SelectionChanged="TabControl_SelectionChanged">
+            <TabItem x:Name="bestTab" Header="最优" Width="96" Style="{DynamicResource TabItemStyle_Button}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="220"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <!--<Button x:Name="Bid_OrderBtn_Best" Content="Bid"  Width="60" Height="24" Foreground="White" Visibility="{Binding ShowOrderBtn}" Margin="10 0 0 0" HorizontalAlignment="Left"
+                       Click="Bid_OrderBtn_Best_Click" Background="#ED6D00" BorderBrush="#FF963D"  Style="{DynamicResource OrderButtonStyle}" />
+                    <Button x:Name="Ofr_OrderBtn_Best" Content="Ofr" Width="60" Height="24" Foreground="White" Visibility="{Binding ShowOrderBtn}" Margin="80 0 0 0" HorizontalAlignment="Left"
+                        Click="Ofr_OrderBtn_Best_Click" Background="#009AFF" BorderBrush="#89C9FF" 
+                            Style="{DynamicResource OrderButtonStyle}"/>-->
+                    <!--左标题区-->
+                    <StackPanel Orientation="Horizontal" Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+                        <Button Content="+ 新增需求" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="Button_Click"/>
+                        <Button Content="批量识别" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="ShowRecognizeWin_Click"  Visibility="{Binding RecognitionBtnVisibility}"/>
+                        <Button Content="+模糊" x:Name="btnFuzzyRequire" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="btnFuzzyRequire_Click" Visibility="{Binding IsShowFuzzy}"/>
+
+                        <Button Content="REF ALL" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" Style="{DynamicResource GraySlateButtonStyle}" Foreground="White"
+                             BorderThickness="0 1 0 0" Click="refall_click" IsEnabled="{Binding HasMyOrders}">
+                        </Button>
+                        <Button x:Name="refBestBtn" Content="REF" Width="80" Height="24" Margin="4 0 0 0"  HorizontalAlignment="Left" Style="{DynamicResource GraySlateButtonStyle}" Foreground="White"
+                             BorderThickness="0 1 0 0" Click="ref_best_Click" IsEnabled="False"/>
+
+
+                    </StackPanel>
+                    <!--右标题区-->
+                    <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right" Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+                        <commComp:SearchTextBox x:Name="Search_TextBox_Best" HintText="搜索..." ToolTip="可模糊查询债券代码、债券简称、角色、本方交易员" SearchText="{Binding Best_SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0 0 4 0" HorizontalAlignment="Right" VerticalAlignment="Center"  Width="120" Height="24" IsFuzzy="True" IsMagnifierMode="False"
+                                                MouseOverBorderBrush="{DynamicResource TextBox.MouseOver.Border}" FocusBorderBrush="{DynamicResource TextBox.Focus.Border}"/>
+                        <Button x:Name="RefreshBtn_Best" Width="24" Height="24" Style="{DynamicResource RefreshButton_24}" Margin="0 0 4 0" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding RefreshCommand}" />
+                        <!--<TextBlock Text="自动刷新:" Margin="0 0 110 0" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource QuotationList.SubTitle.Foreground}" ToolTip="每隔5秒自动刷新"/>
+                    <CheckBox x:Name="autoChk_Best" IsChecked="{Binding AutoEnable,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Style="{StaticResource  SwitchMMCheckBoxStyle}" Height="16" Width="34" Foreground="#3C3C3C"
+                                        Margin="0 0 68 0" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="每隔5秒自动刷新"/>-->
+                        <Rectangle Width="1" Height="16" Fill="#3C3C3C" Margin="0 0 4 0" HorizontalAlignment="Right"/>
+                        <Button x:Name="singleToggleBtn_Best" Width="24" Height="24" Style="{DynamicResource CollapsedButton_24}" Margin="0 0 0 0" HorizontalAlignment="Right" VerticalAlignment="Center" Click="singleToggleBtn_Best_Click"/>
+                    </StackPanel>
+
+                    <!--过滤筛选部分-->
+                    <Grid x:Name="best_single_filter_part" Grid.Row="1" Grid.ColumnSpan="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <localComp:InnerBoardFilterPanel_New x:Name="InnerBoardFilterPanel_New_Best" IsMe="{Binding IsMe_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Visibility4IsMe="Visible" 
+                                                             HasPrice="{Binding HasPrice_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Visibility4All="Visible"
+                                                             FocusTags="{Binding FocusTags_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SaveAction="Save_Best_Click" EditAction="EditGroup_Best_Click"
+                                                             SearchText="{Binding Best_SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                             StartPrice="{Binding StartPrice_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" EndPrice="{Binding EndPrice_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsPrice="{Binding IsPrice_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsShowSaveEdit="Visible"/>
+
+                        <Grid Grid.Row="1">
+                            <ListBox x:Name="ProfileListBox_Best"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Single"
+                                     ItemsSource="{Binding  ViewSource_Tag.View}" 
+                                     SelectedItem="{Binding SelectedItem_Tag_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewMouseDown="ProfileListBox_Best_PreviewMouseDown" SelectionChanged="ProfileListBox_Best_SelectionChanged">
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource TagGroupListBoxItemStyle}">
+                                        <Setter Property="Content" Value="{Binding GroupName}"/>
+                                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListBoxItem_Best_PreviewMouseLeftButtonDown"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+
+
+                        </Grid>
+                    </Grid>
+                    
+                    <localComp:CustomInnerDataGrid Grid.Row="2"  Grid.ColumnSpan="2" x:Name="InnerBoard_Best_dataGrid_IRS" ItemsSource="{Binding ViewSource_Best.View}" SelectionMode="Extended"
+                                  SelectedItem="{Binding SelectedItem_MyInnerOrders_Best, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                   IsSynchronizedWithCurrentItem="True" DefaultHideColumns="简称,类型,Bid回复,Ofr回复"
+                                  Style="{DynamicResource DefaultDataGrid}" MouseRightButtonDown="InnerBoard_Best_dataGrid_MouseRightButtonDown" FrozenColumnCount="3"
+                                                   PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
+                                                   SelectionChanged="InnerBoard_Best_dataGrid_SelectionChanged">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu x:Name="dgMenu_Best" Style="{DynamicResource DefaultContextMenu}" Opened="dgMenu_Best_Opened">
+                                <MenuItem x:Name="JoinMenu_Best" Header="Join" Style="{DynamicResource DefaultMenuItem}" Click="JoinMenu_Best_Click"/>
+                                <MenuItem x:Name="PointPriceMenu_Best" Header="点价" Style="{DynamicResource DefaultMenuItem}" Click="PointPriceMenu_Best_Click"/>
+                                <MenuItem x:Name="ReplyPriceMenu_Best" Header="回价" Style="{DynamicResource DefaultMenuItem}" Click="ReplyPriceMenu_Best_Click"/>
+                                <MenuItem x:Name="REFMenu_Best" Header="REF" Style="{DynamicResource DefaultMenuItem}" Click="REFMenu_Best_Click"/>
+                                <MenuItem x:Name="EditMenu_Best" Header="编辑" Style="{DynamicResource DefaultMenuItem}" Click="EditMenu_Best_Click"/>
+                                <MenuItem x:Name="ConsiderationMenu_Best" Header="报对价" Style="{DynamicResource DefaultMenuItem}" Click="ConsiderationMenu_Best_Click"/>
+                                <MenuItem x:Name="CopyMenu_Best" Header="复制" Style="{DynamicResource DefaultMenuItem}" Click="CopyMenu_Best_Click"/>
+                                <MenuItem x:Name="SearchMenu_Best" Header="搜索该券" Style="{DynamicResource DefaultMenuItem}" Click="SearchMenu_Best_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="期限" Width="Auto" MinWidth="105" SortMemberPath="Term_Convert">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="14"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="term" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" Text="{Binding Term}">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                            <Button Grid.Column="1" HorizontalAlignment="Right" Width="12" Height="12"  BorderThickness="0" Style="{DynamicResource OpenSecurityButton}"  ToolTip="查看行情小窗"  Click="best_opensecurity_btn_Click"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Is1YOr5Y}" Value="1">
+                                                <Setter TargetName="term" Property="FontWeight" Value="Bold"/>
+                                                <Setter TargetName="term" Property="Foreground" Value="{StaticResource YellowForground}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding SecurityID}" Header="代码" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding SecurityID}" CellStyle="{StaticResource BestPriceStyle}"  SortMemberPath="SecurityID">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Is1YOr5Y}" Value="1">
+                                                <Setter Property="TextElement.Foreground" Value="{StaticResource YellowForground}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTemplateColumn  Header="简称" Width="Auto" MinWidth="85" SortMemberPath="Symbol" CellStyle="{StaticResource BestPriceStyle}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Symbol}" TextTrimming="CharacterEllipsis"  FontWeight="SemiBold"  ToolTip="{Binding Symbol}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding Type}" Header="类型" Width="Auto" MinWidth="85"/>
+                            <DataGridTextColumn Binding="{Binding Product}" Header="产品" Width="Auto" MinWidth="85"/>
+
+
+                            <DataGridTemplateColumn Header="ClientB" Width="60" MinWidth="60" MaxWidth="200" SortMemberPath="Client_InnerBid" Visibility="Collapsed">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="clientBorder" BorderThickness="0" BorderBrush="#C29B4E" CornerRadius="2" HorizontalAlignment="Left" Padding="4 0 4 0">
+                                            <TextBlock x:Name="ClientB_BT" Text="{Binding Client_InnerBid}" Foreground="{Binding Client_InnerBid, Converter={StaticResource colorCon}}"/>
+                                        </Border>
+                                        
+                                        <DataTemplate.Triggers>
+                                            <MultiDataTrigger >
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding DataContext.Type1_Flag, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" Value="true"/>
+                                                    <Condition Binding="{Binding Client_InnerBid, Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="false"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="clientBorder" Property="BorderThickness" Value="1"/>
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding IsMe_InnerBid}" Value="true">
+                                                <Setter TargetName="clientBorder" Property="BorderThickness" Value="0"/>
+                                                <Setter TargetName="ClientB_BT" Property="FontWeight" Value="Bold"/>
+                                                <Setter TargetName="ClientB_BT" Property="Foreground" Value="#C29B4E"/>
+                                            </DataTrigger>
+                                           
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            
+                            <DataGridTemplateColumn Header="TraderB" MinWidth="80" Width="Auto" MaxWidth="150" CanUserSort="True" SortMemberPath="PartySubName_InnerBid">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                                        <Setter Property="Padding" Value="24 0 5 0"/>
+                                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <!-- 我 -->
+                                            <Border x:Name="isMeBorder_InnerBid" CornerRadius="2" BorderThickness="1" BorderBrush="#C29B4E" Background="#000000" Width="16" Height="16" Visibility="Collapsed">
+                                                <TextBlock Text="我" Foreground="#C29B4E" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <!-- 本方交易员 -->
+                                            <TextBlock Grid.Column="1" Text="{Binding PartySubName_InnerBid, Converter={StaticResource StringConvertor}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding PartySubName_InnerBid}"  Foreground="{Binding PartySubName_InnerBid, Converter={StaticResource colorCon}}"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe_InnerBid}" Value="true">
+                                                <Setter TargetName="isMeBorder_InnerBid" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="No.Bid" Width="50" MinWidth="50" MaxWidth="200" SortMemberPath="Count_InnerBid"
+                                                 CellStyle="{DynamicResource  DataGridTextCenterStyle}">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="countTB_InnerBid" Text="{Binding Count_InnerBid}" FontWeight="Bold" Foreground="{DynamicResource YellowForground}"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Count_InnerBid}" Value="0">
+                                                <Setter TargetName="countTB_InnerBid" Property="Text" Value="--"/>
+                                                <Setter TargetName="countTB_InnerBid" Property="Foreground" Value="#4A4D4C"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Count_InnerBid}" Value="1">
+                                                <Setter TargetName="countTB_InnerBid" Property="Foreground" Value="white"/>
+                                                <Setter TargetName="countTB_InnerBid" Property="FontWeight" Value="Normal"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+
+                            <DataGridTemplateColumn Header="Vol.Bid(百万)" Width="90" MinWidth="90" SortMemberPath="Binding Qty_InnerBid">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                                        <Setter Property="Padding" Value="10 0 5 0"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <!-- 数量 -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="5"/>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Ellipse x:Name="Ellipse_InnerBid" VerticalAlignment="Top" Width="5" Visibility="Collapsed" Height="5" Fill="#FF3C3C" />
+
+                                            <TextBlock x:Name="qtyTB_InnerBid" Text="{Binding Qty_InnerBid, Converter={StaticResource StringConvertor}}" Grid.Column="1"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{Binding Qty_InnerBid, Converter={StaticResource colorCon}}"/>
+
+                                            <Border x:Name="wholeTag" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" Margin="1 0 1 0" CornerRadius="1" Visibility="Collapsed" Grid.Column="2">
+                                                <TextBlock Text="整" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Qty_Tooltip_InnerBid, Converter={StaticResource strContainsConvertor}, ConverterParameter='Bid'}" Value="true"/>
+                                                    <Condition Binding="{Binding PartySubName_InnerBid}" Value="多"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="Ellipse_InnerBid" Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding Count_InnerBid}" Value="0">
+                                                <Setter TargetName="qtyTB_InnerBid" Property="Text" Value="--"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding WholeFlag_InnerBid}" Value="1">
+                                                <Setter TargetName="wholeTag" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="Bid回复" Width="60" MinWidth="60" MaxWidth="200">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button x:Name="reply_InnerBid" Content="未回" Height="18" Width="40" Style="{DynamicResource RedButtonStyle2}" Visibility="Collapsed" HorizontalAlignment="Center"/>
+                                        <!--<Border x:Name="reply_InnerBid" CornerRadius="6" Width="40" Background="#136C5E" Visibility="Collapsed">
+                                                <TextBlock Text="未回" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>-->
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding DQType_InnerBid}" Value="!">
+                                                <Setter TargetName="reply_InnerBid" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+
+                            <DataGridTemplateColumn Header="Bid" Width="90" MinWidth="50" MaxWidth="200" SortMemberPath="Price_InnerBid">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderRightStyle}">
+                                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Padding" Value="5 0 21 0"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellStyle>
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource InnerBidPointPriceStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsBest_InnerBid}" Value="2">
+                                                <Setter Property="Background" Value="#392512"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBest_InnerBid}" Value="3">
+                                                <Setter Property="BorderBrush" Value="#ED6D00"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                            <Trigger  Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#5B3616" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTemplateColumn.CellStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="bid_Part">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition Width="16"/>
+                                                
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- 大拇指 -->
+                                            <Image x:Name="thumbImage" Source="/STC.Common;component/Images/大拇指.png" Width="10" Height="10" Visibility="Collapsed" Grid.Column="2"/>
+
+                                            <!-- 意向图标 -->
+                                            <Grid Grid.Column="0" x:Name="firmFlag_Part" HorizontalAlignment="Right" MinWidth="10">
+                                                <!--<Button x:Name="firmbtn" BorderThickness="0" Height="18" Width="18" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                        Style="{StaticResource SelfFirmButton}" Visibility="Collapsed" FlowDirection="LeftToRight">
+                                                </Button>-->
+                                                <Image x:Name="firmbtn" Source="/STC.Common;component/Images/Firm.png" Width="10" Height="10" VerticalAlignment="Center"
+                                                       Visibility="Collapsed" FlowDirection="LeftToRight"/>
+                                                <Button x:Name="nonfirmbtn" BorderThickness="0" Height="18" Width="18" VerticalAlignment="Center"
+                                                        Style="{DynamicResource SelfNonFirmButton}" Visibility="Collapsed" FlowDirection="LeftToRight">
+                                                </Button>
+                                                <TextBlock x:Name="intentionTB" Text="(意)" Width="20" Height="18" VerticalAlignment="Bottom" FlowDirection="LeftToRight"
+                                                       Visibility="Collapsed"></TextBlock>
+                                            </Grid>
+
+                                            <!--价格-->
+                                            <Grid Grid.Column="1">
+                                                <Grid.MaxWidth>
+                                                    <MultiBinding Converter="{StaticResource widthConverter}">
+                                                        <Binding Path="ActualWidth" ElementName="bid_Part"/>
+                                                        <Binding Path="ActualWidth" ElementName="firmFlag_Part"/>
+                                                    </MultiBinding>
+                                                </Grid.MaxWidth>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="priceTB_InnerBid" Foreground="{StaticResource ColorBrush.Orange}" FontSize="14" FontWeight="Bold"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip Content="{Binding Text}"/>
+                                                    </TextBlock.ToolTip>                                                    
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{StaticResource priceStringConverter}" ConverterParameter="Bid">
+                                                            <Binding Path="Price_InnerBid" />
+                                                            <Binding Path="SecurityID" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <TextBlock x:Name="bp" Text="bp" Foreground="{StaticResource ColorBrush.Orange}" Grid.Column="1" FontSize="12" Visibility="Collapsed" VerticalAlignment="Bottom"/>
+                                            </Grid>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsSpreadOrBasis}" Value="true"/>
+                                                    <Condition Binding="{Binding Count_InnerBid, Converter={StaticResource greaterThanZeroConverter}}" Value="true"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="bp" Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding Count_InnerBid}" Value="0">
+                                                <Setter TargetName="priceTB_InnerBid" Property="Text" Value="--"/>
+                                                <Setter TargetName="priceTB_InnerBid" Property="Foreground" Value="#4A4D4C"/>
+                                            </DataTrigger>
+                                            <!--<DataTrigger Binding="{Binding FirmFlag_InnerBid}" Value="0">
+                                                <Setter TargetName="firmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="nonfirmbtn" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="intentionTB" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>-->
+                                            <DataTrigger Binding="{Binding FirmFlag_InnerBid}" Value="1">
+                                                <Setter TargetName="firmbtn" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="nonfirmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="intentionTB" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding FirmFlag_InnerBid}" Value="(需求)">
+                                                <Setter TargetName="firmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="nonfirmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="intentionTB" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsMarketBest_InnerBid}" Value="1">
+                                                <Setter TargetName="thumbImage" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Ofr" Width="90" MinWidth="50" MaxWidth="200" SortMemberPath="Price_InnerOfr">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Padding" Value="21 0 5 0"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellStyle>
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource InnerOfrPointPriceStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsBest_InnerOfr}" Value="2">
+                                                <Setter Property="Background" Value="#102A3B"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsBest_InnerOfr}" Value="3">
+                                                <Setter Property="BorderBrush" Value="#236189"/>
+                                            </DataTrigger>
+                                            <Trigger  Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#0D3F60" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTemplateColumn.CellStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="ofrGrid" FlowDirection="RightToLeft">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition Width="16"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- 意向图标 -->
+                                            <Grid Grid.Column="0" x:Name="firmFlag_Part" HorizontalAlignment="Right" MinWidth="10">
+                                                <Image x:Name="firmbtn" Source="/STC.Common;component/Images/Firm.png" 
+                                                       Width="10" Height="10" VerticalAlignment="Center" 
+                                                       Visibility="Collapsed" FlowDirection="LeftToRight"/>
+                                                <Button x:Name="nonfirmbtn" BorderThickness="0" Height="18" Width="18" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                                        Style="{StaticResource SelfNonFirmButton}" Visibility="Collapsed" FlowDirection="LeftToRight">
+                                                </Button>
+                                                <TextBlock x:Name="intentionTB" Text="(意)" Width="20" Height="18" VerticalAlignment="Bottom" HorizontalAlignment="Right" 
+                                                       Visibility="Collapsed" FlowDirection="LeftToRight"></TextBlock>
+                                            </Grid>
+
+                                            <Grid x:Name="icon_part"  Grid.Column="1"  FlowDirection="LeftToRight">
+                                                <Grid.MaxWidth>
+                                                    <MultiBinding Converter="{StaticResource widthConverter}">
+                                                        <Binding Path="ActualWidth" ElementName="ofrGrid"/>
+                                                        <Binding Path="ActualWidth" ElementName="firmFlag_Part"/>
+                                                    </MultiBinding>
+                                                </Grid.MaxWidth>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock x:Name="bp" Text="bp" Foreground="{DynamicResource ColorBrush.Blue}" FontSize="12" Visibility="Collapsed" VerticalAlignment="Bottom"  Grid.Column="1"/>
+                                                
+                                                <!-- 价格 -->
+                                                <TextBlock x:Name="priceTB_InnerOfr" Foreground="{DynamicResource ColorBrush.Blue}" FontSize="14" FontWeight="Bold"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" MinWidth="30">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip Content="{Binding Text}"/>
+                                                    </TextBlock.ToolTip>
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{StaticResource priceStringConverter}" ConverterParameter="Ofr">
+                                                            <Binding Path="Price_InnerOfr" />
+                                                            <Binding Path="SecurityID" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </Grid>
+
+                                            <!-- 大拇指 -->
+                                            <Image x:Name="thumbImage" Source="/STC.Common;component/Images/大拇指.png" Width="10" Height="10" Visibility="Collapsed" Grid.Column="2"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsSpreadOrBasis}" Value="true"/>
+                                                    <Condition Binding="{Binding Count_InnerOfr, Converter={StaticResource greaterThanZeroConverter}}" Value="true"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="bp" Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding Count_InnerOfr}" Value="0">
+                                                <Setter TargetName="priceTB_InnerOfr" Property="Text" Value="--"/>
+                                                <Setter TargetName="priceTB_InnerOfr" Property="Foreground" Value="#4A4D4C"/>
+                                            </DataTrigger>
+                                            <!--<DataTrigger Binding="{Binding FirmFlag_InnerOfr}" Value="0">
+                                                <Setter TargetName="firmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="nonfirmbtn" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="intentionTB" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>-->
+                                            <DataTrigger Binding="{Binding FirmFlag_InnerOfr}" Value="1">
+                                                <Setter TargetName="firmbtn" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="nonfirmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="intentionTB" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding FirmFlag_InnerOfr}" Value="(需求)">
+                                                <Setter TargetName="firmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="nonfirmbtn" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="intentionTB" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsMarketBest_InnerOfr}" Value="1">
+                                                <Setter TargetName="thumbImage" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Ofr回复" Width="75" MinWidth="75" MaxWidth="200">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button x:Name="reply_InnerOfr" Content="未回" Height="18" Width="40" Style="{DynamicResource RedButtonStyle2}" Grid.Column="4" Visibility="Collapsed" HorizontalAlignment="Center"/>
+                                        <!--<Border x:Name="reply_InnerOfr" CornerRadius="6" Width="40" Background="#136C5E" Visibility="Collapsed" Grid.Column="4">
+                                                <TextBlock Text="未回" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>-->
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding DQType_InnerOfr}" Value="!">
+                                                <Setter TargetName="reply_InnerOfr" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="Vol.Ofr(百万)" Width="90" MinWidth="90" SortMemberPath="Count_InnerBid">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}"/>
+                                        <Setter Property="Padding" Value="10 0 5 0"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <!-- 数量 -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="5"/>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Ellipse x:Name="Ellipse_InnerOfr" VerticalAlignment="Top" Width="5" Visibility="Collapsed" Height="5" Fill="#FF3C3C" />
+
+                                            <TextBlock x:Name="qtyTb_InnerOfr" Text="{Binding Qty_InnerOfr, Converter={StaticResource StringConvertor}}" Grid.Column="1"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="{Binding Qty_InnerOfr, Converter={StaticResource colorCon}}"/>
+
+                                            <Border x:Name="wholeTag" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" Margin="3 0 0 0" CornerRadius="1" Visibility="Collapsed" Grid.Column="2">
+                                                <TextBlock Text="整" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+
+
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Qty_Tooltip_InnerOfr, Converter={StaticResource strContainsConvertor}, ConverterParameter='Ofr'}" Value="true"/>
+                                                    <Condition Binding="{Binding PartySubName_InnerOfr}" Value="多"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="Ellipse_InnerOfr" Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding Count_InnerOfr}" Value="0">
+                                                <Setter TargetName="qtyTb_InnerOfr" Property="Text" Value="--"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding WholeFlag_InnerOfr}" Value="1">
+                                                <Setter TargetName="wholeTag" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="No.Ofr" Width="50" MinWidth="50" MaxWidth="200" SortMemberPath="Count_InnerOfr"
+                                               CellStyle="{DynamicResource DataGridTextCenterStyle}">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="countTB_InnerOfr" Text="{Binding Count_InnerOfr}" FontWeight="Bold" Foreground="{DynamicResource YellowForground}"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Count_InnerOfr}" Value="0">
+                                                <Setter TargetName="countTB_InnerOfr" Property="Text" Value="--"/>
+                                                <Setter TargetName="countTB_InnerOfr" Property="Foreground" Value="#4A4D4C"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Count_InnerOfr}" Value="1">
+                                                <Setter TargetName="countTB_InnerOfr" Property="FontWeight" Value="Normal"/>
+                                                <Setter TargetName="countTB_InnerOfr" Property="Foreground" Value="White"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="TraderO" MinWidth="80" Width="Auto" MaxWidth="150" CanUserSort="True" SortMemberPath="PartySubName_InnerOfr">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                                        <Setter Property="Padding" Value="24 0 5 0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22"/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <!-- 我 -->
+                                            <Border x:Name="isMeBorder_InnerOfr" CornerRadius="2" BorderThickness="1" BorderBrush="#C29B4E" Background="#000000" Width="16" Height="16" Visibility="Collapsed">
+                                                <TextBlock Text="我" Foreground="#C29B4E" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <!-- 本方交易员 -->
+                                            <TextBlock  Grid.Column="1" Text="{Binding PartySubName_InnerOfr, Converter={StaticResource StringConvertor}}"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis"  ToolTip="{Binding PartySubName_InnerOfr}"
+                                                        Foreground="{Binding PartySubName_InnerOfr, Converter={StaticResource colorCon}}"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe_InnerOfr}" Value="true">
+                                                <Setter TargetName="isMeBorder_InnerOfr" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="ClientO" Width="60" MinWidth="60" MaxWidth="200" SortMemberPath="Client_InnerOfr" Visibility="Collapsed">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="clientBorder" BorderThickness="0" BorderBrush="#C29B4E" CornerRadius="2" HorizontalAlignment="Left" Padding="4 0 4 0">
+                                            <TextBlock x:Name="ClientO_BT" Text="{Binding Client_InnerOfr}" Foreground="{Binding Client_InnerOfr, Converter={StaticResource colorCon}}"/>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition  Binding="{Binding DataContext.Type1_Flag, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" Value="true"/>
+                                                    <Condition Binding="{Binding Client_InnerOfr, Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="false"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="clientBorder" Property="BorderThickness" Value="1"/>
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding IsMe_InnerOfr}" Value="true">
+                                                <Setter TargetName="clientBorder" Property="BorderThickness" Value="0"/>
+                                                <Setter TargetName="ClientO_BT" Property="FontWeight" Value="Bold"/>
+                                                <Setter TargetName="ClientO_BT" Property="Foreground" Value="#C29B4E"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            
+                            <DataGridTemplateColumn Header="最新成交(%)" Width="Auto" MinWidth="80" SortMemberPath="LastMarketPx">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding LastMarketPx,Converter={StaticResource numConvertor}}" Foreground="{Binding LastMarketPx, Converter={StaticResource colorCon}}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding UpdateTime}" Header="最后更新时间" Width="Auto" MinWidth="80"/>
+                        </DataGrid.Columns>
+                    </localComp:CustomInnerDataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem x:Name="singleTab" Header="逐笔" Width="96" Style="{DynamicResource TabItemStyle_Button}">
+                <Grid Background="#141414">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="220"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <!--<Button x:Name="Bid_OrderBtn" Content="Bid"  Width="80" Height="24" Foreground="White" Visibility="{Binding ShowOrderBtn}" Margin="4,0,0,0" HorizontalAlignment="Left"
+                       Click="Bid_OrderBtn_Click" Background="#392512" BorderBrush="#5B3616"  Style="{DynamicResource OrderButtonStyle}" />
+                    <Button x:Name="Ofr_OrderBtn" Content="Ofr" Width="80" Height="24" Foreground="White" Visibility="{Binding ShowOrderBtn}" Margin="88,0,0,0" HorizontalAlignment="Left"
+                        Click="Ofr_OrderBtn_Click" Background="#102A3B" BorderBrush="#0D3F60" Style="{DynamicResource OrderButtonStyle}"/>-->
+                    <!--左标题区-->
+                    <StackPanel Orientation="Horizontal" Grid.Column="0">
+                        <Button Content="+ 新增需求" Width="80" Height="24" Margin="4,0,0,0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="btnRequire_Click"/>
+                        <Button Content="批量识别" Width="80" Height="24" Margin="4,0,0,0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="ShowRecognizeWin_Click"  Visibility="{Binding RecognitionBtnVisibility}"/>
+                        <Button Content="+模糊" x:Name="btnFuzzyRequire2" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="btnFuzzyRequire_Click" Visibility="{Binding IsShowFuzzy}"/>
+                        <Button Content="REF ALL" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" Style="{DynamicResource GraySlateButtonStyle}" Foreground="White"
+                             BorderThickness="0 1 0 0" Click="refall_click" IsEnabled="{Binding HasMyOrders}"/>
+                        <Button x:Name="refBtn" Content="REF" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" Style="{DynamicResource GraySlateButtonStyle}" Foreground="White"
+                             BorderThickness="0 1 0 0" Click="REFMenu_Click" IsEnabled="false"/>
+                    </StackPanel>
+
+                    <!--右标题区-->
+                    <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right" >
+                        <commComp:SearchTextBox x:Name="Search_TextBox" HintText="搜索..." ToolTip="可模糊查询债券代码、债券简称、角色、本方交易员" SearchText="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" HorizontalAlignment="Right" VerticalAlignment="Center"  Width="120" Height="24" IsFuzzy="True" Grid.Column="1" IsMagnifierMode ="true"
+                                                MouseOverBorderBrush="{DynamicResource TextBox.MouseOver.Border}" FocusBorderBrush="{DynamicResource TextBox.Focus.Border}"/>
+                        <Button x:Name="RefreshBtn" Width="24" Height="24" Style="{DynamicResource RefreshButton_24}" Margin="0,0,4,0" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding RefreshCommand}" Grid.Column="1" />
+                        <!--<TextBlock Text="自动刷新:" Margin="0,7,110,7" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{StaticResource QuotationList.SubTitle.Foreground}" ToolTip="每隔5秒自动刷新" Grid.Column="1"/>
+                    <CheckBox x:Name="autoChk" IsChecked="{Binding AutoEnable,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Style="{StaticResource  SwitchMMCheckBoxStyle}" Height="16" Width="34" Foreground="#3C3C3C"
+                                        Margin="0,7,68,7" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip="每隔5秒自动刷新" Grid.Column="1"/>-->
+                        <Rectangle Width="1" Height="16" Fill="#3C3C3C" Margin="0 0 4 0" HorizontalAlignment="Right"/>
+                        <Button x:Name="singleToggleBtn" Width="24" Height="24" Style="{DynamicResource CollapsedButton_24}" Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Click="singleToggleBtn_Click" Grid.Column="1" />
+
+                    </StackPanel>
+                    <!--过滤筛选部分-->
+                    <Grid x:Name="single_filter_part" Grid.Row="1" Grid.ColumnSpan="2">
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <localComp:InnerBoardFilterPanel_New x:Name="InnerBoardFilterPanel_New" IsMe="{Binding IsMe, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Visibility4IsMe="Visible"
+                                                             FocusTags="{Binding FocusTags, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SaveAction="Save_Click" EditAction="EditGroup_Click"
+                                                             SearchText="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                              StartPrice="{Binding StartPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" EndPrice="{Binding EndPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsPrice="{Binding IsPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             IsShowSaveEdit="Visible"/>
+
+                        <Grid Grid.Row="1">
+                            <ListBox x:Name="ProfileListBox"  Background="Black" VerticalAlignment="Center" SelectionMode="Single"
+                                     ItemsSource="{Binding  ViewSource_Tag.View}" 
+                                     SelectedItem="{Binding SelectedItem_Tag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewMouseDown="ProfileListBox_PreviewMouseDown" SelectionChanged="ProfileListBox_SelectionChanged">
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource TagGroupListBoxItemStyle}">
+                                        <Setter Property="Content" Value="{Binding GroupName}"/>
+                                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListBoxItem_PreviewMouseLeftButtonDown"/>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+
+
+                    <localComp:CustomInnerDataGrid x:Name="InnerBoard_dataGrid_IRS" ItemsSource="{Binding ViewSource.View}" Grid.Row="2" VirtualizingPanel.VirtualizationMode="Standard"
+                                  SelectedItem="{Binding SelectedItem_MyInnerOrders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectionMode="Extended"
+                                  Style="{DynamicResource DefaultDataGrid}" IsSynchronizedWithCurrentItem="True" DefaultHideColumns="简称,类型"
+                                  Grid.ColumnSpan="2" FrozenColumnCount="3" PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown" MouseRightButtonDown="InnerBoard_dataGrid_MouseRightButtonDown"
+                                                   SelectionChanged="InnerBoard_dataGrid_SelectionChanged">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <Trigger Property="AlternationIndex" Value="0">
+                                        <Setter Property="Background" Value="{DynamicResource DefaultBackgroup.ColorBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="AlternationIndex" Value="1">
+                                        <Setter Property="Background" Value="{DynamicResource DefaultAlternatingRowBackground.ColorBrush}" />
+                                    </Trigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                            <Condition Property="IsSelected" Value="True"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" Value="{DynamicResource Item.SelectedInactive.Background}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Item.SelectedInactive.Border}"/>
+                                    </MultiTrigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                            <Condition Property="IsSelected" Value="True"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" Value="{DynamicResource Item.SelectedActive.Background}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Item.SelectedActive.Border}"/>
+                                    </MultiTrigger>
+
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsMouseOver" Value="true" />
+                                            <Condition Property="IsSelected" Value="false" />
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" Value="{DynamicResource Item.MouseOver.Background}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Item.MouseOver.Border}" />
+                                    </MultiTrigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsMouseOver" Value="true" />
+                                            <Condition Property="IsSelected" Value="true" />
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" Value="{DynamicResource Item.SelectedActive.Background}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Item.SelectedActive.Border}" />
+                                    </MultiTrigger>
+                                    <DataTrigger Binding="{Binding FlashCount}" Value="3">
+                                        <Setter Property="Background" Value="Orange" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding FlashCount}" Value="1">
+                                        <Setter Property="Background" Value="Orange" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                                <Setter Property="Foreground" Value="{DynamicResource DefaultForegroup.ColorBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource DefaultBackgroup.ColorBrush}" />
+                                <Setter Property="Height" Value="24" />
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <!--<DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRowStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsNeedFlash}" Value="true">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <ColorAnimation AutoReverse="True" 
+                                                        RepeatBehavior="2x"
+                                                        Storyboard.TargetProperty="Background.(SolidColorBrush.Color)" 
+                                                        To="Orange" Duration="0:0:0.3"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>-->
+                        <DataGrid.ContextMenu>
+                            <ContextMenu x:Name="dgMenu" Style="{DynamicResource DefaultContextMenu}" Opened="dgMenu_Opened">
+                                <MenuItem x:Name="JoinMenu" Header="Join" Style="{DynamicResource DefaultMenuItem}" Click="JoinMenu_Click"/>
+                                <MenuItem x:Name="PointPriceMenu" Header="点价" Style="{DynamicResource DefaultMenuItem}" Click="PointPriceMenu_Click"/>
+                                <MenuItem x:Name="ReplyPriceMenu" Header="回价" Style="{DynamicResource DefaultMenuItem}" Click="ReplyPriceMenu_Click"/>
+                                <MenuItem x:Name="REFMenu" Header="REF" Style="{DynamicResource DefaultMenuItem}" Click="REFMenu_Click"/>
+                                <MenuItem x:Name="EditMenu" Header="编辑" Style="{DynamicResource DefaultMenuItem}" Click="EditMenu_Click"/>
+                                <MenuItem x:Name="ConsiderationMenu" Header="报对价" Style="{DynamicResource DefaultMenuItem}" Click="ConsiderationMenu_Click"/>
+                                <MenuItem x:Name="CopyMenu" Header="复制" Style="{DynamicResource DefaultMenuItem}" Click="CopyMenu_Click"/>
+                                <MenuItem x:Name="SearchMenu" Header="搜索该券" Style="{DynamicResource DefaultMenuItem}" Click="SearchMenu_Click"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <!--<DataGridTextColumn Header="orderid" Binding="{Binding OrderID}"/>-->
+                            <!--<DataGridTextColumn Header="intentionid" Binding="{Binding IntentionID}"/>-->
+                            <DataGridTemplateColumn Header="期限" Width="Auto" MinWidth="105" SortMemberPath="Term_Convert">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="14"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="term" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" Text="{Binding Term}">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                            <Button Grid.Column="1" HorizontalAlignment="Right" Width="12" Height="12"  BorderThickness="0" Style="{DynamicResource OpenSecurityButton}"  ToolTip="查看行情小窗"  Click="opensecurity_btn_Click"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Is1YOr5Y}" Value="1">
+                                                <Setter TargetName="term" Property="FontWeight" Value="Bold"/>
+                                                <Setter TargetName="term" Property="Foreground" Value="{StaticResource YellowForground}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding SecurityID}" Header="代码" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding SecurityID}" CellStyle="{StaticResource SinglePointPriceStyle}"  SortMemberPath="SecurityID">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style>
+                                        <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Is1YOr5Y}" Value="1">
+                                                <Setter Property="TextElement.Foreground" Value="{StaticResource YellowForground}"/>
+                                                </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTemplateColumn  Header="简称" Width="Auto" MinWidth="85" SortMemberPath="Symbol" CellStyle="{StaticResource SinglePointPriceStyle}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Symbol}" TextTrimming="CharacterEllipsis"  FontWeight="SemiBold"  ToolTip="{Binding Symbol}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            
+                            <DataGridTextColumn Binding="{Binding Type}" Header="类型" Width="Auto" MinWidth="85"/>
+                            <DataGridTextColumn Binding="{Binding Product}" Header="产品" Width="Auto" MinWidth="85"/>
+                            <DataGridTextColumn Binding="{Binding Side,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"
+                                                    ClipboardContentBinding="{Binding Side, Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" 
+                                                    Header="方向" Width="Auto" MinWidth="40" CellStyle="{StaticResource ColumnColorStyle}"/>
+                            <DataGridTemplateColumn Header="报价" Width="Auto" MinWidth="90" SortMemberPath="Price">
+                                <DataGridTemplateColumn.HeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                                        <Setter Property="Padding" Value="11,0,5,0"/>
+                                    </Style>
+                                </DataGridTemplateColumn.HeaderStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="price_part">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="6"/>
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <Polygon x:Name="BestInnerArrow" Grid.Column="0" Stroke="#FF7D00" Fill="#FF7D00" Points="0,0 0,6 6,0" HorizontalAlignment="Left" Visibility="Collapsed"/>
+
+                                            <Grid x:Name="icon_part" Grid.Column="1" FlowDirection="LeftToRight">
+                                                <Grid.MaxWidth>
+                                                    <MultiBinding Converter="{StaticResource widthConverter}">
+                                                        <Binding Path="ActualWidth" ElementName="price_part"/>
+                                                        <Binding Path="ActualWidth" ElementName="reply"/>
+                                                    </MultiBinding>
+                                                </Grid.MaxWidth>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock x:Name="bp" Text="bp" FontSize="12" Visibility="Collapsed" VerticalAlignment="Bottom"  Grid.Column="1"/>
+
+                                                <!-- 价格 -->
+                                                <TextBlock x:Name="priceTB_InnerOfr" FontSize="14" FontWeight="Bold"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" IsHitTestVisible="False" MinWidth="30">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding Converter="{StaticResource priceStringConverter}">
+                                                            <Binding Path="Price_Display" />
+                                                            <Binding Path="SecurityID" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </Grid>
+
+                                            <Button x:Name="reply" Content="未回" Height="18" Width="40" Style="{DynamicResource RedButtonStyle2}" Visibility="Collapsed" Grid.Column="2" HorizontalAlignment="Right" FontSize="12" FontWeight="Normal"/>
+                                            <!--<Border x:Name="reply" CornerRadius="6" Width="40" Background="#136C5E" Visibility="Collapsed" Grid.Column="2" HorizontalAlignment="Right">
+                                                <TextBlock Text="未回" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Normal" FontSize="12"/>
+                                            </Border>-->
+
+                                            <!--<TextBlock Grid.Column="1" Text="{Binding Price_Display}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Price_Display}"/>-->
+                                            <!--<Button x:Name="reply" Content="回复" Height="24" Width="60" Style="{StaticResource RedButtonStyle2}" Grid.Column="3" Visibility="Collapsed" Margin="5 0 0 0"/>-->
+                                            
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsSpreadOrBasis}" Value="true">
+                                                <Setter TargetName="bp" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsInnerBest}" Value="true">
+                                                <Setter TargetName="BestInnerArrow" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+
+                                            <DataTrigger Binding="{Binding DQType}" Value="!">
+                                                <Setter TargetName="reply" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellStyle>
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource ColumnColorStyle}">
+                                        <!--<Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe}" Value="true">
+                                                <Setter Property="Background" Value="DarkSeaGreen"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>-->
+                                    </Style>
+                                </DataGridTemplateColumn.CellStyle>
+                            </DataGridTemplateColumn>
+                            <!--<DataGridTextColumn Binding="{Binding Qty}" Header="报量(万元)" Width="Auto" MinWidth="80" ClipboardContentBinding="{Binding Qty}" />-->
+                            <DataGridTemplateColumn Header="报量(百万)" Width="90" MinWidth="90" ClipboardContentBinding="{Binding Qty, Converter={StaticResource StringConvertor}}" SortMemberPath="Qty">
+                                <DataGridTemplateColumn.CellStyle>
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource SinglePointPriceStyle}">
+                                        <!--<Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe}" Value="true">
+                                                <Setter Property="Background" Value="DarkSeaGreen"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>-->
+                                    </Style>
+                                </DataGridTemplateColumn.CellStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                         <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="20"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Qty, Converter={StaticResource StringConvertor}}" Foreground="{Binding Qty, Converter={StaticResource colorCon}}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Qty, Converter={StaticResource StringConvertor}}"/>
+                                            <Border x:Name="wholeTag" Grid.Column="1" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Margin="1 0 1 0" VerticalAlignment="Center" Visibility="Hidden">
+                                                <TextBlock Text="整" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+ 
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding WholeFlag}" Value="1">
+                                                <Setter TargetName="wholeTag" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding FirmFlag,Converter={StaticResource EnumTypeConvertor},ConverterParameter='firmflag'}" Header="意向类型" Width="Auto" MinWidth="50" HeaderStyle="{StaticResource DataGridColumnHeaderLeftStyle}">
+                                <DataGridTextColumn.CellStyle>
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource SinglePointPriceStyle}">
+                                        <!--<Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe}" Value="true">
+                                                <Setter Property="Background" Value="DarkSeaGreen"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>-->
+                                    </Style>
+                                </DataGridTextColumn.CellStyle>
+                            </DataGridTextColumn>
+                           
+                            <DataGridTemplateColumn  Header="本方交易员" Width="Auto" MinWidth="80" SortMemberPath="PartySubName">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding PartySubName}"/>
+                                            <Border x:Name="isMeBorder" CornerRadius="2" Background="#853629" Width="16" Height="16" Visibility="Collapsed" Margin="5,0,0,0">
+                                                <TextBlock Text="我" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe}" Value="true">
+                                                <Setter TargetName="isMeBorder" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="外部市场最优" Width="160" MinWidth="160" MaxWidth="350" HeaderStyle="{StaticResource DataGridColumnHeaderCenterStyle}" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="4"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="5"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="10"/>
+                                                <ColumnDefinition  Width="4"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock x:Name="best_bid" Grid.Column="2" Text="{Binding Best_Bid, Converter={StaticResource numConvertor}, StringFormat={}{0:0.00##}, NotifyOnTargetUpdated=True}" Opacity="{Binding Best_Bid_Opacity}" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            <TextBlock x:Name="best_ofr" Grid.Column="4" Text="{Binding Best_Ofr, Converter={StaticResource numConvertor}, StringFormat={}{0:0.00##}, NotifyOnTargetUpdated=True}" Opacity="{Binding Best_Ofr_Opacity}" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Best_Bid, Converter={StaticResource numConvertor}}" Value="--">
+                                                <Setter TargetName="best_bid" Property="Foreground" Value="#4A4D4C"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Best_Ofr, Converter={StaticResource numConvertor}}" Value="--">
+                                                <Setter TargetName="best_ofr" Property="Foreground" Value="#4A4D4C"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Binding="{Binding RoleName}" Header="角色" Width="Auto" MinWidth="60"/>
+                            <DataGridTemplateColumn Header="Client" Width="auto" MinWidth="80" SortMemberPath="Client">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="Client_BT" Text="{Binding Client}" Foreground="{Binding Client, Converter={StaticResource colorCon}}"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsMe}" Value="true">
+                                                <Setter TargetName="Client_BT" Property="FontWeight" Value="Bold"/>
+                                                <Setter TargetName="Client_BT" Property="Foreground" Value="#C29B4E"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="最新成交(%)" Width="Auto" MinWidth="80"  SortMemberPath="LastMarketPx">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding LastMarketPx,Converter={StaticResource numConvertor}}" Foreground="{Binding LastMarketPx, Converter={StaticResource colorCon}}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding UpdateTime}" Header="最后更新时间" Width="Auto" MinWidth="80"/>
+                        </DataGrid.Columns>
+                    </localComp:CustomInnerDataGrid>
+                </Grid>
+            </TabItem>
+
+            <!--<TabItem x:Name="historyreqTab" Header="历史需求"  Width="86" Visibility="{Binding IsShowIHR}">-->
+            <!--<TabItem x:Name="historyreqTab" Header="历史需求"  Width="96" Visibility="Collapsed" Style="{DynamicResource TabItemStyle_Button}">
+                <local:InnerHistoryRequire x:Name="ihr"></local:InnerHistoryRequire>
+            </TabItem>-->
+        </TabControl>
+
+        <commComp:RowCountBar x:Name="countBar" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="290 0 0 6" Visibility="Collapsed"
+                              RowCount="{Binding RowCount}" BidRowCount="{Binding BidRowCount}" OfrRowCount="{Binding OfrRowCount}"/>
+        <commComp:RowCountBar x:Name="countBar_best" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="290 0 0 6"
+                              RowCount="{Binding RowCount_Best}" BidRowCount="{Binding BidRowCount_Best}" OfrRowCount="{Binding OfrRowCount_Best}" />
+        <commComp:RowCountBar x:Name="countBar_H" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="290 0 0 6" Visibility="Collapsed"
+                              RowCount="{Binding DataContext.RowCount, ElementName=ihr}"
+                              BidRowCount="{Binding DataContext.BidRowCount, ElementName=ihr}"
+                              OfrRowCount="{Binding DataContext.OfrRowCount, ElementName=ihr}"/>
+
+        <Button x:Name="btnFullScreen" Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource PopupButton}" 
+                    Command="{x:Static utils:CommonUtils.PopupWindowCommand}" Margin="0 0 10 4">
+            <Button.CommandParameter>
+                <MultiBinding Converter="{StaticResource MultiBindingConverter}">
+                    <MultiBinding.Bindings>
+                        <Binding Source="{x:Static command:PopupTypeEnum.InnerBoard}" Mode="OneWay"/>
+                        <Binding ElementName="innerBoard"/>
+                    </MultiBinding.Bindings>
+                </MultiBinding>
+            </Button.CommandParameter>
+        </Button>
+
+
+        <Button x:Name="btnVer" Grid.RowSpan="2" Grid.Column="1" Width="8" Height="40" Padding="0, 0, 0, 0" Margin="1, 0, 1, 0" Content=">" 
+                FontSize="8" Style="{DynamicResource SplitButtonStyle}"  Panel.ZIndex="1" Click="BtnVer_Click"></Button>
+
+        <!-- gridSplitter -->
+        <GridSplitter x:Name="gridSplitter" Grid.Column="1" Grid.RowSpan="2" Background="{DynamicResource BackgroundBrush}" Style="{DynamicResource VGridSplitterStyleNoVer}"  DragCompleted="gridSplitter_DragCompleted"/>
+
+
+        <Border BorderBrush="#282828" Margin="2" Grid.Column="2" Grid.RowSpan="2"  x:Name="Pov" BorderThickness="1" Background="#141414" Visibility="Visible">
+            <card:PriceAndOrderView x:Name="dgPrice"></card:PriceAndOrderView>
+        </Border>
+        
+        
+    </Grid>
+
+</UserControl>

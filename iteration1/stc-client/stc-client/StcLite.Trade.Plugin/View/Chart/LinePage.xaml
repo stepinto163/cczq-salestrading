@@ -1,0 +1,236 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.View.Chart.LinePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Chart"
+      mc:Ignorable="d" 
+      d:DesignHeight="365" d:DesignWidth="527"
+       Background="#121A19" SizeChanged="LinePage_OnSizeChanged">
+    <UserControl.Resources>
+        <!--金色-->
+        <SolidColorBrush x:Key="ColorBrush01" Color="#F9C152"></SolidColorBrush>
+        <!--浅黄色 15min-->
+        <SolidColorBrush x:Key="ColorBrush02" Color="#FFEBC8"></SolidColorBrush>
+        <!--浅黄色 坐标轴字-->
+        <SolidColorBrush x:Key="ColorBrush03" Color="#8F9598"></SolidColorBrush>
+        <!--bar 红-->
+        <SolidColorBrush x:Key="ColorBrush04" Color="#99DF201F"></SolidColorBrush>
+        <!--bar 绿-->
+        <SolidColorBrush x:Key="ColorBrush05" Color="#9921DF1F"></SolidColorBrush>
+        <!--边框颜色-->
+        <SolidColorBrush x:Key="BorderBrush" Color="#193D37"></SolidColorBrush>
+        <!--网格内容色颜色-->
+        <SolidColorBrush x:Key="BorderContendBrush" Color="#172422"></SolidColorBrush>
+        <!--y轴 文字-->
+        <Style x:Key="XYText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource ColorBrush03}"></Setter>
+            <Setter Property="FontSize" Value="10"></Setter>
+        </Style>
+        <Style x:Key="YText" TargetType="TextBlock" BasedOn="{StaticResource XYText}">
+            <Setter Property="HorizontalAlignment" Value="Right"></Setter>
+            <Setter Property="VerticalAlignment" Value="Top"></Setter>
+            <Setter Property="Grid.Column" Value="0"></Setter>
+            <Setter Property="Margin" Value="0 0 4 0"></Setter>
+        </Style>
+        <Style x:Key="YTextTop" TargetType="TextBlock" BasedOn="{StaticResource XYText}">
+            <Setter Property="HorizontalAlignment" Value="Right"></Setter>
+            <Setter Property="VerticalAlignment" Value="Top"></Setter>
+            <Setter Property="Grid.Column" Value="0"></Setter>
+            <Setter Property="Margin" Value="0 0 4 -5"></Setter>
+        </Style>
+
+        <Style x:Key="XText" TargetType="TextBlock" BasedOn="{StaticResource XYText}">
+            <Setter Property="HorizontalAlignment" Value="Center"></Setter>
+            <Setter Property="VerticalAlignment" Value="Top"></Setter>
+            <Setter Property="Grid.Row" Value="12"></Setter>
+            <Setter Property="Grid.ColumnSpan" Value="4"></Setter>
+            <Setter Property="Margin" Value="0 4 0 0"></Setter>
+        </Style>
+
+        <!--柱样式-->
+        <Style x:Key="BarStyle" TargetType="Grid" >
+            <Setter Property="Margin" Value="2 0"></Setter>
+            <Setter Property="Grid.Row" Value="9"></Setter>
+            <Setter Property="Grid.RowSpan" Value="3"></Setter>
+            <Setter Property="VerticalAlignment" Value="Bottom"></Setter>
+        </Style>
+
+        <DrawingBrush x:Key="border01" Viewport="0,0,8,8" ViewportUnits="Absolute" TileMode="Tile">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="{StaticResource ColorBrush01}">
+                        <GeometryDrawing.Geometry>
+                            <GeometryGroup>
+                                <RectangleGeometry Rect="0,0,50,50"></RectangleGeometry>
+                                <RectangleGeometry Rect="50,50,50,50"></RectangleGeometry>
+                            </GeometryGroup>
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+    </UserControl.Resources>
+
+    <Grid Margin="10" Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="6"></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="35"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <!--10-->
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <!--20-->
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <!--30-->
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <!--40-->
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <!--50-->
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <TextBlock Name="BondCodeText" Grid.ColumnSpan="8"  Foreground="{StaticResource ColorBrush01}" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14" >190205.IB</TextBlock>
+        <StackPanel Orientation="Horizontal" Grid.ColumnSpan="17"  Grid.Column="35" Grid.Row="1" HorizontalAlignment="Right">
+            <Canvas HorizontalAlignment="Right" Margin="0 0 4 0" Width="18">
+                <Line X1="0" Y1="16" X2="16" Y2="16" Stroke="{StaticResource ColorBrush01}" StrokeThickness="2"></Line>
+                <Ellipse Width="6" Height="6" Fill="{StaticResource ColorBrush01}" Canvas.Top="13" Canvas.Left="5"></Ellipse>
+            </Canvas>
+            <TextBlock   FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{StaticResource ColorBrush02}">15min成交均值</TextBlock>
+        </StackPanel>
+        <TextBlock Name="LineY07" Grid.Row="2" Style="{StaticResource YTextTop}" VerticalAlignment="Top" Margin="0 -6 4 0">3.740</TextBlock>
+        <TextBlock Name="LineY06" Grid.Row="2" Style="{StaticResource YTextTop}" VerticalAlignment="Bottom">3.740</TextBlock>
+        <TextBlock Name="LineY05" Grid.Row="3" Style="{StaticResource YTextTop}"  VerticalAlignment="Bottom">3.740</TextBlock>
+        <TextBlock Name="LineY04" Grid.Row="4" Style="{StaticResource YTextTop}"  VerticalAlignment="Bottom">3.740</TextBlock>
+        <TextBlock Name="LineY03" Grid.Row="5" Style="{StaticResource YTextTop}"  VerticalAlignment="Bottom">3.740</TextBlock>
+        <TextBlock Name="LineY02" Grid.Row="6" Style="{StaticResource YTextTop}"  VerticalAlignment="Bottom">3.740</TextBlock>
+        <TextBlock Name="LineY01" Grid.Row="7" Style="{StaticResource YTextTop}"  VerticalAlignment="Bottom">3.740</TextBlock>
+
+        <TextBlock Name="BarY03" Grid.Row="9" Style="{StaticResource YText}" >75</TextBlock>
+        <TextBlock Name="BarY02" Grid.Row="10" Style="{StaticResource YText}" >50</TextBlock>
+        <TextBlock Name="BarY01" Grid.Row="11" Style="{StaticResource YText}" >25</TextBlock>
+        <TextBlock Name="BarY00" Grid.Row="11" Grid.RowSpan="2" Style="{StaticResource YText}" VerticalAlignment="Center" >0.0</TextBlock>
+
+
+        <TextBlock Style="{StaticResource XText}"  Grid.Column="3">08:00</TextBlock>
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="7">09:00</TextBlock>-->
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="11">10:00</TextBlock>-->
+        <TextBlock Style="{StaticResource XText}"  Grid.Column="15">11:00</TextBlock>
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="19">12:00</TextBlock>-->
+        <TextBlock Style="{StaticResource XText}"  Grid.Column="23">13:00</TextBlock>
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="27">14:00</TextBlock>-->
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="31">15:00</TextBlock>-->
+        <TextBlock Style="{StaticResource XText}"  Grid.Column="35">16:00</TextBlock>
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="39">17:00</TextBlock>-->
+        <!--<TextBlock Style="{StaticResource XText}"  Grid.Column="43">18:00</TextBlock>-->
+        <TextBlock Style="{StaticResource XText}"  Grid.Column="47">19:00</TextBlock>
+        <Canvas Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="52" Grid.RowSpan="6" Name="DataCanvas" ZIndex="10" >
+            <!--<Ellipse Width="6" Height="6" Fill="{StaticResource ColorBrush01}" Canvas.Top="0" Canvas.Left="0"  Name="e1"></Ellipse>-->
+        </Canvas>
+        <Border Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="52" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness=" 1"></Border>
+        <Border Grid.Column="1" Grid.Row="9" Grid.ColumnSpan="52" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness=" 1"></Border>
+        <!--横向网格线-->
+        <Border Grid.Column="1" Grid.Row="3" Grid.ColumnSpan="52" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0 1"></Border>
+        <Border Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="52" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0 1"></Border>
+        <Border Grid.Column="1" Grid.Row="7" Grid.ColumnSpan="52" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0 1 0 0"></Border>
+
+        <Border Grid.Column="1" Grid.Row="10" Grid.ColumnSpan="52" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0 1"></Border>
+
+        <!--纵向-->
+        <Border Grid.Column="5" Grid.Row="2" Grid.ColumnSpan="4" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="13" Grid.Row="2" Grid.ColumnSpan="4" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="21" Grid.Row="2" Grid.ColumnSpan="4" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="29" Grid.Row="2" Grid.ColumnSpan="4" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="37" Grid.Row="2" Grid.ColumnSpan="4" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="45" Grid.Row="2" Grid.ColumnSpan="4" Grid.RowSpan="6" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+
+        <Border Grid.Column="5" Grid.Row="9" Grid.ColumnSpan="4" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="13" Grid.Row="9" Grid.ColumnSpan="4" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="21" Grid.Row="9" Grid.ColumnSpan="4" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="29" Grid.Row="9" Grid.ColumnSpan="4" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="37" Grid.Row="9" Grid.ColumnSpan="4" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+        <Border Grid.Column="45" Grid.Row="9" Grid.ColumnSpan="4" Grid.RowSpan="3" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1 0" Background="{StaticResource BorderContendBrush}" Panel.ZIndex="-1" ></Border>
+
+        <Popup Name="Popup1" >
+            <Border Background=" #193D37" BorderBrush=" #308376" BorderThickness="1" CornerRadius="4" Width="130" Height="70">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <TextBlock Name="PopTime" FontSize="12" Foreground="#FFEBC8" VerticalAlignment="Center" Margin="12 0 0 0">时间：</TextBlock>
+                    <TextBlock Name="PopPrice" Grid.Row="1" FontSize="12" Foreground="#FFEBC8" VerticalAlignment="Center" Margin="12 0 0 0">平均成交：</TextBlock>
+                    <TextBlock Name="PopCount" Grid.Row="2" FontSize="12" Foreground="#FFEBC8" VerticalAlignment="Center" Margin="12 0 0 0">成交笔数：</TextBlock>
+                </Grid>
+            </Border>
+        </Popup>
+
+        <Border Name="BorderDotted" Visibility="Hidden" Grid.Column="1" Grid.Row="2" Grid.RowSpan="10" HorizontalAlignment="Center" Width="2" Margin="1 0 0 0"  BorderBrush="{StaticResource border01}" BorderThickness="1 0 0 0">
+
+        </Border>
+        <!--<Grid Grid.Row="9" Grid.RowSpan="3"  Margin="2 0" VerticalAlignment="Bottom" Grid.Column="1" Height="30"   Background="#99DF201F"></Grid>
+        <Grid Grid.Row="9" Grid.RowSpan="3"  Margin="2 0" VerticalAlignment="Bottom" Grid.Column="1" Height="30"   Background="#99DF201F"></Grid>
+        <Grid Grid.Row="9" Grid.RowSpan="3"  Margin="2 0" VerticalAlignment="Bottom" Grid.Column="1" Height="30"   Background="#99DF201F"></Grid>
+        <Grid Grid.Row="9" Grid.RowSpan="3"  Margin="2 0" VerticalAlignment="Bottom" Grid.Column="1" Height="30"   Background="#99DF201F"></Grid>-->
+    </Grid>
+</UserControl>

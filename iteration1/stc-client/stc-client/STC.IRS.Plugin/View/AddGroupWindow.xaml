@@ -1,0 +1,71 @@
+﻿<base:WindowBase x:Class="STC.IRS.Plugin.View.AddGroupWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.IRS.Plugin.View"
+             xmlns:base="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" SizeToContent="Height" Width="320" MaxboxEnable="False" MinboxEnable="False" Title="保存订阅为组"
+             d:DesignWidth="800">
+    <base:WindowBase.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+        </ResourceDictionary>
+    </base:WindowBase.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="116"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+
+        <RadioButton x:Name="newGroupRd" Content="新建组" Grid.Row="1" HorizontalAlignment="Right"  Style="{DynamicResource DefaultRadioButtonStyle}"  Foreground="#8F9598" VerticalContentAlignment="Center"  IsChecked="True"/>
+        <TextBox x:Name="groupNameTxt" Text="{Binding GroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource STCDefaultBoxStyle}" Grid.Row="1" Grid.Column="1" Width="132" Height="24" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8 0 0 0"/>
+        <CheckBox x:Name="subChk_Bond" Content="订阅" Style="{DynamicResource DefaultCheckBoxStyle}" Grid.Row="1" Grid.Column="1" Padding="4 0 0 0" Margin="146 0 0 0" Foreground="#D7D7D7" IsChecked="{Binding IfSubscribe, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+        <RadioButton x:Name="updateGroupRd" Content="已有组" Grid.Row="2" HorizontalAlignment="Right" Style="{DynamicResource DefaultRadioButtonStyle}" Foreground="#8F9598" VerticalContentAlignment="Center"  Visibility="{Binding GroupCbcVisibility}"/>
+        <ComboBox x:Name="comTemplet" VerticalAlignment="Center" Margin="8 4 0 4" Visibility="{Binding GroupCbcVisibility}"
+                      VerticalContentAlignment="Center"  HorizontalAlignment="Left" 
+                      Width="132" Height="24" Grid.Row="2" Grid.Column="1" ItemsSource="{Binding GroupList}" SelectedItem="{Binding SelectItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      Style="{DynamicResource NonEditableComboBoxStyle}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding GroupName}"/>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <!--第四行-->
+        <Border Grid.Row="11" Grid.ColumnSpan="2" BorderBrush="#232323" BorderThickness="0 1 0 0" >
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="btnCancel" Width="60" Height="24" Style="{DynamicResource GraySlateButtonStyle}"
+                            Click="btnCancel_Click" Foreground="#D7D7D7" BorderThickness="0 1 0 0">取消</Button>
+                <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" Style="{DynamicResource BlueGreenStyle}" IsEnabled="False"
+                        Click="btnOK_Click" Foreground="#D7D7D7" BorderThickness="0 1 0 0">确认
+                    <!--<Button.IsEnabled>
+                        <MultiBinding Converter="{DynamicResource multiAndConverter}">
+                            <MultiBinding.Bindings>
+                                <Binding ElementName="SecurityID_TextBox" Path="(Validation.HasError)"/>
+                                <Binding ElementName="settleTypeMode_ccb" Path="(Validation.HasError)"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Button.IsEnabled>-->
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</base:WindowBase>

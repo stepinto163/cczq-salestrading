@@ -1,0 +1,160 @@
+﻿<UserControl x:Class="STC.Repo.Plugin.View.BondManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Repo.Plugin.View"
+             xmlns:comComponent="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             xmlns:converter="clr-namespace:STC.Repo.Plugin.Converter"
+             mc:Ignorable="d" Loaded="UserControl_Loaded"
+             d:DesignHeight="450" d:DesignWidth="1000">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="SelfVGridSplitterStyle2" TargetType="{x:Type GridSplitter}">
+                <Setter Property="PreviewStyle" Value="{DynamicResource GridSplitterPreviewStyle}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GridSplitter}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <Rectangle Width="1" Height="12" Stroke="#515151" Margin="0,0,2,0"/>
+                                    <Rectangle Width="1" Height="12" Stroke="#515151" Margin="-2,0,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <converter:DetailTitleConverter x:Key="detailTitleConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="3"/>
+            <ColumnDefinition Width="360"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.ColumnSpan="3" Background="#282828">
+            <TextBlock Text="债券持仓信息" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="4 0 0 0"/>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="40"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="32"/>
+                </Grid.RowDefinitions>
+
+                <Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <comComponent:SearchTextBox x:Name="Search_TextBox" HintText="债券代码、简称" ToolTip="债券代码、简称" 
+                                                SearchText="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                Height="24" Width="120" Margin="4 0 0 0" IsFuzzy="True"
+                                                MouseOverBorderBrush="{DynamicResource TextBox.MouseOver.Border}" 
+                                                FocusBorderBrush="{DynamicResource TextBox.Focus.Border}"/>
+                        <TextBlock Text="账户/portfolio：" Foreground="#D7D7D7" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="4 0 0 0"/>
+                        <comComponent:MultiSelectComboBox x:Name="qptAccount" HorizontalAlignment="Left" 
+                                                Width="100" Height="24" Background="Black" Margin="4 0 0 0"
+                                                DefaultText="全部" Tag="qptAccount" ItemsSource="{Binding QtpAccounts}"
+                                                FilterDicChanged="qptAccount_FilterDicChanged">
+                        </comComponent:MultiSelectComboBox>
+
+                        <TextBlock Text="托管机构：" Foreground="#D7D7D7" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="4 0 0 0"/>
+                        <ComboBox x:Name="InstitutionCb" Text="123" Height="24" Width="100" Margin="4 0 0 0" Style="{DynamicResource NonEditableComboBoxStyle}"
+                                  SelectedValuePath="Key" DisplayMemberPath="Value" VerticalContentAlignment="Center" 
+                                  SelectedValue="{Binding SelectedInstitution, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+                        <Button Content="搜索" Height="24" Width="80" Margin="4 0 0 0" Style="{DynamicResource BlueGreenStyle}" Command="{Binding SearchCommand}"/>
+                        <Button Content="刷新" Height="24" Width="80" Margin="4 0 0 0" Style="{DynamicResource BlueGreenStyle}" Command="{Binding RefreshCommand}"/>
+                    </StackPanel>
+
+                    <!--<TextBlock Text="托管余额更新时间:" VerticalAlignment="Center" Foreground="#D7D7D7" HorizontalAlignment="Right" Margin="0 0 69 0"/>
+                    <TextBlock Text="HH:MM:SS" VerticalAlignment="Center" Foreground="#D7D7D7" HorizontalAlignment="Right"  Margin="0 0 4 0"/>-->
+                </Grid>
+
+                <DataGrid x:Name="dg_total" Grid.Row="1" Style="{DynamicResource DefaultDataGrid}"
+                          HorizontalScrollBarVisibility="Disabled"
+                          ItemsSource="{Binding ViewSource.View}" SelectedItem="{Binding SelectTotalBond}" 
+                          ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderCenterStyle}"
+                          CellStyle="{DynamicResource DataGridTextCenterStyle}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="债券代码" Width="*" Binding="{Binding SecurityID}"/>
+                        <DataGridTextColumn Header="债券名称" Width="*" Binding="{Binding Symbol}"/>
+                        <DataGridTextColumn Header="状态" Width="*" Binding="{Binding Status, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='limitavailablestatus'}"/>
+                        <DataGridTextColumn Header="T+0可用券(万)" Width="*" Binding="{Binding CT0, StringFormat='#,##0.00'}"/>
+                        <DataGridTextColumn Header="T+1可用券(万)" Width="*" Binding="{Binding CT1, StringFormat='#,##0.00'}"/>
+                        <DataGridTextColumn Header="租借持仓(万)" Width="*" Binding="{Binding M0, StringFormat='#,##0.00'}"/>
+                        <DataGridTextColumn Header="T+0已质押债券(万)" Width="1.2*" Binding="{Binding ST0, StringFormat='#,##0.00'}"/>
+                        <DataGridTextColumn Header="T+1已质押债券(万)" Width="1.2*" Binding="{Binding ST1, StringFormat='#,##0.00'}"/>
+                        <DataGridTextColumn Header="托管机构" Width="*" Binding="{Binding InstitutionName}"/>
+                        <!--<DataGridTextColumn Header="托管余额" Width="*" Binding="{Binding LastQty, StringFormat='#,##0.00'}"/>-->
+                        <DataGridTextColumn Header="账户/portfolio" Width="*" Binding="{Binding QtpAccout}"/>
+                        <DataGridTextColumn Header="租借到期日" Width="*" Binding="{Binding DueDate}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <DataGrid Grid.Row="2" x:Name="TotalRow_total" Style="{DynamicResource DefaultDataGrid}" HeadersVisibility="None"
+                          HorizontalScrollBarVisibility="Disabled"
+                          AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" ItemsSource="{Binding TotalSummaryList}"
+                          ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderCenterStyle}"
+                          CellStyle="{DynamicResource DataGridTextCenterStyle}"/>
+            </Grid>
+        </Grid>
+
+        <!--分割-->
+        <GridSplitter x:Name="gridSplitter" Grid.Column="1" Grid.Row="1" Grid.RowSpan="4" Background="{DynamicResource BackgroundBrush}" Style="{DynamicResource SelfVGridSplitterStyle2}"/>
+
+        <Grid Grid.Row="1" Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition/>
+                <RowDefinition Height="32"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Foreground="#D7D7D7" Margin="4 0 4 0" Text="{Binding SelectTotalBond, Converter={StaticResource detailTitleConverter}}">
+                    <!--<Run Text="{Binding SelectTotalBond.SecurityID}"/>/<Run Text="{Binding SelectTotalBond.Symbol}"/>-->
+                </TextBlock>
+                <TextBlock Text="质押明细" VerticalAlignment="Center" Foreground="#D7D7D7"/>
+            </StackPanel>
+
+            <DataGrid x:Name="dg_detail" Grid.Row ="1" Grid.Column="1" Style="{DynamicResource DefaultDataGrid}" 
+                      ItemsSource="{Binding DetailList}"
+                       HorizontalScrollBarVisibility="Disabled"
+                      ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderCenterStyle}"
+                      CellStyle="{DynamicResource DataGridTextCenterStyle}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="编号" Width="0.8*" Binding="{Binding Code}"/>
+                    <DataGridTextColumn Header="券面总额(万)" Width="1.2*" Binding="{Binding CouponAmount, StringFormat='#,##0.00'}"/>
+                    <DataGridTextColumn Header="起息日" Width="*" Binding="{Binding BondStartDate}"/>
+                    <DataGridTextColumn Header="到期结算日" Width="*" Binding="{Binding DueSettlementDate}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <DataGrid Grid.Row="2" x:Name="TotalRow_detail" Style="{DynamicResource DefaultDataGrid}" HeadersVisibility="None"
+                      AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
+                      HorizontalScrollBarVisibility="Disabled"
+                      ItemsSource="{Binding DetailSummaryList}"
+                      ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderCenterStyle}"
+                          CellStyle="{DynamicResource DataGridTextCenterStyle}"/>
+        </Grid>
+    </Grid>
+</UserControl>

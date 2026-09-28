@@ -1,0 +1,259 @@
+﻿<UserControl x:Class="STC.Common.View.Order.InnerView.TagConditionView"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Order.InnerView"
+             xmlns:Component="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="120" d:DesignWidth="1400">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/View/Order/SendPriceDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--TabItem Style-->
+            <Style x:Key="SelfTabItemStyle" TargetType="{x:Type TabItem}">
+                <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusVisual}"/>
+                <Setter Property="Foreground" Value="{Binding ItemHeadForeground}"/>
+                <Setter Property="Background" Value="#141414"/>
+                <Setter Property="FontSize" Value="{DynamicResource SmallContentFontSize}"/>
+                <Setter Property="Margin" Value="0,0,0,0"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource TabItem.Static.Border}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabItem}">
+                            <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                                <Border x:Name="mainBorder" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2" BorderThickness="0" Background="{TemplateBinding Background}">
+                                    <Border x:Name="innerBorder" CornerRadius="4,4,0,0" BorderThickness="0" Background="{Binding ItemHeadBackGround}" Opacity="0"/>
+                                </Border>
+                                <ContentPresenter x:Name="contentPresenter" ContentSource="Header" Focusable="False" HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="false"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+
+                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="0"/>
+                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="0"/>
+                                    <Setter TargetName="contentPresenter" Property="TextBlock.Foreground" Value="#A0A0A0"/>
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="true"/>
+                                        <Condition Binding="{Binding TabStripPlacement, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}" Value="Top"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Panel.ZIndex" Value="1"/>
+                                    <Setter Property="Opacity" TargetName="innerBorder" Value="1"/>
+                                    <Setter Property="BorderThickness" TargetName="innerBorder" Value="0"/>
+                                    <Setter Property="BorderThickness" TargetName="mainBorder" Value="0"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </MultiDataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Border BorderThickness="0,0,0,0" BorderBrush="{DynamicResource ColorBrush.Gray20}">
+            <TabControl x:Name="SettlTypeListBox" Margin="0, 4, 0, 0" BorderThickness="0" Background="{Binding BorderBG}" IsTabStop="False">
+                <TabItem x:Name="lbInner" Header="标签" FontSize="12" Width="80" Style="{DynamicResource SelfTabItemStyle}" IsTabStop="False">
+                    <Grid Grid.Row="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="32"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Margin="4 0 0 0">
+                            <CheckBox Content="急" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 0 0" Height="24" Width="24"
+                          IsChecked="{Binding HurryFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" IsTabStop="False"/>
+                            <CheckBox Content="荐" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 0 0" Height="24" Width="24"
+                          IsChecked="{Binding SuggestFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" IsTabStop="False"/>
+                            <CheckBox Content="火" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 0 0" Height="24" Width="24"
+                          IsChecked="{Binding FireFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" IsTabStop="False"/>
+
+                            <CheckBox Content="底" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="24" Width="24" Margin="10 0 0 0"
+                          IsChecked="{Binding FloorPrice, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" IsTabStop="False"/>
+                            <CheckBox Content="OCO" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 0 0" Height="24" Width="42"
+                          IsChecked="{Binding OcoFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" IsTabStop="False"/>
+                            <CheckBox Content="打包" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 0 0" Height="24" Width="42"
+                          IsChecked="{Binding OcoFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" IsTabStop="False"/>
+
+                            <!--<ComboBox x:Name="a" Style="{DynamicResource NonEditableComboBoxStyle}" Width="60" Height="24" Margin="4 0 0 0"/>-->
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Orientation="Vertical" Margin="4 0 0 0">
+                            <Component:WatermarkTextBox x:Name="memo" WaterMark="个人笔记" Height="36" Margin="4 0 4 0" TextWrapping="WrapWithOverflow"
+                                                        VerticalContentAlignment="Stretch"
+                                                        AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                           Text="{Binding PersonalRemarks, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" MaxLength="1000" IsTabStop="False"/>
+
+                            <Component:WatermarkTextBox x:Name="commandNote" WaterMark="指令备注" Height="36" Margin="4 4 4 0" TextWrapping="WrapWithOverflow"
+                                                        VerticalContentAlignment="Stretch"
+                                                        AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Text="{Binding CommandNotes, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" MaxLength="1000" IsTabStop="False" Visibility="Collapsed"/>
+
+                            <Component:WatermarkTextBox x:Name="mark" WaterMark="公告" Height="24" Margin="4 4 4 0"
+                          Text="{Binding PublicRemarks, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" IsTabStop="False"/>
+                            
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+                
+
+
+                <TabItem x:Name="lbCancel" Header="撤单条件" FontSize="12" Width="80" Style="{DynamicResource SelfTabItemStyle}" IsTabStop="False">
+                    <StackPanel Height="80" Background="Transparent">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="61*"/>
+                                <ColumnDefinition Width="637*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="4"></RowDefinition>
+                                <RowDefinition Height="18"></RowDefinition>
+                                <RowDefinition Height="32"></RowDefinition>
+                                <RowDefinition Height="24"></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                                <TextBlock Text="有效时长:" Margin="10, 0, 0, 0" Height="16" HorizontalAlignment="Left" Foreground="{DynamicResource TextBlockDefaultDisableForeground}"  FontSize="12" FontWeight="Bold"/>
+                            </Grid>
+                            <Grid Grid.Row="2" Grid.ColumnSpan="2">
+                                <StackPanel Orientation="Horizontal"  Grid.Column="0">
+                                    <ComboBox x:Name="cbSettle2" Width="60"  Margin="10,0,0,0" Height="24" Padding="0, 0, 0, 0" BorderThickness="0 1 0 0" Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" FontWeight="Normal" SelectedIndex="{Binding ValidSelectIndex,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" IsTabStop="False">
+                                        <ComboBoxItem Content="默认" Tag="1"></ComboBoxItem>
+                                        <ComboBoxItem Content="时长" Tag="2"></ComboBoxItem>
+                                        <ComboBoxItem Content="时点" Tag="3"></ComboBoxItem>
+                                        <ComboBoxItem Content="无   " Tag="4"></ComboBoxItem>
+                                    </ComboBox>
+                                    <TextBlock Grid.Row="0" Margin="10, 0, 0, 0"  Height="16" HorizontalAlignment="Left" Grid.Column="0"  FontSize="12" FontWeight="Bold" Visibility="{Binding DefaultValidTimeQuotationCheck,Converter={StaticResource visibilityConvertor}}">
+                                                            <Run Text="每日" Foreground="{DynamicResource ColorBrush.Gray14}" />
+                                                            <Run Text="6:00、12:00、16:30" Foreground="#F9C152"/>
+                                                            <Run Text="自动撤回"  Foreground="{DynamicResource ColorBrush.Gray14}"/>
+                                    </TextBlock>
+                                    <!--时长-->
+                                    <StackPanel Orientation="Horizontal" Height="24" Grid.Column="0"  Margin="6, 0, 0, 0"  Visibility="{Binding HourValidTimeQuotationCheck,Converter={StaticResource visibilityConvertor}}">
+                                        <Component:WatermarkTextBox WaterMark="" ContextMenu="{x:Null}" Tag="1" MaxLength="3" x:Name="ValidMinute" PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput" Text="{Binding ValidMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" InputMethod.IsInputMethodEnabled="False" Width="28"  Height="24" Padding="0, 0, 0, 0" Style="{DynamicResource GreenBlueWatermarkTextBox}" IsTabStop="False">
+                                            <TextBox.ToolTip>
+                                                <ToolTip Content="输入范围:[0-500]分钟"></ToolTip>
+                                            </TextBox.ToolTip>
+                                        </Component:WatermarkTextBox>
+                                        <TextBlock Grid.Row="0" Text="分" Margin="6, 0, 0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                                        <Component:WatermarkTextBox  WaterMark="" ContextMenu="{x:Null}"  Margin="6,0,0, 0" Tag="3"  MaxLength="2"  x:Name="ValidSecond"   PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidSecond, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False"   Width="28" Height="24" Padding="0, 0, 0, 0"  Style="{DynamicResource GreenBlueWatermarkTextBox}" IsTabStop="False">
+                                            <TextBox.ToolTip>
+                                                <ToolTip Content="输入范围:[0-60)"></ToolTip>
+                                            </TextBox.ToolTip>
+                                        </Component:WatermarkTextBox>
+                                        <TextBlock Grid.Row="0" Text="秒"  Height="16"  Margin="6, 0, 0, 0" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                                        <TextBlock Grid.Column="1" Text="后失效" Margin="6, 0, 0, 0" Height="16" HorizontalAlignment="Left" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <!--时点-->
+                                    <StackPanel Orientation="Horizontal" Height="24"  Grid.Column="0"  Margin="10, 0, 0, 0" Visibility="{Binding TimeValidTimeQuotationCheck,Converter={StaticResource visibilityConvertor}}">
+                                        <Component:WatermarkTextBox  WaterMark="时" ContextMenu="{x:Null}" Tag="2" MaxLength="2" x:Name="ValidTimeHour"  PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidTimeHour, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False" Width="28" Height="24" Padding="0, 0, 0, 0" Style="{DynamicResource GreenBlueWatermarkTextBox}" IsTabStop="False">
+                                            <TextBox.ToolTip>
+                                                <ToolTip Content="输入范围:(0，24]"></ToolTip>
+                                            </TextBox.ToolTip>
+                                        </Component:WatermarkTextBox>
+                                        <TextBlock Grid.Row="0" Text=":"  Margin="6,0,0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" />
+                                        <Component:WatermarkTextBox WaterMark="分" ContextMenu="{x:Null}"  Tag="0"  Margin="6,0,0, 0" MaxLength="2" x:Name="ValidTimeMinute"  PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidTimeMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False"   Width="28" Height="24" Padding="0, 0, 0, 0"  Style="{DynamicResource GreenBlueWatermarkTextBox}" IsTabStop="False">
+                                            <TextBox.ToolTip>
+                                                <ToolTip Content="输入范围:[0-60)"></ToolTip>
+                                            </TextBox.ToolTip>
+                                        </Component:WatermarkTextBox>
+                                        <TextBlock Grid.Row="0" Text=":"   Margin="6, 0,0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" />
+                                        <Component:WatermarkTextBox WaterMark="秒" ContextMenu="{x:Null}" Tag="0"  Margin="6,0,0, 0" MaxLength="2" x:Name="ValidTimeSecond"  PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidTimeSecond, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False"   Width="28" Height="24" Padding="0, 0, 0, 0"  Style="{DynamicResource GreenBlueWatermarkTextBox}" IsTabStop="False">
+                                            <TextBox.ToolTip>
+                                                <ToolTip Content="输入范围:[0-60)"></ToolTip>
+                                            </TextBox.ToolTip>
+                                        </Component:WatermarkTextBox>
+                                        <TextBlock Grid.Column="1" Text="失效" Margin="6, 0, 0, 0" Height="16" HorizontalAlignment="Left" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Grid.Row="3" Orientation="Horizontal" Visibility="{Binding MorethanMarketVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.ColumnSpan="2">
+                                <CheckBox x:Name="cbMorethanParty"  IsChecked="{Binding MorethanMarketBPCheck}" Margin="10,0,0,0"  HorizontalAlignment="Center" VerticalAlignment="Center"  FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"
+                                              FontSize="{DynamicResource SmallContentFontSize}" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" BorderThickness="2" Background="Transparent" BorderBrush="{DynamicResource ColorBrush.Gray-23}" 
+                                              Foreground="{DynamicResource ListBoxItem.SelectedActive.Foreground}" Content="与市场最优倒挂" Height="14" Width="105" IsTabStop="False"></CheckBox>
+
+                                <Component:BpNumericUpDown Height="24"  Width="80" x:Name="PriceTxt"  NumericValue="{Binding MorethanMarketBP, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding MorethanMarketBPCheck, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ContextMenu="{x:Null}"  
+                                                                TextContentAlignment="Left" TextForeground="White" Foreground="White"  VerticalAlignment ="Center" DecimalLength="0" RangeValue="1" MaxValue="99999999" MinValue="0" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                Margin="10,0,0,0" FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True"></Component:BpNumericUpDown>
+
+                                <TextBlock Text="bp撤单" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="4, -3, 0, 0"  FontWeight="Normal" Foreground="{DynamicResource ListBoxItem.SelectedActive.Foreground}"></TextBlock>
+
+                                <Button Grid.Column="3" HorizontalAlignment="Left" Style="{DynamicResource InfoButton}" Width="15" Height="15" Margin="4,0,0,0" IsTabStop="False">
+                                    <Button.ToolTip>
+                                        <ToolTip Content="对于Bid报价：[市场最优Ofr] - [我的bid] >= Nbp，即撤单&#13;对于Ofr报价：[我的Ofr] - [市场最优Bid] >=Nbp，即撤单 &#13;*&lt;市场最优&gt;的范围包括经纪商行情、双边、XBond，不包含本机构报价。"></ToolTip>
+                                    </Button.ToolTip>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                </TabItem>
+
+                <TabItem x:Name="lbSub" Header="订阅" FontSize="12" Width="60" Margin="2,0,0,0" Style="{DynamicResource SelfTabItemStyle}">
+                    <Border Background="Transparent">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="4"></RowDefinition>
+                                <RowDefinition Height="18"></RowDefinition>
+                                <RowDefinition Height="10"></RowDefinition>
+                                <RowDefinition Height="24"></RowDefinition>
+                                <RowDefinition Height="24"></RowDefinition>
+
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="1">
+                                <TextBlock Text="订阅报价:" Margin="10, 0, 0, 0" Height="16" HorizontalAlignment="Left" Foreground="{DynamicResource TextBlockDefaultDisableForeground}"  FontSize="12" FontWeight="Bold"/>
+                            </Grid>
+                            <StackPanel Grid.Row="3" HorizontalAlignment="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                                <CheckBox Content="该券同向" Margin="10, 0, 0, 0"   FontWeight="Bold" IsChecked="{Binding CheckSyntropy}" BorderThickness="2" BorderBrush="{DynamicResource ColorBrush.Gray-23}" Foreground="{DynamicResource ColorBrush.White-1}"
+                                HorizontalAlignment="Left" VerticalAlignment="Top" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" Background="Transparent"  Height="14" Padding="4,-2,0,0"></CheckBox>
+                                <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="{DynamicResource DefaultFont}" Visibility="{Binding CheckSyntropyReverseVisible}"
+                                           Foreground="{DynamicResource ColorBrush.Gray14}" Margin="4, 0, 0, 0">
+                                    <Run Text="(#"></Run>
+                                    <Run Text="{Binding SecurityID}"></Run>
+                                    <Run Text=" "></Run>
+                                    <Run Text="{Binding SyntropyTxt}"></Run>
+                                    <Run Text=")"></Run>
+                                </TextBlock>
+
+                            </StackPanel>
+                            <StackPanel Grid.Row="4" HorizontalAlignment="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                                <CheckBox Content="该券反向"  Margin="10, 0, 0, 0" FontWeight="Bold" IsChecked="{Binding CheckReverse}" BorderThickness="2" BorderBrush="{DynamicResource ColorBrush.Gray-23}" Foreground="{DynamicResource ColorBrush.White-1}"
+                                  HorizontalAlignment="Left" VerticalAlignment="Top" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" Height="14" Background="Transparent" Padding="4,-2,0,0"></CheckBox>
+
+                                <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="{DynamicResource DefaultFont}"  Visibility="{Binding CheckSyntropyReverseVisible}"
+                                           Foreground="{DynamicResource ColorBrush.Gray14}" Margin="4, 0, 0, 0">
+                                        <Run Text="(#"></Run>
+                                        <Run Text="{Binding SecurityID}"></Run>
+                                        <Run Text=" "></Run>
+                                        <Run Text="{Binding ReverseTxt}"></Run>
+                                        <Run Text=")"></Run>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </TabItem>
+            </TabControl>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,171 @@
+﻿<UserControl x:Class="STC.Frame.CustomUI.Component.SearchGroupTextBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Frame.CustomUI.Component"
+             mc:Ignorable="d" x:Name="searchGroupTextBox"
+             d:DesignHeight="18" d:DesignWidth="100"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <!-- 搜索文本框 -->
+            <Style x:Key="SearchTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource TextBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBox.Focus.Foreground}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontSize" Value="{DynamicResource SmallContentFontSize}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="cleanBtn" Style="{DynamicResource CleanButton}" Click="closeButton_Click" Width="{Binding Height, ElementName=searchGroupTextBox, Mode=TwoWay}" Padding="2" Visibility="Visible"/>
+
+                                    <Border x:Name="search_border" Background="Transparent" Width="{TemplateBinding Height}" Height="{TemplateBinding Height}" BorderBrush="{TemplateBinding BorderBrush}" Visibility="Collapsed">
+                                        <Path x:Name="svg_path" Data="M11.8658619,11.1690297 L9.10681761,8.42369919 C9.89250384,7.46830475 10.285347,6.37462953 10.285347,5.14267355 C10.285347,3.72300998 9.78307918,2.51105327 8.77854362,1.50680343 C7.77400807,0.502553597 6.56205136,0.000285825897 5.14267348,1.21818112e-07 C3.7232956,-0.000285582261 2.51133888,0.501982189 1.50680333,1.50680343 C0.502267776,2.51162468 5.7095145e-16,3.72358138 0,5.14267355 C-5.7095145e-16,6.56176571 0.502267776,7.77372241 1.50680333,8.77854366 C2.51133888,9.7833649 3.7232956,10.2856327 5.14267348,10.285347 C6.37491518,10.285347 7.46859041,9.89250386 8.42369915,9.10681764 L11.1827435,11.8658619 C11.2721689,11.9552873 11.3837363,12 11.5174458,12 C11.6511553,12 11.767294,11.9552873 11.8658619,11.8658619 C11.9552873,11.7675797 12,11.651441 12,11.5174458 C12,11.3834506 11.9552873,11.2673119 11.8658619,11.1690297 Z M6.76304418,8.99925006 C6.25420521,9.21352812 5.71408164,9.32066715 5.14267348,9.32066715 C4.57126531,9.32066715 4.03114174,9.21352812 3.52230277,8.99925006 C3.02232063,8.784972 2.57819364,8.48369705 2.18992179,8.0954252 C1.80164994,7.70715336 1.5048034,7.26302637 1.29938216,6.76304423 C1.07624728,6.25420527 0.964679833,5.7140817 0.964679833,5.14267355 C0.964679833,4.57126539 1.07624728,4.03114183 1.29938216,3.52230286 C1.5048034,3.02232072 1.80164994,2.57819373 2.18992179,2.18992189 C2.57819364,1.80165004 3.02232063,1.50037509 3.52230277,1.28609703 C4.03114174,1.07181897 4.57126531,0.964679945 5.14267348,0.964679945 C5.71408164,0.964679945 6.25420521,1.07181897 6.76304418,1.28609703 C7.26302632,1.50037509 7.70715332,1.80165004 8.09542516,2.18992189 C8.48369701,2.57819373 8.78497197,3.02232072 8.99925003,3.52230286 C9.21352809,4.03114183 9.32066712,4.57126539 9.32066712,5.14267355 C9.32066712,5.7140817 9.21352809,6.25420527 8.99925003,6.76304423 C8.78497197,7.26302637 8.48369701,7.70715336 8.09542516,8.0954252 C7.70715332,8.48369705 7.26302632,8.784972 6.76304418,8.99925006 Z"
+                                              UseLayoutRounding="True" Margin="4 2 4 2"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"
+                                              Fill="{DynamicResource  SvgButton.Static.Foreground}">
+                                        </Path>
+                                    </Border>
+                                    <!--<Image x:Name="SearchImage" Source="/STC.Common;component/Images/放大镜.png" Width="24" Height="24"/>-->
+
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" Grid.Column="1"/>
+
+                                    <TextBlock x:Name="HintTextBox" IsHitTestVisible="False" Text="{Binding HintGroupText, ElementName=searchGroupTextBox, Mode=TwoWay}" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="1"  Padding="4 0 0 0 "
+                                                Foreground="{DynamicResource TextBox.Static.Border}" Visibility="Collapsed"/>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Disable.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Disable.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.MouseOver.Border}"/>
+                                    <!--<Setter Property="Source" TargetName="SearchImage" Value="/STC.Common;component/Images/放大镜h.png"/>-->
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Focus.Border}"/>
+                                    <!--<Setter Property="Source" TargetName="SearchImage" Value="/STC.Common;component/Images/放大镜h.png"/>-->
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Focus.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Focus.Border}"/>
+                                </Trigger>
+                                <Trigger Property="Text" Value="">
+                                    <Setter Property="Visibility" TargetName="search_border" Value="Visible"/>
+                                    <Setter Property="Visibility" TargetName="cleanBtn" Value="Collapsed"/>
+                                    <Setter Property="Visibility" TargetName="HintTextBox" Value="Visible"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+    <Grid>
+        <Button x:Name="SearchImage" Width="24" Height="24" VerticalAlignment="Center" HorizontalAlignment="Right" Click="SearchImage_Click" Visibility="Collapsed" Style="{DynamicResource SearchButton_24}"/>
+
+        <Grid x:Name="SearchGrid" Visibility="Visible">
+            <TextBox x:Name="SearchTermTextBox" Style="{DynamicResource SearchTextBoxStyle}"
+                 VerticalContentAlignment="Center" 
+                 MaxLength="20" MinWidth="100"
+                 TextChanged="SearchTermTextBox_TextChanged"
+                 PreviewKeyDown="tbSearch_PreviewKeyDown"
+                 KeyDown="tbSearch_KeyDown"
+                 GotFocus="tbSearch_GotFocus"
+                 LostFocus="tbSearch_LostFocus" 
+                 input:TextCompositionManager.PreviewTextInput="tbTraderAInfoChange_PreviewTextInput"
+                 input:TextCompositionManager.PreviewTextInputUpdate="tbTraderAInfoChange_PreviewTextInputUpdate"/>
+
+            <Popup x:Name="popBondCode" PlacementTarget="{Binding ElementName=SearchTermTextBox}" StaysOpen="False" MaxHeight="200"
+                   PopupAnimation="Slide" AllowsTransparency="False">
+                <Border BorderBrush="#282828" BorderThickness="1" >
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="搜索组" FontSize="12" Background="{DynamicResource DefaultBackgroup.ColorBrush}" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"/>
+                        <!--{DynamicResource DefaultBackgroup.ColorBrush}-->
+                        <DataGrid x:Name="dgBondCode" Grid.Row="1"
+                        ItemsSource="{Binding}" 
+                        HeadersVisibility="None"
+                        BorderThickness="0"       
+                        VirtualizingPanel.IsVirtualizing="True"
+                        VirtualizingPanel.ScrollUnit="Pixel"
+                        ScrollViewer.CanContentScroll="True"
+                        Margin="0" 
+                        Width="200"
+                        MouseUp="dgBondCode_MouseUp"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                        ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+
+                            <DataGrid.Resources>
+                                <Style x:Key="tbStyle" TargetType="{x:Type TextBlock}">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Style>
+                                <DynamicResource ResourceKey="DefaultDataGrid"/>
+                            </DataGrid.Style>
+                            <DataGrid.Columns>
+
+                                <DataGridTemplateColumn Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent">
+                                                <TextBlock Grid.Column="0" Height="22" Text="{Binding groupname}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource self}, Path=Text}">
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                    </Grid>
+
+                </Border>
+
+            </Popup>
+
+        </Grid>
+
+    </Grid>
+</UserControl>

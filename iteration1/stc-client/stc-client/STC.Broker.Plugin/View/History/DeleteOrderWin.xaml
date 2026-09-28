@@ -1,0 +1,462 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.History.DeleteOrderWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+        xmlns:localcomp ="clr-namespace:STC.Broker.Plugin.View.Component"
+        xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+        xmlns:local="clr-namespace:STC.Broker.Plugin.View.History"
+        mc:Ignorable="d"
+        d:DesignHeight="600" d:DesignWidth="1180"
+        x:Name="wd_delOrder" SizeChanged="wd_delOrder_SizeChanged" Loaded="wd_delOrder_Loaded">
+    <UserControl.Template>
+        <ControlTemplate TargetType="{x:Type UserControl}">
+            <AdornerDecorator>
+                <ContentPresenter />
+            </AdornerDecorator>
+        </ControlTemplate>
+    </UserControl.Template>
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            </Style>
+
+            <Style x:Key="ColumnHeaderGripperStyle" TargetType="Thumb">
+                <Setter Property="Width" Value="8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Cursor" Value="SizeWE"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Thumb}">
+                            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+
+            </Style>
+
+
+            <Style x:Key="{x:Type ItemsControl}" TargetType="{x:Type ItemsControl}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Items.Count, RelativeSource={RelativeSource Self}}" Value="0">
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <VisualBrush Stretch="None">
+                                    <VisualBrush.Visual>
+                                        <TextBlock  Foreground="#FFFFFF" Opacity="0.5" FontSize="20" Text="暂无数据 " 
+                                       />
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Setter.Value>
+                        </Setter>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Items, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <VisualBrush Stretch="None">
+                                    <VisualBrush.Visual>
+                                        <TextBlock Foreground="#FFFFFF" Opacity="0.5" FontSize="20" Text="暂无数据 " 
+                                       />
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Setter.Value>
+                        </Setter>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type ItemsControl}}">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <!--<Setter Property="Background" Value="#040B0B"/>-->
+                <Setter Property="AlternationCount" Value="2"/>
+                <Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Foreground">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Background" Value="#040B0B"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Setter Property="FontSize" Value="14"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridColumnHeader">
+                                        <Grid Background="Black" x:Name="gdColumnHeader">
+                                            <!--<Themes:DataGridHeaderBorder BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" IsClickable="{TemplateBinding CanUserSort}" IsPressed="{TemplateBinding IsPressed}" IsHovered="{TemplateBinding IsMouseOver}" Padding="{TemplateBinding Padding}" SortDirection="{TemplateBinding SortDirection}" SeparatorBrush="{TemplateBinding SeparatorBrush}" SeparatorVisibility="{TemplateBinding SeparatorVisibility}">-->
+                                            <Grid >
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Line x:Name="headerLine" X1="0" Y1="7"  X2="0" Y2="21" 
+                                                      Stroke="#193D37 " StrokeThickness="1" />
+                                                <ContentPresenter Grid.Column="0" Margin="5,0,5,0"
+                                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                <Path x:Name="SortArrow"
+                                                          Grid.Column="1"
+                                                          HorizontalAlignment="Left"
+                                                          VerticalAlignment="Center"
+                                                          Width="8" Height="12" Margin="5,0,5,0"
+                                                          Stretch="Fill" Opacity="1" Fill="{TemplateBinding Foreground}"
+                                                          RenderTransformOrigin="0.5,0.4"
+                                                          Visibility="Collapsed"
+                                                          Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" />
+                                            </Grid>
+                                            <!--</Themes:DataGridHeaderBorder>-->
+                                            <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                            <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="SortDirection" Value="Ascending">
+                                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"></Setter>
+                                                <Setter TargetName="SortArrow" Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <RotateTransform Angle="180" />
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                            <Trigger Property="SortDirection" Value="Descending">
+                                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="headerLine" Property="Stroke" Value="#136C5E" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                            <!--<Setter Property="Background" Value="#0E0F0E"/>-->
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Style.Triggers>
+                                <Trigger Property="AlternationIndex" Value="0">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#0A0F0E" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="AlternationIndex" Value="1">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#121716" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#193D37" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <SolidColorBrush Color="#193D37" Opacity="0.9"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="LabelStyle1" TargetType="{x:Type Label}">
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="Width" Value="50"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Label}">
+                            <Border CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="SelfLabel" TargetType="Label" BasedOn="{StaticResource LabelStyle1}">
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="#008704"></Setter>
+            </Style>
+            <Style x:Key="OtherLabel" TargetType="Label" BasedOn="{StaticResource LabelStyle1}">
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="SelectData" TargetType="DataGrid">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <Setter Property="Background" Value="#040B0B"/>
+                <Setter Property="AlternationCount" Value="1"/>
+                <Setter Property="AlternatingRowBackground" Value="#121716"/>
+                <Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Margin" Value="10,0,0,0"/>
+                            <Setter Property="Foreground">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Background" Value="#040B0B"/>
+                            <Setter Property="Height" Value="30"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                            <Setter Property="Background" Value="#193D37"/>
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" Value="#172422"/>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#172422"/>
+                                    <Setter Property="Foreground" Value="#FFEBC8"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <!--<WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" 
+                      UseAeroCaptionButtons="False"
+                      ResizeBorderThickness="5"
+                       GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>-->
+
+    <Grid  >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid x:Name="gMain" Grid.Row="1" Background="#090C0C">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <StackPanel x:Name="spConditions" HorizontalAlignment="Right" Orientation="Horizontal" Margin="5,5,5,5" Grid.Row="0" Grid.Column="0">
+                    <TextBox x:Name="txtb" Width="0"></TextBox>
+                    <DatePicker x:Name="dpFrom" Height="25" Width="140" Margin="10,0,3,0" FontFamily="{StaticResource DefaultFont}" Style="{StaticResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" ></DatePicker>
+                    <Line X1 ="5" Y1="12"  X2="15"  Y2="12" Stroke="Wheat" />
+                    <DatePicker x:Name="dpTo" Height="25" Width="140" Margin="10,0,0,0" FontFamily="{StaticResource DefaultFont}" Style="{StaticResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" ></DatePicker>
+                    <Button  x:Name="btnSelect" Margin="10,0,0,0" Style="{StaticResource ConfirmButtonStyle}" Foreground="Wheat" Width="60" Height="22" Content="查询" Click="Button_Click"/>
+                </StackPanel>
+            </Grid>
+            <Grid x:Name="gDetail" Grid.Row="1" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Grid Background="Black" Margin="5">
+                    <!--水印-->
+                    <DataGrid x:Name="dgRecords"  ItemsSource="{Binding}" FontSize="12" Opacity="1"   BorderThickness="1"  BorderBrush="#464646" 
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.CanContentScroll="True"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" >
+                        <DataGrid.Resources>
+                            <Style x:Key="tbStyle" TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="HorizontalAlignment" Value="Left"/>
+                                <Setter Property="FontSize" Value="14"/>
+                                <Setter Property="Margin" Value="5,0,5,0"/>
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                <Setter Property="Foreground" Value="#FFEBC8"/>
+                                <Setter Property="ToolTip">
+                                    <Setter.Value>
+                                        <ToolTip Content="{Binding Path=Text}"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </DataGrid.Resources>
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:Name="dgtcSeq" Header="内码" Width="50*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" Foreground="#FFEBC8"  FontWeight="Bold" Binding="{Binding Sequence}"></DataGridTextColumn>
+                            <DataGridTextColumn x:Name="dgtcGoodsCode" Header="代码" Width="80*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" Foreground="#FFEBC8"  FontWeight="Bold" Binding="{Binding SecurityID}"></DataGridTextColumn>
+                            <DataGridTextColumn x:Name="dgtcGoodsShortName" Header="简称" Width="120*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsShortName" Foreground="#FFEBC8" FontWeight="Bold"  Binding="{Binding Symbol}"></DataGridTextColumn>
+                            <DataGridTemplateColumn x:Name="dgtcPriceFormat" Header="价格"  Width="70*" CanUserSort="False" SortMemberPath="PriceFormat">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock  x:Name="tbContentDisplay" Foreground="#F9C66E"  Style ="{StaticResource tbStyle}"  Text="{Binding PriceFormat}" ></TextBlock>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger  Value="2"  Binding="{Binding InternalFlag }">
+                                                <Setter Property="Foreground" TargetName="tbContentDisplay" Value="#00FFB4"></Setter>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn x:Name="dgFandian" Header="价格备注" Width="50*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="FandianShow" Foreground="#F9C66E" FontWeight="Bold"  Binding="{Binding FandianShow}"></DataGridTextColumn>
+                            <DataGridTextColumn x:Name="dgtcVolDisplay" Header="Vol" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="qty" Foreground="#F9C66E" Width="60*" FontWeight="Bold"  Binding="{Binding LastQty}"></DataGridTextColumn>
+                            <DataGridTemplateColumn x:Name="dgTecTag" Header="结算方式"  Width="60*" CanUserSort="False" SortMemberPath="ContentDisplay">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel x:Name="spTag" Orientation="Horizontal" VerticalAlignment="Center" >
+                                            <StackPanel x:Name="spTagChild"></StackPanel>
+                                            <TextBlock x:Name="tbContentDisplay" FontSize="14" Foreground="#FFEBC8" Margin="5,0,0,0" FontFamily="{StaticResource DefaultFont}" Text="{Binding ContentDisplay}"></TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn x:Name="dgtcTraderAInfo" Header="点价/ofr方"  Width="120*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="TraderAInfo" Foreground="#FFEBC8"  Binding="{Binding TraderAInfo}" ></DataGridTextColumn>
+                            <DataGridTemplateColumn x:Name="dgTecTraderA" Header="点价/ofr方Broker" Width="70*" CanUserSort="False" SortMemberPath="brokerNameA">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:Name="dTeTraderA" >
+                                        <StackPanel x:Name="spTraderA" Margin="5,0,0,0" Orientation="Horizontal" VerticalAlignment="Center" >
+                                            <Label x:Name="lTraderASelfLabel" VerticalAlignment="Center" Style="{StaticResource OtherLabel}">
+                                                <TextBlock x:Name="tbBrokerNameA"  FontSize="14" TextTrimming="CharacterEllipsis"  Text="{Binding PartySubName}">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip x:Name="ttTraderAText" Content="{Binding Path=Text}">
+                                                        </ToolTip>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                            </Label>
+                                            <Image x:Name="imgTraderA" Margin="5,0,0,0" Width="18" Height="18"></Image>
+                                        </StackPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger  Value="1" Binding="{Binding BrokerARole }">
+                                                <Setter TargetName="tbBrokerNameA" Property="Foreground" Value="#00CDAD"></Setter>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn x:Name="dgTecSideDisplay" Width="40*" MinWidth="50"  Header="方向" CanUserSort="False" SortMemberPath="SideDisplay">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:Name="dTeSideDisplay">
+                                        <TextBlock x:Name="lbSide" Text="{Binding SideDisplay}"   FontFamily="{StaticResource DefaultFont}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger  Value="GVN" Binding="{Binding SideDisplay }">
+                                                <Setter TargetName="lbSide" Property="Foreground" Value="#FF9200"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger  Value="出给" Binding="{Binding SideDisplay }">
+                                                <Setter TargetName="lbSide" Property="Foreground" Value="#FF9200"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger  Value="TKN" Binding="{Binding SideDisplay }">
+                                                <Setter TargetName="lbSide" Property="Foreground" Value="#12A1FF"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger  Value="TRD" Binding="{Binding SideDisplay }">
+                                                <Setter TargetName="lbSide" Property="Foreground" Value="#008704"></Setter>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn x:Name="dgtcTraderBInfo" Header="被点/bid方" Width="120*" CanUserSort="False" SortMemberPath="TraderBInfo" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}"  Binding="{Binding TraderBInfo}"></DataGridTextColumn>
+                            <DataGridTemplateColumn x:Name="dgtcTraderB" Header="被点/bid方Broker"  Width="70*" CanUserSort="False" SortMemberPath="brokerNameB">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:Name="dTeTraderB">
+                                        <StackPanel x:Name="spTraderB" Margin="5,0,0,0"  Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Label x:Name="lTraderBSelfLabel" VerticalAlignment="Center" Style="{StaticResource OtherLabel}">
+                                                <TextBlock x:Name="tbBrokerNameB"   FontSize="14" TextTrimming="CharacterEllipsis"  Text="{Binding CounterPartySubName}">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip x:Name="ttTraderBText" Content="{Binding Path=Text}">
+                                                        </ToolTip>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                            </Label>
+                                            <Image x:Name="imgTraderB" Margin="5" Width="18" Height="18"></Image>
+                                        </StackPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger  Value="1" Binding="{Binding BrokerBRole }">
+                                                <Setter TargetName="tbBrokerNameB" Property="Foreground" Value="#00CDAD"></Setter>
+                                            </DataTrigger>
+                                            <!--<DataTrigger  Value="1" Binding="{Binding BrokerShowStyle }">
+                                                <Setter TargetName="imgTraderB" Property="Source" Value="../Images/trade_tag_confirmed.png"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger  Value="2" Binding="{Binding BrokerShowStyle }">
+                                                <Setter TargetName="imgTraderB" Property="Source" Value="../Images/trade_tag_denied.png"></Setter>
+                                            </DataTrigger>
+                                            <DataTrigger  Value="3" Binding="{Binding BrokerShowStyle }">
+                                                <Setter TargetName="imgTraderB" Property="Source" Value="../Images/trade_tag_partly_confirmed.png"></Setter>
+                                            </DataTrigger>-->
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn x:Name="dgtcCTime" Header="创建时间" Width="120*" MinWidth="120" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}" CanUserSort="False"  SortMemberPath="createTime"  FontWeight="Bold"  Binding="{Binding CreateTimeDisplay}"></DataGridTextColumn>
+                            <DataGridTextColumn x:Name="dgtc_delTime" Header="删除时间" Width="120*" MinWidth="120" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}" CanUserSort="False"  SortMemberPath="createTime"  FontWeight="Bold"  Binding="{Binding UpdateTimeDisplay}"></DataGridTextColumn>
+                            <DataGridTextColumn x:Name="dt_Operator" Header="操作人" Width="60*"  MinWidth="60" Foreground="#FFEBC8" ElementStyle="{StaticResource tbStyle}" CanUserSort="False"  SortMemberPath="createTime"  FontWeight="Bold"  Binding="{Binding  CloseBy}"></DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <!--<UserControls:WaterMarkControl x:Name="waterMark" VirtualizingPanel.IsVirtualizing="True"  Height="{Binding Path=Height, ElementName=gMain}" Width="{Binding Path=Width, ElementName=wd_delOrder}" Grid.Row="0" Grid.RowSpan="2"  IsHitTestVisible="False"  Margin="5,30,23,5" VerticalAlignment="Top"/>-->
+                </Grid>
+                <commComp:PageControl x:Name="pageControl"  Grid.Row="1" HorizontalAlignment="Right" Margin="0,0,0,5"  />
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

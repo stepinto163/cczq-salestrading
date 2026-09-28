@@ -1,0 +1,40 @@
+﻿<UserControl x:Class="STC.Common.View.Component.AlertSign"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="24" d:DesignWidth="24" x:Name="alertSign">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ControlTemplate x:Key="AlertTemplate" TargetType="Button">
+                <Border x:Name="AlertSign" Grid.Column="0" Grid.Row="1" Visibility="Visible" SnapsToDevicePixels="true" HorizontalAlignment="Left"  BorderThickness="0" Width="24" Height="21">
+                    <Canvas>
+                        <TextBlock Text="!" x:Name="arrow" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#8F9598"  FontSize="12" Padding="10,6,0,0" FontWeight="Bold">
+                        </TextBlock>
+                        <Path  x:Name="patharrow"  Data="M 12,2 L 2,21 L 22,21 L 12,2 Z" SnapsToDevicePixels="False"  Stroke="#8F9598" StrokeThickness="2"/>
+                    </Canvas>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="#3C3C3C"/>
+                    </Trigger>
+
+                    <Trigger Property="IsMouseOver" Value="true">
+                        <Setter TargetName="arrow" Property="Foreground" Value="#FFFFFF"/>
+                        <Setter TargetName="patharrow" Property="Stroke" Value="#FFFFFF"/>
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="false">
+                        <Setter TargetName="arrow" Property="Foreground" Value="#8F9598"/>
+                        <Setter TargetName="patharrow" Property="Stroke" Value="#8F9598"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Button Name="btAlert" Width="24" Height="24" Template="{StaticResource AlertTemplate}"  ToolTip="{Binding ToolTipText, ElementName=alertSign, Mode=TwoWay}" >
+        </Button>
+    </Grid>
+</UserControl>

@@ -1,0 +1,313 @@
+﻿<bondComp:WindowBase x:Class="STC.quant.plugin.View.Component.GroupManagerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.quant.plugin.View.Component"
+             xmlns:bondComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"   Closed="WindowBase_Closed"
+             mc:Ignorable="d"  Title="券组管理"  MinboxEnable="False" MaxboxEnable="False" WindowStartupLocation="CenterScreen"
+            Width="1000" Height="450"  MouseDown="WindowBase_MouseDown"
+                     xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore">
+    <bondComp:WindowBase.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <!-- 居中 -->
+            <Style x:Key="MMDataGridColumnHeaderCenterStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="Margin" Value="9 0 0 0"/>
+                <Setter Property="BorderThickness" Value="0 0 0 0"/>
+            </Style>
+            <!-- 居右 -->
+            <Style x:Key="MMDataGridColumnHeaderRightStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderRightStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+            <!-- 居左 -->
+            <Style x:Key="MMDataGridColumnHeaderLeftStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+            <SolidColorBrush x:Key="DataGridBorderBrush" Color="#3C3C3C"/>
+
+            <Style x:Key="DataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
+                <Setter Property="Foreground" Value="{DynamicResource DataGridColumnHeaderForeground}"/>
+                <Setter Property="Background" Value="{DynamicResource DataGridColumnHeaderBackground}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment"  Value="Center"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="Padding" Value="10,0,0,0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridColumnHeader">
+                            <Grid Background="{TemplateBinding Background}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                          VerticalAlignment ="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Grid.Column="0" Margin="5,0,0,0"
+                                                HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                VerticalAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    <Path x:Name="SortArrow"
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"                                           
+                                                Width="8" Height="6" Margin="2,0,0,0"
+                                                Stretch="Fill" Opacity="0.5" Fill="{TemplateBinding Foreground}"
+                                                RenderTransformOrigin="0.5,0.4"
+                                                Visibility="Collapsed"
+                                                Data="M0,0 L1,0 0.5,1 z"/>
+                                </Grid>
+                                <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Style="{DynamicResource ColumnHeaderGripperStyle}"/>
+                                <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Style="{DynamicResource ColumnHeaderGripperStyle}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <!--
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="PART_LeftHeaderGripper" Property="Background">
+                                <Setter.Value>
+                                    <RadialGradientBrush>
+                                        <GradientStop Color="Black" Offset="1"/>
+                                        <GradientStop Color="White" Offset="0.5"/>
+                                    </RadialGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        -->
+                                <Trigger Property="SortDirection" Value="Ascending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="SortArrow" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="180" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Descending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>
+                <Setter Property="Background" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>
+                <Setter Property="Height" Value="50"/>
+                <Style.Triggers>
+                    <Trigger Property="AlternationIndex" Value="0">
+                        <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                    </Trigger>
+                    <Trigger Property="AlternationIndex" Value="1">
+                        <Setter Property="Background" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>
+                    </Trigger>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.SelectedInactive.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedInactive.Border}"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.SelectedActive.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedActive.Border}"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="TextBlock.VerticalAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="IsTabStop" Value="False"/>
+                <!--<Setter Property="Padding" Value="10,0,0,0"/>-->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True" BorderBrush="{DynamicResource DataGridCellBorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+           
+        </ResourceDictionary>
+    </bondComp:WindowBase.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="26" />
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+
+        <StackPanel Orientation="Horizontal">
+            <!--<Button x:Name="btnAddGroup" Grid.Column="0" Width="56" Height="16" Margin="5,0,4,0" Style="{StaticResource AddButtonStyle}"
+                       Click="btnAddGroup_Click"  IsDefault="True" Content="添加券组">
+            </Button>-->
+            <Button x:Name="AddQuantBtn" Width="88" Height="24" Style="{DynamicResource GrayButtonStyle}" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Center"
+                  Command="{Binding AddGroupCommand}" >
+                <WrapPanel Orientation="Horizontal" Background="Transparent" VerticalAlignment="Center">
+                    <!--<Image Source="/STC.quant.Plugin;component/Images/stc_icon_add_seleted.png" HorizontalAlignment="Left" Margin="0,0,0,0"/>-->
+                    <Path x:Name="svg_path" Data="M11.441872,5.42050297 L6.5114933,5.42050297 L6.5114933,0.563956889 C6.5114933,0.407218648 6.45725153,0.274041273 6.34876798,0.164424764 C6.24028444,0.0548082547 6.10848355,4.45239412e-16 5.95336531,0 L5.95336531,0 C5.79824706,0 5.66644617,0.0548082547 5.55796263,0.164424764 C5.44947908,0.274041273 5.39523731,0.407218648 5.39523731,0.563956889 L5.39523731,5.42050297 L0.558127997,5.42050297 C0.413262775,5.42050297 0.284107822,5.47531122 0.170663139,5.58492773 C0.0572184554,5.69454424 0.000330742517,5.82772161 0,5.98445985 L0,5.98445985 C0,6.1411981 0.0568877129,6.27437547 0.170663139,6.38399198 C0.284438565,6.49360849 0.413593517,6.54841674 0.558127997,6.54841674 L5.39523731,6.54841674 L5.39523731,11.4360431 C5.39523731,11.5824213 5.44947908,11.7129251 5.55796263,11.8275545 C5.66644617,11.942184 5.79824706,11.9996658 5.95336531,12 L5.95336531,12 C6.10848355,12 6.24028444,11.9425182 6.34876798,11.8275545 C6.45725153,11.7125909 6.5114933,11.5820871 6.5114933,11.4360431 L6.5114933,6.54841674 L11.441872,6.54841674 C11.5969902,6.54841674 11.7287911,6.49360849 11.8372747,6.38399198 C11.9457582,6.27437547 12,6.1411981 12,5.98445985 L12,5.98445985 C12,5.82772161 11.9457582,5.69454424 11.8372747,5.58492773 C11.7287911,5.47531122 11.5969902,5.42050297 11.441872,5.42050297 L11.441872,5.42050297 Z"
+                                  UseLayoutRounding="True" Width="16"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Center"
+                                  Fill="{DynamicResource SvgButton.Selected.Fill}" />
+                    <TextBlock Text="添加券组" Width="Auto" Height="16" Margin="2,0,0,0"/>
+                </WrapPanel>
+            </Button>
+        </StackPanel>
+        <TextBox Name="txTest" Visibility="Hidden" Width="0"/>
+        <DataGrid x:Name="GroupView" Grid.Row="1"   BorderThickness="1"
+                  SelectedItem="{Binding SelectedGroupItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    ItemsSource="{Binding GroupView}"
+                  Style="{DynamicResource DefaultDataGrid}"
+                   ColumnHeaderStyle="{StaticResource MMDataGridColumnHeaderLeftStyle}" SelectionMode="Single" Grid.ColumnSpan="3" Margin="0,0,0.001,0"
+                  CellEditEnding="GroupView_CellEditEnding">
+            <DataGrid.Columns>
+
+                <DataGridTemplateColumn Header="" Width="48" MinWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Center">
+                                <Button Content="一" Foreground="#A0A0A0" Width="24" Margin="0, 0, 6, 0" Height="24" ToolTip="删除" HorizontalAlignment="Center" Style="{DynamicResource GreenDeleteButtonStyle}" 
+                                        Command="{Binding DataContext.DelGroupCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                        Visibility="{Binding ShowDeleteBtn,Converter={StaticResource visibilityConvertor}}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="*" Header="组名" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0">
+                                    <TextBlock Text="{Binding Groupname}" Visibility="{Binding GroupTextVisibleNo}" VerticalAlignment="Center">
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                    <TextBox Name="txGroupName" Text="{Binding Groupname,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"  
+                                             Style="{DynamicResource STCDefaultBoxStyle}" 
+                                             Visibility="{Binding GroupTextVisible}"
+                                              Height="24" KeyDown="TxGroupName_KeyDown" LostFocus="TxGroupName_LostFocus" 
+                                             HorizontalAlignment="Stretch" Margin="2,0,2,0" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"/>
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTextColumn Header="债券数量" MinWidth="50" Width="0.5*" Binding="{Binding BondNum}" >
+                    <!--<DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding Info1}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>-->
+                </DataGridTextColumn>
+
+                <!--<DataGridTextColumn Header="债券代码" MinWidth="100" Width="2.5*" Binding="{Binding BondCode}" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding BondCode}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>-->
+                <DataGridTemplateColumn MinWidth="100"  Width="2.5*" Header="操作文本" CanUserSort="False" SortMemberPath="Value" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Label Content="{Binding BondCode}" Foreground="#FFFFFF">
+                                <Label.ToolTip>
+                                    <ToolTip  >
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Width="400"/>
+                                    </ToolTip>
+                                </Label.ToolTip>
+                            </Label>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="作者"  Width="*" MinWidth="75" Binding="{Binding Username}" />
+                <DataGridTextColumn Header="最后编辑人"  Width="*" MinWidth="75" Binding="{Binding Closeby}" />
+
+                <DataGridTextColumn Header="更新时间" MinWidth="130" Width="*" Binding="{Binding updatetime}" >
+                </DataGridTextColumn>
+
+                <DataGridTemplateColumn Header="操作" Width="48" MinWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left"  VerticalAlignment="Center" >
+                                <Button x:Name="btnAlter" Height="16" Width="16" Margin="5,0,0,0" ToolTip="修改"
+                                                    Command="{Binding DataContext.EditGroupCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"   
+                                                        Style="{DynamicResource EditButton}"  FontSize="10"
+                                        Visibility="{Binding ShowDeleteBtn,Converter={StaticResource visibilityConvertor}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTemplateColumn Header="操作" Width="80" MinWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                          
+                            <Button x:Name="TPAddBtn" Content="修改" Style="{DynamicResource RedButtonStyle}" HorizontalAlignment="Right" Width="80" Height="24" Margin="10,0,20,0" />
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+            </DataGrid.Columns>
+        </DataGrid>
+
+
+    </Grid>
+
+
+</bondComp:WindowBase>

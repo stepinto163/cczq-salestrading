@@ -1,0 +1,692 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.View.Trade.Card.MarketCardOrderView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Trade.Card"
+             mc:Ignorable="d" 
+             d:DesignHeight="215" d:DesignWidth="365" MouseWheel="UserControl_MouseWheel">
+    
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="16"></RowDefinition>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition Height="24"></RowDefinition>
+
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Visibility="{Binding OhlcVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="20"></ColumnDefinition>
+                <ColumnDefinition Width="30*"></ColumnDefinition>
+                <ColumnDefinition Width="20"></ColumnDefinition>
+                <ColumnDefinition Width="30*"></ColumnDefinition>
+                <ColumnDefinition Width="20"></ColumnDefinition>
+                <ColumnDefinition Width="30*"></ColumnDefinition>
+                <ColumnDefinition Width="10*"></ColumnDefinition>
+                <ColumnDefinition Width="80"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0, 0, 5, 0">
+                <TextBlock Grid.Column="7" Text="成交:" Width="28" Height="15" HorizontalAlignment="Left" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center">
+
+                </TextBlock>
+                <TextBlock Grid.Column="7" Text="{Binding OrderCount}" Height="15" MinWidth="15" Margin="0, 0, 0, 0" HorizontalAlignment="Left" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center"></TextBlock>
+
+                <TextBlock Grid.Column="7" Text="笔" Width="15" Height="15" HorizontalAlignment="Right" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center">
+
+                </TextBlock>
+            </StackPanel>
+            
+            <TextBlock Grid.Column="0" Text="昨：" Margin="0 ,0, 3, 0" Width="15" Height="15" HorizontalAlignment="Right" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-12}" VerticalAlignment="Center"></TextBlock>
+            <TextBlock Grid.Column="1" Text="{Binding CloseYield}" TextTrimming="CharacterEllipsis" ToolTip="{Binding CloseYield}"  Height="15" HorizontalAlignment="Left" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-12}" VerticalAlignment="Center"></TextBlock>
+
+            <TextBlock Grid.Column="0" Visibility="Collapsed" Text="开：" Margin="0 ,0, 3, 0" Width="15" Height="15" HorizontalAlignment="Right" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center"></TextBlock>
+            <TextBlock Grid.Column="1" Visibility="Collapsed" Text="{Binding OpenYld}" TextTrimming="CharacterEllipsis" ToolTip="{Binding OpenYld}" Height="15" HorizontalAlignment="Left" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center"></TextBlock>
+
+            <TextBlock Grid.Column="2" Text="高：" Margin="0 ,0, 3, 0" Width="15" Height="15" HorizontalAlignment="Right" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center"></TextBlock>
+            <TextBlock Grid.Column="3" Text="{Binding HighYield}" TextTrimming="CharacterEllipsis" ToolTip="{Binding HighYield}" Height="15" HorizontalAlignment="Left" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-12}" VerticalAlignment="Center"></TextBlock>
+
+            <TextBlock Grid.Column="4" Text="低：" Margin="0 ,0, 3, 0" Width="15" Height="15" HorizontalAlignment="Right" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center"></TextBlock>
+            <TextBlock Grid.Column="5" Text="{Binding LowYield}" TextTrimming="CharacterEllipsis" ToolTip="{Binding LowYield}"  Height="15" HorizontalAlignment="Left" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}"  FontSize="{StaticResource FontSize-11}" VerticalAlignment="Center"></TextBlock>
+        </Grid>
+
+        <!--第一行数据 <Setter Property="Background" Value="#172422"></Setter>-->
+        <Grid Grid.Row="1" VerticalAlignment="Top" Tag="{Binding IsValid1}">
+            <Grid.Resources>
+                <!--Style方式-->
+                <Style  TargetType="Grid">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Style.Triggers>
+                        <Trigger Property="Tag" Value="Y">
+                            <Setter Property="Background" Value="#172422"></Setter>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="N">
+                            <Setter Property="Background" Value="#172422"></Setter>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="25*" MinWidth="40"/>
+                <ColumnDefinition Width="26" />
+                <ColumnDefinition Width="12.5*" MinWidth="54"/>
+                <ColumnDefinition Width="12.5*" MinWidth="50"/>
+                <ColumnDefinition Width="20*" MinWidth="50"/>
+                <ColumnDefinition Width="25*" MinWidth="70"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock  Grid.Column="0" Text="{Binding Side1,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"  FontSize="{StaticResource FontSize-11}" >
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="Height" Value="24"></Setter>
+                        <Setter Property="Width" Value="40"></Setter>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextAlignment" Value="Center"></Setter>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side1}" Value="Y"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue_firm}" />
+                            </MultiDataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side1}" Value="Z"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Green}" />
+                            </MultiDataTrigger>
+
+
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <Image  Grid.Column="1"  Height="12" Source="/STC.Common;component/Images/stclite-invalid.png">
+                <Image.Style>
+                    <!--是否有效样式1-->
+                    <Style TargetType="Image">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsValid1}" Value="N">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid1}" Value="Y">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </Style>
+                </Image.Style>
+            </Image>
+
+            <TextBlock  Grid.Column="2" Text="{Binding ExecutePricePercent_Display1, Converter={StaticResource numConvertor}}" FontSize="{StaticResource FontSize-11}">
+                <!--价格样式1-->
+               <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side1}" Value="Y"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side1}" Value="Z"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}" />
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding Side1}" Value="">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid1}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side1}" Value=""/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </MultiDataTrigger>
+                         </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            
+            <!--涨跌-->
+            <TextBlock Grid.Column="3" x:Name="tbDownUp" Text="{Binding DownUp1}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush1}" Value="0"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush1}" Value="2"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter  Property="Foreground" Value="{StaticResource Textblock.Foreground.Red}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush1}" Value="1"/>
+                                    <Condition Binding="{Binding IsValid1}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter  Property="Foreground" Value="{StaticResource Textblock.Foreground.Green}" />
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsValid1}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <!--渠道-->
+            <TextBlock Grid.Column="4">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource Title.Foreground}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="Height" Value="24"></Setter>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextBlock.TextAlignment" Value="Center"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SourceTrader1}" Value="TPSC">
+                                <Setter Property="Text"  Value="国利"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader1}" Value="CTTJ">
+                                <Setter Property="Text"  Value="信唐"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader1}" Value="CNEX">
+                                <Setter Property="Text" Value="国际"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader1}" Value="CCTB">
+                                <Setter Property="Text"  Value="中诚"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader1}" Value="PTCN">
+                                <Setter Property="Text" Value="平安"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid1}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!--时间-->
+            <TextBlock  Grid.Column="5"  Text="{Binding Time1, Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}">
+            <!--时间样式1-->
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Foreground" Value="{StaticResource DataGrid.Foreground}"/>
+                        <Setter Property="Height" Value="24"/>
+                        <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}"/>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextBlock.TextAlignment" Value="Center"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                        <Setter Property="FontSize" Value="{StaticResource FontSize-11}"/>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+        </Grid>
+
+        <!--第二行数据-->
+        <Grid Grid.Row="2" VerticalAlignment="Top" Tag="{Binding IsValid2}">
+            <Grid.Resources>
+                <!--Style方式-->
+                <Style  TargetType="Grid">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Style.Triggers>
+                        <Trigger Property="Tag" Value="Y">
+                            <Setter Property="Background" Value="#121A19"></Setter>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="N">
+                            <Setter Property="Background" Value="#121A19"></Setter>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="25*" MinWidth="40"/>
+                <ColumnDefinition Width="26" />
+                <ColumnDefinition Width="12.5*" MinWidth="54"/>
+                <ColumnDefinition Width="12.5*" MinWidth="50"/>
+                <ColumnDefinition Width="20*" MinWidth="50"/>
+                <ColumnDefinition Width="25*" MinWidth="70"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock  Grid.Column="0" Text="{Binding Side2,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"  FontSize="{StaticResource FontSize-11}" >
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="Height" Value="24"></Setter>
+                        <Setter Property="Width" Value="40"></Setter>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextAlignment" Value="Center"></Setter>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side2}" Value="Y"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue_firm}" />
+                            </MultiDataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side2}" Value="Z"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Green}" />
+                            </MultiDataTrigger>
+
+                            <DataTrigger Binding="{Binding IsValid2}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                            </DataTrigger>
+                            
+                            <DataTrigger Binding="{Binding ExecutePricePercent_Display1}" Value="--">
+                                <Setter Property="Text" Value="" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <Image  Grid.Column="1"  Height="12" Source="/STC.Common;component/Images/stclite-invalid.png">
+                <Image.Style>
+                    <!--是否有效样式1-->
+                    <Style TargetType="Image">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsValid2}" Value="N">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid2}" Value="Y">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </Style>
+                </Image.Style>
+            </Image>
+
+            <TextBlock  Grid.Column="2" Text="{Binding ExecutePricePercent_Display2, Converter={StaticResource numConvertor}}" FontSize="{StaticResource FontSize-11}">
+                <!--价格样式1-->
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side2}" Value="Y"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side2}" Value="Z"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}" />
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsValid2}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                            </DataTrigger>
+                            
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side2}" Value=""/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!--涨跌-->
+            <TextBlock Grid.Column="3" Text="{Binding DownUp2}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush2}" Value="0"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush2}" Value="2"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter  Property="Foreground" Value="{StaticResource Textblock.Foreground.Red}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush2}" Value="1"/>
+                                    <Condition Binding="{Binding IsValid2}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter  Property="Foreground" Value="{StaticResource Textblock.Foreground.Green}" />
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsValid2}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <!--渠道-->
+            <TextBlock Grid.Column="4">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource Title.Foreground}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="Height" Value="24"></Setter>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextBlock.TextAlignment" Value="Center"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SourceTrader2}" Value="TPSC">
+                                <Setter Property="Text"  Value="国利"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader2}" Value="CTTJ">
+                                <Setter Property="Text"  Value="信唐"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader2}" Value="CNEX">
+                                <Setter Property="Text" Value="国际"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader2}" Value="CCTB">
+                                <Setter Property="Text"  Value="中诚"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader2}" Value="PTCN">
+                                <Setter Property="Text" Value="平安"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid2}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!--时间-->
+            <TextBlock  Grid.Column="5"  Text="{Binding Time2, Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}">
+            <!--时间样式1-->
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Foreground" Value="{StaticResource DataGrid.Foreground}"/>
+                        <Setter Property="Height" Value="24"/>
+                        <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}"/>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextBlock.TextAlignment" Value="Center"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                        <Setter Property="FontSize" Value="{StaticResource FontSize-11}"/>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+        </Grid>
+
+        <!--第三行数据-->
+        <Grid Grid.Row="3" VerticalAlignment="Top" Tag="{Binding IsValid3}">
+            <Grid.Resources>
+                <!--Style方式-->
+                <Style  TargetType="Grid">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Style.Triggers>
+                        <Trigger Property="Tag" Value="Y">
+                            <Setter Property="Background" Value="#172422"></Setter>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="N">
+                            <Setter Property="Background" Value="#172422"></Setter>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="25*" MinWidth="40"/>
+                <ColumnDefinition Width="26" />
+                <ColumnDefinition Width="12.5*" MinWidth="54"/>
+                <ColumnDefinition Width="12.5*" MinWidth="50"/>
+                <ColumnDefinition Width="20*" MinWidth="50"/>
+                <ColumnDefinition Width="25*" MinWidth="70"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock  Grid.Column="0" Text="{Binding Side3,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"  FontSize="{StaticResource FontSize-11}" >
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="Height" Value="24"></Setter>
+                        <Setter Property="Width" Value="40"></Setter>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextAlignment" Value="Center"></Setter>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side3}" Value="Y"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue_firm}" />
+                            </MultiDataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side3}" Value="Z"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Green}" />
+                            </MultiDataTrigger>
+
+                            <DataTrigger Binding="{Binding IsValid3}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                            </DataTrigger>
+
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <Image  Grid.Column="1"  Height="12" Source="/STC.Common;component/Images/stclite-invalid.png">
+                <Image.Style>
+                    <!--是否有效样式1-->
+                    <Style TargetType="Image">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsValid3}" Value="N">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid3}" Value="Y">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </Style>
+                </Image.Style>
+            </Image>
+
+            <TextBlock  Grid.Column="2" Text="{Binding ExecutePricePercent_Display3, Converter={StaticResource numConvertor}}" FontSize="{StaticResource FontSize-11}">
+                <!--价格样式1-->
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side3}" Value="Y"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side3}" Value="Z"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource TextBox.Static.Foreground}" />
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsValid3}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Side3}" Value=""/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!--涨跌-->
+            <TextBlock Grid.Column="3" Text="{Binding DownUp3}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush3}" Value="0"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush3}" Value="2"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter  Property="Foreground" Value="{StaticResource Textblock.Foreground.Red}" />
+                            </MultiDataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding DownUpBrush3}" Value="1"/>
+                                    <Condition Binding="{Binding IsValid3}" Value="Y"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter  Property="Foreground" Value="{StaticResource Textblock.Foreground.Green}" />
+                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsValid3}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <!--渠道-->
+            <TextBlock Grid.Column="4">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource Title.Foreground}"/>
+                        <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                        <Setter Property="Height" Value="24"></Setter>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextBlock.TextAlignment" Value="Center"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SourceTrader3}" Value="TPSC">
+                                <Setter Property="Text"  Value="国利"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader3}" Value="CTTJ">
+                                <Setter Property="Text"  Value="信唐"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader3}" Value="CNEX">
+                                <Setter Property="Text" Value="国际"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader3}" Value="CCTB">
+                                <Setter Property="Text"  Value="中诚"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SourceTrader3}" Value="PTCN">
+                                <Setter Property="Text" Value="平安"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsValid3}" Value="N">
+                                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <!--时间-->
+            <TextBlock  Grid.Column="5"  Text="{Binding Time3, Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}">
+            <!--时间样式1-->
+                <TextBlock.Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Foreground" Value="{StaticResource DataGrid.Foreground}"/>
+                        <Setter Property="Height" Value="24"/>
+                        <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}"/>
+                        <Setter Property="Padding" Value="0,4,0,0"></Setter>
+                        <Setter Property="TextBlock.TextAlignment" Value="Center"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                        <Setter Property="FontSize" Value="{StaticResource FontSize-11}"/>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,728 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.View.Trade.Card.PriceAndOrderView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Trade.Card"
+             xmlns:Comp="clr-namespace:BDB.Trade.Plugin.Component"
+             xmlns:Trade="clr-namespace:BDB.Trade.Plugin.View.Trade"
+             mc:Ignorable="d" 
+             d:DesignHeight="372" d:DesignWidth="284" DataContextChanged="UserControl_DataContextChanged">
+             <!--d:DesignHeight="366" d:DesignWidth="283">-->
+
+    <!--<UserControl.LayoutTransform>
+        <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
+    </UserControl.LayoutTransform>-->
+
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ContextMenuStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <ContextMenu x:Key="OrderContextMenu" Style="{StaticResource DefaultContextMenu}">
+                <MenuItem x:Name="miSendPrice" Header="报价" Style="{StaticResource DefaultMenuItem}" Click="OrderMenuItme_Click"/>
+            </ContextMenu>
+
+
+            <Style x:Key="BidBrokerBargainFlagStyle" TargetType="Image">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding PriceModel.BidBrokerBargainFlag, Converter={StaticResource stringContainsConvertor},ConverterParameter='1'}" Value="true">
+                        <Setter Property="Source" Value="/STC.Common;component/Images/stc_tag_list_nonfirm_1star_14x14.png"/>
+                        <Setter Property="ToolTip" Value="意向价"/>
+                        <Setter Property="Height" Value="25"/>
+                        <Setter Property="Width" Value="25"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding PriceModel.BidBrokerBargainFlag, Converter={StaticResource stringContainsConvertor},ConverterParameter='2'}" Value="true">
+                        <Setter Property="Source" Value="/STC.Common;component/Images/stc_tag_list_nonfirm_2stars_14x14.png"/>
+                        <Setter Property="ToolTip" Value="必须请示"/>
+                        <Setter Property="Height" Value="25"/>
+                        <Setter Property="Width" Value="25"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="OfrBrokerBargainFlagStyle" TargetType="Image">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding PriceModel.OfrBrokerBargainFlag, Converter={StaticResource stringContainsConvertor},ConverterParameter='1'}" Value="true">
+                        <Setter Property="Source" Value="/STC.Common;component/Images/stc_tag_list_nonfirm_1star_14x14.png"/>
+                        <Setter Property="ToolTip" Value="意向价"/>
+                        <Setter Property="Height" Value="25"/>
+                        <Setter Property="Width" Value="25"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding PriceModel.OfrBrokerBargainFlag, Converter={StaticResource stringContainsConvertor},ConverterParameter='2'}" Value="true">
+                        <Setter Property="Source" Value="/STC.Common;component/Images/stc_tag_list_nonfirm_2stars_14x14.png"/>
+                        <Setter Property="ToolTip" Value="必须请示"/>
+                        <Setter Property="Height" Value="25"/>
+                        <Setter Property="Width" Value="25"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+
+        
+    </UserControl.Resources>
+
+    <!--<Border x:Name="bdFirst" CornerRadius="2" BorderThickness="2" BorderBrush="#28403C" Margin="2"
+            Background="{StaticResource MainFrame.Background}">-->
+    <Border x:Name="bdFirst" CornerRadius="2" BorderThickness="0" BorderBrush="{StaticResource Green-1}" Margin="2"
+            Background="#172422">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"></RowDefinition>
+                <RowDefinition Height="26"></RowDefinition>
+                <RowDefinition Height="{Binding PriceModel.BrokerConditionHeight}"></RowDefinition>
+                <RowDefinition Height="{Binding PriceModel.BestPriceHeight}"></RowDefinition>
+                <!--<RowDefinition Height="20"></RowDefinition>-->
+                <RowDefinition Height="{Binding PriceModel.BrokerPriceShowHeight}"></RowDefinition>
+                <!--<RowDefinition Height="180"></RowDefinition>-->
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+
+
+
+
+            <Border x:Name="bdTitle" Grid.Row="0" Margin="8, 0, 4, 0" MouseLeftButtonDown="bdTitle_MouseLeftButtonDown">
+
+                <Grid>
+                    <Border x:Name="bdSecurity"  BorderThickness="0" MouseLeftButtonDown="Border_MouseLeftButtonDown" Visibility="{Binding PriceModel.BondGridVisibility}">
+                        <Grid Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel x:Name="spTitle" Orientation="Horizontal" Grid.Column="0" MouseDown="Grid_MouseDown" MouseEnter="Grid_MouseEnter" MouseLeave="Grid_MouseLeave">
+                                <TextBlock Grid.Column="0" Text="{Binding PriceModel.Security}" Foreground="#F9C152"
+                                       Height="24" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                           FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"
+                                               FontWeight="Bold" LineHeight="24"
+                                           FontSize="{StaticResource FontSize-17}"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding PriceModel.ToolTipTxt}">
+                                </TextBlock>
+                                <TextBlock Margin="8, 6, 0, 0" Grid.Column="1" Text="{Binding PriceModel.SymbolName}" Foreground="#F9C152"
+                                       Height="24" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="{StaticResource FontSize-13}" FontWeight="Normal"
+                                           FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" LineHeight="24"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding PriceModel.ToolTipTxt}"></TextBlock>
+                                <TextBlock Margin="8, 7, 0, 2" Grid.Column="2" Text="{Binding PriceModel.RemainingTime}" Height="24" VerticalAlignment="Center" FontWeight="Normal"
+                                       Foreground="{StaticResource Gray-1}" HorizontalAlignment="Left" FontSize="{StaticResource FontSize-13}" 
+                                           FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" Visibility="{Binding PriceModel.SymbolNameVisibilly}" LineHeight="24"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding PriceModel.ToolTipTxt}"></TextBlock>
+                                <!--<Button x:Name="QBLinkBtn" Margin="2, 0, 0, 6" Click="QBLinkBtn_Click" Style="{StaticResource QBLinkButton}" Width="16" Height="16" Padding="2" VerticalAlignment="Center"/>-->
+
+                            </StackPanel>
+
+                            <Button x:Name="MsgBtn" Grid.Column="1" Width="16" Height="16" Visibility="{Binding PriceModel.MarketIndicatorVisibility}"
+                                    Command="{Binding MsgCommand}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5, 0, 0, 8">
+                                <Button.Style>
+                                    <Style TargetType="{x:Type Button}">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type Button}">
+                                                    <Grid>
+                                                        <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2">
+                                                            <Path x:Name="svg_path" Data="M5.99997163,0.5 C6.79642132,0.5 7.44996453,1.02315925 7.58536364,1.7462224 L7.597,1.832 L7.66361547,1.85996512 C9.22156985,2.53148781 10.2998319,4.04716957 10.3836001,5.78231549 L10.3888542,6.00030658 L10.3906361,7.52987185 C10.3919111,7.58020919 10.3939541,7.64043067 10.3970262,7.70847605 C10.4072543,7.93501848 10.4256253,8.16107522 10.4537766,8.36891787 C10.4809143,8.569277 10.5157268,8.7395189 10.555622,8.86618584 L10.5905341,8.96742366 L10.6661786,8.98429405 C11.0973618,9.07406048 11.4429895,9.41982835 11.4936116,9.86202352 L11.5,9.97448887 C11.5,10.5459281 11.0117844,10.987551 10.4444271,10.987551 L7.666,10.987 L7.666,11 L8.16663357,11.0005991 C8.16663357,12.0980111 7.27918359,12.9605355 6.15471614,13.0334632 L5.99997163,13.0384615 C4.85530101,13.0384615 3.91808274,12.2236507 3.83874933,11.1487382 L3.833,10.987 L1.55557289,10.987551 C0.988226604,10.987551 0.5,10.5459258 0.5,9.97448887 C0.5,9.47363378 0.844642078,9.08004759 1.30613734,8.98454215 L1.408,8.968 L1.41178923,8.94345504 C1.46471148,8.81354783 1.5106126,8.61329142 1.54470032,8.36752948 C1.56388796,8.22919261 1.57863429,8.08273994 1.58943279,7.93343489 L1.60926681,7.52963524 C1.6105707,7.47937736 1.61108905,7.43900248 1.61108905,7.41057254 L1.61108905,6.00030658 C1.61108905,4.18880102 2.76466577,2.52997495 4.3618346,1.84874543 L4.402,1.832 L4.41463454,1.74622193 C4.54156247,1.06834935 5.12386163,0.566175615 5.8524047,0.506051837 L5.99997163,0.5 Z M7.025,11.5 L4.974,11.5 L4.98853751,11.5252482 C5.16713127,11.8020115 5.48572447,11.9963037 5.86967126,12.0323945 L5.99997163,12.0384615 C6.44169192,12.0384615 6.81296824,11.832763 7.01140576,11.5252482 L7.025,11.5 Z M5.99997163,1.5 C5.63979693,1.5 5.38888259,1.73232951 5.38888259,2.02611021 L5.38888259,2.55210609 L5.03980189,2.66262692 C3.6611353,3.09912018 2.61108905,4.49129044 2.61108905,6.00030658 L2.60902136,7.5519289 C2.60754673,7.60984509 2.60519054,7.67791052 2.60166426,7.75418067 C2.58989716,8.00869192 2.56867507,8.26369971 2.53521777,8.50491646 C2.41151025,9.39680926 2.19627636,9.9251397 1.55557289,9.96148306 L1.50679409,9.96296416 C1.49989832,9.96454167 1.49999992,9.96779313 1.49999992,9.97448887 L1.52507972,9.98317149 C1.53331274,9.98560315 1.54350885,9.98755102 1.55557289,9.98755102 L10.4444271,9.98755102 C10.4806268,9.98755102 10.4999999,9.97002667 10.4999999,9.97448887 L10.4749357,9.96585299 C10.4667027,9.96342718 10.4565027,9.96148306 10.4444271,9.96148306 C9.80591614,9.96148306 9.58756879,9.42412678 9.46282504,8.50313773 C9.44108208,8.34260838 9.42463766,8.17593175 9.41269089,8.00734993 L9.39804386,7.75357858 C9.39116691,7.60126004 9.38885422,7.48173687 9.38885422,7.41057254 L9.38885422,6.00030658 C9.38885422,4.46738411 8.38717336,3.12232713 6.95780363,2.66186219 L6.61111741,2.5501788 L6.61111741,2.02611021 L6.60373055,1.93999503 C6.55983447,1.68820228 6.32414539,1.5 5.99997163,1.5 Z"
+                                                                  UseLayoutRounding="True"
+                                                                  VerticalAlignment="Center"
+                                                                  HorizontalAlignment="Center"
+                                                                  Fill="#FFEBC8" />         
+                                                        </Border>
+                                                        <Grid>
+                                                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                        </Grid>
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding PriceModel.BellStatus}" Value="1">
+                                                            <Setter Property="Fill" TargetName="svg_path" Value="#F9C152"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PriceModel.BellStatus}" Value="2">
+                                                            <Setter Property="Fill" TargetName="svg_path" Value="#FF7D00"/>
+                                                            <Setter Property="Data" TargetName="svg_path" Value="M9.1675,9.99527931 L9.1675,5.25027343 C9.1675,4.1291418 8.81152778,3.15383894 8.09958333,2.32436486 C7.38763889,1.49489078 6.51083333,1.02094726 5.46916667,0.902534296 L5.46916667,0.49217212 C5.46916667,0.355384728 5.42361111,0.239159193 5.3325,0.143495516 C5.24138889,0.0478318386 5.13069444,-6.48019554e-15 5.00041667,-6.48019554e-15 C4.87013889,-6.48019554e-15 4.75944444,0.0478318386 4.66833333,0.143495516 C4.57722222,0.239159193 4.53166667,0.355384728 4.53166667,0.49217212 L4.53166667,0.902534296 C3.49,1.02094726 2.61319444,1.49489078 1.90125,2.32436486 C1.18930556,3.15383894 0.833333333,4.1291418 0.833333333,5.25027343 L0.833333333,9.99527931 L0.46875,9.99527931 C0.338472222,9.99527931 0.227777778,10.0431112 0.136666667,10.1387748 C0.0455555556,10.2344385 1.85037171e-16,10.350664 0,10.4874514 C-1.85037171e-16,10.6242388 0.0455555556,10.7404644 0.136666667,10.836128 C0.227777778,10.9317917 0.338472222,11.0040398 0.46875,11.0040398 L3.98124123,11.0040398 L3.98124123,11.635853 C3.98124123,11.9094278 4.15361111,12.1418789 4.33583333,12.3332063 C4.51805556,12.5245336 4.73944444,12.5721931 5,12.5721931 C5.26055556,12.5721931 5.48194444,12.5245336 5.66416667,12.3332063 C5.84638889,12.1418789 6.0090847,11.9094278 6.0090847,11.635853 L6.0090847,11.0040398 L9.53125,11.0040398 C9.66152778,11.0040398 9.77222222,10.9317917 9.86333333,10.836128 C9.95444444,10.7404644 10,10.6242388 10,10.4874514 C10,10.350664 9.95444444,10.2344385 9.86333333,10.1387748 C9.77222222,10.0431112 9.66152778,9.99527931 9.53125,9.99527931 L9.1675,9.99527931 Z"/>
+                                                        </DataTrigger>
+                                                        <Trigger Property="IsMouseOver" Value="true">
+                                                            <Setter Property="Background" TargetName="background" Value="#136C5E"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="true">
+                                                            <Setter Property="Background" TargetName="background" Value="#172422"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled" Value="false">
+                                                            <Setter Property="Visibility" TargetName="background" Value="Collapsed"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+
+                            <Button x:Name="btnEdit" Grid.Column="2" Width="16" Height="16" Style="{StaticResource EditButtonStyle}" Visibility="{Binding PriceModel.EditVisibility}"
+                                    Command="{Binding EditCommand}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0, 0, 0, 8"></Button>
+
+                            <Button x:Name="btnPop" Grid.Column="2" Width="16" Height="16" Style="{StaticResource PopButtonStyle}" Visibility="{Binding PriceModel.PopVisibility}"
+                                    Command="{Binding PopCommand}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0, 0, 0, 8"></Button>
+                            <!--<Button x:Name="btnPop" Grid.Column="0" Width="16" Height="16" Style="{StaticResource PopButtonStyle}" Visibility="Collapsed"
+                                    Command="{Binding PopCommand}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5, 0, 0, 8"></Button>-->
+
+                            <Button x:Name="btnDelete" Grid.Column="3" FontSize="{StaticResource FontSize-12}" Content="✕" Padding="0, 0, 3, 0"
+                                    Style="{StaticResource CardDelteButtonStyle}"  Margin="0, 0, 0, 8" Command="{Binding DelteCommand}"
+                                    Visibility="{Binding PriceModel.BondGridVisibility}" Width="16" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Height="16" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></Button>
+
+                        </Grid>
+                    </Border>
+
+                    <!--<Button Width="80" Height="24" Content="+添加债券" Click="AddButton_Click" Visibility="{Binding PriceModel.AddBondVisibility}" Style="{StaticResource Green2ButtonStyle}"/>-->
+
+                    <Comp:SearchEditUI x:Name="seSearch" Height="20" Margin="0, -3, 2, 2" Visibility="{Binding PriceModel.SearchVisibility}" 
+                                       AfterDeleted="seSearch_AfterDeleted" 
+                                       SearchChanged="SeSearch_SearchChanged" LostFocus="seSearch_LostFocus"></Comp:SearchEditUI>
+
+
+                </Grid>
+
+            </Border>
+
+
+            <Grid Grid.Row="1" x:Name="BestExec" MouseLeftButtonDown="BestExec_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0" Margin="8, -12, 2, 0" Visibility="{Binding PriceModel.BondGridVisibility}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="1" Margin="-2 -4 0 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="{Binding PriceModel.LastExecPriceBP}" Padding="3, 0, 3, 0" Foreground="{Binding PriceModel.LastExecBpBrush}" ToolTip="{Binding PriceModel.LastExecPriceBP_ToolTip}"
+                               Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="13" FontFamily="{StaticResource Font.MicrosoftYaHei.Bold}"
+                               FontWeight="SemiBold"/>
+
+                        <TextBlock Grid.Column="0" HorizontalAlignment="Left" FontFamily="{StaticResource Font.MicrosoftYaHei.Bold}" VerticalAlignment="Center" 
+                               Foreground="{Binding PriceModel.LastExecSideBrush}" 
+                               Text="{Binding PriceModel.LastExecSideShow}" FontSize="12" Visibility="{Binding PriceModel.SettleVisibility}"
+                               FontWeight="SemiBold"/>
+
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{StaticResource TextBox.Static.Foreground}"
+                               FontFamily="{StaticResource Font.MicrosoftYaHei.Bold}" FontWeight="SemiBold" FontSize="11" Margin="4, 0, 0, 0"
+                               Text="{Binding PriceModel.LastExecSource}" Visibility="{Binding PriceModel.SymbolNameVisibilly}">
+                        <!--<TextBlock.LayoutTransform>
+                            <ScaleTransform ScaleX="1.3" ScaleY="1.4"/>
+                        </TextBlock.LayoutTransform>-->
+                        </TextBlock>
+                    </Grid>
+                    
+                    
+                    <!--<TextBlock Text="{Binding PriceModel.LastExecPrice}" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="{StaticResource FontSize-22}"
+                               Foreground="{StaticResource Textblock.Foreground.Red}" FontFamily="{StaticResource Font.MicrosoftYaHei.Bold}" FontWeight="Bold"/>-->
+
+                    
+
+                    <TextBlock Text="{Binding PriceModel.LastExecPrice}" Margin="0" Grid.Column="0" HorizontalAlignment="Left" 
+                               VerticalAlignment="Center" FontSize="20"
+                               Foreground="{Binding PriceModel.LastExecBpBrush}" FontFamily="{StaticResource Font.MicrosoftYaHei.Bold}" 
+                               FontWeight="SemiBold"/>
+                    
+                </Grid>
+                
+
+                <!--<Grid Grid.Column="1" HorizontalAlignment="Right" Margin="0, 4, 11, 2" Visibility="{Binding PriceModel.IndexVisibility}">-->
+                <Grid Grid.Column="1" HorizontalAlignment="Right" Margin="0, 4, 11, 2">
+                    <!--<Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>-->
+
+                    <Grid Visibility="{Binding PriceModel.OHLCVisibility}"  Margin="0, -12, -7, 0" >
+                        <Grid.RowDefinitions>
+                            <RowDefinition></RowDefinition>
+                            <RowDefinition></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="22"></ColumnDefinition>
+                            <ColumnDefinition Width="*" MinWidth="35"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto" MinWidth="2"></ColumnDefinition>
+                            <ColumnDefinition Width="10"></ColumnDefinition>
+                            <ColumnDefinition Width="*" MinWidth="35"></ColumnDefinition>
+                            <ColumnDefinition Width="Auto" MinWidth="2"></ColumnDefinition>
+                            <ColumnDefinition Width="10"></ColumnDefinition>
+                            <ColumnDefinition Width="*" MinWidth="35"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="中债" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-11}" FontWeight="SemiBold" 
+                                   Grid.Column="0" Grid.Row="0" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" Visibility="{Binding PriceModel.FutureVisibility}"></TextBlock>
+                        <TextBlock Grid.Column="1"  Grid.Row="0" Text="{Binding PriceModel.CDCValue}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}" 
+                                   Width="48" FontSize="{StaticResource FontSize-11}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"
+                                   Visibility="{Binding PriceModel.FutureVisibility}"></TextBlock>
+
+                        <TextBlock Text="中证" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-11}" FontWeight="SemiBold" 
+                                   Grid.Column="0"  Grid.Row="1" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" Visibility="{Binding PriceModel.FutureVisibility}"></TextBlock>
+                        <TextBlock Grid.Column="1"  Grid.Row="1" Text="{Binding PriceModel.CsiValue}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}"
+                                   FontSize="{StaticResource FontSize-11}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"
+                                   Visibility="{Binding PriceModel.FutureVisibility}"></TextBlock>
+
+                        <TextBlock Text="昨" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-11}" FontWeight="SemiBold" 
+                                   Grid.Column="3" Grid.Row="0" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        <TextBlock Grid.Column="4"  Grid.Row="0" Text="{Binding PriceModel.PreClose}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}" 
+                                   Width="48" FontSize="{StaticResource FontSize-11}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+
+
+                        <TextBlock Text="高" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-11}" FontWeight="SemiBold" 
+                                   Grid.Column="6"  Grid.Row="0" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        <TextBlock Grid.Column="7"  Grid.Row="0" Text="{Binding PriceModel.High}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}"
+                                   FontSize="{StaticResource FontSize-11}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+
+                        <TextBlock Text="开" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-11}" FontWeight="SemiBold" 
+                                   Grid.Column="3"  Grid.Row="1" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        <TextBlock Grid.Column="4" Grid.Row="1" Text="{Binding PriceModel.OpenPrice}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}"
+                                   FontSize="{StaticResource FontSize-11}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+
+
+                        <TextBlock Text="低" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-11}" FontWeight="SemiBold" 
+                                   Grid.Column="6" Grid.Row="1" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        <TextBlock Grid.Column="7" Grid.Row="1" Text="{Binding PriceModel.Low}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}"
+                                   FontSize="{StaticResource FontSize-11}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+
+                    </Grid>
+                    
+                    <StackPanel Orientation="Horizontal" Grid.Row="0" Visibility="Collapsed">
+
+                        <TextBlock Text="今开" Foreground="{StaticResource Gray-1}" FontSize="{StaticResource FontSize-10}" 
+                                   LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        <TextBlock Text="{Binding PriceModel.OpenPrice}" MinWidth="30" Margin="2, 0, 0, 0" Foreground="{StaticResource Yellow-2}"
+                                   Width="48" FontSize="{StaticResource FontSize-10}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        <TextBlock Text="昨结" Foreground="{StaticResource Gray-1}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" FontSize="{StaticResource FontSize-10}"></TextBlock>
+                        <TextBlock Text="{Binding PriceModel.PreSettlePrice}" MinWidth="30" Margin="2, 1, 0, 0" Foreground="{StaticResource Yellow-2}" 
+                                   Width="40" FontSize="{StaticResource FontSize-10}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        
+                        
+                        <!--<TextBlock Text="持仓" Foreground="{StaticResource Textblock.Foreground.HOLC.Gray}" FontFamily="{StaticResource Font.MicrosoftYaHei}" FontSize="{StaticResource FontSize-10}"></TextBlock>
+                        <TextBlock Text="{Binding PriceModel.OpenInterest}" MinWidth="30" Margin="2, 1, 0, 0" Foreground="{StaticResource Yellow-2}" 
+                                   Width="40" FontSize="{StaticResource FontSize-10}"></TextBlock>-->
+                       
+                    </StackPanel>
+                    
+                    <!--<StackPanel Orientation="Horizontal" Grid.Row="1" Visibility="{Binding PriceModel.FutureRealDataVisibility}">-->
+                    <StackPanel Orientation="Horizontal" Grid.Row="1" Visibility="Collapsed">
+                        <TextBlock Text="持仓" Foreground="{StaticResource Gray-1}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" FontSize="{StaticResource FontSize-10}"></TextBlock>
+                        <TextBlock Text="{Binding PriceModel.OpenInterest}" MinWidth="30" Margin="3, 0, 0, 0" Foreground="{StaticResource Yellow-2}" 
+                                    FontSize="{StaticResource FontSize-10}" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+
+                        <TextBlock Text="成交额" Foreground="{StaticResource Gray-1}" LineHeight="16" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" Margin="10, 0, 0, 0" FontSize="{StaticResource FontSize-10}"></TextBlock>
+                        <TextBlock Text="{Binding PriceModel.Turnover}" MinWidth="25" Margin="3, 0, 0, 0" Foreground="{StaticResource Yellow-2}" 
+                                    FontSize="{StaticResource FontSize-10}" ToolTip="{Binding PriceModel.Turnover}" FontWeight="SemiBold" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                        
+                    </StackPanel>
+                </Grid>
+
+            </Grid>
+
+
+            <Button Grid.Row="0" Grid.RowSpan="2" Width="120" Height="24" Content="+ 添加" x:Name="btn_AddBond" Click="AddButton_Click" Visibility="{Binding PriceModel.AddBondVisibility}" Style="{StaticResource Green2ButtonStyle}"/>
+            
+            <Border Grid.Row="2" Background="#172422">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <Comp:CustomBrokerFilterView x:Name="brokerFilter"  Margin="4, -2, 3, 0" Padding="0, 0, 0, 3" SelectIndex="{Binding BrokerIndex, Mode=TwoWay}" Visibility="{Binding PriceModel.BondGridVisibility}"></Comp:CustomBrokerFilterView>
+
+                    <Comp:SettleFilterView HorizontalAlignment="Right" Margin="0, -6, 3, 0" x:Name="settleFilter" Grid.Column="2" Visibility="{Binding PriceModel.SettleVisibility}"
+                                       FilterDic="{Binding SettleFilterDic, Mode=TwoWay}" Height="24" MinWidth="96"></Comp:SettleFilterView>
+                </Grid>
+            </Border>
+
+
+            <Grid Grid.Row="3" Visibility="{Binding PriceModel.BondGridVisibility}" Margin="4, 0, 4, 4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50*"></ColumnDefinition>
+                    <ColumnDefinition Width="50*"></ColumnDefinition>
+                    <!--<ColumnDefinition Width="18*"/>-->
+                </Grid.ColumnDefinitions>
+
+                <!--<Border x:Name="bdBid" Grid.Column="0" Margin="2, 0, 0, 0" BorderThickness="1" BorderBrush="{StaticResource Border.Background}">-->
+                <Border x:Name="bdBid" Grid.Column="0" Margin="0, 0, 0, 0" BorderThickness="1" BorderBrush="{Binding PriceModel.UpSideBdBrush}" Background="{Binding PriceModel.UpSideBgBrush}" MouseRightButtonUp="BdBid_MouseRightButtonUp" MouseLeftButtonDown="bdBid_MouseLeftButtonDown">
+                    <Border.ContextMenu>
+                        <ContextMenu Style="{StaticResource DefaultContextMenu}">
+                            <MenuItem x:Name="Bid_CopySecurityID_mi" Header="复制代码" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopySecurityID_mi_Click"/>
+                            <MenuItem x:Name="Bid_CopySymbolName_mi" Header="复制简称" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopySymbolName_mi_Click"/>
+                            <MenuItem x:Name="Bid_CopySingleClick_mi" Header="复制行情(单击)" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopySingleClick_mi_Click"/>
+                            <MenuItem x:Name="Bid_CopyDoubleClick_mi" Header="速点复制(双击)" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopyDoubleClick_mi_Click"/>
+                            <MenuItem x:Name="Bid_CopyCtrlSingleClick_mi" Header="生成意向(ctrl+单击)" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopyCtrlSingleClick_mi_Click"/>
+                        </ContextMenu>
+                    </Border.ContextMenu>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="25*"></ColumnDefinition>
+                            <ColumnDefinition Width="75*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <!--<Polygon x:Name="BidArrow" Margin="1, 1, 0, 0" Grid.Column="0" Visibility="{Binding PriceModel.BidArrowVisibilly}" Stroke="{Binding PriceModel.BidArrowStroke}" Fill="{Binding PriceModel.BidArrowFill}" 
+                                 Points="0,0 0,10 10,0" VerticalAlignment="Top" HorizontalAlignment="Left" ToolTip="{Binding PriceModel.BidArrowToolTxt}">
+                        </Polygon>-->
+
+                        <Polygon x:Name="BidArrow" Margin="1, 1, 0, 0" Grid.Column="0" Visibility="Collapsed" Stroke="{Binding PriceModel.BidArrowStroke}" Fill="{Binding PriceModel.BidArrowFill}" 
+                                 Points="0,0 0,10 10,0" VerticalAlignment="Top" HorizontalAlignment="Left" ToolTip="{Binding PriceModel.BidArrowToolTxt}">
+                        </Polygon>
+
+                        <TextBlock x:Name="tbBidVenue" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Top" Text="{Binding PriceModel.BestBidVenue}" Foreground="{StaticResource Green-3}"
+                                   Margin="2, 2, 0, 0" Visibility="{Binding PriceModel.SettleVisibility}" LineHeight="16" FontSize="{StaticResource FontSize-10}"
+                                   FontWeight="Normal" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}">
+                            <!--<TextBlock.LayoutTransform>
+                                <ScaleTransform ScaleX="1.0" ScaleY="1.05"/>
+                            </TextBlock.LayoutTransform>-->
+                        </TextBlock>
+
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Bottom" Orientation="Horizontal">
+
+                            <!--<Border Visibility="{Binding PriceModel.AllBidSettleVisibility}" Width="16" Height="16" Margin="2, 0, 0, 2" CornerRadius="2" Background="{StaticResource TextBox.MouseOver.Background}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                <TextBlock Text="{Binding PriceModel.AllBidSettleTip}" Foreground="{StaticResource TextBox.Static.Foreground}" FontSize="{StaticResource FontSize-9}" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" 
+                                     FontWeight="SemiBold" Padding="0, 1, 0, 0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0, 0, 0, 0"></TextBlock>
+                            </Border>-->
+
+                            <TextBlock  Text="{Binding PriceModel.BestBidAmount}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PriceModel.BestBidAmount}" 
+                                   Width="Auto" HorizontalAlignment="Left" Margin="2, 2, 0, 0"
+                               FontSize="{StaticResource FontSize-12}" FontWeight="SemiBold"
+                                Foreground="{StaticResource TextBox.Static.Foreground}" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}"></TextBlock>
+                            
+
+                            
+
+
+                            
+                        </StackPanel>
+
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+
+                            <Border Visibility="{Binding PriceModel.AllBidSettleVisibility}" Width="16" Height="16" Margin="2, 0, 2, 3" CornerRadius="2" Background="{StaticResource TextBox.MouseOver.Background}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                <TextBlock Text="{Binding PriceModel.AllBidSettleTip}" Foreground="{StaticResource TextBox.Static.Foreground}" FontSize="{StaticResource FontSize-10}" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" 
+                                     FontWeight="SemiBold" Padding="0, 1, 0, 0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0, 0, 0, 0"></TextBlock>
+                            </Border>
+                            
+                            
+                            <TextBlock Text="{Binding PriceModel.BestBid}" Height="24" VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="{StaticResource FontSize-18}" 
+                               Foreground="{StaticResource Orange-1}" FontWeight="Bold" FontFamily="{StaticResource Font.Roboto-Black}" Padding="0 3 0 0"></TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+
+                <!--<Border x:Name="bdOfr" Grid.Column="1" Margin="0, 0, 2, 0" BorderThickness="1" BorderBrush="{StaticResource Border.Background}">-->
+                <Border x:Name="bdOfr" Grid.Column="1" Margin="0, 0, 0, 0" BorderThickness="1" BorderBrush="{Binding PriceModel.UpSideBdBrush}" Background="{Binding PriceModel.UpSideBgBrush}" Grid.ColumnSpan="2" MouseRightButtonUp="BdOfr_MouseRightButtonUp" MouseLeftButtonDown="bdOfr_MouseLeftButtonDown">
+                    <Border.ContextMenu>
+                        <ContextMenu  Style="{StaticResource DefaultContextMenu}">
+                            <MenuItem x:Name="Ofr_CopySecurityID_mi" Header="复制代码" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopySecurityID_mi_Click"/>
+                            <MenuItem x:Name="Ofr_CopySymbolName_mi" Header="复制简称" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopySymbolName_mi_Click"/>
+                            <MenuItem x:Name="Ofr_CopySingleClick_mi" Header="复制行情(单击)" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopySingleClick_mi_Click"/>
+                            <MenuItem x:Name="Ofr_CopyDoubleClick_mi" Header="速点复制(双击)" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopyDoubleClick_mi_Click"/>
+                            <MenuItem x:Name="Ofr_CopyCtrlSingleClick_mi" Header="生成意向(ctrl+单击)" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopyCtrlSingleClick_mi_Click"/>
+                        </ContextMenu>
+                    </Border.ContextMenu>
+                    <Grid>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="75*"></ColumnDefinition>
+                            <ColumnDefinition Width="25*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Grid.Column="0" Foreground="{StaticResource Blue-2}" Text="{Binding PriceModel.BestOfr}" Height="24" VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                   FontSize="{StaticResource FontSize-18}" FontWeight="Bold" FontFamily="{StaticResource Font.Roboto-Black}" Padding="0 3 0 0"
+                                   ></TextBlock>
+
+
+
+                            <Border Visibility="{Binding PriceModel.AllOfrSettleVisibility}" Width="16" Height="16" Margin="2, 0, 2, 3" CornerRadius="2" Background="{StaticResource TextBox.MouseOver.Background}"
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                                <TextBlock Text="{Binding PriceModel.AllOfrSettleTip}" Foreground="{StaticResource TextBox.Static.Foreground}" FontSize="{StaticResource FontSize-10}" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" 
+                                     FontWeight="SemiBold" Padding="0, 1, 0, 0" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                            </Border>
+
+                        </StackPanel>
+
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+
+                            
+
+
+
+                            
+
+                            <TextBlock Text="{Binding PriceModel.BestOfrAmount}" TextTrimming="CharacterEllipsis" ToolTip="{Binding PriceModel.BestOfrAmount}" Foreground="{StaticResource TextBox.Static.Foreground}" Width="Auto"
+                                   HorizontalAlignment="Right" TextAlignment="Right" Margin="0, 2, 4, 0"
+                                FontSize="{StaticResource FontSize-12}" VerticalAlignment="Center" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" Grid.RowSpan="2"
+                                   FontWeight="SemiBold"></TextBlock>
+
+                            <!--<Border Visibility="{Binding PriceModel.AllOfrSettleVisibility}" Width="16" Height="16" Margin="-1, 0, 2, 2" CornerRadius="2" Background="{StaticResource TextBox.MouseOver.Background}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                <TextBlock Text="{Binding PriceModel.AllOfrSettleTip}" Foreground="{StaticResource TextBox.Static.Foreground}" FontSize="{StaticResource FontSize-9}" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" 
+                                     FontWeight="SemiBold" Padding="0, 1, 0, 0" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                            </Border>-->
+
+                            
+                        </StackPanel>
+
+
+
+
+
+                        <!--<Polygon x:Name="OfrArrow" Grid.Column="1" Margin="0,1,0,0" Visibility="{Binding PriceModel.OfrArrowVisibilly}" Stroke="{Binding PriceModel.OfrArrowStroke}" Fill="{Binding PriceModel.OfrArrowFill}" 
+                                 Points="0,0 10,0 10,10" HorizontalAlignment="Right"  ToolTip="{Binding PriceModel.OfrArrowToolTxt}" Grid.RowSpan="2"/>-->
+                        <Polygon x:Name="OfrArrow" Grid.Column="1" Margin="0,1,0,0" Visibility="Collapsed" Stroke="{Binding PriceModel.OfrArrowStroke}" Fill="{Binding PriceModel.OfrArrowFill}" 
+                                 Points="0,0 10,0 10,10" HorizontalAlignment="Right"  ToolTip="{Binding PriceModel.OfrArrowToolTxt}" Grid.RowSpan="2"/>
+
+
+                        
+                        <TextBlock x:Name="tbOfrVenue" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" Text="{Binding PriceModel.BestOfrVenue}" Foreground="{StaticResource Green-3}"
+                                   Margin="0, 2, 5, 0" Visibility="{Binding PriceModel.SettleVisibility}" LineHeight="16" FontWeight="Normal" 
+                                   FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" FontSize="{StaticResource FontSize-10}">
+                            <!--<TextBlock.LayoutTransform>
+                                <ScaleTransform ScaleX="1.0" ScaleY="1.05"/>
+                            </TextBlock.LayoutTransform>-->
+                        </TextBlock>
+
+                    </Grid>
+                </Border>
+
+
+                <Border  Grid.Column="0" Grid.ColumnSpan="2" Width="45" Height="24" HorizontalAlignment="Center" VerticalAlignment="Bottom"  
+                        Background="{StaticResource MainFrame.Background}" CornerRadius="2" BorderThickness="1" BorderBrush="{Binding PriceModel.UpSideBdBrush}">
+                    <!--<Border Margin="1" BorderThickness="1" BorderBrush="{StaticResource Border.Background}">-->
+                    <Border x:Name="bdBp" Margin="1" BorderThickness="1" BorderBrush="{Binding PriceModel.UpSideBdBrush}" Background="{Binding PriceModel.UpSideBdBrush}" MouseLeftButtonDown="bdBp_MouseLeftButtonDown">
+                        <TextBlock  Text="{Binding PriceModel.BestPriceBP}" TextAlignment="Center" Padding="0, 0, 0, 0" Foreground="{StaticResource TextBox.Static.Foreground}"
+                                    FontFamily="{StaticResource Font.Roboto-Regular}" FontWeight="Normal"
+                                    FontSize="{StaticResource FontSize-12}" VerticalAlignment="Center" ToolTip="{Binding PriceModel.BestPriceBP}" 
+                                    TextTrimming="CharacterEllipsis"></TextBlock>
+                    </Border>
+
+                </Border >
+
+            </Grid>
+
+
+
+            
+            
+
+            <Grid Grid.Row="3" Margin="4, 2, 5, 2" HorizontalAlignment="Left" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                    <ColumnDefinition Width="38*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+            </Grid>
+
+
+
+            <Border  Grid.Row="4" BorderBrush="{StaticResource Border.Bottom.Background}" BorderThickness="0, 0, 0, 0">
+
+                <Grid Visibility="{Binding PriceModel.BondGridVisibility}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="{Binding PriceModel.AllBrokerHeight}"></RowDefinition>
+                        <RowDefinition Height="{Binding PriceModel.AllBrokerHeight}"></RowDefinition>
+                        <RowDefinition Height="{Binding PriceModel.BrokerHeight}"></RowDefinition>
+                        <RowDefinition Height="{Binding PriceModel.BrokerHeight}"></RowDefinition>
+                        <RowDefinition Height="{Binding PriceModel.BrokerHeight}"></RowDefinition>
+                        <RowDefinition Height="{Binding PriceModel.LastBrokerHeight}"></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Visibility="{Binding PriceModel.BrokerVisibility}" Height="100">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50*"></ColumnDefinition>
+                            <ColumnDefinition Width="50*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" CornerRadius="2" Margin="2, 2, 0, 0" Height="96" Background="{StaticResource Brown-3-20%}" MouseRightButtonUp="BdBid_MouseRightButtonUp" MouseLeftButtonDown="bdBid_MouseLeftButtonDown">
+                            <Border.ContextMenu>
+                                <ContextMenu Style="{StaticResource DefaultContextMenu}">
+                                    <MenuItem x:Name="Best_Bid_CopySecurityID_mi" Header="复制代码" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopySecurityID_mi_Click"/>
+                                    <MenuItem x:Name="Best_Bid_CopySymbolName_mi" Header="复制简称" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopySymbolName_mi_Click"/>
+                                    <MenuItem x:Name="Best_Bid_CopySingleClick_mi" Header="复制行情(单击)" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopySingleClick_mi_Click"/>
+                                    <MenuItem x:Name="Best_Bid_CopyDoubleClick_mi" Header="速点复制(双击)" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopyDoubleClick_mi_Click"/>
+                                    <MenuItem x:Name="Best_Bid_CopyCtrlSingleClick_mi" Header="生成意向(ctrl+单击)" Style="{StaticResource DefaultMenuItem}" Click="Bid_CopyCtrlSingleClick_mi_Click"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="50*"></RowDefinition>
+                                    <RowDefinition Height="50*"></RowDefinition>
+                                </Grid.RowDefinitions>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0, 0, 0, 0">
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding PriceModel.BidPrice, Converter={StaticResource numConvertor}}" Grid.Row="1" 
+                                               Grid.Column="0" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0, 12, 0, 0"
+                                               Foreground="{StaticResource Orange-1}" TextAlignment="Center" FontSize="{StaticResource FontSize-24}" 
+                                               FontFamily="{StaticResource Font.Roboto-Black}"></TextBlock>
+                                        <Image x:Name="imsgBidStar" Grid.Row="1" Grid.Column="1"  Margin="2, 0, 0, 0"
+                                           Style="{StaticResource BidBrokerBargainFlagStyle}"/>
+                                    </StackPanel>
+
+                                </Grid>
+
+                                <TextBlock Text="{Binding PriceModel.BidTxt}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 4, 0, 0" ToolTipService.InitialShowDelay="0"
+                                           Foreground="{StaticResource TextBox.Static.Foreground}" 
+                                   TextAlignment="Center"  LineHeight="16" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" FontWeight="SemiBold"
+                                   FontSize="{StaticResource FontSize-13}" TextTrimming="CharacterEllipsis" MaxWidth="140">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip DataContext="{Binding Path=PlacementTarget, RelativeSource={x:Static RelativeSource.Self}}">
+                                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" MaxWidth="300"/>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+
+
+                                <Canvas x:Name="bidCornerMarket" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top" ToolTipService.InitialShowDelay="0"
+                                                ToolTip="{Binding PriceModel.BidCornerMarketText}" Margin="1, 0, 0, 0">
+
+                                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                                        <Path.Data>
+                                            <PathGeometry>
+                                                <PathGeometry.Figures>
+                                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                                        <LineSegment Point="0,0" />
+                                                        <LineSegment Point="0,8" />
+                                                    </PathFigure>
+                                                </PathGeometry.Figures>
+                                            </PathGeometry>
+                                        </Path.Data>
+                                    </Path>
+
+
+                                </Canvas>
+
+                            </Grid>
+                        </Border>
+
+
+                        <Border Grid.Row="0" Grid.Column="1" CornerRadius="2" Margin="2, 2, 0, 0" Height="96" Background="{StaticResource Blue-3-20%}" MouseRightButtonUp="BdOfr_MouseRightButtonUp" MouseLeftButtonDown="bdOfr_MouseLeftButtonDown">
+                            <Border.ContextMenu>
+                                <ContextMenu  Style="{StaticResource DefaultContextMenu}">
+                                    <MenuItem x:Name="Best_Ofr_CopySecurityID_mi" Header="复制代码" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopySecurityID_mi_Click"/>
+                                    <MenuItem x:Name="Best_Ofr_CopySymbolName_mi" Header="复制简称" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopySymbolName_mi_Click"/>
+                                    <MenuItem x:Name="Best_Ofr_CopySingleClick_mi" Header="复制行情(单击)" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopySingleClick_mi_Click"/>
+                                    <MenuItem x:Name="Best_Ofr_CopyDoubleClick_mi" Header="速点复制(双击)" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopyDoubleClick_mi_Click"/>
+                                    <MenuItem x:Name="Best_Ofr_CopyCtrlSingleClick_mi" Header="生成意向(ctrl+单击)" Style="{StaticResource DefaultMenuItem}" Click="Ofr_CopyCtrlSingleClick_mi_Click"/>
+                                </ContextMenu>        
+                            </Border.ContextMenu>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="50*"></RowDefinition>
+                                    <RowDefinition Height="50*"></RowDefinition>
+                                </Grid.RowDefinitions>
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="10"></ColumnDefinition>
+                                    <ColumnDefinition Width="*"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0, 0, 0, 0">
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding PriceModel.OfrPrice, Converter={StaticResource numConvertor}}" Grid.Row="1" Grid.Column="0" 
+                                               Foreground="{StaticResource Blue-2}" VerticalAlignment="Center" Margin="0, 12, 0, 0"
+                                               TextAlignment="Center" FontSize="{StaticResource FontSize-24}" FontWeight="SemiBold" FontFamily="{StaticResource Font.Roboto-Black}"
+                                               ></TextBlock>
+
+                                        <Image x:Name="imsgOfrStar" Grid.Row="1" Grid.Column="1" Margin="2, 0, 0, 0" Style="{StaticResource OfrBrokerBargainFlagStyle}"/>
+
+                                    </StackPanel>
+                                    
+
+                                </Grid>
+
+                                <TextBlock Text="{Binding PriceModel.OfrTxt}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 4, 0, 0" TextAlignment="Center" ToolTipService.InitialShowDelay="0"
+                                    TextTrimming="CharacterEllipsis" MaxWidth="140"
+                                    Foreground="{StaticResource TextBox.Static.Foreground}"
+                                    LineHeight="16" FontFamily="{StaticResource Font.MicrosoftYaHeiSemibold}" FontWeight="SemiBold"
+                                    FontSize="{StaticResource FontSize-13}">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip DataContext="{Binding Path=PlacementTarget, RelativeSource={x:Static RelativeSource.Self}}">
+                                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" MaxWidth="300"/>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+
+
+                                <Canvas x:Name="ofrCornerMarket" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top" ToolTipService.InitialShowDelay="0"
+                                                ToolTip="{Binding PriceModel.OfrCornerMarketText}" Margin="1, 0, 0, 0">
+
+                                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource ColorBrush.Blue_firm}">
+                                        <Path.Data>
+                                            <PathGeometry>
+                                                <PathGeometry.Figures>
+                                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                                        <LineSegment Point="0,0" />
+                                                        <LineSegment Point="0,8" />
+                                                    </PathFigure>
+                                                </PathGeometry.Figures>
+                                            </PathGeometry>
+                                        </Path.Data>
+                                    </Path>
+
+
+                                </Canvas>
+
+                            </Grid>
+                        </Border>
+
+
+
+                    </Grid>
+
+
+
+                    <local:BrokerPriceView x:Name="oneBroker" Grid.Row="1" DataContext="{Binding OneBrokerPriceViewModel}"></local:BrokerPriceView>
+                    <local:BrokerPriceView x:Name="twoBroker" Grid.Row="2" DataContext="{Binding TwoBrokerPriceViewModel}"></local:BrokerPriceView>
+                    <local:BrokerPriceView x:Name="threeBroker" Grid.Row="3" DataContext="{Binding ThreeBrokerPriceViewModel}"></local:BrokerPriceView>
+                    <local:BrokerPriceView x:Name="fourBroker" Grid.Row="4" DataContext="{Binding FourBrokerPriceViewModel}"></local:BrokerPriceView>
+                    <local:BrokerPriceView x:Name="fiveBroker" Grid.Row="5" DataContext="{Binding FiveBrokerPriceViewModel}"></local:BrokerPriceView>
+                    <local:BrokerPriceView x:Name="sixBroker" Grid.Row="6" DataContext="{Binding SixBrokerPriceViewModel}"></local:BrokerPriceView>
+                </Grid>
+
+            </Border>
+
+            <!--<local:MarketCardOrderView x:Name="marketView" Grid.Row="5"></local:MarketCardOrderView>-->
+
+            <Trade:MarketOrderView x:Name="marketView" Grid.Row="5" Margin="2, 0, 2, 0"></Trade:MarketOrderView>
+            
+        </Grid>
+
+    </Border>
+    
+</UserControl>

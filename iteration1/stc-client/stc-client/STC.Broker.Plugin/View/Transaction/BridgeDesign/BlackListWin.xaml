@@ -1,0 +1,217 @@
+﻿<Window x:Class="STC.Broker.Plugin.View.Transaction.BridgeDesign.BlackListWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+        xmlns:local="clr-namespace:STC.Broker.Plugin.View.Transaction.BridgeDesign"
+        mc:Ignorable="d"
+         d:DesignWidth="600" d:DesignHeight="500"
+        Title="黑名单" Width="525" MinWidth="525" MaxWidth="525" Height="490"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        WindowStartupLocation="CenterOwner"
+        >
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="BaseTextBlockStyle" TargetType="TextBlock">
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="FontSize" Value="{StaticResource BigContentFontSize}"/>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"/>
+                <Setter Property="Margin" Value="10,20,0,10"/>
+            </Style>
+
+            <Style x:Key="YellowTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Yellow}"/>
+            </Style>
+
+            <Style x:Key="TextBoxSearchStyle" TargetType="{x:Type TextBox}">
+                <Style.Resources>
+                    <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                        <VisualBrush.Visual>
+                            <TextBlock x:Name="tbVisual" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGrey}" Text=" 搜索"/>
+                        </VisualBrush.Visual>
+                    </VisualBrush>
+                </Style.Resources>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Yellow}"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"/>
+
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderThickness="2" BorderBrush="#186054" Background="#0E1A18">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#172422"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFEBC8"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#FF7D00"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#000"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="false"/>
+                                        <Condition Property="Text" Value=""/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource HintText}"/>
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" 
+                      UseAeroCaptionButtons="False"
+                      ResizeBorderThickness="0"
+                       GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>
+
+    <Border CornerRadius="2" BorderThickness="1" BorderBrush="{StaticResource ColorBrush.Green4}" Background="{StaticResource ColorBrush.Black2}">
+        <Grid >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition ></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Background="{StaticResource ColorBrush.Green}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="35"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="黑名单" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}" Foreground="{StaticResource ColorBrush.PaleGold}"></TextBlock>
+
+                <Button Grid.Column="2" x:Name="btnClose" Style="{StaticResource ImageCloseButton}" Margin="0, 0, 10, 0" Width="20" Height="16" IsCancel="True" Click="btnClose_Click"></Button>
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="10,0,10,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="60"></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" >
+                    <TextBlock Text="机构(联系人):" Style="{StaticResource BaseTextBlockStyle}"/>
+                    <TextBlock Text="{Binding BridgeInsTraderName}"  Style="{StaticResource YellowTextBlockStyle}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <TextBox x:Name="TB_Organization"  MinWidth="420" Height="30" Style="{StaticResource TextBoxSearchStyle}" 
+                                 PreviewKeyDown="tb_Organization_PreviewKeyDown"
+                                 KeyDown="tb_Organization_KeyDown" 
+                                 TextChanged="tb_Organization_TextChanged"
+                                 HorizontalAlignment="Left" Text="{Binding SearchInsShow, Mode=TwoWay}">
+                    </TextBox>
+                    <Button Style="{StaticResource ConfirmButtonStyle}" Margin="10,0,0,0" MinWidth="70" Click="AddButton_Click">添加</Button>
+                </StackPanel>
+
+                <Popup x:Name="pop_Organization" PlacementTarget="{Binding ElementName=TB_Organization}"  StaysOpen="False">
+                    <DataGrid x:Name="dgRecive" 
+                          Grid.Row="1"
+                          Background="#193D37"
+                          HeadersVisibility="None"
+                          BorderThickness="0"       
+                          Margin="0" 
+                          Width="200" 
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          DataGridRow.MouseUp="dgRecive_MouseUp"
+                          AutoGenerateColumns="False"
+                          Style="{StaticResource DataGridDefaultStyle}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ItemsSource="{Binding}" >
+                        <DataGrid.Resources>
+                            <Style x:Key="tbStyle" TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Shortnamecn}" Width="1*" >
+                                <DataGridTextColumn.ElementStyle >
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                        <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </Popup>
+
+                <Grid  Grid.Row="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <ListBox x:Name="lbRecive" BorderThickness="0" MinWidth="500"  Height="300"  Margin="0,10,0,10"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            Background="{StaticResource ColorBrush.Black2}"  ItemsSource="{Binding AddedList}">
+                    </ListBox>
+                </Grid>
+
+                <Grid  Grid.Row="3"  HorizontalAlignment="Center" Margin="10, 0, 30, 10" VerticalAlignment="Bottom" >
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="btnUpdate" Margin="0,0,10,0" Width="80" Height="22" Background="{StaticResource ColorBrush.Gray2}" Style="{StaticResource buttonCancelStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnCancel_Click">取消</Button>
+                        <Button x:Name="btnCancel"  Width="93" Height="22" Background="#136C5E" Style="{StaticResource ConfirmButtonStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnOk_Click">确认</Button>
+                    </StackPanel>
+                </Grid>
+                
+            </Grid>
+
+                
+
+            
+           
+            
+           
+            
+            
+        </Grid>
+    </Border>
+</Window>

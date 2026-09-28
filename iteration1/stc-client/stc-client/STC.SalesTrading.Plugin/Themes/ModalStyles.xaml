@@ -1,0 +1,108 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        模态弹窗共享样式：此前在 FavBondManagerWindow / FilterGroupManagerWindow / QuoteEntryDialog /
+        QuoteEntryOverlayWindow 四个窗口各自复制。键名统一用 StcModal* 前缀（DarkTheme 合并本字典后全局可用）。
+    -->
+
+    <!-- 分组列表项（原型 .fbm-group-item：名称(计数)、hover 浅底、选中蓝描边浅蓝底）——原 FbmGroupItem/FgmGroupItem 副本 -->
+    <Style x:Key="StcModalGroupItem" TargetType="ListBoxItem">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Margin" Value="4,1" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverStrongBgBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#1F3B82F6" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="#4D3B82F6" />
+                            <Setter Property="Foreground" Value="#58A6FF" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 「+ 新建」虚线按钮（原型 dashed rgba(59,130,246,.3)：浅蓝底 + 蓝描边 + hover 加深）——原 FbmDashedButton/FgmDashedButton 副本 -->
+    <Style x:Key="StcModalDashedButton" TargetType="Button">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="#58A6FF" />
+        <Setter Property="Background" Value="#0D3B82F6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="0,5"
+                            BorderBrush="#4D3B82F6" BorderThickness="1">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#143B82F6" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 弹窗头部 ✕（原型 .modal-close{padding:4px} + 24×24 图标 → 32×32 点击区，hover 浅底）。
+         尺寸/字号不由样式定（Overlay 用 24×24，其余 32×32），由使用处设置。 -->
+    <Style x:Key="StcModalCloseButton" TargetType="Button">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBgBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 页脚「取消」（灰底描边 26px，原 Fav/FGM 页脚逐字重复的内联按钮） -->
+    <Style x:Key="StcModalCancelButton" TargetType="Button">
+        <Setter Property="Height" Value="26" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="{DynamicResource HoverStrongBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- 页脚「保存」（蓝底 #3b82f6 白字 26px） -->
+    <Style x:Key="StcModalSaveButton" TargetType="Button">
+        <Setter Property="Height" Value="26" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="18,0" />
+        <Setter Property="Margin" Value="10,0,0,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="#3B82F6" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+</ResourceDictionary>

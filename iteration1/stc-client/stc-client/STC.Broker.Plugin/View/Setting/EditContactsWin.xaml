@@ -1,0 +1,84 @@
+﻿<commonComp:WindowBase x:Class="STC.Broker.Plugin.View.Setting.EditContactsWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Setting"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d"
+        Title="交易所联系"
+        WindowStartupLocation="CenterScreen"
+        Background="#0A0F0E" BorderThickness="2" 
+        BorderBrush="#282828" ResizeMode="NoResize"
+        WindowState="Normal"
+        Width="210"  Height="144">
+    <Grid Grid.Row="1" Margin="10,0,10,0">
+
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <TextBlock x:Name="txtShortcutKey" Foreground="#A0A0A0" FontFamily="{DynamicResource DefaultFont}" 
+                           FontSize="12" Text="联系人："  VerticalAlignment="Center"  HorizontalAlignment="Right" TextWrapping="Wrap"/>
+        <TextBox Width="130" Grid.Column="1" x:Name="tb_startMinute" Style="{DynamicResource  STCDefaultBoxStyle}" Margin="4,0,0,0" Height="22" 
+                         PreviewKeyDown="tb_startHours_PreviewKeyDown"
+                         KeyDown="tb_startMinute_KeyDown"
+                         TextChanged="tb_startMinute_TextChanged"
+                          input:InputMethod.IsInputMethodEnabled="True"
+                          input:TextCompositionManager.PreviewTextInput="tbInstPInput"
+                          input:TextCompositionManager.PreviewTextInputUpdate="tbInstPInputUpdate"
+                         ></TextBox>
+
+        <Popup x:Name="tbInstPop" PlacementTarget="{Binding ElementName=tb_startMinute}" LostFocus="tbInstPop_LostFocus"  StaysOpen="False">
+            <DataGrid x:Name="dgInstResult"
+                                  Grid.Row="1"
+                                  Background="#193D37"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  MouseDoubleClick="dgInstResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                  Style="{DynamicResource DefaultDataGridNoSpaceStyle}">
+                <DataGrid.Resources>
+                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Contact}" Width="1*" >
+                        <DataGridTextColumn.ElementStyle >
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Popup>
+
+        <TextBlock x:Name="tb_qq" Grid.Row="1"  Foreground="#A0A0A0" FontFamily="{DynamicResource DefaultFont}" 
+                           FontSize="12" Text="QQ："  VerticalAlignment="Center"  HorizontalAlignment="Right" TextWrapping="Wrap"/>
+        <TextBox Width="130" Grid.Row="1" Grid.Column="1" x:Name="tbox_qq" Style="{DynamicResource  STCDefaultBoxStyle}" Margin="4,0,0,0" Height="22"  PreviewKeyDown="tb_startHours_PreviewKeyDown" ></TextBox>
+
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
+            <Button x:Name="btnUpdate" Margin="0,0,10,0" Width="80" Height="22" Style="{DynamicResource GrayButtonStyle}" FontFamily="{DynamicResource DefaultFont}" FontSize="12" Click="btnCancel_Click">取消</Button>
+            <Button x:Name="btnCancel"  Width="80" Height="22" Style="{DynamicResource BlueGreenStyle}" FontFamily="{DynamicResource DefaultFont}" FontSize="12" Click="btnOk_Click">确认</Button>
+        </StackPanel>
+    </Grid>
+</commonComp:WindowBase>
+
+

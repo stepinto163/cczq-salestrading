@@ -1,0 +1,127 @@
+<UserControl x:Class="STC.SalesTrading.Plugin.Shell.View.MainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shell="clr-namespace:STC.SalesTrading.Plugin.Shell"
+             xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
+             xmlns:qvm="clr-namespace:STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel"
+             xmlns:qviews="clr-namespace:STC.SalesTrading.Plugin.Modules.QuoteEntry.View"
+             xmlns:mvm="clr-namespace:STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel"
+             xmlns:mviews="clr-namespace:STC.SalesTrading.Plugin.Modules.MarketCenter.View"
+             xmlns:mgvm="clr-namespace:STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel"
+             xmlns:mgviews="clr-namespace:STC.SalesTrading.Plugin.Modules.QuoteMgmt.View"
+             xmlns:conv="clr-namespace:STC.SalesTrading.Plugin.Shared.Converters">
+    <!--
+        页面区：三大模块视图常驻。KeepAliveContentControl 按 Content 实例缓存展示器，
+        切换仅翻转 Visibility，不销毁重建模块视图树（行情中心重建 500+ 控件会导致卡顿）。
+    -->
+    <Grid Background="{DynamicResource WindowBgBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ===== 顶部 Header（原型 48px：#161b22 底 + 底部细分隔线） ===== -->
+        <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 品牌 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                            Margin="20,0,16,0">
+                    <Path Data="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5"
+                          Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" />
+                    <TextBlock Text="FICC销交平台" Style="{DynamicResource StcText}" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
+                               Margin="8,0,0,0" />
+                </StackPanel>
+
+                <!-- 导航按钮（原型 header-nav：活动态 #79c0ff + 底部 2px 蓝边 + 红底白字角标） -->
+                <ListBox Grid.Column="1" Style="{DynamicResource StcNavStrip}"
+                         ItemsSource="{Binding NavItems}" SelectedItem="{Binding SelectedNavItem}"
+                         VerticalAlignment="Stretch">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type shell:NavItem}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" />
+                                <Border Style="{DynamicResource StcBadge}" Margin="6,-3,0,0"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding BadgeCount, Converter={x:Static conv:ConverterLocator.IntToVis}}">
+                                    <TextBlock Text="{Binding BadgeCount}" Style="{DynamicResource StcBadgeText}" />
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Grid Grid.Column="2" />
+
+                <!-- 用户区（原型 header-user：头像 28px 渐变圆 + 姓名 + 箭头 + 下拉） -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                            Margin="0,0,20,0">
+                    <Button Content="手工报价" Command="{Binding ManualQuoteCommand}" Style="{DynamicResource StcButton}" Margin="0,0,12,0" />
+                    <ToggleButton x:Name="UserToggle" Background="Transparent" BorderThickness="0"
+                                  Cursor="Hand" Focusable="False">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Width="28" Height="28" CornerRadius="14"
+                                            Background="{DynamicResource ButtonBlueBrush}">
+                                        <TextBlock Text="A" Foreground="White" FontSize="13"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="{Binding UserName}" Style="{DynamicResource StcText}"
+                                               VerticalAlignment="Center" Margin="8,0,4,0" />
+                                    <TextBlock Text="▾" Foreground="{DynamicResource TextMutedBrush}"
+                                               FontSize="11" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                    <Popup IsOpen="{Binding IsChecked, ElementName=UserToggle}" Placement="Bottom"
+                           PlacementTarget="{Binding ElementName=UserToggle}" StaysOpen="False"
+                           AllowsTransparency="True">
+                        <Border Background="{DynamicResource PanelBgBrush}"
+                                BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="4" MinWidth="150">
+                            <StackPanel>
+                                <Button Content="个人中心" Style="{DynamicResource StcMenuButton}"
+                                        Command="{Binding ShowProfileCommand}" />
+                                <Button Content="设置" Style="{DynamicResource StcMenuButton}"
+                                        Command="{Binding ShowSettingsCommand}" />
+                                <Border Height="1" Background="{DynamicResource BorderStdBrush}" Margin="8,3" />
+                                <Button Content="退出登录" Style="{DynamicResource StcMenuButtonDanger}"
+                                        Command="{Binding LogoutCommand}" />
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== 内容区：三大模块视图常驻（KeepAliveContentControl + 隐式 DataTemplate） ===== -->
+        <components:KeepAliveContentControl Grid.Row="1" Content="{Binding SelectedNavItem.Target}">
+            <components:KeepAliveContentControl.Resources>
+                <DataTemplate DataType="{x:Type qvm:QuoteViewModel}">
+                    <qviews:QuoteView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type mvm:MarketCenterViewModel}">
+                    <mviews:MarketCenterView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type mgvm:QuoteMgmtViewModel}">
+                    <mgviews:QuoteMgmtView />
+                </DataTemplate>
+            </components:KeepAliveContentControl.Resources>
+        </components:KeepAliveContentControl>
+
+        <!-- ===== 全局 Toast 浮层 ===== -->
+        <components:ToastHost Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Right"
+                              Margin="0,12,16,0" Panel.ZIndex="100" />
+    </Grid>
+</UserControl>

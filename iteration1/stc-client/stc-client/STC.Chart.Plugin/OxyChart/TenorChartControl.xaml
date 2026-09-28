@@ -1,0 +1,89 @@
+﻿<UserControl x:Class="STC.Chart.Plugin.OxyChart.TenorChartControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:STC.Chart.Plugin.OxyChart"
+             xmlns:conv="clr-namespace:STC.Chart.Plugin.Converts"
+             xmlns:cpn="clr-namespace:STC.Chart.Plugin.Common.Component"
+             xmlns:oxy="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf"
+             mc:Ignorable="d"  Background="#141414"
+             d:DesignHeight="450"
+             d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Chart.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+              </ResourceDictionary.MergedDictionaries>
+            <conv:TenorConverter x:Key="tenorConverter" />
+            <conv:DateConverter x:Key="dateConverter" />
+            <conv:DiffConverter x:Key="diffConverter" />
+            </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+        <oxy:PlotView x:Name="plotView"
+                      Model="{Binding PlotModel}"
+                      Grid.Row="0"
+                      IsMouseWheelEnabled="True"
+                      Background="Transparent"
+                      Foreground="White">
+            <oxy:PlotView.DefaultTrackerTemplate>
+                <ControlTemplate>
+                    <oxy:TrackerControl Position="{Binding Position}"
+                                        LineStroke="#193D37"
+                                        LineExtents="{Binding PlotModel.PlotArea}"
+                                        Foreground="#FFEBC8"
+                                        BorderBrush="#193D37"
+                                        Background="#172422"
+                                        BorderThickness="1"
+                                        CornerRadius="2"
+                                        >
+                        <oxy:TrackerControl.Content>
+                            <Grid Margin="10,2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Series.Title}"
+                                           Grid.ColumnSpan="2"
+                                           Grid.Row="0" />
+                                <TextBlock Text="X:"
+                                           Grid.Column="0"
+                                           Grid.Row="1" />
+                                <TextBlock Text="{Binding DataPoint.X, Converter={StaticResource dateConverter}}"
+                                           Grid.Column="1"
+                                           Grid.Row="1" />
+                                <TextBlock Text="Y:"
+                                           Grid.Column="0"
+                                           Grid.Row="2" />
+                                <TextBlock Text="{Binding DataPoint.X,Converter={StaticResource diffConverter}, StringFormat='0.0000'}"
+                                           Grid.Column="1"
+                                           Grid.Row="2" />
+                            </Grid>
+
+                        </oxy:TrackerControl.Content>
+                    </oxy:TrackerControl>
+                </ControlTemplate>
+            </oxy:PlotView.DefaultTrackerTemplate>
+
+            <oxy:PlotView.ContextMenu>
+                <ContextMenu Style="{StaticResource DefaultContextMenu}">
+                    <MenuItem Header="Reset" Command="{Binding ResetCommand}"></MenuItem>
+                </ContextMenu>
+            </oxy:PlotView.ContextMenu>
+        </oxy:PlotView>
+        <cpn:RangeSlider x:Name="rangeSlider"
+                         Grid.Row="1"
+                         ValueChanged="RangeSlider_ValueChanged"
+                         Margin="3,0,3,2" />
+    </Grid>
+</UserControl>

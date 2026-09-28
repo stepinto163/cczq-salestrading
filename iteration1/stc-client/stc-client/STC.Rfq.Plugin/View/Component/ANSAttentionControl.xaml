@@ -1,0 +1,458 @@
+﻿<UserControl x:Class="STC.Rfq.Plugin.View.Component.ANSAttentionControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Rfq.Plugin.View.Component"
+             xmlns:conv ="clr-namespace:STC.Rfq.Plugin.Convertor" DataContextChanged="AnsCotrol_DataContextChanged"
+             mc:Ignorable="d" x:Name="AnsCotrol" MinWidth="787" Height="328">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="MyDataGridRowStyle" TargetType="DataGridRow">
+                <!--<Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>-->
+                <Setter Property="Background" Value="#282828"/>
+                <!--{StaticResource DefaultBackgroup.ColorBrush}-->
+                <Setter Property="Height" Value="34"/>
+            </Style>
+
+            <Style x:Key="MyDataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="IsTabStop" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="BorderBrush" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="MyDataGrid" TargetType="DataGrid" BasedOn="{StaticResource DefaultDataGrid}">
+                <!--<Setter Property="CanUserSortColumns" Value="False"/>-->
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Extended"/>
+                <Setter Property="SelectionUnit" Value="CellOrRowHeader"/>
+                <!-- 不需要虚拟模式 -->
+                <!--<Setter Property="EnableRowVirtualization" Value="False"/>-->
+                <!-- 不需要边框 -->
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+                <Setter Property="EnableColumnVirtualization" Value="True"/>
+                <Setter Property="EnableRowVirtualization" Value="True"/>
+                <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+                <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+                <Setter Property="VirtualizingPanel.IsContainerVirtualizable" Value="True"/>
+                <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+                <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True"/>
+                <!--<Setter Property="BorderBrush" Value="red"/>-->
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <!--<Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>-->
+                <!--<Setter Property="AlternationCount" Value="1"/>-->
+                <!--<Setter Property="AlternatingRowBackground" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>-->
+                <!--<Setter Property="ColumnHeaderStyle" Value="{StaticResource DataGridColumnHeaderStyle}"/>-->
+                <Setter Property="RowStyle" Value="{StaticResource MyDataGridRowStyle}"/>
+                <Setter Property="CellStyle" Value="{StaticResource MyDataGridCellStyle}"/>
+                <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+            </Style>
+
+            
+            <Style x:Key="MyDataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
+                <!--{StaticResource DataGridColumnHeaderForeground}-->
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Background" Value="{StaticResource MainBackgroup.ColorBrush}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment"  Value="Center"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Height" Value="21"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridColumnHeader">
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                                <Grid >
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                          VerticalAlignment ="{TemplateBinding VerticalContentAlignment}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ContentPresenter Grid.Column="0" Margin="5,0,5,0"
+                                                HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                VerticalAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Path x:Name="SortArrow"
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"                                           
+                                                Width="8" Height="6" Margin="2,0,0,0"
+                                                Stretch="Fill" Opacity="0.5" Fill="{TemplateBinding Foreground}"
+                                                RenderTransformOrigin="0.5,0.4"
+                                                Visibility="Collapsed"
+                                                Data="M0,0 L1,0 0.5,1 z"/>
+                                    </Grid>
+
+                                    <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                    <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="SortDirection" Value="Ascending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="SortArrow" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="180" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Descending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 居中 -->
+            <Style x:Key="DataGridColumnHeaderCenterStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource MyDataGridColumnHeaderStyle}">
+                <Setter Property="HorizontalContentAlignment"  Value="Center"/>
+            </Style>
+            
+            <conv:ANSAttentionForeConverter x:Key="ANSAttentionForeConverter"/>
+            <conv:AnsGetSecurityCountConverter x:Key="AnsGetSecurityCountConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!--Background="#141414"-->
+    <Border BorderBrush="#FFFFFF" BorderThickness="1">
+        <Grid Background="#1E1E1E">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="62"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Background="#141414" Height="30" VerticalAlignment="Top">
+                <TextBlock Text="做市状态：" Foreground="#A0A0A0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                <TextBlock Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding status,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Value="1">
+                                    <Setter Property="Text" Value="正常"/>
+                                    <Setter Property="Foreground" Value="#009AFF"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding status,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Value="2">
+                                    <Setter Property="Text" Value="需关注"/>
+                                    <Setter Property="Foreground" Value="#FF9201"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding status,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Value="3">
+                                    <Setter Property="Text" Value="已达标"/>
+                                    <Setter Property="Foreground" Value="#238F7E"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding status,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Value="4">
+                                    <Setter Property="Text" Value="失败"/>
+                                    <Setter Property="Foreground" Value="#8F9598"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="检查时间：" Foreground="#A0A0A0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                <TextBlock Text="{Binding checkTime,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                <TextBlock Text="剩余可报时长：" Foreground="#A0A0A0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                <TextBlock Text="{Binding remainTime,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0"/>
+            </StackPanel>
+
+            <Grid Grid.Row="1" Grid.Column="0" Margin="5,0,0,0">
+                <DataGrid x:Name="newBond_dg"  HorizontalAlignment="Left" VerticalAlignment="Top" Style="{StaticResource MyDataGrid}" SelectedIndex="-1"
+                  ColumnHeaderStyle ="{StaticResource DataGridColumnHeaderCenterStyle}" ItemsSource="{Binding NewBondList.View,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}"
+                  Margin="0,2,0,0" BorderThickness="0" Width="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding securityDec}" Foreground="#FFFFFF"  VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,0,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="安全只数" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding countSafe}" Foreground="#F9C152" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="1Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding termCountList[0]}" Foreground="{Binding termCountList[0],Converter={StaticResource  ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="2Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding termCountList[1]}" Foreground="{Binding termCountList[1],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="3Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding termCountList[2]}" Foreground="{Binding termCountList[2],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="5Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding termCountList[3]}" Foreground="{Binding termCountList[3],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="7Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding termCountList[4]}" Foreground="{Binding termCountList[4],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="10Y" Width="66" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Label Content="{Binding termCountList[5]}" Foreground="{Binding termCountList[5],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="65" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,0,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                    <!--<DataGrid.Resources>
+                        <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+                    </DataGrid.Resources>-->
+                </DataGrid>
+
+            </Grid>
+
+            <!-- ColumnHeaderStyle ="{StaticResource DataGridColumnHeaderCenterStyle}"-->
+            <DataGrid x:Name="otherBond_dg" Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Top" Style="{StaticResource MyDataGrid}" Margin="5,0,0,5"
+                  SelectedIndex="-1" ColumnHeaderStyle ="{StaticResource DataGridColumnHeaderCenterStyle}" 
+                  ItemsSource="{Binding OtherBondList.View,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding securityDec}" Foreground="#FFFFFF"  VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="34" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,0,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="安全只数" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding countSafe}" Foreground="#F9C152" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="0-1Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding termCountList[0]}" Foreground="{Binding termCountList[0],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="1-3Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding termCountList[1]}" Foreground="{Binding termCountList[1],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="3-5Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding termCountList[2]}" Foreground="{Binding termCountList[2],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="5-7Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding termCountList[3]}" Foreground="{Binding termCountList[3],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="7-10Y" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding termCountList[4]}" Foreground="{Binding termCountList[4],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header=">10Y" Width="66" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding termCountList[5]}" Foreground="{Binding termCountList[5],Converter={StaticResource ANSAttentionForeConverter}}" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="65" Height="100" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,0,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+                <!--<DataGrid.Resources>
+                    <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+                </DataGrid.Resources>-->
+            </DataGrid>
+
+            <DataGrid x:Name="bondType_dg" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top" Style="{StaticResource MyDataGrid}"
+                  ColumnHeaderStyle ="{StaticResource DataGridColumnHeaderCenterStyle}" ItemsSource="{Binding securityTypeLt,Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" 
+                  Margin="3,0,0,5" SelectedIndex="-1">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding securityDec}" Foreground="#FFFFFF"  VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="34" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,0,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="安全只数" Width="65" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label Content="{Binding countSafe}" Foreground="#F9C152" VerticalAlignment="Center" HorizontalAlignment="Center" Background="#141414"
+                                       Width="100" Height="34" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,1,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+                <!--<DataGrid.Resources>
+                    <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+                </DataGrid.Resources>-->
+            </DataGrid>
+
+            <Grid Grid.Row="1" Grid.Column="2" Grid.RowSpan="3" Background="#282828" Margin="3,2,0,0" Width="125" Height="285" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="利率债" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,5" Foreground="#FFFFFF"/>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="有效报价:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bncSecurityCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"
+                               Foreground="{Binding bncSecurityCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bncSecurityCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="品种分布:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bncSecurityTypeCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"
+                               Foreground="{Binding bncSecurityTypeCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bncSecurityTypeCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="剩余期限:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bncTimetomaturityCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"
+                               Foreground="{Binding bncTimetomaturityCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bncTimetomaturityCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="国债数量:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bncNDCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" 
+                               Foreground="{Binding bncNDCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bncNDCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="新发国债期限:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bncNewNDCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" 
+                               Foreground="{Binding bncNewNDCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bncNewNDCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="信用债:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="8" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="有效报价:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bcoSecurityCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" 
+                               Foreground="{Binding bcoSecurityCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bcoSecurityCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="9" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="品种分布:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bcoSecurityTypeCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" 
+                               Foreground="{Binding bcoSecurityTypeCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bcoSecurityTypeCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF"/>
+                </StackPanel>
+                <StackPanel Grid.Row="10" Orientation="Horizontal" Margin="10,0,0,0">
+                    <TextBlock Text="发行人覆盖:" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#A0A0A0"/>
+                    <TextBlock Text="{Binding bcoIssuerCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=security}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" 
+                               Foreground="{Binding bcoIssuerCount,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=securityFore}"/>
+                    <TextBlock Text="/" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding bcoIssuerCount,Mode=OneWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource AnsGetSecurityCountConverter},ConverterParameter=standard}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Foreground="#FFFFFF" Height="14"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+    
+</UserControl>

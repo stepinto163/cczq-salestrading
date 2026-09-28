@@ -1,0 +1,48 @@
+﻿<UserControl x:Class="STC.WorkTable.Plugin.View.IntentionPanel.ExecutionPart"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkTable.Plugin.View.IntentionPanel"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="280">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Background="#282828">
+            <TextBlock Text="{Binding TotalCount, StringFormat={}历史需求({0})}" Foreground="#FFFFFF"/>
+            <Rectangle Margin="8 0 8 0" Width="1" Height="16" Fill="#3C3C3C"/>
+            <Button Width="16" Height="16">
+                <Button.Template>
+                    <ControlTemplate>
+                        <Border CornerRadius="8" Background="#136C5E">
+                            <TextBlock Text="+" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <TextBlock Foreground="#A0A0A0" VerticalAlignment="Center" Margin="8 0 0 0">
+                        共<Run Text="{Binding TotalCount}" Foreground="#FFFFFF"/>笔,成交量<Run Text="{Binding BidCount}" Foreground="#FFFFFF"/>kw
+            </TextBlock>
+        </StackPanel>
+        <DataGrid Grid.Row="1" Style="{StaticResource DefaultDataGrid}" RowHeight="32">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="PNL(rmb)" MinWidth="60"/>
+                <DataGridTextColumn Header="成交价" MinWidth="60"/>
+                <DataGridTextColumn Header="成交量" MinWidth="76"/>
+                <DataGridTextColumn Header="渠道" MinWidth="40"/>
+                <DataGridTextColumn Header="时间" MinWidth="76"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

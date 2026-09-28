@@ -1,0 +1,80 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.HomePage.HomePageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.HomePage"
+             xmlns:card="clr-namespace:STC.Common.View.Card;assembly=STC.Common"
+             xmlns:command ="clr-namespace:STC.XBond.Plugin.Command"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             xmlns:utils="clr-namespace:STC.XBond.Plugin.Utils"
+             mc:Ignorable="d" 
+             d:DesignHeight="480" d:DesignWidth="1340"
+             Background="#282828"
+             Margin="5,2,5,5" Initialized="HomePageView_Initialized">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <fcon:MultiBindingConverter x:Key="MultiBindingConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="340"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="0" Grid.Column="1"  Background="{DynamicResource MidnightBlueSilverBrush}">
+            <Button x:Name ="popupBtn" Width="12" Height="12" Style="{DynamicResource PopupButton}" Margin="12,0,16,0" HorizontalAlignment="Right"
+                                                     Command="{x:Static utils:WindowKeyHelper.popupWindowCommand}">
+                <Button.CommandParameter>
+                    <MultiBinding Converter="{StaticResource MultiBindingConverter}">
+                        <MultiBinding.Bindings>
+                            <Binding Source="{x:Static command:PopupTypeEnum.HomePage}" Mode="OneWay"/>
+                            <Binding ElementName="popupBtn"/>
+                        </MultiBinding.Bindings>
+                    </MultiBinding>
+                </Button.CommandParameter>
+            </Button>
+        </Border>
+
+        <Border Grid.Row="0" Grid.RowSpan="2" BorderBrush="#282828" Grid.Column="1" Margin="1, 23, 1, 1"  x:Name="Border_Right1" BorderThickness="1" Background="Transparent">
+            <card:PriceAndOrderView x:Name="dgPrice"></card:PriceAndOrderView>
+        </Border>
+
+        <Border Grid.Row="0" Grid.RowSpan="2" BorderBrush="#282828"  BorderThickness="1 0 0 1" Background="#282828">
+            <local:HomePageTabControl x:Name="GroupTabControl" Background="{DynamicResource MainBackgroup.ColorBrush}" BorderThickness="0" BorderBrush="#282828" Tag="100" SelectionChanged="GroupTabControl_SelectionChanged">
+                <!--<local:HomePageTabItemWithClose Header="活跃券">
+            <local:FavoriteBondsListBox/>
+        </local:HomePageTabItemWithClose>
+            <local:HomePageTabItemWithClose Header="活跃券">
+                <local:FavoriteBondsListBox/>
+            </local:HomePageTabItemWithClose>
+            <local:HomePageTabItemWithClose Header="活跃券"/>
+        <local:HomePageTabItemWithClose Header="活跃券"/>
+
+        <local:HomePageTabItemWithClose Header="活跃券">
+            <local:FavoriteBondsListBox Grid.Row="1"/>
+        </local:HomePageTabItemWithClose>
+       <local:HomePageTabItemWithClose Header="活跃券"/>-->
+
+
+
+            </local:HomePageTabControl>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,636 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Component"
+             x:Class="STC.Common.View.Component.MultiTreeComboBox"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor"
+             mc:Ignorable="d" x:Name="treeComboBox"
+             d:DesignHeight="30" d:DesignWidth="100">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <fcon:ComboBoxDisplayConverter x:Key="ComboBoxDisplayConverter"/>
+            
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="CanContentScroll" Value="true"/>
+            </Style>
+            <!-- 搜索文本框 -->
+            <Style x:Key="SelfSearchTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource TextBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBox.Focus.Foreground}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="AllowDrop" Value="true"/>
+
+                <!--<Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>-->
+                
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="cleanBtn" Style="{DynamicResource CleanButton}" Click="cleanBtn_Click" Width="24" Height="24"/>
+
+                                    <Border x:Name="search_border" Background="Transparent" Width="24" Height="24" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="2" Visibility="Collapsed">
+                                        <Path x:Name="svg_path" Data="M11.8658619,11.1690297 L9.10681761,8.42369919 C9.89250384,7.46830475 10.285347,6.37462953 10.285347,5.14267355 C10.285347,3.72300998 9.78307918,2.51105327 8.77854362,1.50680343 C7.77400807,0.502553597 6.56205136,0.000285825897 5.14267348,1.21818112e-07 C3.7232956,-0.000285582261 2.51133888,0.501982189 1.50680333,1.50680343 C0.502267776,2.51162468 5.7095145e-16,3.72358138 0,5.14267355 C-5.7095145e-16,6.56176571 0.502267776,7.77372241 1.50680333,8.77854366 C2.51133888,9.7833649 3.7232956,10.2856327 5.14267348,10.285347 C6.37491518,10.285347 7.46859041,9.89250386 8.42369915,9.10681764 L11.1827435,11.8658619 C11.2721689,11.9552873 11.3837363,12 11.5174458,12 C11.6511553,12 11.767294,11.9552873 11.8658619,11.8658619 C11.9552873,11.7675797 12,11.651441 12,11.5174458 C12,11.3834506 11.9552873,11.2673119 11.8658619,11.1690297 Z M6.76304418,8.99925006 C6.25420521,9.21352812 5.71408164,9.32066715 5.14267348,9.32066715 C4.57126531,9.32066715 4.03114174,9.21352812 3.52230277,8.99925006 C3.02232063,8.784972 2.57819364,8.48369705 2.18992179,8.0954252 C1.80164994,7.70715336 1.5048034,7.26302637 1.29938216,6.76304423 C1.07624728,6.25420527 0.964679833,5.7140817 0.964679833,5.14267355 C0.964679833,4.57126539 1.07624728,4.03114183 1.29938216,3.52230286 C1.5048034,3.02232072 1.80164994,2.57819373 2.18992179,2.18992189 C2.57819364,1.80165004 3.02232063,1.50037509 3.52230277,1.28609703 C4.03114174,1.07181897 4.57126531,0.964679945 5.14267348,0.964679945 C5.71408164,0.964679945 6.25420521,1.07181897 6.76304418,1.28609703 C7.26302632,1.50037509 7.70715332,1.80165004 8.09542516,2.18992189 C8.48369701,2.57819373 8.78497197,3.02232072 8.99925003,3.52230286 C9.21352809,4.03114183 9.32066712,4.57126539 9.32066712,5.14267355 C9.32066712,5.7140817 9.21352809,6.25420527 8.99925003,6.76304423 C8.78497197,7.26302637 8.48369701,7.70715336 8.09542516,8.0954252 C7.70715332,8.48369705 7.26302632,8.784972 6.76304418,8.99925006 Z"
+                                            UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center" Fill="{DynamicResource  SvgButton.Static.Foreground}">
+                                        </Path>
+                                    </Border>
+
+                                    <ScrollViewer x:Name="PART_ContentHost" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" Grid.Column="1"/>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Disable.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Disable.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.MouseOver.Border}"/>
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Focus.Border}"/>
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Focus.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Focus.Border}"/>
+                                </Trigger>
+                                <Trigger Property="Text" Value="">
+                                    <Setter Property="Visibility" TargetName="search_border" Value="Visible"/>
+                                    <Setter Property="Visibility" TargetName="cleanBtn" Value="Collapsed"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            
+            <Style x:Key="ComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Setter Property="IsTabStop" Value="false"/>
+                <Setter Property="Focusable" Value="false"/>
+                <Setter Property="ClickMode" Value="Press"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                            <Border x:Name="templateRoot" SnapsToDevicePixels="true" Background="{DynamicResource TextBox.Static.Background}">
+                                <Border x:Name="splitBorder" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" SnapsToDevicePixels="true" Margin="0" HorizontalAlignment="Right" BorderThickness="1" Background="{TemplateBinding Background}" BorderBrush="Transparent">
+                                    <Viewbox Width="10" Height="6" Stretch="Uniform">
+                                        <Path x:Name="arrow"  VerticalAlignment="Center"  HorizontalAlignment="Center"  Fill="#A0A0A0" Data="M0,0 L6,0 3,3 z"/>
+                                    </Viewbox>
+                                </Border>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <!--鼠标移过-->
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Fill" TargetName="arrow" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                    <Setter Property="BorderBrush" TargetName="templateRoot" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="CmbTreeExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+                <Setter Property="OverridesDefaultStyle" Value="true"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Width" Value="16"/>
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                            <Border x:Name="templateRoot" SnapsToDevicePixels="true" Background="Transparent" BorderBrush="#515151" BorderThickness="0,0,0,0" Margin="0 -2 0 0" Visibility="{Binding IsVisible,Converter={StaticResource BoolVisibilityConvertor}}">
+                                <Border x:Name="splitBorder" Width="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" SnapsToDevicePixels="true" Margin="0" HorizontalAlignment="Right" BorderThickness="1" BorderBrush="Transparent">
+                                    <Viewbox Height="12" Width="12">
+                                        <Path x:Name="ExpandPath" Grid.Column="1" Stroke="{DynamicResource GreenBlueComboBoxArrowBtn.Normal.Stroke}" StrokeThickness="1" Data="M 2,4 L 8,12 L 14,4"  HorizontalAlignment="Left">
+                                            <Path.RenderTransform>
+                                                <RotateTransform Angle="-90" CenterY="8" CenterX="8"/>
+                                            </Path.RenderTransform>
+                                        </Path>
+                                    </Viewbox>
+                                </Border>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="RenderTransform" TargetName="ExpandPath">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="0" CenterY="0" CenterX="0"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Stroke" TargetName="ExpandPath" Value="{StaticResource GreenBlueComboBoxArrowBtn.Normal.Stroke}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Stroke" TargetName="ExpandPath" Value="{StaticResource GreenBlueCheckBox.MouseOver.Border}"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                        <Condition Property="IsChecked" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Stroke" TargetName="ExpandPath" Value="{StaticResource GreenBlueCheckBox.MouseOver.Glyph}"/>
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="CmbGreenBlueTreeViewItemStyle" TargetType="{x:Type TreeViewItem}">
+                <Setter Property="Background" Value="{DynamicResource MainTitleBackgroup.ColorBrush}"/>
+                <Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+                <Setter Property="Padding" Value="1,0,0,0"/>
+                <Setter Property="IsExpanded" Value="True"/>
+                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                            <Grid Visibility="{Binding IsVisible,Converter={StaticResource BoolVisibilityConvertor}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition MinWidth="24" Width="Auto"/>
+                                    <!--<ColumnDefinition Width="Auto"/>-->
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <ToggleButton x:Name="Expander" ClickMode="Press" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource  CmbTreeExpandCollapseToggleStyle}"/>
+                                <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.Column="1" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="PART_Header" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                </Border>
+                                <ItemsPresenter x:Name="ItemsHost" Grid.ColumnSpan="2" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsExpanded" Value="false">
+                                    <Setter Property="Visibility" TargetName="ItemsHost" Value="Collapsed"/>
+                                </Trigger>
+                                <Trigger Property="HasItems" Value="false">
+                                    <Setter Property="Visibility" TargetName="Expander" Value="Hidden"/>
+                                </Trigger>
+                                <!--鼠标移过-->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True" SourceName="PART_Header"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="VirtualizingPanel.IsVirtualizing" Value="true">
+                        <Setter Property="ItemsPanel">
+                            <Setter.Value>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <ControlTemplate x:Key="ComboBoxTemplate" TargetType="{x:Type ComboBox}">
+                <Grid x:Name="templateRoot" SnapsToDevicePixels="true" >
+                    <ToggleButton x:Name="toggleButton"  Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" BorderBrush="{TemplateBinding BorderBrush}"  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Focusable="false" ClickMode="Press" HorizontalContentAlignment="Left">
+                        <ToggleButton.Template>
+                            <ControlTemplate>
+                                <Border x:Name="BorderComp" Grid.Column="0" CornerRadius="2" Margin="1" Background="{DynamicResource TextBox.Static.Background}"  BorderBrush="{DynamicResource TextBox.Static.Border}" BorderThickness="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="18"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!--TextBlock x:Name="txText" IsEnabled="{TemplateBinding IsEnabled}" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"  Text="{Binding ElementName=treeComboBox, Path=SelectedParentTexts, Converter={StaticResource ComboBoxDisplayConverter}, ConverterParameter=Full}"  ToolTip="{Binding ElementName=treeComboBox, Path=SelectedParentTexts, Converter={StaticResource ComboBoxDisplayConverter}, ConverterParameter=Trimmed}" Padding="3" TextTrimming="CharacterEllipsis" -->
+                                        <TextBlock x:Name="txText" IsEnabled="{TemplateBinding IsEnabled}" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"  Text="{Binding ElementName=treeComboBox, Path=SelectedTexts}"  ToolTip="{Binding ElementName=treeComboBox, Path=SelectedTexts}" Padding="3" TextTrimming="CharacterEllipsis" >
+                                        </TextBlock>
+                                        <TextBlock x:Name="txWaterMark" Foreground="{Binding  ElementName=treeComboBox, Path=Foreground}" Text="{Binding ElementName=treeComboBox, Path=DefaultText}" Background="Transparent" Padding="3" TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=txText}" Value="">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsEnabled, ElementName=txText}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.5"/>
+                                                            </DataTrigger>
+                                                    </Style.Triggers>
+                                                    
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <Button x:Name="deleteBtn" Click="deleteBtn_Click" IsEnabled="{TemplateBinding IsEnabled}" Grid.Column="1" Background="Transparent" Foreground="{DynamicResource GreenBlueComboBoxArrowBtn.Normal.Stroke}" Height="12" Width="12" Margin="0 1 0 0">
+                                            <Button.Style>
+                                                <Style TargetType="{x:Type Button}">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                                <Grid x:Name="Grid">
+                                                                    <Border x:Name="out_border" CornerRadius="1" BorderBrush="{DynamicResource ImageButton.Static.Border}" BorderThickness="0,0,0,0" Background="Transparent" SnapsToDevicePixels="true">
+                                                                        <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                                                            <Viewbox Width="9" Height="9">
+                                                                                <Path x:Name="svg_path" Data="M6.49241251,5.53100139 L10.8558668,1.15050666 C10.9932898,1.02444399 11.0620028,0.867048874 11.0620028,0.678321323 C11.0620028,0.489593772 10.9962215,0.329266969 10.8646619,0.197340914 C10.7331023,0.0654148584 10.5727755,-0.000364938572 10.3836814,0 C10.1945874,0.000367983957 10.0371923,0.069079471 9.91149611,0.206135984 L5.53100139,4.56959026 L1.15050666,0.206135984 C1.02444399,0.0687130098 0.867048874,0 0.678321323,0 C0.489593772,0 0.329266969,0.0657813196 0.197340914,0.197340914 C0.0654148584,0.328900507 -0.000364938572,0.489227311 0,0.678321323 C0.000367983957,0.867415335 0.069079471,1.02481045 0.206135984,1.15050666 L4.56959026,5.53100139 L0.206135984,9.91149611 C0.0687130098,10.0375588 0,10.1949539 0,10.3836814 C0,10.572409 0.0657813196,10.7327358 0.197340914,10.8646619 C0.328900507,10.9965879 0.489227311,11.0623677 0.678321323,11.0620028 C0.867415335,11.0616348 1.02481045,10.9929233 1.15050666,10.8558668 L5.53100139,6.47537206 L9.91149611,10.8558668 C10.0375588,10.9932898 10.1949539,11.0620028 10.3836814,11.0620028 C10.572409,11.0620028 10.7327358,10.9962215 10.8646619,10.8646619 C10.9965879,10.7331023 11.0623677,10.5727755 11.0620028,10.3836814 C11.0616348,10.1945874 10.9929233,10.0371923 10.8558668,9.91149611 L6.49241251,5.53100139 Z"
+                                                                                    UseLayoutRounding="True" VerticalAlignment="Center"  HorizontalAlignment="Center" Fill="{TemplateBinding Foreground}" />
+                                                                            </Viewbox>
+                                                                        </Border>
+                                                                    </Border>
+                                                                    <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="{DynamicResource ImageButton.Static.Background}" BorderThickness="0"/>
+                                                                </Grid>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="Background" TargetName="border" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                                                        <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Path x:Name="Arrow" Grid.Column="2" IsEnabled="{TemplateBinding IsEnabled}" Stroke="{DynamicResource GreenBlueComboBoxArrowBtn.Normal.Stroke}" StrokeThickness="1" Data="M 6,10 L 10,15 L 14,10" Margin="-6 -8 0 0"  HorizontalAlignment="Center"  VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="false">
+                                        <Setter Property="Visibility" TargetName="deleteBtn" Value="Collapsed"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}" Value="False">
+                                        <Setter Property="Visibility" TargetName="deleteBtn" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Visibility" TargetName="deleteBtn" Value="Visible"/>
+                                        <Setter Property="Foreground" TargetName="deleteBtn" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                        <Setter Property="Foreground" TargetName="txText" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                        <Setter Property="Stroke" TargetName="Arrow" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                        <Setter Property="BorderBrush" TargetName="BorderComp" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                        <Setter Property="Background" TargetName="BorderComp" Value="{DynamicResource ComboBoxItem.MouseOver.Background}"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                        <Setter Property="Stroke" TargetName="Arrow" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                        <Setter Property="BorderBrush" TargetName="BorderComp" Value="{DynamicResource ComboBoxItem.MouseOver.Border}"/>
+                                        <Setter Property="Background" TargetName="BorderComp" Value="{DynamicResource ComboBoxItem.MouseOver.Background}"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsEnabled" Value="false">
+                                        <Setter Property="Background" TargetName="BorderComp" Value="{DynamicResource TextBox.Disable.Background}"/>
+                                        <Setter Property="Stroke" TargetName="Arrow" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                        <Setter Property="Foreground" TargetName="txText" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                        <Setter Property="Opacity" TargetName="BorderComp" Value="0.5"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding ElementName=treeComboBox, Path=SelectedValues}"  Value="">
+                                        <Setter Property="Foreground" TargetName="txText" Value="{Binding ElementName=treeComboBox, Path=Foreground}"/>
+                                    </DataTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+
+                    <Popup x:Name="PART_Popup" AllowsTransparency="False" Grid.ColumnSpan="2" MaxHeight="{TemplateBinding MaxDropDownHeight}"  IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                        PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" PlacementTarget="{Binding ElementName=ComboBox}">
+                        <Border x:Name="shadow"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"  Height="Auto" MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{Binding ActualWidth, ElementName=templateRoot}" >
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Border x:Name="Search_Part" BorderThickness="0 0 0 0" Background="{DynamicResource MainTitleBackgroup.ColorBrush}" BorderBrush="#282828" Height="32">
+                                    <TextBox x:Name="txt_SearchTextBox"  Focusable="True" IsHitTestVisible="True" Margin="4" Style="{StaticResource SelfSearchTextBoxStyle}" TextChanged="MultiSelectCombo_TextChanged"/>
+                                </Border>
+
+                                <!-- 分页 -->
+                                <Border  BorderThickness="0 1 0 0"  Grid.Row="2" Background="{DynamicResource MainTitleBackgroup.ColorBrush}"  BorderBrush="#282828">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,2,0,2" Background="Transparent">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <!-- TotalPages = 0 时隐藏 -->
+                                                    <DataTrigger Binding="{Binding TotalPages, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <!-- TotalPages = 1 时隐藏 -->
+                                                    <DataTrigger Binding="{Binding TotalPages, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="1">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Button Style="{DynamicResource FirstPageButton}"  IsEnabled="{Binding CanGoFirst, RelativeSource={RelativeSource AncestorType=UserControl}}"  Height="18" Width="18" MinHeight="11" MinWidth="11" Foreground="#FFEBC8" Click="FirstPage_Click"  ToolTip="首页" Margin="8 0 4 0"/>
+                                        <Button Style="{DynamicResource PrevPageButton}"   IsEnabled="{Binding CanGoPrev, RelativeSource={RelativeSource AncestorType=UserControl}}"  Height="18" Width="18" MinHeight="11" MinWidth="11" Foreground="#FFEBC8"  Click="PrevPage_Click" ToolTip="上一页" Margin="4 0 0 0"/>
+                                        <TextBlock Text="{Binding CurrentPage, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="5,0"/>
+                                        <TextBlock Text="/" Margin="2,0"/>
+                                        <TextBlock Margin="5,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <!-- 默认绑定 TotalPages -->
+                                                    <Setter Property="Text" Value="{Binding TotalPages, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding TotalPages, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="0">
+                                                            <Setter Property="Text" Value="--" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <Button Style="{DynamicResource NextPageButton}" IsEnabled="{Binding CanGoNext, RelativeSource={RelativeSource AncestorType=UserControl}}"  Height="18" Width="18" MinHeight="11" MinWidth="11" Foreground="#FFEBC8"  Click="NextPage_Click" ToolTip="下一页"  Margin="4 0 4 0"/>
+                                        <Button Style="{DynamicResource EndPageButton}" IsEnabled="{Binding CanGoLast, RelativeSource={RelativeSource AncestorType=UserControl}}"   Height="18" Width="18" MinHeight="11" MinWidth="11" Foreground="#FFEBC8"  Click="EndPage_Click" ToolTip="末页"  Margin="4 0 8 0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border x:Name="dropDownBorder" Grid.Row="1" BorderThickness="0"  Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+                                    <ScrollViewer x:Name="DropDownScrollViewer">
+                                        <Grid x:Name="grid" RenderOptions.ClearTypeHint="Enabled">
+                                            <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="0" VerticalAlignment="Top" Width="100">
+                                                <Rectangle x:Name="opaqueRect" Fill="{Binding Background, ElementName=dropDownBorder}"  Height="{Binding ActualHeight, ElementName=dropDownBorder}"  Width="{Binding ActualWidth, ElementName=dropDownBorder}"/>
+                                            </Canvas>
+
+                                            <TreeView x:Name="InnerTreeView" ItemContainerStyle="{StaticResource CmbGreenBlueTreeViewItemStyle}" ItemsSource="{Binding PagedNodes, RelativeSource={RelativeSource AncestorType=UserControl}}"   VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"  ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Disabled" Margin="2"  BorderBrush="Transparent" BorderThickness="0" Foreground="White" Background="Transparent" PreviewMouseWheel="DropDownScrollViewer_PreviewMouseWheel">
+                                            </TreeView>
+                                        </Grid>
+                                    </ScrollViewer>
+
+                                </Border>
+
+                            </Grid>
+                        </Border>
+                    </Popup>
+
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <DataTrigger Binding="{Binding ElementName=treeComboBox, Path=IsEnableSearch}" Value="False">
+                        <Setter Property="Visibility" TargetName="Search_Part" Value="Collapsed"/>
+                    </DataTrigger>
+                    
+                    <Trigger Property="HasDropShadow" SourceName="PART_Popup" Value="true">
+                        <Setter Property="Background" TargetName="shadow" Value="#71000000"/>
+                    </Trigger>
+                    <!--<Trigger Property="HasItems" Value="false">
+                    <Setter Property="Height" TargetName="dropDownBorder" Value="120"/>
+                </Trigger>-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsGrouping" Value="true"/>
+                            <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                    </MultiTrigger>
+                    <Trigger Property="ScrollViewer.CanContentScroll" SourceName="DropDownScrollViewer" Value="false">
+                        <Setter Property="Canvas.Top" TargetName="opaqueRect" Value="{Binding VerticalOffset, ElementName=DropDownScrollViewer}"/>
+                        <Setter Property="Canvas.Left" TargetName="opaqueRect" Value="{Binding HorizontalOffset, ElementName=DropDownScrollViewer}"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+
+            <Style x:Key="CmbTreeComboBox" TargetType="{x:Type ComboBox}">
+                <Setter Property="Background" Value="{DynamicResource TextBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{StaticResource ComboBoxItem.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="MaxDropDownHeight" Value="300"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Template" Value="{DynamicResource ComboBoxTemplate}"/>
+            </Style>
+
+            <!-- << 首页 -->
+            <Style TargetType="{x:Type Button}" x:Key="FirstPageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource SvgButton.Static.Foreground}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                     BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                    <Viewbox Height="{TemplateBinding MinHeight}" Width="{TemplateBinding MinWidth}">
+                                        <Path x:Name="svg_path"  Data="M15,0 L0,10 L15,20 Z M30,0 L15,10 L30,20 Z"
+                                       UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                       Fill="{TemplateBinding Foreground}" />
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.Disabled.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- < 上一页 -->
+            <Style TargetType="{x:Type Button}" x:Key="PrevPageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource SvgButton.Static.Foreground}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                             BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                        <Viewbox Height="{TemplateBinding MinHeight}" Width="{TemplateBinding MinWidth}">
+                                            <Path x:Name="svg_path"  Data="M15,0 L0,10 L15,20 Z"
+                               UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center"
+                               Fill="{TemplateBinding Foreground}" />
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.Disabled.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- > 下一页 -->
+            <Style TargetType="{x:Type Button}" x:Key="NextPageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource SvgButton.Static.Foreground}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                     BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                                            <Viewbox Height="{TemplateBinding MinHeight}" Width="{TemplateBinding MinWidth}">
+                                                                <Path x:Name="svg_path"  Data="M0,0 L15,10 L0,20 Z"
+                                       UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                       Fill="{TemplateBinding Foreground}" />
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.Disabled.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!-- >> 末页 -->
+            <Style TargetType="{x:Type Button}" x:Key="EndPageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="MinHeight" Value="12"/>
+                <Setter Property="MinWidth" Value="12"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource SvgButton.Static.Foreground}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                     BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                                                        <Viewbox Height="{TemplateBinding MinHeight}" Width="{TemplateBinding MinWidth}">
+                                                                            <Path x:Name="svg_path"  Data="M0,0 L15,10 L0,20 Z M15,0 L30,10 L15,20 Z"
+                                       UseLayoutRounding="True" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                       Fill="{TemplateBinding Foreground}" />
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.Disabled.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+        
+    </UserControl.Resources>
+
+    <ComboBox Style="{StaticResource CmbTreeComboBox}" Loaded="treeComboBox_Loaded" MaxDropDownHeight="{Binding MaxDropDownHeight, RelativeSource={RelativeSource AncestorType=UserControl}}" IsHitTestVisible="True" IsTabStop="False" Focusable="False" SnapsToDevicePixels="True" OverridesDefaultStyle="True"  IsSynchronizedWithCurrentItem="True" x:Name="ComboBox" DropDownOpened="ComboBox_DropDownOpened"/>
+</UserControl>

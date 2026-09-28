@@ -1,0 +1,47 @@
+﻿<comp:WindowBase x:Class="STC.Mm.Plugin.View.UpdateCancelWidenSettingWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" ResizeMode="NoResize" MaxboxEnable="False" MinboxEnable="False"
+             Width="400" Height="150"  Title="确认">
+    <comp:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+        </ResourceDictionary>
+    </comp:WindowBase.Resources>
+    <comp:WindowBase.InputBindings>
+        <KeyBinding Key="Escape" Command="{x:Static SystemCommands.CloseWindowCommand}"/>
+    </comp:WindowBase.InputBindings>
+    <Grid x:Name="RootGrid" >
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="45"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Run Foreground="#F9C152">撤销"我的所有做市券"的挂单</Run>
+            <LineBreak/>
+            <Run Foreground="#828282">（仅指STC发出的单子，不包含本币机发出的单子），STC不再发送</Run>
+            <LineBreak/>
+             <Run Foreground="#828282">新报价。</Run>
+        </TextBlock>
+
+        <Border Grid.Row="1" BorderBrush="#232323" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="btnCancel" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}"
+                            Click="btnCancel_Click">取消</Button>
+                <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource RedButtonStyle}"
+                        Click="btnOK_Click" IsDefault="True">确定</Button>
+            </StackPanel>
+
+        </Border>
+    </Grid>
+</comp:WindowBase>

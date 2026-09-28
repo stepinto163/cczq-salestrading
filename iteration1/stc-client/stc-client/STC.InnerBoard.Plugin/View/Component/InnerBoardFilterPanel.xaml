@@ -1,0 +1,99 @@
+﻿<UserControl x:Class="STC.InnerBoard.Plugin.View.Component.InnerBoardFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.InnerBoard.Plugin.View.Component"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <!--<Grid>
+        <ListBox x:Name="FirmFlagListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="FirmFlagListBox_SelectionChanged">
+            <ListBox.Template>
+                <ControlTemplate>
+                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBoxItem Content="全部" Style="{StaticResource MyCommonFilterListBoxItemStyle}" IsSelected="True"/>
+            <ListBoxItem Content="firm" Style="{StaticResource MyCommonFilterListBoxItemStyle}" Width="60"/>
+            <ListBoxItem Content="nonfirm" Style="{StaticResource MyCommonFilterListBoxItemStyle}" Width="60"/>
+        </ListBox>
+    </Grid>-->
+    <Grid>
+        <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Height="24">
+
+            <RadioButton x:Name="ShowAll_ToggleButton" Width="80" Height="16" Margin="10,0,0,0"  
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="True" Content="Show All" Foreground="White" Style="{StaticResource ShowAllRadioStyle}" 
+                          Checked="ShowAll_ToggleButton_Checked"
+                         Unchecked="ShowAll_ToggleButton_Unchecked"
+                         Click="ShowAll_ToggleButton_Click"/>
+
+            <ListBox x:Name="FirmTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" 
+                     SelectionChanged="FirmFlagListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="firm" Width="90" HorizontalContentAlignment="Center" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="nonfirm" Width="90" HorizontalContentAlignment="Center" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="需求" Width="90" HorizontalContentAlignment="Center" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+            </ListBox>
+
+            <TextBlock x:Name="SettleLbl" Text="清算速度:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{StaticResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="SettlTypeListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"
+                     SelectionChanged="SettlTypeListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="T+1" Width="40" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="T+0" Width="40" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="远期" Width="40" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+            </ListBox>
+
+            <TextBlock Text="方向:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{StaticResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="SideListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="SideListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="Bid" Style="{StaticResource MyCommonFilterListBoxItemStyle}" Width="40"/>
+                <ListBoxItem Content="Ofr" Style="{StaticResource MyCommonFilterListBoxItemStyle}" Width="40"/>
+            </ListBox>
+
+            <TextBlock Text="角色:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{StaticResource QuotationList.SubTitle.Foreground}"/>
+            <comp:MultiSelectComboBox x:Name="RoleCbb" Width="120" Height="22" Background="Black" FilterDicChanged="RoleCbb_FilterDicChanged">
+            </comp:MultiSelectComboBox>
+
+            <CheckBox x:Name="isMeCB" Content="我" VerticalAlignment="Center" Margin="10,0,5,0" Style="{StaticResource DefaultCheckBoxStyle}" IsChecked="false" Padding="5 0 0 0"
+                      Foreground="{StaticResource QuotationList.SubTitle.Foreground}" Checked="isMeCB_Checked" Unchecked="isMeCB_Unchecked"/>
+            <!--<ListBox x:Name="RoleListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="RoleListBox_SelectionChanged"
+                     ItemsSource="{Binding RoleList}">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource MyCommonFilterListBoxItemStyle}">
+                        <Setter Property="Content" Value="{Binding itemText}"/>
+                        <Setter Property="IsSelected" Value="{Binding itemIsSelected}"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>-->
+        </StackPanel>
+    </Grid>
+</UserControl>

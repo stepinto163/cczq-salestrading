@@ -1,0 +1,324 @@
+﻿<comp:WindowBase x:Class="STC.WorkTable.Plugin.View.WorkTable.RecognizeIntentionQuoteWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkTable.Plugin.View.WorkTable"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:localcomp="clr-namespace:STC.WorkTable.Plugin.View.Component"
+             mc:Ignorable="d" Background="#141414"
+             ResizeMode="CanResize"
+             Title="报价识别"
+             Height="400" Width="900" Closed="WindowBase_Closed">
+
+    <comp:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.WorkTable.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkTable.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="SideTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </comp:WindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition/>
+            <RowDefinition Height="40"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+       
+        <Border Background="#1E1E1E">
+            <TextBlock Text="原文" Foreground="#FFFFFF" Opacity="0.5" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+        </Border>
+        
+            <Grid Grid.Row="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <comp:WatermarkTextBox x:Name="contentTxt"  WaterMark="请粘贴报价信息&#x000A;如 BID 200210 3.24% 3000w&#x000A;(支持粘贴多条信息)" VerticalContentAlignment="Top"
+                             BorderThickness="0" Background="#0B0C0C" Foreground="#FFFFFF" 
+                             AcceptsReturn="True" TextWrapping="Wrap"></comp:WatermarkTextBox>
+                </ScrollViewer>
+            </Grid>
+       
+        <Border x:Name="step1" Grid.Row="2" BorderBrush="#3B3C3E" BorderThickness="0 1 0 0" >
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"  >
+                <Button x:Name="btnClear" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}"
+                            Click="btnClear_Click">清除</Button>
+                <Button x:Name="btnRecognize" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource RedButtonStyle}"
+                        Click="btnRecognize_Click">识别</Button>
+            </StackPanel>
+        </Border>
+        <Border Grid.RowSpan="3"  BorderBrush="#3B3C3E" BorderThickness="0,0,1,0"></Border>
+
+        <DataGrid x:Name="dg" Grid.Column="1" Grid.RowSpan="2"
+                      ItemsSource="{Binding ViewSource.View}"
+                      SelectedItem="{Binding SelectedItem_Recognize,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                      Style="{StaticResource DefaultDataGrid}" SelectionMode="Single" IsReadOnly="False"
+                  
+                   LoadingRow="DataGrid_LoadingRow" 
+                   UnloadingRow="DataGrid_UnloadingRow"
+                  
+                  BeginningEdit="DataGrid_BeginningEdit"
+                  CellEditEnding="DataGrid_CellEditEnding"
+                  >
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="序号" Width="Auto" MinWidth="40" MaxWidth="80" IsReadOnly="True" HeaderStyle="{StaticResource DataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="No_TB" Text="{Binding No}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="方向" MinWidth="55" Width="55" MaxWidth="60" CanUserSort="True" SortMemberPath="Side">
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <!--编辑部分-->
+                            <ComboBox x:Name="cbSide_edit" Height="18" VerticalContentAlignment="Center"
+                                          ItemsSource="{Binding DataContext.SideDic,RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                          DisplayMemberPath="Value"  SelectedValuePath="Key" Grid.Column="2"
+                                          SelectedValue="{Binding Side_Edit,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                          Style="{StaticResource NonEditableComboBoxStyle}"
+                                      FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}">
+                            </ComboBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <!--显示部分-->
+                            <Border x:Name="SideBorder">
+                                <TextBlock x:Name="SideTB_display" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" Width="45" Style="{StaticResource SideTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <!--没有方向-->
+                                <DataTrigger Binding="{Binding Side,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                    <Setter TargetName="SideBorder" Property="BorderThickness" Value="1"/>
+                                    <Setter TargetName="SideBorder" Property="BorderBrush" Value="red"/>
+                                    <Setter TargetName="SideTB_display" Property="Text" Value="方向"/>
+                                    <Setter TargetName="SideTB_display" Property="Foreground" Value="#3C3C3C"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="代码" MinWidth="80" Width="100" MaxWidth="150" CanUserSort="True" SortMemberPath="SecurityId" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="SecurityIDTB" Text="{Binding SecurityId}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding SecurityId}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="报价" MinWidth="70" Width="70" MaxWidth="90" CanUserSort="True" SortMemberPath="Price">
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <!--编辑部分-->
+                            <comp:NumericUpDown x:Name="PriceNU_Edit" NumericValue="{Binding Price_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                    MinValue="0" MaxValue="999999999999" DecimalLength="4" RangeValue="0.0025" VerticalAlignment="Center"
+                                                Loaded="PriceNU_Edit_Loaded"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border x:Name="PriceBorder">
+                                <!--显示部分-->
+                                <TextBlock x:Name="Price_Display" Text="{Binding Price, StringFormat={}{0:0.00##}}" VerticalAlignment="Center"/>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Price,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                    <Setter TargetName="PriceBorder" Property="BorderThickness" Value="1"/>
+                                    <Setter TargetName="PriceBorder" Property="BorderBrush" Value="red"/>
+                                    <Setter TargetName="Price_Display" Property="Text" Value="--"/>
+                                    <Setter TargetName="Price_Display" Property="Foreground" Value="#3C3C3C"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="报量" MinWidth="70" Width="70" MaxWidth="90" CanUserSort="True" SortMemberPath="Qty">
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <!--编辑部分-->
+                            <comp:NumericUpDown x:Name="QuantityNU_edit" NumericValue="{Binding Qty_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                    MinValue="1000" MaxValue="100000000" DecimalLength="0" RangeValue="1000" VerticalAlignment="Center"
+                                                FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                                Loaded="QuantityNU_edit_Loaded" LostFocus="QuantityNU_edit_LostFocus" ToolTip="输入范围:1000-100000000;且是1000的倍数"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border x:Name="QtyBorder">
+                                <!--显示部分-->
+                                <TextBlock x:Name="Quantity_display" Text="{Binding Qty, StringFormat={}{0:0}}" VerticalAlignment="Center"/>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Qty,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                    <Setter TargetName="QtyBorder" Property="BorderThickness" Value="1"/>
+                                    <Setter TargetName="QtyBorder" Property="BorderBrush" Value="red"/>
+                                    <Setter TargetName="Quantity_display" Property="Text" Value="--"/>
+                                    <Setter TargetName="Quantity_display" Property="Foreground" Value="#3C3C3C"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="清算速度" MinWidth="80" Width="80" MaxWidth="145" CanUserSort="True" SortMemberPath="SettlType">
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <!--编辑部分-->
+                            <localcomp:SettleTypeSelector SettleType="{Binding SettlType_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"
+                                                     CreateTime="{Binding CreateTime}"
+                                                     FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"/>
+                            <!--<StackPanel x:Name="settltype_panel_edit" Orientation="Horizontal">
+                                <DatePicker x:Name="datePicker" Width="70" Height="24" 
+                                                
+                                        SelectedDate="{Binding edit_settltype_date,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                Style="{StaticResource SettlTypeDatePickerStyle}"
+                                            CalendarStyle="{StaticResource BlackRed_CalendarStyle}">
+                                    <DatePicker.Resources>
+                                        <Style TargetType="DatePickerTextBox">
+                                            <Setter Property="IsReadOnly" Value="True"/>
+                                        </Style>
+                                    </DatePicker.Resources>
+                                </DatePicker>
+                                <ComboBox x:Name="cbSettle" Width="60"  Height="24"  Margin="1,0,0,0" VerticalContentAlignment="Center"
+                                                SelectedIndex="{Binding edit_settletype,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                Style="{StaticResource NonEditableComboBoxStyle}">
+                                    <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                    <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>-->
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border x:Name="settlTypeBorder">
+                                <!--显示部分-->
+                                <TextBlock x:Name="settlType_dispay" Text="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"  FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding SettlType,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                    <Setter TargetName="settlTypeBorder" Property="BorderThickness" Value="1"/>
+                                    <Setter TargetName="settlTypeBorder" Property="BorderBrush" Value="red"/>
+                                    <Setter TargetName="settlType_dispay" Property="Text" Value="--"/>
+                                    <Setter TargetName="settlType_dispay" Property="Foreground" Value="#3C3C3C"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="操作" MinWidth="40" Width="40" MaxWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button x:Name="DelBtn" Height="14" Width="14" 
+                                        Command="{Binding DataContext.DelOrderCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                        Style="{StaticResource DeleteButton}" FontSize="10"
+                                         PreviewMouseLeftButtonDown="Btn_PreviewMouseLeftButtonDown"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="原文" Width="160" MinWidth="160" MaxWidth="300" CanUserSort="True" SortMemberPath="Text" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="OriginalTextTB" Margin="0,0,0,0" Text="{Binding Text}" VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip>
+                                            <TextBlock Text="{Binding Text, Converter={StaticResource subStringConverter}, ConverterParameter=250}" TextWrapping="Wrap" MaxWidth="200"/>
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                                <!--<Image Margin="1,0,0,0" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_search_typing.png" Width="20" Height="20" VerticalAlignment="Center"/>-->
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Border Grid.Row="2" Grid.Column="1" BorderBrush="#3B3C3E" BorderThickness="0,1,0,0">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="客户机构:" Style="{StaticResource TitleTBFont}" VerticalAlignment="Center" Margin="5 3 5 0" Foreground="#FFFFFF"/>
+                    <localcomp:AutoCompleteComboBox x:Name="InsNameCb_edit" Height="20" Width="120"
+                                                       DisplayValuePath="shortnamecn"
+                                                       SelectedItem="{Binding SelectedInstintuion_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding InstitutionName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                                                       MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                                                       Watermark="客户机构" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="SelectedInstitutionCB_PatternChanged">
+                        <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                            <DataGridTemplateColumn  Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding shortnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    </localcomp:AutoCompleteComboBox>
+                    <TextBlock Text="客户名:" Style="{StaticResource TitleTBFont}" VerticalAlignment="Center" Margin="5 3 5 0" Foreground="#FFFFFF"/>
+                    <localcomp:AutoCompleteComboBox x:Name="TrdNameCb_edit" Height="20" Width="120" 
+                                                       DisplayValuePath="namecn"
+                                                       SelectedItem="{Binding SelectedTrader_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding TraderName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                                                       MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                                                       Watermark="客户名" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="SelectedUserIDCB_PatternChanged">
+                        <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                            <DataGridTemplateColumn MinWidth="100" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding namecn}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    </localcomp:AutoCompleteComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" >
+                    <Button x:Name="close_button" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}" Click="close_button_Click">取消</Button>
+                    <Button x:Name="ok_button" Width="100" Height="24" Margin="4,0,4,0" Style="{StaticResource RedButtonStyle}" Click="ok_button_Click">确定</Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid> 
+</comp:WindowBase>

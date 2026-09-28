@@ -1,0 +1,302 @@
+﻿<Comp:WindowBase x:Class="BDB.Trade.Plugin.View.Trade.AddBondWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Trade"
+        xmlns:Comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+        xmlns:Component="clr-namespace:BDB.Trade.Plugin.Component"
+        mc:Ignorable="d"
+        Title="新增" Height="272" Width="344" ResizeMode="NoResize"
+                 MinboxEnable="False" MaxboxEnable="False" WindowStartupLocation="CenterScreen" BorderThickness="1" BorderBrush="#136C5E">
+    <Comp:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="CustomerHeader" TargetType="DataGridColumnHeader">
+
+                <Setter Property="Margin" Value="8, 3, 0, 0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="#788187"/>
+                <Setter Property="Background" Value="Transparent"/>
+            </Style>
+
+
+            <ControlTemplate x:Key="BondTextBox"
+                         TargetType="TextBox">
+                <Border Name="Border"
+                    Background="#0A0F0E"
+                    CornerRadius="0"
+                    BorderThickness="0"
+                    SnapsToDevicePixels="True">
+
+                    <ScrollViewer Margin="5,-0,5,0"
+                                  Grid.Column="0"
+                                  BorderThickness="0"
+                                  VerticalAlignment="Stretch"
+                                  x:Name="PART_ContentHost" />
+
+                </Border>
+
+                <ControlTemplate.Triggers>
+
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsKeyboardFocused" Value="false"/>
+                            <Condition Property="IsMouseOver" Value="true"/>
+                        </MultiTrigger.Conditions>
+
+                        <Setter TargetName="Border" Property="BorderThickness" Value="1"/>
+                        <Setter TargetName="Border" Property="BorderBrush" Value="#FF9300"/>
+                        
+                    </MultiTrigger>
+                    
+                </ControlTemplate.Triggers>
+                
+            </ControlTemplate>
+
+        </ResourceDictionary>
+    </Comp:WindowBase.Resources>
+
+
+    <Grid>
+
+
+        <Grid  x:Name="gridBatch" Background="#171F1F" Visibility="{Binding BatchVisibility}">
+        <!--<Grid  x:Name="gridBatch" Background="{StaticResource Window.Backgroud}" Visibility="Collapsed">-->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="45"/>
+            </Grid.RowDefinitions>
+
+            <!-- 第一步 -->
+            <Border x:Name="step1" BorderBrush="#3B3C3E" Background="#0B0C0C" BorderThickness="0"  Margin="16" Visibility="Visible">
+                <Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <TextBox x:Name="importTxt" BorderThickness="0" Background="#0B0C0C" Foreground="#FFFFFF" Template="{StaticResource BondTextBox}"  AcceptsReturn="True" TextWrapping="Wrap"  Padding="10"  >
+                            <!--<TextBox.ContextMenu>
+                        <ContextMenu Name="cm" StaysOpen="true">
+                            <MenuItem Header="导入CVS文件" Command="{Binding ImportCommand}"/>
+                        </ContextMenu>
+                    </TextBox.ContextMenu>-->
+
+                        </TextBox>
+                    </ScrollViewer>
+
+                    <TextBlock x:Name="HintTextBox" IsHitTestVisible="False" Text="贴上文本信息以识别债券数据" 
+                       Foreground="{StaticResource TextBox.Static.Border}" Padding="10">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=importTxt}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Border>
+
+            <!-- 第二步 -->
+            <Grid x:Name="step2" Visibility="Collapsed">
+                <TextBlock Margin="20,20,20,0">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}识别: {0}/{1}">
+                            <Binding Path="CheckedCount"></Binding>
+                            <Binding Path="SumCount"></Binding>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <!--<DataGrid Margin="20,40,20,20" ItemsSource="{Binding ImportDv}" Style="{StaticResource DefaultDataGrid}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn MinWidth="40">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsCheck,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" Checked="CheckBox_Click" Unchecked="CheckBox_Click" Style="{StaticResource DefaultCheckBoxStyle}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="代码" MinWidth="80" Binding="{Binding SecurityID}"/>
+                        <DataGridTextColumn Header="简称" MinWidth="130" Binding="{Binding Symbol}"/>
+                        <DataGridTextColumn Header="期限" MinWidth="100" Binding="{Binding RemainingDate}"/>
+                    </DataGrid.Columns>
+                </DataGrid>-->
+            </Grid>
+
+            <!-- 第三步 -->
+            <Grid x:Name="step3" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="InfoIcon" Width="16" Height="16" CornerRadius="8" Background="#00A84B" Visibility="Visible">
+                    <TextBlock Text="✔" Foreground="#FFFFFF"  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <DockPanel  Grid.Column="1" Margin="5,36,10,30"  VerticalAlignment="Top" >
+                    <TextBlock x:Name="title" DockPanel.Dock="Left" Text="{Binding SuccessCount, StringFormat={}成功导入{0}只债券，}"  Foreground="#A0A0A0"  />
+                    <TextBlock x:Name="title_fail" Text="{Binding FailCount, StringFormat={}失败导入{0}只债券：}" Foreground="#A0A0A0"  />
+                </DockPanel>
+
+
+                <ScrollViewer Margin="5,60,10,30" Grid.Column="1" MinWidth="260" 
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" x:Name="viewer">
+                    <TextBox x:Name="txtMessage" IsReadOnly="True"  TextWrapping="Wrap" BorderThickness="0" Background="#0B0C0C" Foreground="#FFFFFF" Text="{Binding ResultStr}" ></TextBox>
+                </ScrollViewer>
+            </Grid>
+
+            <Border Grid.ColumnSpan="2" Grid.Row="1" BorderBrush="#0A0F0E" BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="btnBatchCancel" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}"
+                            Click="btnCancel_Click">取消</Button>
+                    <Button x:Name="btnBatchOK" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource Green2ButtonStyle}"
+                        Click="BtnBatchOK_Click"  Visibility="Visible">识别</Button>
+                    <Button x:Name="btnBatchOK2" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource Green2ButtonStyle}"
+                        Click="btnOK2_Click" Visibility="Collapsed" IsDefault="True">确认导入</Button>
+                    <Button x:Name="btnBatchOK3" Width="100" Height="24"  Margin="4,0,0,0"  Style="{StaticResource Green2ButtonStyle}"
+                        Click="btnOK3_Click" Visibility="Collapsed" IsDefault="True" IsEnabled="{Binding BtnOK3Enabled}">确认</Button>
+                </StackPanel>
+
+            </Border>
+        </Grid>
+
+
+        <Grid x:Name="gridOne" Background="#171F1F" Visibility="{Binding OneVisibility}">
+        <!--<Grid x:Name="gridOne" Background="{StaticResource Window.Backgroud}" Visibility="Collapsed">-->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="34"/>
+            </Grid.RowDefinitions>
+
+            <Grid  Grid.Row="0" Margin="16, 0, 16, 0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Component:SearchEditUI x:Name="seSearch" Grid.Column="0" Height="26" SearchChanged="SeSearch_SearchChanged"/>
+                <Button Grid.Column="1" HorizontalAlignment="Right" Width="44" Height="24" FontSize="12" Content="+批量"
+                Style="{StaticResource Green2ButtonStyle}" Command="{Binding BatchCommand}"/>
+            </Grid>
+
+
+
+
+            <DataGrid x:Name="dgData" Style="{StaticResource DefaultDataGrid}" Grid.Row="1" ItemsSource="{Binding AddBondList}" SelectedItem="{Binding SelectedBond, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                      Margin="16, 0, 16, 16">
+
+                <DataGrid.Columns>
+
+                    <DataGridTextColumn Binding="{Binding Security}" HeaderStyle="{StaticResource CustomerHeader}" Header="代码" Width="25*" FontWeight="SemiBold" ClipboardContentBinding="{Binding Symbol}"/>
+                    <!--<DataGridTextColumn Binding="{Binding Symbol}" HeaderStyle="{StaticResource CustomerHeader}" Header="简称" Width="25*" FontWeight="SemiBold" ClipboardContentBinding="{Binding Symbol}"/>-->
+
+                    <DataGridTemplateColumn Width="25*" Header="简称" HeaderStyle="{StaticResource CustomerHeader}">
+
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+
+                                <TextBlock FontWeight="SemiBold" Text="{Binding Symbol}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Symbol}"></TextBlock>
+
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
+
+
+
+
+                    <DataGridTextColumn Binding="{Binding RemainingTime}" HeaderStyle="{StaticResource CustomerHeader}" ClipboardContentBinding="{Binding RemainingTime}" Header="期限" Width="25*" SortMemberPath="SettlDate">
+                    </DataGridTextColumn>
+
+                    <DataGridTemplateColumn Width="25*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid HorizontalAlignment="Center">
+                                    <Button Width="14" Height="14" HorizontalAlignment="Center" Style="{StaticResource OldDeleteButton}" Command="{Binding DataContext.DelteCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Border Grid.ColumnSpan="2" Grid.Row="2" BorderBrush="#0A0F0E" BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal" Margin="16, 0, 16, 0">
+
+                    <TextBlock Text="共" Foreground="#788187" VerticalAlignment="Center"></TextBlock>
+                    <TextBlock Text="{Binding Total}" Foreground="#788187" Margin="2, 0, 2, 0" VerticalAlignment="Center"></TextBlock>
+                    <TextBlock Text="只" Foreground="#788187" VerticalAlignment="Center"></TextBlock>
+
+                    <Button x:Name="btnCancel" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}" 
+                            Click="btnCancel_Click" Margin="30, 0, 0, 0">取消</Button>
+                    <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource Green2ButtonStyle}" Command="{Binding OkCommand}"
+                        Click="btnOK_Click" >确定</Button>
+                </StackPanel>
+
+            </Border>
+        </Grid>
+
+
+        <Grid Background="{StaticResource Window.Backgroud}" Visibility="{Binding ReplyVisibility}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25*"></RowDefinition>
+                <RowDefinition Height="75*"></RowDefinition>
+                <RowDefinition Height="45"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 10, 0, 0">
+                <Image Width="24" Height="24" Source="{Binding ImageSource}"/>
+                <TextBlock Text="{Binding ResultTxt}" Margin="10, 0, 0, 0" Foreground="{Binding TxtBrush}" FontSize="{StaticResource FontSize-14}" VerticalAlignment="Center"></TextBlock>
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" x:Name="scrolls" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+
+                <StackPanel x:Name="spTxt" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <!--<TextBlock Text="test" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="tsdfsdfsdfest" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="test" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="tsdfsdfsdfest" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="test" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="tsdfsdfsdfest" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="test" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="tsdfsdfsdfest" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="test" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>
+                    <TextBlock Text="tsdfsdfsdfest" Foreground="#FFEBC8" HorizontalAlignment="Center" Margin="0, 3, 0, 3"/>-->
+                </StackPanel>
+            </ScrollViewer>
+
+
+            <Border Grid.Row="2" BorderBrush="#0A0F0E" BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+                    <Button x:Name="btnSendOK" Width="100" Height="24" Margin="4,0,0,0" Style="{StaticResource Green2ButtonStyle}"
+                        Click="BtnSendOK_Click">确定</Button>
+                </StackPanel>
+
+            </Border>
+
+        </Grid>
+        
+    </Grid>
+
+
+</Comp:WindowBase>

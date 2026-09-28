@@ -1,0 +1,67 @@
+﻿<UserControl
+    x:Class="BDB.Trade.Plugin.View.Chart.TransactionLadder"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Chart"
+    xmlns:c="clr-namespace:BDB.Trade.Plugin.View.Chart"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:oxyplot="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf"
+    xmlns:oxyshared="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf.Shared"
+    Width="283" Height="268"
+    Background="#0A0F0E "
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <local:ScreenPointToOffSetScreenPointConverter x:Key="scconvert"/>
+            <local:TrackerConverter x:Key="trackerconvert"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Background="#0A0F0E">
+        <Grid.RowDefinitions>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        
+        
+        <oxyplot:PlotView x:Name="Plot" Grid.Row="1" Grid.Column="1" Model="{Binding model}" Tag="{Binding CurrentTag}" Margin="0,0,10,0">
+            <oxyplot:PlotView.DefaultTrackerTemplate>
+                <ControlTemplate>
+                    <oxyshared:TrackerControl Position="{Binding Position}"  Distance="10"   LineDashArray="2"  CanCenterVertically="False" CanCenterHorizontally="False"  LineStroke="#FFEBC8"  HorizontalLineVisibility="Collapsed" VerticalLineVisibility="Visible"  BorderBrush="#308376" Foreground="#FFEBC8"  ShowPointer="True" BorderThickness="2"  CornerRadius="3" LineExtents="{Binding PlotModel.PlotArea}">
+                        <oxyshared:TrackerControl.Background>
+                            <LinearGradientBrush EndPoint="0,1">
+                                <GradientStop Color="#193D37" />
+                                <GradientStop Offset="1" Color="#193D37"/>
+                            </LinearGradientBrush>
+                        </oxyshared:TrackerControl.Background>
+
+                        <oxyshared:TrackerControl.Content>
+                            <StackPanel>
+                                <TextBlock  Tag="{Binding CurrentTag}" Padding="4">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource trackerconvert}">
+                                            <Binding Path="Position"/>
+                                            <Binding Path="PlotModel"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <!--<TextBlock  Text="{Binding Position,Converter={StaticResource trackerconvert}}"/>-->
+                            </StackPanel>
+                        </oxyshared:TrackerControl.Content>
+                    </oxyshared:TrackerControl>
+                </ControlTemplate>
+            </oxyplot:PlotView.DefaultTrackerTemplate>
+            <oxyplot:PlotView.TrackerDefinitions>
+                <oxyshared:TrackerDefinition TrackerKey="InvisibleTracker">
+                    <oxyshared:TrackerDefinition.TrackerTemplate>
+                        <ControlTemplate>
+                            <TextBlock Text="{Binding}" Visibility="Collapsed"/>
+                        </ControlTemplate>
+                    </oxyshared:TrackerDefinition.TrackerTemplate>
+                </oxyshared:TrackerDefinition>
+            </oxyplot:PlotView.TrackerDefinitions>
+        </oxyplot:PlotView>
+    </Grid>
+</UserControl>

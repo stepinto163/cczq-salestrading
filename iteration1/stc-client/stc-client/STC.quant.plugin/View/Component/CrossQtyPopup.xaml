@@ -1,0 +1,226 @@
+﻿<UserControl x:Class="STC.quant.plugin.View.Component.CrossQtyPopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.quant.plugin.View.Component"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:vm="clr-namespace:STC.quant.plugin.ViewModel"
+             mc:Ignorable="d" 
+             FontSize="12"
+             Foreground="{DynamicResource DefaultForegroup.ColorBrush}" MaxHeight="507"
+             d:DesignHeight="168" d:DesignWidth="489" Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.quant.plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.quant.plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="DataGridCellStyle1" TargetType="{x:Type DataGridCell}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridCell_PreviewMouseLeftButtonDown"/>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True" BorderBrush="{DynamicResource DataGridCellBorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="已成交">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                        
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="MyDataGridColumnHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                <Setter Property="Foreground" Value="{StaticResource DataGridColumnHeaderForeground}"/>
+                <Setter Property="Background" Value="{StaticResource MainBackgroup.ColorBrush}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment"  Value="Center"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Height" Value="20"/>
+            </Style>
+            <vm:CrossQtyPopupViewModel x:Key="crossQtyPopupViewModel"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <UserControl.DataContext>
+        <StaticResourceExtension ResourceKey="crossQtyPopupViewModel"/>
+    </UserControl.DataContext>
+    <Grid Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24"/>
+                <RowDefinition />
+                <RowDefinition Height="24"/>
+            </Grid.RowDefinitions>
+        <Border BorderThickness="1,1,1,0" Grid.Row="0" CornerRadius="4,4,0,0" BorderBrush="#A0A0A0"  Background="#4E4E4E">
+            <Grid  Background="#0A0F0E" Margin="0,3,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <DockPanel>
+                    <DockPanel.Background>
+                        <LinearGradientBrush EndPoint="0.5,0.971" StartPoint="0.5,0.042">
+                            <GradientStop Color="#4E4E4E" Offset="0"/>
+                            <GradientStop Color="#282828" Offset="1"/>
+                        </LinearGradientBrush>
+                    </DockPanel.Background>
+                    <StackPanel Margin="10,-3,0,0" Orientation="Horizontal">
+                        <TextBlock x:Name="SecurityID_TB" Text="{Binding SecurtityID}" VerticalAlignment="Center" FontWeight="SemiBold" FontFamily="Microsoft YaHei" FontSize="12"/>
+                        <TextBlock x:Name="Side_TB" Text="{Binding Side, Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" VerticalAlignment="Center" FontWeight="SemiBold" FontFamily="Microsoft YaHei" FontSize="12" Margin="5,0,0,0"/>
+                        <TextBlock x:Name="Settle_TB" Text="{Binding SettleType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_myOrder'}"  VerticalAlignment="Center" FontWeight="SemiBold" FontFamily="Microsoft YaHei" FontSize="12" Margin="5,0,0,0"/>
+                        <TextBlock x:Name="Price_TB" Text="{Binding Price,Converter={StaticResource numConvertor},ConverterParameter='1'}" VerticalAlignment="Center" FontWeight="SemiBold" FontFamily="Microsoft YaHei" FontSize="12" Margin="5,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Right" Margin="0,0,10,0" Orientation="Horizontal">
+                        <TextBlock x:Name="STCCode_Tag_TB" Text="STC订单号：" VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Microsoft YaHei" FontSize="12" Foreground="#A0A0A0"/>
+                        <TextBlock x:Name="STCCode_TB" Text="{Binding STCCode}" VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Microsoft YaHei" FontSize="12" Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+        </Border>
+
+        <Border BorderThickness="1,0,1,0" Grid.Row="1" CornerRadius="0" BorderBrush="#A0A0A0"  Background="#4E4E4E">
+            <DataGrid x:Name="CrossQtyDataGrid" ItemsSource="{Binding CrossDv}" ColumnHeaderStyle="{StaticResource MyDataGridColumnHeaderStyle}" CellStyle="{StaticResource DataGridCellStyle1}"
+                  GridLinesVisibility="All" HorizontalGridLinesBrush="#1E1E1E" VerticalGridLinesBrush="#1E1E1E"
+                  Foreground="#FFFFFF" BorderThickness="0" Background="#141414" RowHeight="32" RowBackground="#141414"
+                          AutoGenerateColumns="False" HeadersVisibility="Column"
+                          AllowDrop="False" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False"
+                          CanUserResizeRows="False" CanUserSortColumns="False"
+                          SelectionMode="Single" SelectionUnit="FullRow" ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.IsDeferredScrollingEnabled="True" 
+                  BeginningEdit="CrossQtyDataGrid_BeginningEdit"
+                          PreparingCellForEdit="DataGrid_PreparingCellForEdit">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="状态" Width="48">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <TextBlock x:Name="Status_TB" Text="{Binding Status}" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontSize="12" FontFamily="Microsoft YaHei" FontWeight="Regular" Margin="4,0,0,0"/>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Status}" Value="已成交">
+                                        <Setter TargetName="Status_TB" Property="Foreground" Value="#42B574"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="匹配中">
+                                        <Setter TargetName="Status_TB" Property="Foreground" Value="#ED6D00"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="报价">
+                                        <Setter TargetName="Status_TB" Property="Foreground" Value="#E63034"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Status}" Value="已拒绝">
+                                        <Setter TargetName="Status_TB" Property="Foreground" Value="#F9C152"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <!--<DataGridTextColumn Header="blocknum" Binding="{Binding blocknum}" MinWidth="60"/>-->
+                    <DataGridTemplateColumn Header="子订单号" Width="140">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <TextBlock x:Name="Status_TB" Text="{Binding OrderID}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="12" FontFamily="Roboto" FontWeight="Regular"  HorizontalAlignment="Left"  ToolTip="{Binding OrderID}" TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="渠道" Width="72">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <TextBlock x:Name="Status_TB" Text="{Binding Venues,Converter={StaticResource EnumTypeConvertor},ConverterParameter='venues_exe'}"  FontSize="12" FontFamily="Microsoft YaHei" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="价格(%)" Width="56">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <TextBlock x:Name="Price_TB"  Text="{Binding Price_Display, Converter={StaticResource numConvertor}}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,0,0,0" FontSize="12" FontFamily="Roboto" FontWeight="Medium" Foreground="{StaticResource ColorBrush.Orange}"/>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.Side, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Value="2">
+                                        <Setter TargetName="Price_TB" Property="Foreground" Value="{StaticResource ColorBrush.Blue}"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="净价(元)" Width="72">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="Status_TB" Text="{Binding NetPrice,Converter={StaticResource numConvertor}}" VerticalAlignment="Center" FontSize="12" FontFamily="Roboto" FontWeight="Regular"  Margin="5,0,0,0"/>
+                                    <Button x:Name="EidtBtn" MinWidth="12" Height="12" Grid.Column="1" Style="{StaticResource  EditButton}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding DisplayBtn}" Click="EidtBtn_Click"/>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="22"/>
+                                    </Grid.ColumnDefinitions>
+                                    <comp:NumericUpDown x:Name="Edit_NetPrice_TXT" NumericValue="{Binding Edit_NetPrice,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinValue="0" MaxValue="999999999999" DecimalLength="4" RangeValue="0.0001" Margin="3" KeyDown="Edit_NetPrice_TXT_KeyDown"/>
+                                    <Button x:Name="OKBtn" Width="12" Height="12" Grid.Column="1" Style="{StaticResource SaveButton}" HorizontalAlignment="Center" VerticalAlignment="Center" Click="OKBtn_Click"/>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="量(万)" Width="96">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Height="32">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="32"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock x:Name="Status_TB" Text="{Binding Qty}" Height="24" FontSize="12" FontFamily="Roboto" FontWeight="Regular" VerticalAlignment="Center" HorizontalAlignment="Left" TextAlignment="Center" Margin="8,10,0,0"/>
+                                    </StackPanel>
+                                    <Border x:Name="oco_icon" Grid.Column="1" Width="24" Height="16" CornerRadius="2" BorderThickness="0" Background="#136C5E" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,4,8,4">
+                                        <TextBlock Text="oco" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Status}" Value="已成交">
+                                        <Setter TargetName="oco_icon" Property="Visibility" Value="Hidden"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border BorderThickness="1,0,1,1" Grid.Row="2" CornerRadius="0,0,4,4" BorderBrush="#A0A0A0"  Background="{StaticResource MainBackgroup.ColorBrush}">
+            <StackPanel Orientation="Horizontal" Margin="4,0,0,0">
+                <TextBlock Text="已成交:" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                <TextBlock Text="{Binding ExeQty}" Foreground="#FB943C" FontFamily="Microsoft YaHei" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                <TextBlock Text="/" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding TotalQty}"  Foreground="#FFFFFF" FontFamily="Microsoft YaHei" FontWeight="SemiBold"  VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

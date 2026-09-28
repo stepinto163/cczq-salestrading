@@ -1,0 +1,857 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CAA795FC-2690-4F78-A2C3-2F9E68B33608}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>BDB.Price.Plugin</RootNamespace>
+    <AssemblyName>BDB.Price.Plugin</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Ats.Foundation">
+      <HintPath>..\client\bin\Ats.Foundation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="common.netapi">
+      <HintPath>..\client\bin\common.netapi.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="gateway-api">
+      <HintPath>..\client\bin\gateway-api.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MDT.ThirdParty.Control">
+      <HintPath>..\client\bin\MDT.ThirdParty.Control.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Expression.Drawing, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\Microsoft.Expression.Drawing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Expression.Interactions, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\Microsoft.Expression.Interactions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="OxyPlot">
+      <HintPath>..\client\bin\OxyPlot.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="OxyPlot.Wpf">
+      <HintPath>..\client\bin\OxyPlot.Wpf.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="OxyPlot.Wpf.Shared">
+      <HintPath>..\client\bin\OxyPlot.Wpf.Shared.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationFramework.Aero" />
+    <Reference Include="ReachFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Printing" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Windows" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\System.Windows.Interactivity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="VirtualizingWrapPanel">
+      <HintPath>..\client\bin\VirtualizingWrapPanel.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Cache\CardWinCache.cs" />
+    <Compile Include="Cache\IMainConditionCache.cs" />
+    <Compile Include="Cache\ISettleCache.cs" />
+    <Compile Include="Cache\ISortCache.cs" />
+    <Compile Include="Cache\LayoutSetttingCache.cs" />
+    <Compile Include="Cache\MainConditionCache.cs" />
+    <Compile Include="Cache\SettleCache.cs" />
+    <Compile Include="Cache\SortCache.cs" />
+    <Compile Include="Chart\Deal\ChartExecCache.cs" />
+    <Compile Include="Chart\Deal\CustomLinearAxis.cs" />
+    <Compile Include="Chart\Deal\DataPointDataConverter.cs" />
+    <Compile Include="Chart\Deal\DateConverter.cs" />
+    <Compile Include="Chart\Deal\DealAreaSeries.cs" />
+    <Compile Include="Chart\Deal\DealCanvasRenderContext.cs" />
+    <Compile Include="Chart\Deal\DealDataPoint.cs" />
+    <Compile Include="Chart\Deal\DealDateTimeAxis.cs" />
+    <Compile Include="Chart\Deal\DealHorizontalAndVerticalAxisRenderer.cs" />
+    <Compile Include="Chart\Deal\DealPlotView.cs" />
+    <Compile Include="Chart\Deal\ExecChart.xaml.cs">
+      <DependentUpon>ExecChart.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Chart\Deal\OxyPlotUtil.cs" />
+    <Compile Include="ChatPlugin.cs" />
+    <Compile Include="Command\ExecuteCommandAction.cs" />
+    <Compile Include="Command\PopupWindowCommand.cs" />
+    <Compile Include="Component\CustomBrokerFilterView.xaml.cs">
+      <DependentUpon>CustomBrokerFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\CustomeAllBrokerFilterView.xaml.cs">
+      <DependentUpon>CustomeAllBrokerFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\CustomSettleView.xaml.cs">
+      <DependentUpon>CustomSettleView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\PositonBrokerFilterView.xaml.cs">
+      <DependentUpon>PositonBrokerFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\PopupEx.cs" />
+    <Compile Include="Component\ChatBrokerFilterView.xaml.cs">
+      <DependentUpon>ChatBrokerFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\PriceBrokerFilterView.xaml.cs">
+      <DependentUpon>PriceBrokerFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\BrokerFilterView.xaml.cs">
+      <DependentUpon>BrokerFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\CardSettleFilterView.xaml.cs">
+      <DependentUpon>CardSettleFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\CustomExecDataGrid.cs" />
+    <Compile Include="Component\CustomSearchTextBox.xaml.cs">
+      <DependentUpon>CustomSearchTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\MsgSearchTextBox.xaml.cs">
+      <DependentUpon>MsgSearchTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\NonTopmostPopup.cs" />
+    <Compile Include="Component\SearchEditUI.xaml.cs">
+      <DependentUpon>SearchEditUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Component\SettleFilterView.xaml.cs">
+      <DependentUpon>SettleFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\CustomMsgView.xaml.cs">
+      <DependentUpon>CustomMsgView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\ExecuteReplyView.xaml.cs">
+      <DependentUpon>ExecuteReplyView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\ExecuteReplyViewModel.cs" />
+    <Compile Include="CustomeUI\FloatDetailView.xaml.cs">
+      <DependentUpon>FloatDetailView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\MsgDetailUI.xaml.cs">
+      <DependentUpon>MsgDetailUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\MsgFloatUI.xaml.cs">
+      <DependentUpon>MsgFloatUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\MsgFloatView.xaml.cs">
+      <DependentUpon>MsgFloatView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\MsgFloatViewModel.cs" />
+    <Compile Include="CustomeUI\MsgPo.cs" />
+    <Compile Include="CustomeUI\MsgUI.xaml.cs">
+      <DependentUpon>MsgUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\NofirmView.xaml.cs">
+      <DependentUpon>NofirmView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\NofirmViewModel.cs" />
+    <Compile Include="CustomeUI\ObjectConvert.cs" />
+    <Compile Include="CustomeUI\PageControl.xaml.cs">
+      <DependentUpon>PageControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\PriceMatchDetail.cs" />
+    <Compile Include="CustomeUI\PriceMatchView.xaml.cs">
+      <DependentUpon>PriceMatchView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\PriceMatchViewModel.cs" />
+    <Compile Include="CustomeUI\TimeSort.cs" />
+    <Compile Include="CustomeUI\UserNoticeView.xaml.cs">
+      <DependentUpon>UserNoticeView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\ValetDetailView.xaml.cs">
+      <DependentUpon>ValetDetailView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomeUI\ValetDetailViewModel.cs" />
+    <Compile Include="Handler\BondChangeHandler.cs" />
+    <Compile Include="Handler\CommonHandler.cs" />
+    <Compile Include="Handler\DataProcesser\CrossOrdersProcesser.cs" />
+    <Compile Include="Handler\DataProcesser\EmsOrderProcesser.cs" />
+    <Compile Include="Handler\DataProcesser\LastExecutionProcesser.cs" />
+    <Compile Include="Handler\DataProcesser\MarketExecutionProcesser.cs" />
+    <Compile Include="Handler\DataProcesser\MyExecutionProcesser.cs" />
+    <Compile Include="Handler\DataProcesser\MyOrderProcesser.cs" />
+    <Compile Include="Handler\EmsOrdersHandler.cs" />
+    <Compile Include="Handler\ExecutionsHandler.cs" />
+    <Compile Include="Handler\HomePageDataHandler.cs" />
+    <Compile Include="Handler\MDHist\IMDHistHandler.cs" />
+    <Compile Include="Handler\MDHist\Kline1MCache.cs" />
+    <Compile Include="Handler\MDHist\MDHistHandler.cs" />
+    <Compile Include="Handler\MsgSettingHandler.cs" />
+    <Compile Include="Handler\OHLC\IOhlcHandler.cs" />
+    <Compile Include="Handler\OHLC\OhlcHandler.cs" />
+    <Compile Include="Handler\OpenWinHandler.cs" />
+    <Compile Include="Handler\OrdersHandler.cs" />
+    <Compile Include="Handler\PermisionHandler.cs" />
+    <Compile Include="BrokerKanbanPlugin.cs" />
+    <Compile Include="Handler\QuoteConfigHandler.cs" />
+    <Compile Include="HistoryMsgPlugin.cs" />
+    <Compile Include="HistoryDealPlugin.cs" />
+    <Compile Include="Model\CardShowType.cs" />
+    <Compile Include="Model\DataType.cs" />
+    <Compile Include="Model\DisplayMode.cs" />
+    <Compile Include="Model\OHLC\OhlcCount.cs" />
+    <Compile Include="Model\OHLC\OhlcPo.cs" />
+    <Compile Include="Model\QcPagePo.cs" />
+    <Compile Include="Model\QcPanelPo.cs" />
+    <Compile Include="Model\QcPanelPoEx.cs" />
+    <Compile Include="Model\QuoteConfigPo.cs" />
+    <Compile Include="MsgPlugin.cs" />
+    <Compile Include="PythonPlugin.cs" />
+    <Compile Include="SettingPlugin.cs" />
+    <Compile Include="HistoryPlugin.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimulatePlugin.cs" />
+    <Compile Include="TestWin.xaml.cs">
+      <DependentUpon>TestWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="TradingPlugin.cs" />
+    <Compile Include="Utils\BDBWinHandler.cs" />
+    <Compile Include="Utils\CardFileManager.cs" />
+    <Compile Include="Utils\ClipboardHelper.cs" />
+    <Compile Include="Utils\ConvertObject.cs" />
+    <Compile Include="Utils\ExcelHelper.cs" />
+    <Compile Include="Utils\ExtensionHelper.cs" />
+    <Compile Include="Utils\IComboSourceUtil.cs" />
+    <Compile Include="Utils\IContentInterface.cs" />
+    <Compile Include="Component\BrokerSettleFilterView.xaml.cs">
+      <DependentUpon>BrokerSettleFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utils\IdcHelper.cs" />
+    <Compile Include="Utils\RelayCommand.cs" />
+    <Compile Include="Utils\SettleParseHelper.cs" />
+    <Compile Include="Utils\TableHeaderUtils.cs" />
+    <Compile Include="Utils\ThreadQueue.cs" />
+    <Compile Include="Utils\TimeUtils.cs" />
+    <Compile Include="Utils\UITools.cs" />
+    <Compile Include="Utils\WindowKeyHelper.cs" />
+    <Compile Include="Validation\MsgSettingValidationRules.cs" />
+    <Compile Include="ViewModel\Adapter\SendPriceModelAdapter.cs" />
+    <Compile Include="ViewModel\BrokerKanban\Model\QtrsOrderData.cs" />
+    <Compile Include="ViewModel\BrokerKanban\Model\QtrsTradeData.cs" />
+    <Compile Include="ViewModel\BrokerKanban\QtrsTradeViewModel.cs" />
+    <Compile Include="ViewModel\BrokerKanban\QtrsOrderViewModel.cs" />
+    <Compile Include="ViewModel\Data\BrokerInfo.cs" />
+    <Compile Include="ViewModel\Data\IntentionQuoteItem.cs" />
+    <Compile Include="ViewModel\Data\MsgSettingItem.cs" />
+    <Compile Include="ViewModel\Trade\Card\CardWindowModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\MarketOrderListViewModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\PageCardItemViewModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\PageCardViewModel.cs" />
+    <Compile Include="ViewModel\Chat\ChatViewModel.cs" />
+    <Compile Include="ViewModel\Chart\TransactionLadderViewModel.cs" />
+    <Compile Include="ViewModel\Data\GroupItems.cs" />
+    <Compile Include="ViewModel\Data\InnerPriceItem.cs" />
+    <Compile Include="ViewModel\Data\TabShowModel.cs" />
+    <Compile Include="ViewModel\History\HistoryDealsViewModel.cs" />
+    <Compile Include="ViewModel\History\HistoryMsgViewModel.cs" />
+    <Compile Include="ViewModel\History\HistoryOrderViewModel.cs" />
+    <Compile Include="ViewModel\Order\RiskViewUIViewModel.cs" />
+    <Compile Include="ViewModel\Order\SendPointPriceModelLite.cs" />
+    <Compile Include="ViewModel\Position\CrossQtyPopupViewModel.cs" />
+    <Compile Include="ViewModel\Position\PositionViewModel.cs" />
+    <Compile Include="ViewModel\TradeMainViewModel.cs" />
+    <Compile Include="ViewModel\Trade\AddBondViewModel.cs" />
+    <Compile Include="ViewModel\Trade\BatchAddBondsWindowViewModel.cs" />
+    <Compile Include="ViewModel\Trade\BrokerPriceTableViewModel.cs" />
+    <Compile Include="ViewModel\Trade\CardViewModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\BrokerPriceViewModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\MarketCardOrderViewModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\PriceAndOrderViewModel.cs" />
+    <Compile Include="ViewModel\Trade\Card\PriceModel.cs" />
+    <Compile Include="ViewModel\Trade\ConditionHelper.cs" />
+    <Compile Include="ViewModel\Trade\CTPriceControler.cs" />
+    <Compile Include="ViewModel\Trade\InnerPriceViewModel.cs" />
+    <Compile Include="ViewModel\Trade\MarketOrderModel.cs" />
+    <Compile Include="ViewModel\Trade\MarketOrderViewModel.cs" />
+    <Compile Include="ViewModel\Trade\MsgSettingViewModel.cs" />
+    <Compile Include="ViewModel\Trade\PriceTableViewModel.cs" />
+    <Compile Include="ViewModel\Order\SendPriceViewModelLite.cs" />
+    <Compile Include="ViewModel\Trade\PriceViewModel.cs" />
+    <Compile Include="ViewModel\Trade\PriceCalHelper.cs" />
+    <Compile Include="ViewModel\Trade\RecognizeIntentionQuoteViewModel.cs" />
+    <Compile Include="ViewModel\Trade\RememberHelper.cs" />
+    <Compile Include="ViewModel\UserSetting\LayoutSettingPo.cs" />
+    <Compile Include="ViewModel\UserSetting\MsgAlertSettingViewModel.cs" />
+    <Compile Include="ViewModel\UserSetting\PythonViewModel.cs" />
+    <Compile Include="ViewModel\UserSetting\NewUserSettingViewModel.cs" />
+    <Compile Include="ViewModel\UserSetting\UserSettingViewModel.cs" />
+    <Compile Include="View\BrokerKanban\QtrsOrderView.xaml.cs">
+      <DependentUpon>QtrsOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\BrokerKanban\BrokerKanbanView.xaml.cs">
+      <DependentUpon>BrokerKanbanView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\BrokerKanban\QtrsTradeView.xaml.cs">
+      <DependentUpon>QtrsTradeView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\BrokerKanban\QtrsTradeFilterPanel.xaml.cs">
+      <DependentUpon>QtrsTradeFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\BrokerKanban\QtrsOrderFilterPanel.xaml.cs">
+      <DependentUpon>QtrsOrderFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Chart\LinePage.xaml.cs">
+      <DependentUpon>LinePage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Chart\TransactionLadder.xaml.cs">
+      <DependentUpon>TransactionLadder.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Chart\ScreenPointToOffSetScreenPointConverter.cs" />
+    <Compile Include="View\Chart\TrackerConverter.cs" />
+    <Compile Include="View\Chat\AutoScrollBehavior.cs" />
+    <Compile Include="View\Chat\ChatBubbleSelector.cs" />
+    <Compile Include="View\Chat\ChatMessage.cs" />
+    <Compile Include="View\Chat\ChatView.xaml.cs">
+      <DependentUpon>ChatView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryDealFilterPanel.xaml.cs">
+      <DependentUpon>HistoryDealFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryDealsView.xaml.cs">
+      <DependentUpon>HistoryDealsView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryEMSFilterPanel.xaml.cs">
+      <DependentUpon>HistoryEMSFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryFilterPanel.xaml.cs">
+      <DependentUpon>HistoryFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryMsgFilterPanel.xaml.cs">
+      <DependentUpon>HistoryMsgFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryMsgView.xaml.cs">
+      <DependentUpon>HistoryMsgView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryOrderView.xaml.cs">
+      <DependentUpon>HistoryOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\History\HistoryView.xaml.cs">
+      <DependentUpon>HistoryView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPointPriceViewLite.xaml.cs">
+      <DependentUpon>SendPointPriceViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceRiskView.xaml.cs">
+      <DependentUpon>SendPriceRiskView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\RiskViewUI.xaml.cs">
+      <DependentUpon>RiskViewUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\CancelOrderView.xaml.cs">
+      <DependentUpon>CancelOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\CrossQtyPopup.xaml.cs">
+      <DependentUpon>CrossQtyPopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\ExecutionsOrderModel.cs" />
+    <Compile Include="View\Position\MyExecutionsFilterPanel.xaml.cs">
+      <DependentUpon>MyExecutionsFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\MyExecView.xaml.cs">
+      <DependentUpon>MyExecView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\MyOrdersFilterPanel.xaml.cs">
+      <DependentUpon>MyOrdersFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\MyOrderView.xaml.cs">
+      <DependentUpon>MyOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Position\OrderModel.cs" />
+    <Compile Include="View\Position\PositionView.xaml.cs">
+      <DependentUpon>PositionView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\TradeMainView.xaml.cs">
+      <DependentUpon>TradeMainView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\AddBondWindow.xaml.cs">
+      <DependentUpon>AddBondWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\AddGroupWindow.xaml.cs">
+      <DependentUpon>AddGroupWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\AnimationHelper.cs" />
+    <Compile Include="View\Trade\BatchAddBondsWindow.xaml.cs">
+      <DependentUpon>BatchAddBondsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\BrokerPriceTableView.xaml.cs">
+      <DependentUpon>BrokerPriceTableView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\CardPriceView.xaml.cs">
+      <DependentUpon>CardPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\CardView.xaml.cs">
+      <DependentUpon>CardView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\BrokerFillView.xaml.cs">
+      <DependentUpon>BrokerFillView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\BrokerPriceView.xaml.cs">
+      <DependentUpon>BrokerPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\CardWindow.xaml.cs">
+      <DependentUpon>CardWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\HoverTopView.xaml.cs">
+      <DependentUpon>HoverTopView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\MarketCardOrderView.xaml.cs">
+      <DependentUpon>MarketCardOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\PageCardHandler.cs" />
+    <Compile Include="View\Trade\Card\PageCardItemView.xaml.cs">
+      <DependentUpon>PageCardItemView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\PageCardView.xaml.cs">
+      <DependentUpon>PageCardView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\Card\PriceAndOrderView.xaml.cs">
+      <DependentUpon>PriceAndOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\ConditionWindow.xaml.cs">
+      <DependentUpon>ConditionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\InnerPriceView.xaml.cs">
+      <DependentUpon>InnerPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\MarketOrderView.xaml.cs">
+      <DependentUpon>MarketOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\MsgSettingWindow.xaml.cs">
+      <DependentUpon>MsgSettingWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\MyDataTemplateSelector.cs" />
+    <Compile Include="View\Trade\PriceTableView.xaml.cs">
+      <DependentUpon>PriceTableView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\PriceView.xaml.cs">
+      <DependentUpon>PriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceViewLite.xaml.cs">
+      <DependentUpon>SendPriceViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\RecognizeIntentionQuoteWin.xaml.cs">
+      <DependentUpon>RecognizeIntentionQuoteWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Trade\ScrollingListBox.cs" />
+    <Compile Include="View\Trade\TableAndCardView.xaml.cs">
+      <DependentUpon>TableAndCardView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UserSettting\LayoutSetting.xaml.cs">
+      <DependentUpon>LayoutSetting.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UserSettting\MsgAlertSettingSelector.cs" />
+    <Compile Include="View\UserSettting\MsgAlertSettingView.xaml.cs">
+      <DependentUpon>MsgAlertSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UserSettting\PageSetQuotation.xaml.cs">
+      <DependentUpon>PageSetQuotation.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UserSettting\PythonView.xaml.cs">
+      <DependentUpon>PythonView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UserSettting\NewUserSettingView.xaml.cs">
+      <DependentUpon>NewUserSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UserSettting\UserSettingView.xaml.cs">
+      <DependentUpon>UserSettingView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Chart\Deal\ExecChart.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\CustomBrokerFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Component\CustomeAllBrokerFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Component\CustomSettleView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Component\PositonBrokerFilterView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\ChatBrokerFilterView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\PriceBrokerFilterView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\BrokerFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Component\CardSettleFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Component\CustomSearchTextBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\MsgSearchTextBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\SearchEditUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\SettleFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomeUI\CustomMsgView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\ExecuteReplyView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\FloatDetailView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\MsgDetailUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\MsgFloatUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\MsgFloatView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\MsgUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\NofirmView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\PageControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\PriceMatchView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\UserNoticeView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CustomeUI\ValetDetailView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Component\BrokerSettleFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="TestWin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\BrokerKanban\QtrsOrderView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\BrokerKanban\BrokerKanbanView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\BrokerKanban\QtrsTradeView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\BrokerKanban\QtrsTradeFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\BrokerKanban\QtrsOrderFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Chart\LinePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Chart\TransactionLadder.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Chat\ChatView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\History\HistoryDealFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\History\HistoryDealsView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\History\HistoryEMSFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\History\HistoryFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\History\HistoryMsgFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\History\HistoryMsgView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\History\HistoryOrderView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\History\HistoryView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\SendPointPriceViewLite.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceRiskView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\RiskViewUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Position\CancelOrderView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Position\CrossQtyPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Position\MyExecutionsFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Position\MyExecView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Position\MyOrdersFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Position\MyOrderView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Position\PositionView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\TradeMainView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\AddBondWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\AddGroupWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\BatchAddBondsWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\BrokerPriceTableView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\CardPriceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\CardView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\Card\BrokerFillView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\Card\BrokerPriceView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\Card\CardWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\Card\HoverTopView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\Card\MarketCardOrderView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\Card\PageCardItemView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\Card\PageCardView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\Card\PriceAndOrderView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\ConditionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\InnerPriceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\MarketOrderView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\MsgSettingWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\PriceTableView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\PriceView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\SendPriceViewLite.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Trade\RecognizeIntentionQuoteWin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Trade\TableAndCardView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UserSettting\LayoutSetting.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UserSettting\MsgAlertSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UserSettting\PageSetQuotation.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UserSettting\PythonView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UserSettting\NewUserSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UserSettting\UserSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\STC.Common\STC.Common.csproj">
+      <Project>{756f6622-163e-419a-b853-6f148101979d}</Project>
+      <Name>STC.Common</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\STC.Frame\STC.Frame.csproj">
+      <Project>{71da583b-72e4-44c1-abf0-a9d64319cbd6}</Project>
+      <Name>STC.Frame</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

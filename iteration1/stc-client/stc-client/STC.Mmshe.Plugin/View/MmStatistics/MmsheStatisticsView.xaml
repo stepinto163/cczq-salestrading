@@ -1,0 +1,301 @@
+﻿<UserControl x:Class="STC.Mmshe.Plugin.View.MmsheStatisticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mmshe.Plugin.View" 
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:viewmodel="clr-namespace:STC.Mmshe.Plugin.ViewModel" 
+             xmlns:command ="clr-namespace:STC.Mmshe.Plugin.Command"
+             xmlns:comp="clr-namespace:STC.Mmshe.Plugin.View.Component"
+             xmlns:conv="clr-namespace:STC.Mmshe.Plugin.Convertor" 
+             d:DataContext="{d:DesignData Type=viewmodel:MmsheStatisticsViewModel}"
+             FontSize="12" x:Name="MainView"
+             mc:Ignorable="d" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+             d:DesignHeight="450" d:DesignWidth="1428" Initialized="MainView_Initialized"
+             DataContextChanged="MainView_DataContextChanged">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>-->
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:AnsDetailSymbolTypeConvter x:Key="AnsDetailSymbolTypeConvter"/>
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Button x:Name="btnPopup" Width="24" Height="24" Margin="0,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource PopupButton2}" Panel.ZIndex="9"
+                Command="{StaticResource PopupWindowCommand}">
+            <Button.CommandParameter>
+                <MultiBinding Converter="{StaticResource MultiBindingConverter}">
+                    <MultiBinding.Bindings>
+                        <Binding Source="{x:Static command:PopupTypeEnum.MmStatisticsView}" Mode="OneWay"/>
+                        <Binding ElementName="MainView"/>
+                    </MultiBinding.Bindings>
+                </MultiBinding>
+            </Button.CommandParameter>
+        </Button>
+
+        <TabControl x:Name="tabcontrol" Style="{StaticResource TabControlStyle1}" Background="{StaticResource MainBackgroup.ColorBrush}" SelectedIndex="0">
+            <TabItem x:Name="OutLine_TabItem" Header="做市概要" Width="110" Height="24" TabIndex="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="30"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <local:MmsheStatisticsFilterPanel x:Name="outline_filter" Grid.Column="0" FilterDicChanged="outline_filter_FilterDicChanged" HorizontalAlignment="Left"/>
+                        <Button x:Name="btnOutlineExport" Grid.Column="1" Width="24" Height="24" Margin="0,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource ExportButton2}"
+                                Command="{Binding OutLineExportCommand}"/>
+
+                    </Grid>
+
+                    <DataGrid x:Name="outline_dg" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Style="{StaticResource DefaultDataGrid}"
+                              ItemsSource="{Binding OutLineDV}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="日期" Width="100" HeaderStyle="{StaticResource DataGridColumnHeaderStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="date">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock  Text="{Binding date}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="利率债有效报价券数" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bncSecurityCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding bncSecurityCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="利率债品种分布" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bncSecurityTypeCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock  Text="{Binding bncSecurityTypeCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="剩余期限分布" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bncTimetomaturityCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding bncTimetomaturityCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="国债数量" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bncNDCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding bncNDCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="新发国债期限分布" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bncNewNDCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding bncNewNDCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="信用债有效报价券数" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bcoSecurityCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock  Text="{Binding bcoSecurityCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="信用债品种分布" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bcoSecurityTypeCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding bcoSecurityTypeCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="发行人分布" Width="130" HeaderStyle="{StaticResource  DataGridColumnHeaderCenterStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="bcoIssuerCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding bcoIssuerCount}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <comp:PageControl x:Name="outlinePageControl" Grid.Row="3" HorizontalAlignment="Right"  Visibility="{Binding OutlinePageVisible,Converter={StaticResource visibilityConvertor}}"
+                                   PageChanged="outlinePageControl_PageChanged"/>
+
+                    <fUI:LoadingMask x:Name="outlineloadMask" Visibility="Collapsed" Grid.RowSpan="4" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"></fUI:LoadingMask>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="Detail_TabItem" Header="做市详情" Width="110" Height="24" TabIndex="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="30"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="530"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <local:MmsheStatisticsFilterPanel x:Name="detail_filter" Grid.Column="0" FilterDicChanged="detailFilter_FilterDicChanged" HorizontalAlignment="Left"/>
+
+                            <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                <comp:SearchTextBox x:Name="bond_txt" Width="120" SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Button x:Name="search_btn" Style="{StaticResource DefaultButtonStyle}" Content="搜查" Width="60" Height="Auto" Margin="5,0,0,0" Foreground="#FFFFFF" VerticalAlignment="Center"
+                                    Command="{Binding SearchCommand}"/>
+                            </StackPanel>
+                            
+                            <ListBox x:Name="bondType_lbx" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"  
+                                    HorizontalAlignment="Right" Grid.Column="2" SelectionChanged="bondType_lbx_SelectionChanged">
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBoxItem Content="全部" Style="{StaticResource CommonFilterListBoxItemStyle}" IsSelected="True" Width="Auto" Height="16" />
+                                <ListBoxItem Content="利率债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+                                <ListBoxItem Content="信用债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" Height="16"/>
+                            </ListBox>
+                        </Grid>
+                        
+                        <Button x:Name="btnDetailExport" Grid.Column="1" Width="24" Height="24" Margin="0,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource ExportButton2}"
+                                Command="{Binding DetailExportCommand}"/>
+                        <!--Command="{Binding ExportCommand}" IsEnabled="{Binding BtnEnable}"-->
+                    </Grid>
+
+                    <DataGrid x:Name="detail_dg" Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Style="{StaticResource DefaultDataGrid}"
+                              ItemsSource="{Binding DetailDV}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="日期" Width="100" HeaderStyle="{StaticResource DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="date">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock  Text="{Binding date}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="债券代码" Width="75" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="securityId">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding securityId}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="债券简称" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="symbol">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding symbol}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="剩余期限" Width="80" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="timetomaturity">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding timetomaturity}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="债券种类" Width="80" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="symbolType">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding symbolType,Converter={StaticResource AnsDetailSymbolTypeConvter}}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="剩余期限分组" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="timetomaturityGroup">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding timetomaturityGroup}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="报价人" Width="75" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="username">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding username}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="报价开始时间" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="quoteBeginTime">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding quoteBeginTime}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="报价结束时间" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="quoteEndTime">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding quoteEndTime}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="有效报价时长" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="quoteTimeLength">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding quoteTimeLength}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="报价点差(bp)" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="avgBP">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding avgBP,StringFormat=0.##}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="成交笔数" Width="100" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="executionCount">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding executionCount}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="总成交量(万)" Width="200" HeaderStyle="{StaticResource  DataGridColumnHeaderLeftStyle}" CanUserResize="True" CanUserSort="True" SortMemberPath="executionQty">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding executionQty,StringFormat=0.##}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <comp:PageControl x:Name="detailPageControl" Grid.Row="3" HorizontalAlignment="Right" 
+                                   Visibility="{Binding DetailPageVisible, Converter={StaticResource visibilityConvertor},Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                   PageChanged="detailPageControl_PageChanged" Grid.Column="1"  Grid.RowSpan="2"/>
+
+                    <fUI:LoadingMask x:Name="detailloadMask" Visibility="Collapsed" Grid.RowSpan="4" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"></fUI:LoadingMask>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+
+</UserControl>

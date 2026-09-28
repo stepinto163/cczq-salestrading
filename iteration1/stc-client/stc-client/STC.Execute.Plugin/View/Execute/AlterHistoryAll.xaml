@@ -1,0 +1,433 @@
+﻿<UserControl x:Class="STC.Execute.Plugin.View.Execute.AlterHistoryAll"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Execute.Plugin.View.Execute"
+             xmlns:Component="clr-namespace:STC.Execute.Plugin.View.Component"
+             xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Execute.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--<ContextMenu x:Key="CopyContextMenu" Style="{StaticResource DefaultContextMenu}" ContextMenuOpening="UserControl_ContextMenuOpening">
+                <MenuItem x:Name="copyRow" Header="复制" Style="{StaticResource DefaultMenuItem}" Click="copyRow_Click"/>
+            </ContextMenu>-->
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="TextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray14}"/>
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <VisualBrush x:Key="HintExchangeText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="24" Width="180" Background="{StaticResource SearchTextBox.Backgroud.ColorBrush}" FontSize="12" Foreground="{StaticResource TextBox.Static.Border}" Text="搜索代码、对手方"/>
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <Style x:Key="SearchTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <!--<Setter Property="BorderBrush" Value="#193D37"/>-->
+                <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>-->
+                <Setter Property="Foreground" Value="#A0A0A0"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="Background" Value="#515151"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border"  Value="{StaticResource TextBox.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.MouseOver.Border}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#A0A0A0"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="Background" TargetName="border"  Value="{StaticResource TextBox.Focus.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Focus.Border}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="false"/>
+                                        <Condition Property="Text" Value=""/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource HintExchangeText}"/>
+                                </MultiTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <DataTemplate x:Key="data_DataTemplate" >
+                <Grid>
+                    <TextBlock x:Name="TotalQty_TB" Text="{Binding TotalQty}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" />
+                </Grid>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsBest}" Value="true">
+                        <Setter Property="Text" TargetName="TotalQty_TB" Value=""/>
+                    </DataTrigger>
+
+                    <DataTrigger Binding="{Binding IsPermission}" Value="false">
+                        <Setter Property="Foreground" TargetName="TotalQty_TB" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                        <Setter Property="FontFamily" TargetName="TotalQty_TB" Value="Roboto" />
+                        <Setter Property="FontWeight" TargetName="TotalQty_TB" Value="Normal" />
+                        <Setter Property="FontStyle" TargetName="TotalQty_TB" Value="Italic" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+        <Grid Grid.Column="2" Grid.Row="0" Grid.RowSpan="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25"></RowDefinition>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <Grid  Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="75"></ColumnDefinition>
+                    <ColumnDefinition Width="24"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="修改历史" Foreground="{StaticResource ColorBrush.While}" FontFamily="{DynamicResource IDCFontFamily.YaHei.Semibold}"
+                           HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+                <Button Name="btConfirm" Grid.Column="2" Grid.Row="0" IsEnabled="{Binding ConfirmEnable}" Width="56" Height="18" Content="反馈修改" Style="{StaticResource RedButtonStyle}" HorizontalAlignment="Right" Margin="0, 0, 0, 0" 
+                        Command="{Binding ConfirmCommand}" Click="btConfirm_Click" Visibility="Hidden"/>
+           
+        </Grid>
+        <Popup x:Name="Feedpop"  PlacementTarget="{Binding ElementName=btConfirm}" Placement="Center" Visibility="Visible"  StaysOpen="True" Width="254" Height="96">
+            <!--<local:FeedbackModifity x:Name="AnsAttention" Width="254" Height="96"/>-->
+            <Border  BorderBrush="#FFFFFF" BorderThickness="1,1,1,1">
+                <Grid>
+                    <Grid.RowDefinitions>
+
+                        <RowDefinition ></RowDefinition>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <TextBox Name="txRemark" Grid.Row="0" Grid.Column="0" 
+                             Style="{StaticResource TextBoxStyle1}" BorderThickness="0"
+                             TextWrapping="Wrap" 
+                             VerticalScrollBarVisibility="Visible"
+                             Text="{Binding EditRemark, Mode=TwoWay}"                              
+                   ></TextBox>
+                    <Border  Grid.Row="1" BorderThickness="0" Margin="0,6,0,8">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="btnCancel" Width="48" Height="18" Style="{StaticResource GrayButtonStyle}"
+                            Click="btnCancel_Click">取消</Button>
+                            <Button x:Name="btnOK" Width="56" Height="18" Margin="4,0,8,0" Style="{StaticResource RedButtonStyle}"
+                        Click="btnOK_Click" IsDefault="True">发送</Button>
+                        </StackPanel>
+
+                    </Border>
+                </Grid>
+            </Border>
+        </Popup>
+        <commComp:ExDataGrid Grid.Row="1" x:Name="Histiry_dataGrid" Style="{StaticResource DefaultDataGrid}" ItemsSource="{Binding HistiryOrdersDT}" >
+                <DataGrid.Columns>
+                    <!--<DataGridTextColumn MinWidth="80" Header="内码" Binding="{Binding Text}"></DataGridTextColumn>-->
+                <DataGridTemplateColumn Header="内码" MinWidth="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="code" Text="{Binding Text}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="code" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="code" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="code" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="code" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="code" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="修改时间" MinWidth="140">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txUpdateTime" Text="{Binding UpdateTime}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txUpdateTime" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txUpdateTime" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txUpdateTime" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txUpdateTime" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txUpdateTime" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="发送方" MinWidth="48">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="tbSender" Text="{Binding Sender}" />
+
+                            <!--<DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="2">
+                                    <Setter TargetName="tbSide" Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="tbSide" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="tbSide" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="tbSide" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="tbSide" Value="Italic" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>-->
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="内容" MinWidth="170" Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="tbContent" Text="{Binding ChangeMsg}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="经纪商备注" MinWidth="70" Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="tbAllocText" Text="{Binding AllocText}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="债券代码" MinWidth="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="15"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="txSecurityID" Text="{Binding SecurityID}" Grid.Column="0"/>
+                                <Border x:Name="background" Grid.Column="1" Height="12" Width="12" BorderThickness="0"  Visibility="Collapsed" ToolTip="{Binding ChangeMsg}">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/STC.Execute.Plugin;component/Images/stc-status-yellow.png"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding ChangeFlag}" Value="1">
+                                    <Setter TargetName="background" Property="Visibility" Value="Visible"></Setter>
+                                </DataTrigger>
+                                <!--<DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txSecurityID" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txSecurityID" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txSecurityID" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txSecurityID" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txSecurityID" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>-->
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="方向" MinWidth="32">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="tbSide" Text="{Binding Side, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}" Foreground="{StaticResource ColorBrush.Orange}"/>
+
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Side}" Value="2">
+                                    <Setter TargetName="tbSide" Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="成交价(%)" MinWidth="56">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txAvgPx" Text="{Binding AvgPx}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="成交量(万)" MinWidth="56">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txAllocQty" Text="{Binding AllocQty}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txAllocQty" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txAllocQty" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txAllocQty" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txAllocQty" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txAllocQty" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                 <DataGridTemplateColumn Header="清算速度" MinWidth="48">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txSettlType" Text="{Binding SettlType, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='settletype_execute'}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txSettlType" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txSettlType" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txSettlType" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txSettlType" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txSettlType" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!--<DataGridTextColumn MinWidth="32" Header="类型" Binding="{Binding TradeType, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='exeType'}"></DataGridTextColumn>-->
+                <DataGridTemplateColumn Header="类型" MinWidth="32">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txTradeType" Text="{Binding TradeType, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='exeType'}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txTradeType" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txTradeType" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txTradeType" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txTradeType" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txTradeType" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!--<DataGridTemplateColumn Header="本方交易员" MinWidth="56">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txPartySubName" Text="{Binding PartySubName}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txPartySubName" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txPartySubName" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txPartySubName" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txPartySubName" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txPartySubName" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+
+                <!--<DataGridTextColumn MinWidth="56" Header="对手方" Binding="{Binding CounterPartyName}"></DataGridTextColumn>-->
+                <DataGridTemplateColumn Header="对手方" MinWidth="56">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txCounterPartyName" Text="{Binding CounterPartyName}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txCounterPartyName" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txCounterPartyName" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txCounterPartyName" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txCounterPartyName" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txCounterPartyName" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!--<DataGridTextColumn MinWidth="72" Header="对手方交易员" Binding="{Binding CounterPartySubName}"></DataGridTextColumn>-->
+                <DataGridTemplateColumn Header="对手方交易员" MinWidth="72">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="txCounterPartySubName" Text="{Binding CounterPartySubName}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="1">
+                                    <Setter Property="Foreground" TargetName="txCounterPartySubName" Value="{StaticResource Text.Foreground.NoPermission}"/>
+                                    <Setter Property="FontFamily" TargetName="txCounterPartySubName" Value="Roboto" />
+                                    <Setter Property="FontWeight" TargetName="txCounterPartySubName" Value="Normal" />
+                                    <Setter Property="FontStyle" TargetName="txCounterPartySubName" Value="Italic" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDelete}" Value="0">
+                                    <Setter Property="Foreground" TargetName="txCounterPartySubName" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </commComp:ExDataGrid>
+    </Grid>
+</UserControl>

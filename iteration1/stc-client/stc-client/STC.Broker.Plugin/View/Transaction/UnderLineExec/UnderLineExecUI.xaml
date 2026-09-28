@@ -1,0 +1,225 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Transaction.UnderLineExec.UnderLineExecUI"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+            
+             mc:Ignorable="d" 
+             d:DesignHeight="60" d:DesignWidth="430" Height="60">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="TBBigStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="FontSize" Value="14px"></Setter>
+                <Setter Property="Foreground" Value="#EAB854"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FontWeight" Value="Bold"/>
+            </Style>
+
+            <Style x:Key="TBSmallStyle1" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="FontSize" Value="14px"></Setter>
+                <Setter Property="Foreground" Value="#FFFFFF"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="Opacity" Value="0.5"></Setter>
+            </Style>
+            <Style x:Key="TBSmallStyle2" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="FontSize" Value="14px"></Setter>
+                <Setter Property="Foreground" Value="#D7D7D7"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+            </Style>
+
+            <Style x:Key="MToDoBrokerLableStyle" BasedOn="{StaticResource CommonLabelStyle}" TargetType="{x:Type Label}">
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush Opacity="1" StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Offset="0.1" Color="#FF6800"/>
+                            <GradientStop Offset="0.7" Color="#FF005D"/>
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="5,1,5,1"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="FontSize" Value="12px"/>
+                <Setter Property="Width" Value="50px"/>
+            </Style>
+
+            <Style x:Key="UnDoBrokerLableStyle" BasedOn="{StaticResource CommonLabelStyle}" TargetType="{x:Type Label}">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="FontSize" Value="12px"/>
+                <Setter Property="Width" Value="50px"/>
+            </Style>
+
+            <Style x:Key="OToDoBrokerLableStyle" BasedOn="{StaticResource CommonLabelStyle}" TargetType="{x:Type Label}">
+                <!--<Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush Opacity="1" StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Offset="0.1" Color="#DB9200"/>
+                            <GradientStop Offset="0.7" Color="#C75100"/>
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>-->
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="5,1,5,1"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Foreground" Value="#00CDAD "/>
+                <Setter Property="FontFamily" Value="{DynamicResource DefaultFont}"/>
+                <Setter Property="FontSize" Value="14px"/>
+                <Setter Property="Width" Value="66px"/>
+            </Style>
+            <!--Bid GVN报价颜色-->
+            <SolidColorBrush x:Key="scbBidPrice" Color="#FF9200"/>
+            <!--Offer TKN报价颜色-->
+            <SolidColorBrush x:Key="scbOfferPrice" Color="#12A1FF"/>
+            <!--<local:TrimmedTextBlockVisibilityConverter x:Key="trimmedTextBlockVisibilityConverter"/>-->
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="25*"></ColumnDefinition>
+            <ColumnDefinition Width="20"></ColumnDefinition>
+            <ColumnDefinition MinWidth="77" Width="12*"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="20"></ColumnDefinition>
+            <ColumnDefinition MinWidth="65" Width="12*"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="20*"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock x:Name="tbBondCode" Text="中国建设银行"  Grid.Row="0" Grid.Column="0" Margin="5,2,0,2" TextTrimming="CharacterEllipsis" Style="{StaticResource TBBigStyle}">
+            <TextBlock.ToolTip>
+                <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                    <ToolTip.Content>
+                        <TextBlock Text="{Binding Path=Text}"/>
+                    </ToolTip.Content>
+                </ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+        <TextBlock Text="Px" Style="{StaticResource TBSmallStyle1}" Grid.Row="0" Grid.Column="1"  Margin="2,0,0,0"></TextBlock>
+        <TextBlock x:Name="tbPrice" Text="224.1925" TextTrimming="CharacterEllipsis" Grid.Row="0" Grid.Column="2" Style="{StaticResource TBBigStyle}" Margin="5,0,5,0">
+            <TextBlock.ToolTip>
+                <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                    <ToolTip.Content>
+                        <TextBlock Text="{Binding Path=Text}"/>
+                    </ToolTip.Content>
+                </ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+        <TextBlock x:Name="tbVol" Grid.Column="4" Text="Vol" Style="{StaticResource TBSmallStyle1}" Margin="2,10,0,10"></TextBlock>
+        <TextBlock x:Name="tbAmount" Grid.Column="5" Text="3000" Style="{StaticResource TBBigStyle}" Margin="5,0,5,0" TextTrimming="CharacterEllipsis" >
+            <TextBlock.ToolTip>
+                <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                    <ToolTip.Content>
+                        <TextBlock Text="{Binding Path=Text}"/>
+                    </ToolTip.Content>
+                </ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+        <TextBlock x:Name="tbSettle" Grid.Row="0" Grid.Column="7"  VerticalAlignment="Center" Width="70" 
+                           TextTrimming="CharacterEllipsis" Padding="0" Margin="0" Style="{StaticResource TBSmallStyle2}" 
+                           Text="+1,明天+0" RenderTransformOrigin="0.5,0.5">
+            <TextBlock.ToolTip>
+                <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                    <ToolTip.Content>
+                        <TextBlock Text="{Binding Path=Text}"/>
+                    </ToolTip.Content>
+                </ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+
+        <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60*"></ColumnDefinition>
+                <ColumnDefinition Width="40*"></ColumnDefinition>
+                <ColumnDefinition Width="27"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="tbTraderAInfo" Grid.Row="0" Grid.Column="0" Margin="5,0,0,0" TextTrimming="CharacterEllipsis" Style="{StaticResource TBSmallStyle2}"
+                            Text="东吴基金"  Grid.RowSpan="2">
+                <TextBlock.ToolTip>
+                    <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                        <ToolTip.Content>
+                            <TextBlock Text="{Binding Path=Text}"/>
+                        </ToolTip.Content>
+                    </ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
+            <Label x:Name="tbBrokerA" Grid.Row="0" Grid.Column="1" Style="{StaticResource MToDoBrokerLableStyle}" HorizontalAlignment="Left"  
+                           Margin="2,0,2,0" >
+                <TextBlock x:Name="tbBrokerAName" Text="操作员" TextTrimming="CharacterEllipsis">
+                    <TextBlock.ToolTip>
+                        <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                            <ToolTip.Content>
+                                <TextBlock Text="{Binding Path=Text}"/>
+                            </ToolTip.Content>
+                        </ToolTip>
+                    </TextBlock.ToolTip>
+                </TextBlock>
+            </Label>
+
+            <TextBlock x:Name="tbSide" Grid.Row="0" Grid.Column="2" Margin="0,0,0,0" Text="出给"   Foreground="#ED6D00" HorizontalAlignment="Right" 
+                   Style="{StaticResource TBSmallStyle2}"></TextBlock>
+        </Grid>
+
+
+
+        <TextBlock x:Name="tbTraderBInfo" Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" HorizontalAlignment="Left" Text="农行上海" TextTrimming="CharacterEllipsis"  
+                       Margin="0,0,0,0" Style="{StaticResource TBSmallStyle2}">
+            <TextBlock.ToolTip>
+                <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                    <ToolTip.Content>
+                        <TextBlock Text="{Binding Path=Text}"/>
+                    </ToolTip.Content>
+                </ToolTip>
+            </TextBlock.ToolTip>
+        </TextBlock>
+
+        <Label x:Name="tbBrokerB" Grid.Row="1" Grid.Column="7" Style="{StaticResource OToDoBrokerLableStyle}" HorizontalAlignment="Left"  
+                   Margin="2,0,0,0" >
+            <TextBlock x:Name="tbBrokerBName" Text="操作员" TextTrimming="CharacterEllipsis">
+                <TextBlock.ToolTip>
+                    <ToolTip Visibility="{Binding RelativeSource={RelativeSource Self}, Path=PlacementTarget, Converter={StaticResource TrimmedTextBlockVisibilityConverter}}">
+                        <ToolTip.Content>
+                            <TextBlock Text="{Binding Path=Text}"/>
+                        </ToolTip.Content>
+                    </ToolTip>
+                </TextBlock.ToolTip>
+            </TextBlock>
+        </Label>
+
+    </Grid>
+</UserControl>

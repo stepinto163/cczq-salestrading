@@ -1,0 +1,96 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Component.TextBoxBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="35" d:DesignWidth="120" Width="200">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="TBBigStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"></Setter>
+                <Setter Property="FontSize" Value="14px"></Setter>
+                <Setter Property="Foreground" Value="#F9C152"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FontWeight" Value="Bold"/>
+            </Style>
+            
+
+            <Style x:Key="TextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#121A19"/>
+                <Setter Property="BorderBrush" Value="#193D37"/>
+                <Setter Property="Foreground" Value="#F9C152"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#172422"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#0f7767"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFEBC8"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#FF7D00"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#000"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Border  Grid.Row="0" Grid.Column="0" Mouse.MouseDown="Border_MouseDown" Width="200" >
+            <TextBlock x:Name="TB_Name"   Text="{Binding LimitCountShow}" Style="{StaticResource TBBigStyle}" Width="200"  />
+        </Border>
+        <TextBox x:Name="TBox_Name" Grid.Row="0" Grid.Column="0" Width="200"
+                 FontFamily="{StaticResource DefaultFont}"
+                 Visibility="Collapsed"  
+                 HorizontalAlignment="Left" 
+                 Style="{StaticResource TextBoxStyle}"
+                 KeyDown="TBoxName_KeyDown" 
+                 PreviewKeyDown="TBoxName_PreviewKeyDown"
+                 LostKeyboardFocus="TBoxName_LostKeyboardFocus"
+                 PreviewTextInput="TBox_Name_PreviewTextInput"
+                 InputMethod.IsInputMethodEnabled="False"
+                 TextChanged="TBox_Name_TextChanged"
+                 ContextMenu="{x:Null}" Grid.RowSpan="2"/>
+    </Grid>
+</UserControl>

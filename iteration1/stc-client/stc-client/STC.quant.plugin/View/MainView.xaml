@@ -1,0 +1,189 @@
+﻿<UserControl x:Class="STC.quant.plugin.View.MainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:comp="clr-namespace:STC.quant.plugin.View.Component"
+             xmlns:homepage ="clr-namespace:STC.quant.plugin.View.HomePage"
+             xmlns:conv="clr-namespace:STC.quant.plugin.Convertor" 
+             xmlns:utils="clr-namespace:STC.quant.plugin.Utils;assembly=STC.quant.plugin"
+             xmlns:command ="clr-namespace:STC.quant.plugin.Command"
+             xmlns:vb ="clr-namespace:STC.quant.plugin.View"
+             mc:Ignorable="d" x:Name="MM_MainView" Padding="5" Background="#141414"
+             d:DesignHeight="450" d:DesignWidth="1450" Initialized="MM_MainView_Initialized_1"
+             DataContextChanged="MM_MainView_DataContextChanged">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.quant.plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--<conv:MmStatusConvertor x:Key="MmStatusConvertor"/>-->
+            <!--<conv:MMStatusToolTipConverter x:Key="MMStatusToolTipConverter"/>-->
+
+            <Style x:Key="CloseButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="TextElement.FontWeight" TargetName="contentPresenter" Value="ExtraBold"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="TextElement.FontWeight" TargetName="contentPresenter" Value="Bold"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="Gray"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <!-- 居中 -->
+            <Style x:Key="MMDataGridColumnHeaderCenterStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+            <!-- 居右 -->
+            <Style x:Key="MMDataGridColumnHeaderRightStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderRightStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+            <!-- 居左 -->
+            <Style x:Key="MMDataGridColumnHeaderLeftStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Grid.ColumnSpan="3" Grid.RowSpan="2" BorderThickness="1" BorderBrush="#282828">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition />
+                <RowDefinition  Height="8"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <!--<ColumnDefinition Width="8"/>-->
+                <ColumnDefinition Width="502"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="AddQuantBtn" Width="88" Height="24" Style="{StaticResource RedButtonStyle}" Background="#515151" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Center"
+                    Command="{Binding AddStrategyCommand}">
+                    <WrapPanel Orientation="Horizontal" Background="Transparent" VerticalAlignment="Center">
+                        <Image Source="/STC.quant.Plugin;component/Images/stc_icon_add_seleted.png" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                        <TextBlock Text="添加策略" Width="Auto" Height="16" Margin="2,0,0,0"/>
+                    </WrapPanel>
+                </Button>
+                <Button x:Name="addAllBtn" Width="88" Height="24" Style="{StaticResource RedButtonStyle}" Background="#515151" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Center"
+                    Command="{Binding StopAllStrategyCommand}">
+                    <WrapPanel Orientation="Horizontal" Background="Transparent" VerticalAlignment="Center">
+                        <Image Source="/STC.quant.Plugin;component/Images/MM_CancelAll.png" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                        <TextBlock Text="全撤全停" Width="Auto" Height="16" Margin="2,0,0,0"/>
+                    </WrapPanel>
+                </Button>
+                <Button x:Name="GroupBtn" Width="88" Height="24" Style="{StaticResource RedButtonStyle}" Background="#515151" HorizontalAlignment="Left" Margin="4,0,0,0" VerticalAlignment="Center"
+                    Command="{Binding GroupManagerCommand}">
+                    <WrapPanel Orientation="Horizontal" Background="Transparent" VerticalAlignment="Center">
+                        <Image Source="/STC.quant.Plugin;component/Images/券组管理.png" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                        <TextBlock Text="券组管理" Width="Auto" Height="16" Margin="2,0,0,0"/>
+                    </WrapPanel>
+                </Button>
+            </StackPanel>
+
+
+            <homepage:HomePageTabControl Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" x:Name="GroupTabControl" Background="#141414" BorderBrush="#282828" Tag="100" SelectionChanged="GroupTabControl_SelectionChanged" Grid.ColumnSpan="2" RenderTransformOrigin="0.507,0.511">
+            </homepage:HomePageTabControl>
+
+            <!--Visibility="{Binding IsShowGridSplitter,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"-->
+            <GridSplitter x:Name="gridSplitter" Width="8" Grid.Column="1"  Grid.RowSpan="5" Background="{StaticResource MainBackgroup.ColorBrush}" Style="{StaticResource VGridSplitterStyle2}" Margin="0,0,0,0" 
+                          Visibility="Visible"/>
+
+            <!--Visibility="{Binding IsShowMMOrderControl,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"-->
+            <Grid Grid.Row="0" Grid.Column="2" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+                <comp:SearchTextBox x:Name="Search_TextBox" Grid.Column="0" SearchText="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" VerticalAlignment="Center" Width="120" Height="18" ListMarketFilter="CIB" />
+                <!--<Button x:Name="SearchBtn" Width="60" Height="18"  Grid.Column="1" Content="筛选" Style="{StaticResource GrayButtonStyle}" HorizontalAlignment="Right"  VerticalAlignment="Center" Click="SearchBtn_Click" />-->
+
+                <Button x:Name="btnFullScreen" Grid.Column="1" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource PopupButton}" 
+                Margin="0,0,6,0"    Command="{x:Static utils:QuantCommonUtils.PopupWindowCommand}" CommandParameter="{x:Static command:PopupTypeEnum.Strategy}"/>
+
+            </Grid>
+            <Grid Grid.Row="1" Grid.RowSpan="4" Grid.Column="2" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="212*"/>
+                    <ColumnDefinition Width="39*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="0.83*"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="20"/>
+                </Grid.RowDefinitions>
+                <comp:ParamOrderControl x:Name="OrderControl"  Visibility="Visible" Grid.Row="0" Grid.ColumnSpan="2"/>
+                <GridSplitter  Grid.Row="1"  Background="{StaticResource MainBackgroup.ColorBrush}" Style="{StaticResource HGridSplitterStyle2}" Grid.ColumnSpan="2"/>
+                <comp:QuantIndicator x:Name="QuantIndicatort"  Visibility="Visible" Grid.Row="2" Grid.ColumnSpan="2"/>
+                <GridSplitter  Grid.Row="3"  Background="{StaticResource MainBackgroup.ColorBrush}" Style="{StaticResource HGridSplitterStyle2}" Grid.ColumnSpan="2"/>
+
+                <comp:QuantLog x:Name="QuantLog"  Visibility="Visible" Grid.Row="4" Grid.ColumnSpan="2"/>
+            </Grid>
+
+            <GridSplitter  Grid.Row="3" Grid.ColumnSpan="2" Background="{StaticResource MainBackgroup.ColorBrush}" Style="{StaticResource HGridSplitterStyle2}"/>
+
+            <Grid Grid.Row="4"  Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <!--<ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="502"/>-->
+                </Grid.ColumnDefinitions>
+                <vb:MyTrading x:Name="MyTradingControl" Grid.Column="0"/>
+                <!-- gridSplitter -->
+                <!--<GridSplitter x:Name="gridSplitter2" Grid.Column="1" Background="{StaticResource MainBackgroup.ColorBrush}" Style="{StaticResource VGridSplitterStyle2}"/>-->
+                
+                
+            </Grid>
+
+
+            <!--<comp:ANSAttentionControl x:Name="AnsAttention" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="10"
+            rid.RowSpan="10"/>-->
+
+            <!-- 一键拉宽遮罩部分-->
+
+            <!--<Viewbox  Width="122" Height="168" Visibility="{Binding LockVisibility}" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.ColumnSpan="2" Margin="658,131,373,107">
+                <Path Name="lock" Fill="#1EFFFFFF"
+                        Data ="M134.4,67.2 C140.585156,67.2 145.605469,72.2203125 145.605469,78.4054688 L145.605469,156.794531 C145.605469,162.979688 140.585156,168 134.4,168 L33.6,168 C27.4148438,168 22.3945312,162.979687 22.3945312,156.794531 L22.3945312,78.4054687 C22.3945312,72.2203125 27.4148437,67.2 33.6,67.2 L33.6,50.4 C33.6,22.575 56.1585938,0 84,0 C111.825,0 134.4,22.5585938 134.4,50.4 L134.4,67.2 Z M123.194531,67.2 L123.194531,50.4 C123.194531,28.7601563 105.639844,11.2054688 84,11.2054688 C62.3601563,11.2054688 44.8054688,28.7601563 44.8054688,50.4 L44.8054688,67.2 L123.194531,67.2 L123.194531,67.2 Z M33.6,78.3890625 L33.6,156.778125 L134.383594,156.778125 L134.383594,78.3890625 L33.6,78.3890625 Z M78.3070313,116.303906 C75.0421875,114.285938 73.4015625,111.398438 73.4015625,107.625 C73.4015625,104.852344 74.4515625,102.457031 76.5351563,100.455469 C78.61875,98.4375 81.1453125,97.4367188 84.0820313,97.4367188 C87.0351563,97.4367188 89.5125,98.4375 91.5304687,100.455469 C93.5484375,102.473438 94.565625,104.852344 94.565625,107.625 C94.565625,111.398438 92.990625,114.285938 89.8570312,116.303906 L89.8570312,131.971875 C89.8570312,133.48125 89.2664062,134.777344 88.1015625,135.84375 C86.9367187,136.910156 85.5585938,137.451563 83.9835937,137.451563 C82.4085937,137.451563 81.0796875,136.910156 79.9640625,135.84375 C78.8484375,134.777344 78.290625,133.48125 78.290625,131.971875 L78.290625,116.303906 L78.3070313,116.303906 Z"/>
+            </Viewbox>-->
+
+            <!--<Grid Visibility="{Binding LockVisibility}" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Grid.Row ="1" Background="black" Opacity="0.3" Margin="0 24 0 0" Grid.ColumnSpan="2"/>
+            <Grid  Visibility="{Binding LockVisibility}" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Grid.Column="2" Grid.RowSpan="2" Background="black" Opacity="0.3" ></Grid>-->
+
+
+            <!--<fUI:LoadingMask x:Name="loadMask" Visibility="{Binding MaskVisibility}" Grid.ColumnSpan="3" Grid.RowSpan="2"/>-->
+        </Grid>
+    </Border>
+</UserControl>

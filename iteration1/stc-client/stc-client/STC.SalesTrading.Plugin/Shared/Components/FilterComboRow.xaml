@@ -1,0 +1,27 @@
+﻿<UserControl x:Class="STC.SalesTrading.Plugin.Shared.Components.FilterComboRow"
+             x:Name="Root"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <!--
+        筛选面板「标签 + 下拉」行（原型 select；首项即默认选中，如「不限」/占位项）。
+        用法：<components:FilterComboRow Label="行业" Items="不限,城投,房地产" />
+        末行免底距：RowMargin="0"。
+    -->
+    <Grid Margin="{Binding RowMargin, ElementName=Root}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Text="{Binding Label, ElementName=Root}" Style="{DynamicResource StcFilterLabel}"
+                   Margin="0,2,3,0" />
+        <ComboBox Grid.Column="1" Style="{DynamicResource StcComboBox}" FontSize="11"
+                  ItemsSource="{Binding Values, ElementName=Root}" SelectedIndex="0" />
+    </Grid>
+</UserControl>

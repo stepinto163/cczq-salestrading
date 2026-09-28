@@ -1,0 +1,298 @@
+﻿<UserControl x:Class="STC.Position.Plugin.View.HistoryProcessingPositionStatus"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Position.Plugin.View"
+             xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common" 
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="SelfCalendarDayButtonStyle" TargetType="{x:Type CalendarDayButton}">
+                <Setter Property="MinWidth" Value="5"/>
+                <Setter Property="MinHeight" Value="5"/>
+                <Setter Property="FontSize" Value="10"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type CalendarDayButton}">
+                            <Grid>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0:0:0.1"/>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="Normal"/>
+                                        <VisualState x:Name="MouseOver">
+                                            <Storyboard>
+                                                <DoubleAnimation Duration="0" To="0.5" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="HighlightBackground"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <Storyboard>
+                                                <DoubleAnimation Duration="0" To="0.5" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="HighlightBackground"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <Storyboard>
+                                                <DoubleAnimation Duration="0" To="0" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="HighlightBackground"/>
+                                                <DoubleAnimation Duration="0" To=".35" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="NormalText"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="SelectionStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0"/>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="Unselected"/>
+                                        <VisualState x:Name="Selected">
+                                            <Storyboard>
+                                                <DoubleAnimation Duration="0" To=".75" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="SelectedBackground"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="CalendarButtonFocusStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0"/>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="CalendarButtonFocused">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Duration="0" Storyboard.TargetProperty="Visibility" Storyboard.TargetName="DayButtonFocusVisual">
+                                                    <DiscreteObjectKeyFrame KeyTime="0">
+                                                        <DiscreteObjectKeyFrame.Value>
+                                                            <Visibility>Visible</Visibility>
+                                                        </DiscreteObjectKeyFrame.Value>
+                                                    </DiscreteObjectKeyFrame>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="CalendarButtonUnfocused">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Duration="0" Storyboard.TargetProperty="Visibility" Storyboard.TargetName="DayButtonFocusVisual">
+                                                    <DiscreteObjectKeyFrame KeyTime="0">
+                                                        <DiscreteObjectKeyFrame.Value>
+                                                            <Visibility>Collapsed</Visibility>
+                                                        </DiscreteObjectKeyFrame.Value>
+                                                    </DiscreteObjectKeyFrame>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="ActiveStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0"/>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="Active"/>
+                                        <VisualState x:Name="Inactive">
+                                            <Storyboard>
+                                                <ColorAnimation Duration="0" To="#FF777777" Storyboard.TargetProperty="(TextElement.Foreground).(SolidColorBrush.Color)" Storyboard.TargetName="NormalText"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="DayStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0"/>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="RegularDay"/>
+                                        <VisualState x:Name="Today">
+                                            <Storyboard>
+                                                <DoubleAnimation Duration="0" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="TodayBackground"/>
+                                                <ColorAnimation Duration="0" To="#FFFFFFFF" Storyboard.TargetProperty="(TextElement.Foreground).(SolidColorBrush.Color)" Storyboard.TargetName="NormalText"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="BlackoutDayStates">
+                                        <VisualStateGroup.Transitions>
+                                            <VisualTransition GeneratedDuration="0"/>
+                                        </VisualStateGroup.Transitions>
+                                        <VisualState x:Name="NormalDay">
+                                        </VisualState>
+                                        <VisualState x:Name="BlackoutDay">
+                                            <Storyboard>
+                                                <DoubleAnimation Duration="0" To=".5" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="Blackout"/>
+                                                <DoubleAnimation Duration="0" To=".4" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="NormalText"/>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Rectangle x:Name="TodayBackground" Fill="#193D37" Opacity="0" RadiusY="1" RadiusX="1"/>
+                                <Rectangle x:Name="SelectedBackground" Fill="Transparent" Opacity="0" RadiusY="1" RadiusX="1"/>
+                                <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}"/>
+                                <Rectangle x:Name="HighlightBackground" Fill="Black" Opacity="0" RadiusY="1" RadiusX="1"/>
+                                <ContentPresenter x:Name="NormalText" TextElement.Foreground="{TemplateBinding Foreground}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="5,1,5,1" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                <Path x:Name="Blackout" Data="M6.49241251,5.53100139 L10.8558668,1.15050666 C10.9932898,1.02444399 11.0620028,0.867048874 11.0620028,0.678321323 C11.0620028,0.489593772 10.9962215,0.329266969 10.8646619,0.197340914 C10.7331023,0.0654148584 10.5727755,-0.000364938572 10.3836814,0 C10.1945874,0.000367983957 10.0371923,0.069079471 9.91149611,0.206135984 L5.53100139,4.56959026 L1.15050666,0.206135984 C1.02444399,0.0687130098 0.867048874,0 0.678321323,0 C0.489593772,0 0.329266969,0.0657813196 0.197340914,0.197340914 C0.0654148584,0.328900507 -0.000364938572,0.489227311 0,0.678321323 C0.000367983957,0.867415335 0.069079471,1.02481045 0.206135984,1.15050666 L4.56959026,5.53100139 L0.206135984,9.91149611 C0.0687130098,10.0375588 0,10.1949539 0,10.3836814 C0,10.572409 0.0657813196,10.7327358 0.197340914,10.8646619 C0.328900507,10.9965879 0.489227311,11.0623677 0.678321323,11.0620028 C0.867415335,11.0616348 1.02481045,10.9929233 1.15050666,10.8558668 L5.53100139,6.47537206 L9.91149611,10.8558668 C10.0375588,10.9932898 10.1949539,11.0620028 10.3836814,11.0620028 C10.572409,11.0620028 10.7327358,10.9962215 10.8646619,10.8646619 C10.9965879,10.7331023 11.0623677,10.5727755 11.0620028,10.3836814 C11.0616348,10.1945874 10.9929233,10.0371923 10.8558668,9.91149611 L6.49241251,5.53100139 Z" Fill="LightGray" HorizontalAlignment="Stretch" Margin="3" Opacity="0" RenderTransformOrigin="0.5,0.5" Stretch="Fill" Height="10" Width="10" VerticalAlignment="Stretch"/>
+                                <Rectangle x:Name="DayButtonFocusVisual" IsHitTestVisible="false" RadiusY="1" RadiusX="1" Stroke="#FF45D6FA" Visibility="Collapsed"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            
+            <Style x:Key="SelfDefaultCalendarStyle" TargetType="{x:Type Calendar}" BasedOn="{StaticResource DefaultCalendarStyle}">
+                <Setter Property="CalendarDayButtonStyle" Value="{StaticResource SelfCalendarDayButtonStyle}"/>
+            </Style>
+
+            <Style x:Key="SelfDatePickerStyle" TargetType="{x:Type DatePicker}" BasedOn="{StaticResource DefaultDatePickerStyle}">
+                <Setter Property="CalendarStyle" Value="{StaticResource SelfDefaultCalendarStyle}"/>
+            </Style>
+
+            <Style x:Key="SumColorEmptyStyleAlignmentLeft" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyleNoSpace}">
+                <Setter Property="TextBlock.TextAlignment" Value="Left"/>
+                <Setter Property="FontWeight" Value="Normal"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="Margin" Value="4 0 0 0"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+
+            <Style x:Key="SumColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyleNoSpace}">
+                <Setter Property="TextBlock.TextAlignment" Value="Right"/>
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"/>
+                <Setter Property="FontWeight" Value="Normal"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Height" Value="30"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding bookid}" Value="0">
+                        <Setter Property="Foreground" Value="#F9C152" />
+                        <Setter Property="FontSize" Value="14"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid  x:Name="gridMain" Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="120"/>
+            
+        </Grid.ColumnDefinitions>
+
+
+
+        <!--工具栏-->
+        <Border Grid.Row="0" Grid.Column="0" BorderThickness="0" Margin="10 0 0 0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="84"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0" Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+
+                    <DatePicker x:Name="dpFrom" Grid.Row="0" Grid.Column="2" Style="{DynamicResource SelfDatePickerStyle}"  Grid.ColumnSpan="2" Width="110px" Height="24" Margin="0,0,0,0"  
+                                    SelectedDate="{Binding BeginDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  HorizontalAlignment="Left" VerticalContentAlignment="Center"></DatePicker>
+
+                    <TextBlock Text="-"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,4,0" Foreground="{DynamicResource TextBlockDefaultDisableForeground}" FontSize="12" />
+
+                    <DatePicker x:Name="dpTo" Grid.Row="0" Grid.Column="2" Style="{DynamicResource SelfDatePickerStyle}"  Grid.ColumnSpan="2" Width="110px" Height="24" Margin="0,0,0,0"  
+                                    SelectedDate="{Binding EndDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  HorizontalAlignment="Left" VerticalContentAlignment="Center"></DatePicker>
+
+                    <ListBox x:Name="LstReplayStatus" Background="Transparent" VerticalAlignment="Center" SelectionMode="Single" SelectionChanged="LstReplayStatus_SelectionChanged" Margin="10 0 0 0">
+                        <ListBox.Template>
+                            <ControlTemplate>
+                                <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                            </ControlTemplate>
+                        </ListBox.Template>
+                        <ListBoxItem Content="ALL" Tag="0" Style="{DynamicResource   FilterListBoxItemDodgerBlueAllStyle}" IsSelected="True" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,0,0" BorderThickness="0 1 0 0"/>
+                        <ListBoxItem Content="成功" Tag="2" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                        <ListBoxItem Content="失败" Tag="3" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal" Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                        <ListBoxItem Content="执行中" Tag="1" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="64" HorizontalContentAlignment="Center" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                    </ListBox>
+                    
+                    <!--跨日结转按钮-->
+                    <Button Content="跨日结转" Width="80" Margin="10 0 0 0" Style="{DynamicResource  BlueGreenOrangeGraySlateButtonStyle}" Height="20" BorderThickness="0 1 0 0" Command="{Binding ManualProcessingPositionCommand}" IsEnabled="{Binding ManualProcessingEnabled}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!--工具栏-->
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderThickness="0" Margin="10 0 0 0">
+            <!--列表-->
+            <DataGrid  x:Name="dgHistoryProcessingStatus" ItemsSource="{Binding Mv.View, UpdateSourceTrigger=PropertyChanged}"
+                                    Style="{DynamicResource DefaultDataGridNoHeadSpaceStyle}" Background="{DynamicResource DefaultBackgroup.ColorBrush}" 
+                                    SelectionMode="Single"
+                                    ScrollViewer.HorizontalScrollBarVisibility="Visible">
+                <DataGrid.Columns>
+                    <!--DataGridTextColumn Header="Id"  Binding="{Binding id}" Width="Auto" MinWidth="80" CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}"/-->
+                    <DataGridTextColumn Header="结转开始日期"  Binding="{Binding startDate}" Width="Auto" MinWidth="120" CanUserSort="True" CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}"/>
+                    <!-- 0-未执行 1-执行中 2-执行成功 3-执行失败-->
+                    <DataGridTemplateColumn Header="结转结果" Width="Auto" MinWidth="100"  CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="cnstatus" />
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding status}" Value="0">
+                                        <Setter TargetName="cnstatus" Property="TextBlock.Foreground" Value="Gray"/>
+                                        <Setter TargetName="cnstatus" Property="TextBlock.Text" Value="未执行"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding status}" Value="1">
+                                        <Setter TargetName="cnstatus"  Property="TextBlock.Foreground" Value="Red"/>
+                                        <Setter TargetName="cnstatus" Property="TextBlock.Text" Value="执行中"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding status}" Value="2">
+                                        <Setter TargetName="cnstatus" Property="TextBlock.Foreground" Value="Green"/>
+                                        <Setter TargetName="cnstatus" Property="TextBlock.Text" Value="成功"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding status}" Value="3">
+                                        <Setter TargetName="cnstatus"  Property="TextBlock.Foreground" Value="Red"/>
+                                        <Setter TargetName="cnstatus" Property="TextBlock.Text" Value="失败"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- 0-未执行 1-执行中 2-执行成功 3-执行失败  -->
+                    <DataGridTemplateColumn Header="失败原因" Width="Auto" MinWidth="100"  CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="cncomment" Text="{Binding comment}" ToolTip="{Binding info1}"/>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding status}" Value="0">
+                                        <Setter TargetName="cncomment" Property="TextBlock.Foreground" Value="Gray"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding status}" Value="1">
+                                        <Setter TargetName="cncomment"  Property="TextBlock.Foreground" Value="Red"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding status}" Value="2">
+                                        <Setter TargetName="cncomment" Property="TextBlock.Foreground" Value="Green"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding status}" Value="3">
+                                        <Setter TargetName="cncomment"  Property="TextBlock.Foreground" Value="Red"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="执行开始时间" Binding="{Binding actionTime}" Width="Auto" MinWidth="140" CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" Foreground="#A0A0A0" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}"/>
+
+                    <DataGridTextColumn Header="执行结束时间" Binding="{Binding endTime}" Width="Auto" MinWidth="140" CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" Foreground="#A0A0A0" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}"/>
+
+                    <DataGridTextColumn Header="操作人"  Binding="{Binding actionUserName}" Width="Auto" MinWidth="130" CellStyle="{StaticResource SumColorEmptyStyleAlignmentLeft}" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+    </Grid>
+</UserControl>

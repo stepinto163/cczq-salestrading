@@ -1,0 +1,378 @@
+﻿<Window x:Class="STC.Broker.Plugin.View.Transaction.BridgeDesign.BridgeDetailWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.Broker.Plugin.View.Transaction.BridgeDesign"
+        mc:Ignorable="d"
+        Title="编辑标签"  SizeToContent="Height"  Width="580" WindowStyle="None" ResizeMode="NoResize" Closed="Window_Closed" WindowStartupLocation="CenterOwner" KeyDown="Window_KeyDown"
+        MouseDown="Window_MouseDown">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="textBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="12"/>
+            </Style>
+
+            <Style x:Key="textBlockStyle2" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Yellow}"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei.Bold}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Margin" Value="10, 0, 0, 0"/>
+            </Style>
+
+            <Style x:Key="ListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="FontFamily" Value="PingFangSC-Semibold"/>
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="Background" Value="{StaticResource ColorBrush.Green9}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Margin" Value="1, 0, 1, 0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="border" BorderBrush="{TemplateBinding Control.BorderBrush}" Background="{StaticResource ColorBrush.Green9}"
+                                    BorderThickness="0" CornerRadius="2">
+
+                                <ContentPresenter Content="{TemplateBinding ContentControl.Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsSelected" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource ColorBrush.Yellow3}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource ColorBrush.Black3}"/>
+                                </Trigger>
+
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource ColorBrush.Gray}"/>
+                                    <Setter Property="Foreground" Value="{StaticResource ColorBrush.Black3}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Image x:Key="LeftImage" Name="LeftImage" Width="14" Height="14" >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V8 H10 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,-491,-389">
+                                        <DrawingGroup Transform="-6.12303176911189E-17,1,-1,-6.12303176911189E-17,888.977272,-103.022728">
+                                            <GeometryDrawing Brush="#FFFFEBC8" Geometry="F1 M10,8z M0,0z M496,397.9773L496,397.9773 499.5,392.7517 497.1667,392.7517 497.1667,387.9773 494.8333,387.9773 494.8333,392.7518 492.5,392.7518z" />
+                                        </DrawingGroup>
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+            <Image x:Key="RightImage" Name="RightImage" Width="14" Height="14" >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V8 H10 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,-510,-389">
+                                        <DrawingGroup Transform="6.12303176911189E-17,-1,1,6.12303176911189E-17,122.022728,907.977272">
+                                            <GeometryDrawing Brush="#FFFFEBC8" Geometry="F1 M10,8z M0,0z M515,397.9773L515,397.9773 518.5,392.7517 516.1667,392.7517 516.1667,387.9773 513.8333,387.9773 513.8333,392.7518 511.5,392.7518z" />
+                                        </DrawingGroup>
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+            <SolidColorBrush x:Key="DesignBackground" Color="#040B0B"></SolidColorBrush>
+            <Style x:Key="ImageDirButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="Background" Value="#193D37"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" BorderThickness="1" BorderBrush="#136C5E " CornerRadius="2" Background="{TemplateBinding Background}">
+                                <ContentPresenter Name="content"
+                              ContentSource="Content"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              TextElement.FontSize="12"
+                              TextElement.Foreground="#FFEBC8" />
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#115B4F" TargetName="border"  />
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" Value="#115B4F"  TargetName="border" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#4A4D4C"  TargetName="border" />
+                                    <Setter Property="BorderThickness" Value="0"></Setter>
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="textBoxSearchStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Yellow}"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"/>
+
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderThickness="1" BorderBrush="{StaticResource ColorBrush.Gray15}" Background="#0E1A18">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#172422"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFEBC8"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#FF7D00"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#000"/>
+                                </Trigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <SolidColorBrush x:Key="ColorBrush.Orange11" Color="#463622"></SolidColorBrush>
+        </ResourceDictionary>
+    </Window.Resources>
+
+
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" 
+                      UseAeroCaptionButtons="False"
+                      ResizeBorderThickness="5"
+                       GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>
+    <Border CornerRadius="2" BorderThickness="2" BorderBrush="{StaticResource ColorBrush.Gray18}" Background="{StaticResource DesignBackground}">
+        <Grid x:Name="gDetail">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="40"></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Background="{StaticResource LightGrayButton.Pressed.Border}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="25"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <!--头部 第1行-->
+                <TextBlock Grid.Column="0" Margin="12, 0, 0, 0" Text="编辑标签" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"
+                           FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}" Foreground="#FFFFFF"></TextBlock>
+
+                <Button Grid.Column="2" x:Name="btnClose" Style="{StaticResource ImageCloseButton}" Width="20" Height="16" IsCancel="True" Click="btnClose_Click"></Button>
+            </Grid>
+            <!--第二行 bid方向和ofr方向的机构信息-->
+            <Grid Grid.Row="1" x:Name="gdBrid">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="26"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto">
+                    </RowDefinition>
+                    <RowDefinition Height="30">
+                    </RowDefinition>
+                </Grid.RowDefinitions>
+
+                <local:BridgeDetailUI x:Name="bdOfr" Grid.Column="0" ></local:BridgeDetailUI>
+                <Button  x:Name="btn_Flag" Style="{StaticResource ImageDirButtonStyle}"
+                         Content="{StaticResource RightImage}"
+                         VerticalAlignment="Top" Margin="0,29,0,0"
+                         Grid.Column="1" Grid.RowSpan="2"  Height="18" Click="btn_Flag_Click"></Button>
+                <local:BridgeDetailUI x:Name="bdBid" Grid.Column="2"  ></local:BridgeDetailUI>
+                
+                <StackPanel Orientation="Horizontal" x:Name="spRemark" Grid.Row="1" Grid.ColumnSpan="3" Margin="22,0,0,0">
+                    <TextBlock Grid.Column="0" Grid.Row="1" Width="40" Height="22" Margin="0,5,0,0"  Text="备注:" HorizontalAlignment="Right" 
+                           VerticalAlignment="Center"  Style="{StaticResource textBlockStyle}"></TextBlock>
+                    <TextBox x:Name="tbAllRemarks" Grid.Column="1" Grid.Row="1" MaxLength="30" Width="488" Height="22" Style="{StaticResource textBoxSearchStyle}" 
+                             Margin="15, 0, 0, 0" TextChanged="tbAllRemarks_TextChanged" >
+     
+                                <!--<TextBox.ToolTip>
+                            <TextBlock Text="{Binding Path=Text}"></TextBlock>
+                        </TextBox.ToolTip>-->
+   
+                    </TextBox>
+                </StackPanel>
+
+            </Grid>
+            <!--第三行双桥信息 -->
+            <Grid Grid.Row="2" x:Name="gdDoubleBridgeInfo">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="40"></RowDefinition>
+                    <RowDefinition Height="auto"></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <!--双桥标题-->
+                <Grid Grid.Column="0" Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition ></ColumnDefinition>
+                        <ColumnDefinition Width="65"></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Separator Grid.Column="0" Grid.Row="0" Margin="10, 0, 0, 0" Background="{StaticResource ColorBrush.Green9}"></Separator>
+
+                    <TextBlock Grid.Column="1" Grid.Row="0" x:Name="tbSettle" Height="26" Text="双桥详情"  Padding="0, 5, 0, 0"
+                        Style="{StaticResource textBlockStyle2}" TextTrimming="CharacterEllipsis">
+                        <TextBlock.ToolTip>
+                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <Separator Grid.Column="2" Grid.Row="0" Margin="0, 0, 10, 0" Background="{StaticResource ColorBrush.Green9}"></Separator>
+                </Grid>
+                <!--双桥基础信息-->
+                <StackPanel Orientation="Horizontal" Grid.Row="1"  >
+                    <TextBlock Width="36" Height="26"  Text="发给:"  Margin="20,0,0,0" Padding="0,7,0,0" Style="{StaticResource textBlockStyle}"></TextBlock>
+                    <TextBox x:Name="tbSendto" Grid.Column="1" Grid.Row="1" Width="188" Height="22" Style="{StaticResource textBoxSearchStyle}" 
+                         Margin="10, 0, 0, 0" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="0" Grid.Row="2" Width="36" Height="26"  Margin="10, 0, 0, 0" Padding="0,7,0,0"
+                               Text="费用:" Style="{StaticResource textBlockStyle}"></TextBlock>
+                    <TextBox x:Name="tbCost" Grid.Column="1" Grid.Row="2" Width="40" Height="22" 
+                             MaxLength="20" Style="{StaticResource textBoxSearchStyle}"  Margin="10, 0, 0, 0">
+                        <TextBox.ToolTip>
+                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                        </TextBox.ToolTip>
+                    </TextBox>
+                    <TextBlock  Width="20" Text="厘" 
+                               Margin="10, 3, 0, 0"  Style="{StaticResource textBlockStyle2}"></TextBlock>
+
+                    <TextBlock  Width="36" Height="26"  Text="备注:"  Margin="10, 0, 0, 0" Padding="0,5,0,0"
+                               VerticalAlignment="Bottom"  Style="{StaticResource textBlockStyle}"></TextBlock>
+                    <TextBox x:Name="tbRemark"  Width="80" Height="22" MaxLength="30" 
+                             Style="{StaticResource textBoxSearchStyle}"   Margin="10, 0, 0, 0">
+                    </TextBox>
+                </StackPanel>
+                <!--双桥渠道-->
+                <StackPanel Orientation="Horizontal"  Grid.Row="2"  Margin="0,10,0,0" >
+                    <TextBlock  Width="36" Height="26" Text="渠道:"  Padding="0, 7, 0, 0" Margin="20,0,0,0"
+                           Style="{StaticResource textBlockStyle}"></TextBlock>
+                    <ListBox x:Name="lbChannel" Margin="10, 0, 0, 0"         
+                         ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                         ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                         Height="26" 
+                         Background="Transparent" 
+                         BorderThickness="0" 
+                         FontSize="12"              
+                         SelectionMode="Extended"
+                         VerticalAlignment="Center" HorizontalAlignment="Left"
+                         BorderBrush="Transparent"   
+                         SelectionChanged="lbChannel_SelectionChanged">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBoxItem x:Name="lbTalk" Width="35" Height="22" Style="{StaticResource ListBoxItemStyle}" Content="对话"/>
+                        <ListBoxItem x:Name="lbRequest" Width="35" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="请求" />
+                        <ListBoxItem x:Name="lbDouble" Width="35" Height="22" Style="{StaticResource ListBoxItemStyle}" Content="双边"/>
+                        <ListBoxItem x:Name="lbXBond" Width="35" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="xbond" />
+                        <ListBoxItem x:Name="lbIDeal" Width="35" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="ideal" />
+
+                        <ListBoxItem x:Name="lbFixed" Width="35" Height="22" Style="{StaticResource ListBoxItemStyle}" Content="固收"/>
+                        <ListBoxItem x:Name="lbBidding" Width="35" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="竞价" />
+                        <ListBoxItem x:Name="lbBulk" Width="35" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="大宗" />
+
+                        <ListBoxItem x:Name="lbIntention" Width="40" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="意向" />
+                        <ListBoxItem x:Name="lbAnonymity" Width="40" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="匿名" />
+                        <ListBoxItem x:Name="lbXbargain" Width="60" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="xbargain" />
+                    </ListBox>
+                </StackPanel>
+               <!--双桥错期选择-->
+                <StackPanel  x:Name="spDoubleBirdgeCross" Orientation="Horizontal" Margin="0,10,0,0" Grid.ColumnSpan="4" Grid.Row="3" >
+                    <TextBlock  Width="auto" Height="26"  Text="错期:"  Padding="0,7,0,0"
+                                Margin="25,0,0,0" Style="{StaticResource textBlockStyle}"></TextBlock>
+                    <ListBox x:Name="lbCrossDate" Margin="15, 0, 0, 0"         
+                         ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                         ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                         Height="26" 
+                         Background="Transparent" 
+                         BorderThickness="0" 
+                         FontSize="12"              
+                         SelectionMode="Extended"
+                         VerticalAlignment="Center" HorizontalAlignment="Left"
+                         BorderBrush="Transparent">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBoxItem x:Name="lbCrossOfr" Width="35" Height="22" Style="{StaticResource ListBoxItemStyle}" Content="Ofr方"/>
+                        <ListBoxItem x:Name="lbCrossBid" Width="35" Height="22"  Style="{StaticResource ListBoxItemStyle}" Content="Bid方" />
+                    </ListBox>
+                </StackPanel>
+            </Grid>
+            <!--第四行按钮-->
+            <StackPanel x:Name="spButtons"  Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Height="30"  Width="170">
+                <Button x:Name="btnCancel" Focusable="False" Content="取消" Background="#464646" Margin="3, 0, 4, 0" HorizontalAlignment="Center"
+                            FontFamily="{StaticResource DefaultFont}"  FontSize="12px" Foreground="#FFEBC8" 
+                            Width="80" Height="22" Style="{StaticResource CancelButtonStyle}" BorderThickness="0" Click="btnCancel_Click" />
+                <Button x:Name="btnConfirm" Content="确定" IsEnabled="True" Background="#136C5E"  HorizontalAlignment="Center"
+                            FontFamily="{StaticResource DefaultFont}"  FontSize="{StaticResource NormalContentFontSize}" 
+                            Foreground="#FFEBC8" Width="80" Height="22" Style="{StaticResource ConfirmButtonStyle}" 
+                            BorderThickness="0"  Click="btnConfirm_Click" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

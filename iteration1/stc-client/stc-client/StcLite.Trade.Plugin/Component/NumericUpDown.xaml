@@ -1,0 +1,141 @@
+﻿<UserControl x:Class="StcLite.Trade.Plugin.Component.NumericUpDown"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:localomponents="clr-namespace:StcLite.Trade.Plugin.Component"
+             mc:Ignorable="d" SizeChanged="UserControl_SizeChanged" x:Name="numericUpDown">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/StcLite.Trade.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/StcLite.Trade.Plugin;component/Resources/TextBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- 默认文本框 -->
+            <Style x:Key="SelfTextBoxStyle1" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#172422"/>
+                <Setter Property="BorderBrush" Value="#193D37"/>
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="Bd" SnapsToDevicePixels="true" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                                <ScrollViewer x:Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="Bd" Value="#1E1E1E"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#3C3C3C"/>
+                                    <Setter Property="Foreground" Value="#788187"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#2CAB97"/>
+                                    <Setter Property="Background" TargetName="Bd" Value="#172422"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#2CAB97"/>
+                                    <Setter Property="Background" TargetName="Bd" Value="#193D37"/>
+                                </Trigger>
+                                <Trigger Property="IsReadOnly" Value="True">
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#2CAB97"/>
+                                    <Setter Property="Background" TargetName="Bd" Value="#172422"/>
+                                    <Setter Property="TextElement.Foreground" Value="#FFEBC8"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="False"/>
+                                        <Condition Property="IsKeyboardFocused" Value="False"/>
+                                        <Condition  Property="IsReadOnly" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#193D37"/>
+                                    <Setter Property="Background" TargetName="Bd" Value="#172422"/>
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+            <!-- 报价按钮 -->
+            <Style x:Key="SelfNumericButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,0" Background="#193D37" SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#2CAB97"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="#193D37"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#2CAB97"/>
+                                </Trigger>
+                                <!--<Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid x:Name="_grid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="0.5*"/>
+                <RowDefinition Height="0.5*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="8*"/>
+                <ColumnDefinition Width="12"/>
+            </Grid.ColumnDefinitions>
+
+            <localomponents:NumericTextBox Grid.RowSpan="2" Grid.ColumnSpan="2" x:Name="NumericTextBox" MouseWheel="TextBox_MouseWheel" PreviewKeyDown="TextBox_PreviewKeyDown" 
+                                       NumericValue="{Binding NumericValue, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       DecimalLength="{Binding DecimalLength, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       MinValue="{Binding MinValue, ElementName=numericUpDown, Mode=TwoWay}"
+                                       MaxValue="{Binding MaxValue, ElementName=numericUpDown, Mode=TwoWay}" 
+                                       IsCommaSeparatedValue="{Binding IsCommaSeparatedValue, ElementName=numericUpDown, Mode=TwoWay}" AllowDrop="False"
+                                       IsGotFocusSelectAll="{Binding IsGotFocusSelectAll, ElementName=numericUpDown, Mode=TwoWay}"
+                                       TextBackground="{Binding TextBackground, ElementName=numericUpDown, Mode=OneWay}"
+                                       TextForeground="{Binding TextForeground, ElementName=numericUpDown, Mode=OneWay}"
+                                       TextAlignment="{Binding TextAlignment, ElementName=numericUpDown, Mode=OneWay}"
+                                       IsReadOnly="False" 
+                                       AdjustDecimalLength="{Binding AdjustDecimalLength, ElementName=numericUpDown, Mode=TwoWay}"
+                                       Background="#193D37" BorderThickness="1" Style="{StaticResource SelfTextBoxStyle1}"/>
+        <Button Grid.Row="0" Grid.Column="1" x:Name="UpButton" FocusManager.IsFocusScope="True" Click="BtnUp_Click" IsTabStop="False" Background="#193D37" Foreground="#FFEBC8" BorderBrush="#515151" Margin="0,1,1,0"  Padding="0,0,1,0" Style="{StaticResource SelfNumericButtonStyle}" MouseEnter="UpButton_MouseEnter" MouseLeave="UpButton_MouseLeave">
+            <Path  x:Name="UpArrow" Data="M 1,5 L 4.5,1 L 8,5" SnapsToDevicePixels="false" Stroke="#FFEBC8" StrokeThickness="1"/>
+        </Button>
+        <Button Grid.Row="1" Grid.Column="1" x:Name="DownButton" FocusManager.IsFocusScope="True" Click="BtnDown_Click" IsTabStop="False" Background="#193D37" Foreground="#FFEBC8" BorderBrush="#515151" Margin="0,0,1,1"  Padding="0,0,1,0" Style="{StaticResource SelfNumericButtonStyle}" MouseEnter="UpButton_MouseEnter" MouseLeave="UpButton_MouseLeave">
+            <Path  x:Name="DownArrow" Data="M 1,1.5 L 4.5,5 L 8,1.5" SnapsToDevicePixels="false" Stroke="#FFEBC8" StrokeThickness="1"/>
+            </Button>
+        </Grid>
+
+</UserControl>

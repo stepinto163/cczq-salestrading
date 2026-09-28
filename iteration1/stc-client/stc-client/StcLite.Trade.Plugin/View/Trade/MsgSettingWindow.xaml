@@ -1,0 +1,139 @@
+﻿<Window x:Class="BDB.Price.Plugin.View.Trade.MsgSettingWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Price.Plugin.View.Trade"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:val="clr-namespace:BDB.Price.Plugin.Validation"
+             mc:Ignorable="d" 
+             Height="350" Width="270" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" 
+             WindowState="Normal" WindowStyle="None" Background="Transparent"
+             Topmost ="True" Title="债券提醒条件"
+             MouseLeftButtonDown="Window_MouseLeftButtonDown" 
+             KeyDown="Window_KeyDown">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/CheckBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border BorderThickness="1" BorderBrush="#0C4F44"  Background="#172422" CornerRadius="2">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25"/>
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="24"/>
+                </Grid.ColumnDefinitions>
+
+                <!--<FrameCustomUI:HorseRaceLampView x:Name="horseRaceLampView" Height="23" Grid.Column="1"></FrameCustomUI:HorseRaceLampView>-->
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource SmallContentFontSize}" Text="债券提醒条件" Foreground="#F9C152"/>
+
+                <Button x:Name="closeBtn" Grid.Column="1" Width="16" Height="16" Command="{Binding CloseCommand}" CommandParameter="{Binding ElementName=closeBtn}" Content="✕" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                        IsCancel="True" Style="{StaticResource CardDelteButtonStyle}" />
+            </Grid>
+
+            <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="40"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="代码:" Foreground="#FFEBC8" VerticalAlignment="Center" Margin="10 0 0 0"></TextBlock>
+                <TextBlock Text="{Binding Item.SecurityID}" Foreground="#F9C152" VerticalAlignment="Center" Margin="40 0 0 0"></TextBlock>
+
+                <TextBlock Grid.Row="1" Text="简称:" Foreground="#FFEBC8" VerticalAlignment="Center" Margin="10 0 0 0"></TextBlock>
+                <TextBlock Grid.Row="1" Text="{Binding SymbolName}" Foreground="#F9C152" VerticalAlignment="Center" Margin="40 0 0 0"></TextBlock>
+
+                <CheckBox x:Name="BidLimitChk" Grid.Row="3" IsChecked="{Binding Item.IsBidLimit_Edit, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource boolAndStringConverter}}" Content="最优Bid(T+1) ≤" Foreground="#FFDA9A" VerticalAlignment="Center" HorizontalAlignment="Left"  Margin="10 0 0 0" Style="{StaticResource GreenDefaultCheckBoxStyle}" Padding="10 0 0 0 "/>
+                <TextBox Grid.Row="3" x:Name="BestBidLimit" Width="60" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="130 0 0 0" Style="{StaticResource ComTextBoxStyle}" input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" IsEnabled="{Binding ElementName=BidLimitChk, Path=IsChecked}">
+                    <TextBox.Text>
+                        <Binding Path="Item.BestBidLimit_Edit" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                            <Binding.ValidationRules>
+                                <val:MsgSettingValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                            </Binding.ValidationRules>
+                        </Binding>
+                    </TextBox.Text>
+                </TextBox>
+                <Button Grid.Row="3" x:Name="BidLimit_TipBtn" Height="16" Width="16" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="200 0 0 0" Style="{StaticResource InfoButton}" ToolTip="整合最优Bid T+1行情，复制最大可成交量"/>
+
+                <CheckBox x:Name="OfrLimitChk" Grid.Row="4" IsChecked="{Binding Item.IsOfrLimit_Edit, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource boolAndStringConverter}}" Content="最优Ofr(T+1) ≥" Foreground="#FFDA9A" VerticalAlignment="Center"  Margin="10 0 0 0" Style="{StaticResource GreenDefaultCheckBoxStyle}" Padding="10 0 0 0 "/>
+                <TextBox Grid.Row="4" x:Name="BestOfrLimit" Width="60" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="130 0 0 0" Style="{StaticResource ComTextBoxStyle}" input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" IsEnabled="{Binding ElementName=OfrLimitChk, Path=IsChecked}">
+                    <TextBox.Text>
+                        <Binding Path="Item.BestOfrLimit_Edit" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                            <Binding.ValidationRules>
+                                <val:MsgSettingValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                            </Binding.ValidationRules>
+                        </Binding>
+                    </TextBox.Text>
+                </TextBox>
+                <Button Grid.Row="4" x:Name="OfrLimi_TipBtn" Height="16" Width="16" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="200 0 0 0" Style="{StaticResource InfoButton}" ToolTip="整合最优ofr T+1行情，复制最大可成交量"/>
+
+                <CheckBox x:Name="BpChk" Grid.Row="5" IsChecked="{Binding Item.IsBestBp_Edit, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource boolAndStringConverter}}" Content="最优价差(T+1) ≤" Foreground="#FFDA9A" VerticalAlignment="Center"  Margin="10 0 0 0" Style="{StaticResource GreenDefaultCheckBoxStyle}" Padding="10 0 0 0 "/>
+                <TextBox Grid.Row="5" x:Name="BestBp" Width="60" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="135 0 0 0" Style="{StaticResource ComTextBoxStyle}" input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" IsEnabled="{Binding ElementName=BpChk, Path=IsChecked}">
+                    <TextBox.Text>
+                        <Binding Path="Item.BestBp_Edit" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                            <Binding.ValidationRules>
+                                <val:MsgSettingValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                            </Binding.ValidationRules>
+                        </Binding>
+                    </TextBox.Text>
+                </TextBox>
+                <TextBlock Grid.Row="5" Text="bp" Foreground="#FFDA9A" VerticalAlignment="Center"  Margin="200 0 0 0"/>
+                <Button Grid.Row="5" x:Name="Bp_TipBtn" Height="16" Width="16" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="225 0 0 0" Style="{StaticResource InfoButton}" ToolTip="提示Spread，设置为0时仅提醒倒挂"/>
+
+                <CheckBox Grid.Row="6" IsChecked="{Binding Item.IsBidPrice_Edit, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource boolAndStringConverter}}" Content="出现Bid" Foreground="#FFDA9A" VerticalAlignment="Center"  Margin="10 0 0 0" Style="{StaticResource GreenDefaultCheckBoxStyle}" Padding="10 0 0 0 "/>
+
+                <CheckBox Grid.Row="7" IsChecked="{Binding Item.IsOfrPrice_Edit, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource boolAndStringConverter}}" Content="出现Ofr" Foreground="#FFDA9A" VerticalAlignment="Center"  Margin="10 0 0 0" Style="{StaticResource GreenDefaultCheckBoxStyle}" Padding="10 0 0 0 "/>
+
+                <CheckBox Grid.Row="8" IsChecked="{Binding Item.IsExecPrice_Edit, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, Converter={StaticResource boolAndStringConverter}}" Content="出现成交" Foreground="#FFDA9A" VerticalAlignment="Center"  Margin="10 0 0 0" Style="{StaticResource GreenDefaultCheckBoxStyle}" Padding="10 0 0 0 "/>
+
+
+                <Border Grid.Row="10" BorderBrush="#0A0F0E" BorderThickness="0,1,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="btnCancel" Width="60" Height="24" Style="{StaticResource GrayButtonStyle}" Command="{Binding CloseCommand}" CommandParameter="{Binding ElementName=btnCancel}">取消</Button>
+                        <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" IsDefault="True" Style="{StaticResource Green2ButtonStyle}" Command="{Binding OkCommand}" CommandParameter="{Binding ElementName=btnCancel}">确定
+                            <Button.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding ElementName="BestBidLimit" Path="(Validation.HasError)"/>
+                                        <Binding ElementName="BestOfrLimit" Path="(Validation.HasError)"/>
+                                        <Binding ElementName="BestBp" Path="(Validation.HasError)"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.IsEnabled>
+                        </Button>
+                    </StackPanel>
+
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+
+</Window>

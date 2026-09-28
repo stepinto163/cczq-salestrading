@@ -1,0 +1,671 @@
+﻿<Window x:Class="STC.Common.View.Drp.DirectionalReturnPriceView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+        xmlns:local="clr-namespace:STC.Common.View.Drp"
+        xmlns:fcon="clr-namespace:STC.Common.Convertor"
+        xmlns:comp="clr-namespace:STC.Common.View.Component"
+        xmlns:drpcomp ="clr-namespace:STC.Common.View.Drp.Component"
+        mc:Ignorable="d"
+        Title="定向回价" Height="398" Width="640" MinHeight="394" WindowStartupLocation="CenterScreen" AllowsTransparency ="True"
+        WindowState="Normal" WindowStyle="None" BorderThickness="0" Background="Transparent" Deactivated="Window_Deactivated" Activated="Window_Activated">
+    <Window.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            
+
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <fcon:ReverseVisibilityConvertor x:Key="ReverseVisibilityConvertor"/>
+            
+            <SolidColorBrush x:Key="DefaultDisableForground" Color="#A0A0A0"/>
+
+            <Style x:Key="DrpDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Gray14}"/>
+                <Setter Property="Background" Value="#1E1E1E"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="FontSize" Value="10"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridColumnHeader">
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                                <Grid >
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                          VerticalAlignment ="{TemplateBinding VerticalContentAlignment}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ContentPresenter Grid.Column="0" Margin="5,0,5,0"
+                                                HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"
+                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                VerticalAlignment="{Binding VerticalContentAlignment, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Path x:Name="SortArrow"
+                                                Grid.Column="1"
+                                                VerticalAlignment="Center"                                           
+                                                Width="8" Height="6" Margin="2,0,0,0"
+                                                Stretch="Fill" Opacity="0.5" Fill="{TemplateBinding Foreground}"
+                                                RenderTransformOrigin="0.5,0.4"
+                                                Visibility="Collapsed"
+                                                Data="M0,0 L1,0 0.5,1 z"/>
+                                    </Grid>
+
+                                    <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                    <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Style="{StaticResource ColumnHeaderGripperStyle}"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="SortDirection" Value="Ascending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="SortArrow" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="180" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Descending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            </Style>
+
+
+            <!--TextBlock 样式-->
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.White-1}"></Setter>
+                <Setter Property="FontFamily" Value="MicrosoftYaHei"></Setter>
+                <Setter Property="FontSize" Value="12"></Setter>
+            </Style>
+
+            <!-- 加号按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="DrpAddButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="1" Background="#3C3C3C">
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="#282828">
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Control.Background" TargetName="background" Value="#515151">
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Visibility" Value="Collapsed">
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="56"/>
+            <RowDefinition Height="4"/>
+            <RowDefinition Height="*" MinHeight="250"/>
+            <RowDefinition Height="0"/>
+            <RowDefinition Height="48"/>
+        </Grid.RowDefinitions>
+        <!--标题区-->
+        <Border BorderThickness="2,2,2,0" x:Name="Border_Left1" Grid.Row="0"  CornerRadius="4,4,0,0" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource BackgroundBrush}">
+            <Grid  Background="{DynamicResource BackgroundBrush}" Margin="2,0,1,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="66"/>
+                    <ColumnDefinition Width="24"/>
+                </Grid.ColumnDefinitions>
+                <Image x:Name="TitleIcon" Width="32" Stretch="Uniform" HorizontalAlignment="Center" Margin="4,0,0,0"></Image>
+                <TextBlock Text="定向回价" Height="24" Grid.Column="1" HorizontalAlignment="Left" Margin="5,3,0,0" FontWeight="Bold" FontSize="{DynamicResource NormalContentFontSize}"/>
+                <TextBlock Grid.Column="2" MouseLeftButtonDown="TextBlock_MouseLeftButtonDown"></TextBlock>
+                <Button Content=">>报价追踪" x:Name="btn_Expand" Tag="Collapsed" Grid.Column="3"  Background="Transparent" Foreground="{DynamicResource DefaultGridForground}" Style="{DynamicResource DrpExpandButton}" 
+                        MouseEnter="btn_Expand_MouseEnter" MouseLeave="btn_Expand_MouseLeave"
+                        BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="Normal" FontSize="11" Margin="0,0,2,0"/>
+                <Button x:Name="PART_CloseButton" Width="24" Height="24" Grid.Column="4" Margin="0,0,0,0" HorizontalAlignment="Right" IsCancel="True" Command="{Binding CancelCommand}" Style="{DynamicResource DrpImageCloseButton}" />
+            </Grid>
+         </Border>
+
+        <Popup x:Name="MM_Duty_pop"  PlacementTarget="{Binding ElementName=btn_Expand}" Placement="Bottom" Visibility="Collapsed" HorizontalOffset="0" Panel.ZIndex="99">
+            <drpcomp:DRPOrderLogView x:Name="AnsAttention" MouseLeave="Ans_status_tb_MouseLeave" Width="300" Height="Auto"/>
+        </Popup>
+        <!--Space-->
+        <Border Grid.Row="1" BorderThickness="2, 0, 2, 0" CornerRadius="0,0,0,0" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+        </Border>
+        
+        <!--我方订单信息-->
+        <Border Grid.Row="2" BorderThickness="2, 0, 2, 0" x:Name="Border_Left2" CornerRadius="0,0,0,0" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="88"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <StackPanel Margin="20, 0, 0, 0" Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
+
+                    <Border x:Name="whole" CornerRadius="2" Width="40" Height="16" Visibility="Visible" Background="#8B6E33" BorderThickness="0" Margin="0,0,0,0">
+                        <TextBlock Text="我的" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFF" FontWeight="SemiBold"/>
+                    </Border>
+
+                    <TextBlock Text="{Binding ContentStart}" Margin="4, 0, 0, 0"  HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{DynamicResource DefaultGridForground}" FontSize="16" FontWeight="SemiBold"></TextBlock>
+                    <TextBlock Margin="4, 0, 0, 0" Text="{Binding ShowSide,ConverterParameter=side, Converter={StaticResource EnumTypeConvertor}}" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="16" FontFamily="MicroSoftYaiHei" FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowSide}" Value="1">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange7}"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ShowSide}" Value="2">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue8}"></Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <TextBlock Margin="4, 0, 0, 0" Text="{Binding ShowPrice}" HorizontalAlignment="Left" VerticalAlignment="Center"  FontSize="16" FontFamily="MicroSoftYaiHei" FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowSide}" Value="1">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange7}"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ShowSide}" Value="2">
+                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue8}"></Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <TextBlock Margin="4, 0, 0, 0"  Text="{Binding ShowLeavesQtyTotal, Mode=TwoWay ,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{DynamicResource DefaultGridForground}" FontSize="16" FontFamily="MicroSoftYaiHei" FontWeight="SemiBold">
+                    </TextBlock>
+                    <TextBlock Margin="2, 0, 0, 0" Text="万" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{DynamicResource DefaultGridForground}" FontSize="16" FontFamily="MicroSoftYaiHei" FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowLeavesQtyTotal}" Value="--">
+                                        <Setter Property="Visibility" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ShowLeavesQtyTotal}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+
+                    <TextBlock Margin="4, 0, 0, 0" Text="{Binding FirmType}" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{DynamicResource DefaultGridForground}" Visibility="{Binding IsShowIRS}" FontSize="16" FontFamily="MicroSoftYaiHei" FontWeight="SemiBold"/>
+
+                    <TextBlock Margin="4, 0, 0, 0" Text="{Binding IocCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{DynamicResource DefaultGridForground}" FontSize="16" FontFamily="MicroSoftYaiHei" FontWeight="SemiBold">
+                    </TextBlock>
+
+                    <Border CornerRadius="2" Width="16" Height="16" Visibility="{Binding Wholeflag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource reversevisibilityConvertor}}" Background="{DynamicResource TextBox.Focus.Border}"  BorderThickness="0" Margin="4,0,0,0">
+                        <TextBlock Text="整" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFF"/>
+                    </Border>
+                </StackPanel>
+                
+                <!--汇总定向回价条数-->
+                <StackPanel Margin="20, 0, 0, 0" Orientation="Horizontal" Grid.Row="1" Grid.Column="0">
+                    <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center"  Text="{Binding IocReccCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{DynamicResource DefaultDisableForground}" FontSize="12">
+                    </TextBlock>
+                </StackPanel>
+                
+                <!--总的倒计时-->
+                <StackPanel Margin="0,0,20,1" Orientation="Horizontal" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Visibility="Collapsed">
+                    <Grid x:Name="Grid" Width="68" Height="56">
+                        <Border x:Name="out_border" CornerRadius="1" BorderBrush="#4C000000" BorderThickness="0,0,0,1" Background="Transparent" SnapsToDevicePixels="true">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="#515151" BorderThickness="0,1,0,0" Background="#282828" SnapsToDevicePixels="true">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding OrderRemainSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" FontSize="16" FontFamily="MicroSoft YaiHei" FontWeight="Bold" Foreground="#FF333A" TextWrapping="Wrap">
+
+                                    </TextBlock>
+
+                                </StackPanel>
+                            </Border>
+                        </Border>
+                        <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+
+        <!--Space-->
+        <Border Grid.Row="3" BorderThickness="2, 0, 2, 0" CornerRadius="0,0,0,0" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+        </Border>
+        
+        <!--taker方订单信息-->
+        <Border Grid.Row="4" BorderThickness="2, 0, 2, 0" x:Name="Border_Left3" CornerRadius="0,0,0,0" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+            <Border Margin="16,0,16,0">
+                <DataGrid x:Name="dgData" Style="{DynamicResource DefaultDataGridNoHeadSpaceStyle}"  ItemsSource="{Binding Mv.View}" MouseDoubleClick="DataGrid_MouseDoubleClick" 
+                    HorizontalScrollBarVisibility="Hidden" AutoGenerateColumns="False" SelectionUnit="FullRow"  SelectionMode="Single" CanUserAddRows="False"
+                 VirtualizingPanel.IsVirtualizing="True" EnableRowVirtualization="True" Background="{DynamicResource DefaultBackgroup.ColorBrush}" VirtualizingPanel.IsContainerVirtualizable="True" VirtualizingPanel.VirtualizationMode="Standard">
+                <DataGrid.RowStyle>
+                    <Style TargetType="{x:Type DataGridRow}">
+                        <Style.Triggers>
+                            <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                                    <Setter Property="Background" Value="{DynamicResource DefaultBackgroup.ColorBrush}" />
+                            </Trigger>
+                            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                    <Setter Property="Background" Value="{DynamicResource DefaultBackgroup.ColorBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource MainListTitleBackgroup.ColorBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="28" CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="CheckBox_All" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="6,0,0,0"
+                                      IsChecked="{Binding DataContext.IsAllChecked, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor},UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                     Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" BorderBrush="{DynamicResource SlateGrayButton.MouseOver.Background}" Background="{DynamicResource DefaultBackgroup.ColorBrush}" Height="14"/>
+                                </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="Selected_Chk" Click="Selected_Chk_Click" IsChecked="{Binding IsChecked,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+                                                VerticalAlignment="Center" HorizontalAlignment="Center" IsEnabled="{Binding EnabledBtn}"
+                                                Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" BorderBrush="{DynamicResource SlateGrayButton.MouseOver.Background}" Background="{DynamicResource DefaultBackgroup.ColorBrush}" Height="14"></CheckBox>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Frozen">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Pending_Newing">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Cancelled">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Rejectd">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Filled">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Cancelling">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Expired">
+                                        <Setter TargetName="Selected_Chk" Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
+                    <DataGridTemplateColumn Width="60">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="报价(%)" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource DefaultDisableForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Price}" x:Name="txtPrice" Foreground="{Binding PriceBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Grid.Column="0" FontWeight="Bold"  FontSize="12"  Tag="{Binding Id}" MouseLeftButtonDown="txtPrice_MouseLeftButtonDown"></TextBlock>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Side}" Value="1">
+                                            <Setter Property="Foreground" TargetName="txtPrice" Value="{DynamicResource ColorBrush.Orange7}"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Side}" Value="2">
+                                            <Setter Property="Foreground" TargetName="txtPrice" Value="{DynamicResource ColorBrush.Blue8}"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding EnabledBtn}" Value="False">
+                                        <Setter Property="Opacity" TargetName="txtPrice" Value="0.6"></Setter>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn MinWidth="74">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="量(万元)" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource DefaultDisableForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                        <TextBlock Text="{Binding Amount}" x:Name="txtAmount" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Grid.Column="0"  Foreground="{DynamicResource DefaultGridForground}" FontSize="12"  Tag="{Binding Id}" MouseLeftButtonDown="txtPrice_MouseLeftButtonDown"></TextBlock>
+                                    <StackPanel Orientation="Horizontal" FlowDirection="RightToLeft" VerticalAlignment="Center" Grid.Column="1" Margin="2,0,0,0" >
+                                        <Border x:Name="YuanQi" CornerRadius="2" Width="16" Height="16" Visibility="Collapsed" Background="{Binding PointSettleBackGround, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Margin="4,0,0,0">
+                                            <TextBlock Text="远" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFF" 
+                                                        ToolTip="{Binding SettlType_yuan, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='settletype_tooltip'}"/>
+                                        </Border>
+
+                                        <Border x:Name="T0" CornerRadius="2" Width="16" Height="16" Visibility="Collapsed" Background="{Binding PointSettleBackGround, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Margin="4,0,0,0">
+                                            <TextBlock Text="0+" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFF"/>
+                                        </Border>
+                                            <Border x:Name="whole" CornerRadius="2" Width="16" Height="16" Visibility="Collapsed" Background="{DynamicResource TextBox.Focus.Border}"  BorderThickness="0" Margin="4,0,0,0">
+                                            <TextBlock Text="整" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFF"/>
+                                        </Border>
+                                        <Border x:Name="duo" CornerRadius="2" Width="16" Height="16" Visibility="Collapsed" Background="{Binding PointSettleBackGround, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0" Margin="4,0,0,0">
+                                            <TextBlock Text="多" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFEBC8" />
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding WholeFlag}" Value="1">
+                                        <Setter TargetName="whole" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding EnabledBtn}" Value="False">
+                                        <Setter Property="Opacity" TargetName="txtAmount" Value="0.6"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding WholeFlag}" Value="1">
+                                        <Setter TargetName="whole" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SettlType,Converter={StaticResource stringContainsConvertor}, ConverterParameter='1'}" Value="true">
+                                        <Setter TargetName="T0" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SettlType_yuan, Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="false"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <MultiDataTrigger.Setters>
+                                            <Setter TargetName="YuanQi" Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger.Setters>
+                                    </MultiDataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+
+                    <DataGridTemplateColumn Width="76">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="来源" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center"  Foreground="{DynamicResource DefaultDisableForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" ToolTip="{Binding Name}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center" Grid.Column="0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"   Foreground="{DynamicResource DefaultGridForground}" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn MinWidth="50" Width="Auto">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="有效时长" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center"  Foreground="{DynamicResource DefaultDisableForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock  Grid.Column="0" Text="{Binding RemainSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Name="txt_IocTimeOut" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" Foreground="#E63034" FontSize="12" FontWeight="SemiBold"></TextBlock>
+                                    <TextBlock  Grid.Column="1" Text="s" HorizontalAlignment="Left" x:Name="txt_IocTimeOuts" VerticalAlignment="Bottom" TextAlignment="Left" Foreground="#E63034" FontSize="12" FontWeight="SemiBold"></TextBlock>
+                                        <TextBlock  Grid.Column="0" Text="{Binding CMsgCode}" x:Name="txt_OrderStatus" Foreground="{DynamicResource DefaultDisableForground}"
+                                                 HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" FontWeight="Bold"  FontSize="12" TextWrapping="Wrap" Visibility="Collapsed"></TextBlock>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding EnabledBtn}" Value="False">
+                                        <Setter Property="Foreground" TargetName="txt_IocTimeOut" Value="#A0A0A0"></Setter>
+                                        <Setter Property="Foreground" TargetName="txt_IocTimeOuts" Value="#A0A0A0"></Setter>
+                                        <Setter Property="IsEnabled" TargetName="txt_IocTimeOut" Value="False"></Setter>
+                                        <Setter Property="Opacity" TargetName="txt_IocTimeOut" Value="0.6"></Setter>
+                                        <Setter Property="Opacity" TargetName="txt_IocTimeOuts" Value="0.6"></Setter>
+                                    </DataTrigger>
+                                    
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Cancelled">
+                                        <Setter Property="Visibility" TargetName="txt_OrderStatus" Value="Visible"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOut" Value="Collapsed"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOuts" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Rejectd">
+                                        <Setter Property="Visibility" TargetName="txt_OrderStatus" Value="Visible"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOut" Value="Collapsed"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOuts" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Expired">
+                                        <Setter Property="Visibility" TargetName="txt_OrderStatus" Value="Visible"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOut" Value="Collapsed"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOuts" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Filled">
+                                        <Setter Property="Visibility" TargetName="txt_OrderStatus" Value="Visible"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOut" Value="Collapsed"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOuts" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="Partially_Filled">
+                                        <Setter Property="Visibility" TargetName="txt_OrderStatus" Value="Visible"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOut" Value="Collapsed"></Setter>
+                                        <Setter Property="Visibility" TargetName="txt_IocTimeOuts" Value="Collapsed"></Setter>
+                                    </DataTrigger>
+
+                                    <DataTrigger Binding="{Binding RemainSeconds}" Value="--">
+                                        <Setter Property="Opacity" TargetName="txt_IocTimeOuts" Value="0"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RemainSeconds}" Value="-1">
+                                        <Setter Property="Opacity" TargetName="txt_IocTimeOut" Value="0"></Setter>
+                                        <Setter Property="Opacity" TargetName="txt_IocTimeOuts" Value="0"></Setter>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RemainSeconds}" Value="0">
+                                        <Setter Property="Text" TargetName="txt_IocTimeOut" Value="--"></Setter>
+                                        <Setter Property="Opacity" TargetName="txt_IocTimeOuts" Value="0"></Setter>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn MinWidth="90">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="确认量(万元)" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource DefaultDisableForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition></RowDefinition>
+                                        <RowDefinition></RowDefinition>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                        <TextBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" x:Name="txtPointAmount" IsEnabled="{Binding EnabledEditPointAmountBtn}" Text="{Binding PointAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource DrpPriceAmountEditTextBox}"  Background="{Binding PointAmountBackGround, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Foreground="{Binding AlertsignPointAmountforground, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  FontSize="12" input:InputMethod.IsInputMethodEnabled="False" TextChanged="TextBox_TextChanged"  ToolTip="{Binding PointAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" Tag="3" Height="24" Width="56" HorizontalContentAlignment="Left"  VerticalAlignment="Center" VerticalContentAlignment="Center" ></TextBox>
+
+                                    <Button TabIndex="-1" Width="22" Height="10" Grid.Column="1" Grid.Row="0" Margin="0, 1, 0, 1" IsEnabled="{Binding EnabledEditPointAmountBtn}"
+                                                    Content="^" Foreground="#D7D7D7"
+                                                    Padding="0, -1, 0, 0" Command="{Binding DataContext.AddAmountCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"   CommandParameter="{Binding Id}" Style="{DynamicResource DrpAddButton}"/>
+                                    <Button TabIndex="-1" Width="22" Height="10" Grid.Column="1" Grid.Row="1" Margin="1, 1, 1, 1" IsEnabled="{Binding EnabledEditPointAmountBtn}"
+                                                    Content="v" Foreground="#D7D7D7" FontWeight="ExtraLight" 
+                                                    Padding="1, -4, 0, 0"    Command="{Binding DataContext.DownAmountCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"   CommandParameter="{Binding Id}" Style="{DynamicResource DrpAddButton}"/>
+                                </Grid>
+
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding EnabledBtn}" Value="False">
+                                        <Setter Property="Opacity" TargetName="txtPointAmount" Value="0.6"></Setter>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="Auto">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="建议价(%)" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource DefaultDisableForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition></RowDefinition>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80"></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <comp:DrpNumericUpDown Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Height="24"  Width="80" Tag="4" x:Name="txtPointPrice" NumericValue="{Binding PointPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding EnabledBtn, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ContextMenu="{x:Null}"  
+                                                                TextForeground="{Binding PointPriceBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{Binding PointPriceBackGround, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                                TextContentAlignment="Left" DecimalLength="4" MaxValue="9999" MinValue="-100" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                Margin="0,0,0,0" FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold"></comp:DrpNumericUpDown>
+
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding EnabledBtn}" Value="False">
+                                        <Setter Property="Opacity" TargetName="txtPointPrice" Value="0.6"></Setter>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="Auto">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                    <TextBlock Text="" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource DefaultGridForground}" FontSize="10"></TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                                        <Button x:Name="btnCopyMsg" ToolTip="复制" Margin="0 0 4 0" Style="{DynamicResource DrpCopyMsgButton}"  Command="{Binding DataContext.CopyOrderCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"  CommandParameter="{Binding Id}" />
+                                        <Button x:Name="btnDeal" Margin="0,0,5,0" Visibility="Collapsed"  ToolTip="{Binding ReplyTooltip, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource DrpReplyButton}"
+                                        Command="{Binding DataContext.ReplyCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"  CommandParameter="{Binding Id}"/>
+                                        <Button x:Name="btnPopKnow" Margin="0,0,5,0" Visibility="Collapsed" ToolTip="忽略" Foreground="#A0A0A0"  Style="{DynamicResource DrpRefuseButton}"
+                                        Command="{Binding DataContext.RefuseCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"  CommandParameter="{Binding Id}"/>
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding OrderStatus}" Value="New">
+                                        <Setter TargetName="btnDeal" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="btnPopKnow" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                     <DataTrigger Binding="{Binding EnabledBtn}" Value="False">
+                                        <Setter TargetName="btnDeal" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="btnPopKnow" Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                 </DataGrid.Columns>
+            </DataGrid>
+            </Border>
+        </Border>
+
+        <Border Grid.Row="5" BorderThickness="2, 0, 2, 2" x:Name="Border_Left4" CornerRadius="0,0,4,4" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="55, 0, 0, 0">
+                    <TextBlock Text="已确认量 " HorizontalAlignment="Center" VerticalAlignment="Center"  FontSize="12"></TextBlock>
+                    <TextBox PreviewTextInput="TextBox_PreviewTextInput" Margin="2, 0, 2, 0" Width="80" Height="20" Text="{Binding CustomAmount, Mode=TwoWay}" 
+                             PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" input:InputMethod.IsInputMethodEnabled="False"
+                             Tag="2" Style="{DynamicResource DefaultTextBoxStyle}" BorderThickness="1" BorderBrush="{DynamicResource ColorBrush.Gray15}" Background="{DynamicResource ColorBrush.Black7}" Padding="5, 0, 0, 0"
+                             FontSize="12"></TextBox>
+                    <TextBlock Text=" 万 /" HorizontalAlignment="Center" VerticalAlignment="Center"  FontSize="12"></TextBlock>
+                    <TextBlock Text="{Binding TotalAmount}" HorizontalAlignment="Center" VerticalAlignment="Center"  Foreground="{DynamicResource ColorBrush.While}" FontSize="12"></TextBlock>
+                    <TextBlock Text=" 万" HorizontalAlignment="Center" VerticalAlignment="Center"  FontSize="12"></TextBlock>
+                </StackPanel>
+
+            </Grid>
+
+        </Border>
+        
+        <!--汇总和功能按钮-->
+        <Border Grid.Row="6" BorderThickness="2, 0, 2, 2"  x:Name="Border_Left5" CornerRadius="0,0,4,4" BorderBrush="{Binding BorderBrush,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Visibility="{Binding CheckAmountErrorVisibility}" Margin="20, 0, 0, 0" HorizontalAlignment="Left" Foreground="{DynamicResource DefaultDisableForground}" FontFamily="MicroSoft YaiHei" VerticalAlignment="Center"  FontSize="12">
+                    <Run>报价总量</Run>
+                    <Run Text="{Binding ShowTotal}" Foreground="{StaticResource DefaultGridForground}"/>
+                    <Run>;点价总量</Run>
+                    <Run x:Name="pointTotalRun" Text="{Binding PointTotal}" Foreground="{Binding WarningColor}"/>
+                    <Run>万;待确认量</Run>
+                    <Run x:Name="totalAmountRun" Text="{Binding ShowLeavesQtyTotal}" Foreground="#00CDAD">
+                    </Run>
+                    <Run>万</Run>
+                    
+                </TextBlock>
+                
+                <TextBlock Grid.Column="0" Text="{Binding ErrorTxt}" Visibility="{Binding ErrorVisibility}" Margin="20, 0, 0, 0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="12"></TextBlock>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <Button x:Name="btnCancel" Grid.Column="1" Content="取消" Command="{Binding CloseCommand}" Width="64" Height="24" FontSize="12" Foreground="{DynamicResource DefaultGridForground}"
+                            Margin="0, 0, 4, 0" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0,1,0,0"/>
+
+                    <Button x:Name="btnBatchRefused" Grid.Column="2" Content="批量拒绝" Command="{Binding BatchRefusedCommand}" Width="80" Height="24" FontSize="12" Foreground="{DynamicResource DefaultGridForground}"
+                            Margin="0, 0, 4, 0" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0 1 0 0"/>
+
+                    <Button x:Name="btnSendPrice" Grid.Column="3" Content="批量确认" IsEnabled="{Binding SendPriceEnable, Mode=TwoWay}" Command="{Binding BatchConfirmCommand}" Width="80" Height="24" 
+                            Margin="0, 0, 20, 0" FontSize="12" Style="{DynamicResource BlueGreenStyle}"   Foreground="{DynamicResource DefaultGridForground}" BorderThickness="0 1 0 0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>
+

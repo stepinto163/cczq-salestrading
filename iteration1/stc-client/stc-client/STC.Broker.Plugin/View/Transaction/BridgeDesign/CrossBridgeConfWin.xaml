@@ -1,0 +1,347 @@
+﻿<Window x:Class="STC.Broker.Plugin.View.Transaction.BridgeDesign.CrossBridgeConfWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.Broker.Plugin.View.Transaction.BridgeDesign" 
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
+        xmlns:usercontrols="clr-namespace:STC.Broker.Plugin.View.Component"
+        xmlns:dd="clr-namespace:STC.Broker.Plugin.Utils.wpf"
+        xmlns:uload="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+        Title="设置桥" Height="500" Width="670">
+    <!--xmlns:uload="clr-namespace:STC.Broker.Plugin.LoadingPan"-->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--添加按钮-->
+            <Style x:Key="AddBridgeButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" BorderThickness="0" Background="{TemplateBinding Background}">
+                                <Image x:Name="iamge"  Grid.Column="1" Width="16" Height="16" Margin="310,0,0,0" HorizontalAlignment="Left">
+                                    <Image.Source>
+                                        <DrawingImage >
+                                            <DrawingImage.Drawing>
+                                                <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                                                    <GeometryDrawing Brush="#FFEBC8" Geometry="M514.048 62.464q93.184 0 175.616 35.328t143.872 96.768 96.768 143.872 35.328 175.616q0 94.208-35.328 176.128t-96.768 143.36-143.872 96.768-175.616 35.328q-94.208 0-176.64-35.328t-143.872-96.768-96.768-143.36-35.328-176.128q0-93.184 35.328-175.616t96.768-143.872 143.872-96.768 176.64-35.328zM772.096 576.512q26.624 0 45.056-18.944t18.432-45.568-18.432-45.056-45.056-18.432l-192.512 0 0-192.512q0-26.624-18.944-45.568t-45.568-18.944-45.056 18.944-18.432 45.568l0 192.512-192.512 0q-26.624 0-45.056 18.432t-18.432 45.056 18.432 45.568 45.056 18.944l192.512 0 0 191.488q0 26.624 18.432 45.568t45.056 18.944 45.568-18.944 18.944-45.568l0-191.488 192.512 0z" />
+                                                </DrawingGroup>
+                                            </DrawingImage.Drawing>
+                                        </DrawingImage>
+                                    </Image.Source>
+                                </Image>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter Property="Background" Value="#178674" TargetName="border"  />-->
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                    <Setter Property="Visibility" Value="Visible" TargetName="iamge"  />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="False">
+                                    <Setter Property="Visibility" Value="Hidden" TargetName="iamge"  />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" Value="#115B4F"  TargetName="border" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <!--表格样式-->
+            <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="AlternationCount" Value="2"/>
+                <Setter Property="Height" Value="Auto"/>
+                <Setter Property="CanUserReorderColumns" Value="False"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <Setter Property="CanUserSortColumns" Value="False"/>
+                <Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Foreground" Value="#8F9598" />
+                            <Setter Property="Background" Value="#193D37"/>
+                            <Setter Property="Height" Value="24"/>
+                            <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                            <Setter Property="FontSize" Value="{StaticResource BigContentFontSize}"/>
+                            
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                            <Setter Property="Height" Value="36"/>
+                            <Setter Property="Background" Value="{StaticResource ColorBrush.BlackishGreen}"/>
+                            <Style.Triggers>
+                                <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                                    <Setter Property="Background" Value="#172422" />
+                                </Trigger>
+                                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                    <Setter Property="Background" Value="#121A19" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" Value="#193D37"/>
+                                </Trigger>
+                                <!--<Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#0f7767"/>
+                                </Trigger>-->
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell" >
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="IsEditing" Value="False"/>
+                            <Style.Triggers >
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#193D37"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="TextBlockStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="FontSize" Value="{StaticResource BigContentFontSize}"/>
+                <Setter Property="Foreground" Value="#DB9200"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="ToolTip" Value="{Binding Path=Text}"/>
+
+            </Style>
+
+            <Style x:Key="BorderStyle" TargetType="Border">
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Margin" Value="0,0,20,0"/>
+                <!--<Setter Property="BorderBrush" Value="#0f7767"/>
+                <Setter Property="BorderThickness" Value="1"/>-->
+            </Style>
+
+
+            <Style x:Key="buttonCancelStyle" TargetType="{x:Type Button}">
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+                <Setter Property="FontSize" Value="12"></Setter>
+                <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#4A4D4C" >
+                                <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#767B79"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#767B79"/>
+                                    <Setter Property="Foreground" Value="#FFF9EE"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#303231"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#303231"/>
+                                    <Setter Property="Foreground" Value="#FFEBC8"/>
+                                </Trigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="customeMenuItemStyle" TargetType="{x:Type MenuItem}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type MenuItem}">
+                            <Border x:Name="border" Margin="{TemplateBinding Margin}" Padding="{TemplateBinding Padding}"
+                                    Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Background="{StaticResource ColorBrush.Green3}">
+                                <ContentPresenter ContentSource="Header"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="BorderThickness" TargetName="border" Value="1"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource ColorBrush.Green8}"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource ColorBrush.Green}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+
+
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="AddButtonTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource RowBrigdeOrderText}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Yellow}" />
+            </Style>
+
+            <Style x:Key="AddButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <TextBlock x:Name="TB_Text" TextDecorations="Baseline" Style="{StaticResource AddButtonTextBlockStyle}">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </TextBlock>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="TB_Text" Value="#178674"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="TB_Text" Value="#115B4F"/>
+                                </Trigger>
+                                <Trigger Property="Content" Value="添加">
+                                    <Setter Property="Foreground" TargetName="TB_Text" Value="#FFEBC8"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+        </ResourceDictionary>
+    </Window.Resources>
+    
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" 
+                      UseAeroCaptionButtons="False"
+                      ResizeBorderThickness="5"
+                       GlassFrameThickness="0">
+        </WindowChrome>
+    </WindowChrome.WindowChrome>
+
+    <Border CornerRadius="2" BorderThickness="1" BorderBrush="{StaticResource ColorBrush.Green4}" Background="{StaticResource ColorBrush.Black2}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="auto"></RowDefinition>
+                <RowDefinition Height="16"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Background="{StaticResource ColorBrush.Green}" MouseLeftButtonDown="Window_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="35"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="设置桥" HorizontalAlignment="Center" VerticalAlignment="Center"  
+                           FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}" Foreground="{StaticResource ColorBrush.PaleGold}"></TextBlock>
+
+                <Button Grid.Column="2" x:Name="btnClose" Style="{StaticResource ImageCloseButton}" Margin="0, 0, 10, 0" Width="20" Height="16" IsCancel="True" Click="btnClose_Click"></Button>
+            </Grid>
+
+            <DataGrid Grid.Row="1" ItemsSource="{Binding BridgeConfigInfos}"
+                      x:Name="BridgeDataGrid"  
+                      Background="{StaticResource ColorBrush.BlackishGreen}"
+                      BorderThickness="0" 
+                      Margin="5,5,5,0"  
+                      RowHeight="30" 
+                      ScrollViewer.CanContentScroll="True" 
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                      ScrollViewer.IsDeferredScrollingEnabled="True" 
+                      AutoGenerateColumns="False"
+                      SelectionMode="Single"
+                      Style="{StaticResource DataGridStyle}" 
+                      MaxHeight="384"
+                      dd:DragDrop.IsDragSource="True"
+                      dd:DragDrop.IsDropTarget="True"
+                      
+                      >
+                <DataGrid.ContextMenu>
+                    <ContextMenu x:Name="DgMenu" FontSize="14"  Foreground="#FFEBC8" Style="{StaticResource contextMenuStyle}">
+                        <MenuItem Header="删除" Click="DgMenu_Delete" Padding="5, 5, 0, 0" Margin="0"  FontFamily="{StaticResource IDCFontFamily.Regular}"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+                <DataGrid.Columns>
+                    <!--<DataGridTextColumn Header="优先级" IsReadOnly="True" Width="auto" MinWidth="100"  Binding="{Binding PriorityShow}"  Foreground="{StaticResource scbNormalPrice}"   />-->
+
+                    <DataGridTemplateColumn Header="优先级" Width="auto" MinWidth="105" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Width="60" Foreground="{StaticResource scbNormalPrice}" Text="{Binding PriorityShow, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="机构(联系人)" Width="auto" MinWidth="210">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource BorderStyle}">
+                                    <usercontrols:PopTextBox x:Name="PTextBox" PopText="{Binding InsTraderShow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" TextChanged="PopTextBox_TextChanged"
+                                                             SeletedPopData ="{Binding InsTraderPopModelData,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="限制笔数" Width="240"  >
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource BorderStyle}">
+                                    <usercontrols:TextBoxBlock Text="{Binding LimitCountShow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                               />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="黑名单" Width="auto"  MinWidth="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding BlacklistShow}" Style="{StaticResource AddButtonStyle}" Click="BlackListButton_Click"></Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+
+            </DataGrid>
+            <!--<Border Grid.Row="2" Style="{StaticResource AddRowBorderStyle}" btnCancel/>-->
+            <Button Grid.Row="2" Margin="10,0,5,0" Style="{StaticResource AddBridgeButtonStyle}" Click="AddButton_Click"></Button>
+
+            <Grid  Grid.Row="3"  HorizontalAlignment="Right" Margin="10, 0, 30, 10" VerticalAlignment="Bottom" >
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="btnCancel" Margin="0,0,10,0" Width="80" Height="22" Background="{StaticResource ColorBrush.Gray2}" Style="{StaticResource buttonCancelStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnCancel_Click">取消</Button>
+                    <Button x:Name="btnUpdate"  Width="93" Height="22" Background="#136C5E" Style="{StaticResource ConfirmButtonStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnOk_Click">确认</Button>
+                </StackPanel>
+            </Grid>
+
+            <uload:LoadingWaiting x:Name="LoadingUI" Grid.Row="1"  Grid.RowSpan="3" CanvasSize="130" EllipseCount="10" EllipseSize="20" StepAngle="36" TimeSpan="50"  Visibility="Collapsed"/>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,453 @@
+﻿<Window x:Class="STC.Broker.Plugin.View.Transaction.ShowSetUI"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.Broker.Plugin.View.Transaction"
+        mc:Ignorable="d"
+        d:DesignWidth="600" d:DesignHeight="500"
+          Background="#0A0F0E" BorderThickness="0" 
+         BorderBrush="#193D37" ResizeMode="NoResize"
+          WindowStartupLocation="CenterScreen" 
+        WindowState="Normal" WindowStyle="None"
+        Title="ShowSetUI" Height="400" Width="291">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+    <Window.Effect>
+        <DropShadowEffect BlurRadius="5" Color="#000000" Direction="90" ShadowDepth="3" Opacity="0.5"/>
+    </Window.Effect>
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"></ResourceDictionary>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="textBoxSearchStyle" TargetType="{x:Type TextBox}">
+                <Style.Resources>
+                    <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left">
+                        <VisualBrush.Visual>
+                            <TextBlock x:Name="tbVisual" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGrey}" Text="搜索"/>
+                        </VisualBrush.Visual>
+                    </VisualBrush>
+                </Style.Resources>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Yellow}"/>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"/>
+
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderThickness="1" BorderBrush="#186054" Background="#0E1A18">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#172422"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFEBC8"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#FF7D00"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#000"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="false"/>
+                                        <Condition Property="Text" Value=""/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource HintText}"/>
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="DataGrid">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="FontFamily" Value="{StaticResource DefaultFont}"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="Column"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <Setter Property="Background" Value="#040B0B"/>
+                <Setter Property="AlternationCount" Value="1"/>
+                <Setter Property="AlternatingRowBackground" Value="#121716"/>
+                <Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Margin" Value="10,0,0,0"/>
+                            <Setter Property="Foreground">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Background" Value="#040B0B"/>
+                            <Setter Property="Height" Value="30"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                            <Setter Property="Background" Value="#193D37"/>
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Style.Triggers>
+                                <!--<Trigger Property="AlternationIndex" Value="0">
+                                    <Setter Property="Background" Value="#121716"/>
+                                </Trigger>
+                                <Trigger Property="AlternationIndex" Value="1">
+                                    <Setter Property="Background" Value="#0E0F0E"/>
+                                </Trigger>-->
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" Value="#172422"/>
+                                    <Setter Property="Foreground" Value="Yellow"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#172422"/>
+                                    <Setter Property="Foreground" Value="#FFEBC8"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="buttonStyle" TargetType="{x:Type Button}">
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+                <Setter Property="FontSize" Value="12"></Setter>
+                <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#136C5E" >
+                                <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#178674"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                                </Trigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="buttonCancelStyle" TargetType="{x:Type Button}">
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+                <Setter Property="FontSize" Value="12"></Setter>
+                <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#4A4D4C" >
+                                <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#767B79"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#767B79"/>
+                                    <Setter Property="Foreground" Value="#FFF9EE"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#303231"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#303231"/>
+                                    <Setter Property="Foreground" Value="#FFEBC8"/>
+                                </Trigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="{x:Type ListBoxItem}">
+
+                <Setter Property="Template">
+                    <Setter.Value>
+
+                        <ControlTemplate TargetType="ListBoxItem">
+
+                            <Border Background="{TemplateBinding Background}">
+
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+
+                                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+
+                                             TextBlock.Foreground="{TemplateBinding Foreground}"/>
+
+                            </Border>
+
+                        </ControlTemplate>
+
+                    </Setter.Value>
+                </Setter>
+
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="true">
+                        <Setter Property="Background" Value="#193D37"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="false">
+                        <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"/>
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="true">
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Trigger>
+
+
+                    <!--<Trigger Property="IsFocused" Value="false">
+                        <Setter Property="Background" Value="{StaticResource ColorBrush.BlackishGreen}"/>
+                    </Trigger>-->
+
+                    <!--<Trigger Property="IsSelected" Value="false">
+                        <Setter Property="Background" Value="{StaticResource ColorBrush.BlackishGreen}"/>
+                    </Trigger>-->
+                </Style.Triggers>
+            </Style>
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="CanContentScroll" Value="False"/>
+            </Style>
+            <Style x:Key="SelfDefaultRadioButtonStyle" TargetType="{x:Type RadioButton}">
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{StaticResource RadioButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RadioButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RadioButton}">
+                            <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="radioButtonBorder" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="100" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="1,1,2,1" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid x:Name="markGrid" Margin="2">
+                                        <Ellipse x:Name="optionMark" Fill="#C29B4E" MinWidth="6" MinHeight="6" Opacity="0"/>
+                                    </Grid>
+                                </Border>
+                                <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="HasContent" Value="true">
+                                    <Setter Property="FocusVisualStyle" Value="{StaticResource OptionMarkFocusVisual}"/>
+                                    <Setter Property="Padding" Value="4,-1,0,0"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="radioButtonBorder" Value="{StaticResource RadioButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="#C29B4E"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="#C29B4E"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="radioButtonBorder" Value="{StaticResource RadioButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="{StaticResource RadioButton.Disabled.Border}"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{StaticResource RadioButton.Disabled.Glyph}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="radioButtonBorder" Value="{StaticResource RadioButton.Pressed.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="#C29B4E"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="#C29B4E"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="#C29B4E"/>
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="{x:Null}">
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="0.56"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <Border CornerRadius="2" BorderThickness="2" BorderBrush="#282828">
+            <Grid Background="#0F0F0F" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="320"></RowDefinition>
+                    <RowDefinition Height="42"></RowDefinition>
+                    <!--<RowDefinition Height="Auto"></RowDefinition>-->
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Background="#282828" HorizontalAlignment="Left" Width="291" Height="30">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="50"></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="20"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Label x:Name="lbSet" Margin="5,3,189,0" Grid.Column="0" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="#FFFFFF" Grid.ColumnSpan="2">显示设置</Label>
+
+                    <Button x:Name="btnCloseWin" Grid.Row="0" Grid.Column="2" Style="{StaticResource ImageCloseButton}" Height="20" Width=" 20" Click="btnCloseWin_Click" IsCancel="True"></Button>
+                </Grid>
+
+                <Border CornerRadius="2" Grid.Row="1" Margin="1" Background="Transparent" Height="320"  >
+                    <!--<Grid>
+                    
+                </Grid>-->
+                    <StackPanel x:Name="spRecive" Orientation="Vertical" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <TextBlock Background="Transparent" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                                   Foreground="{StaticResource TextBlockDefaultForground}" Margin="10, 10, 0, 0" Text="明细展示"/>
+                        <CheckBox x:Name="cb_withCompanyName" Margin="10,10,0,10" Content="含公司名" Width="100"
+                                  HorizontalAlignment="Left" Foreground="{StaticResource TextBlockDefaultForground}"
+                                  Style="{StaticResource OrangeCheckedNormalCheckBox}"/>
+                        <TextBlock Background="Transparent" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                                   Foreground="{StaticResource TextBlockDefaultForground}" Margin="10, 10, 0, 0" Text="默认显示方向"/>
+                        <Grid Grid.Row="1" >
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition Width="auto" ></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+
+                            <RadioButton Content="显示" GroupName="Direction" x:Name="rbShow" Style="{DynamicResource SelfDefaultRadioButtonStyle}" Foreground="{DynamicResource TextBlockDefaultForground}" 
+                                 Margin="10,10,0,10" Grid.Column="0"   Click="rbNotShow_Click"  VerticalAlignment="Center" HorizontalAlignment="Left">
+
+                            </RadioButton>
+                            <RadioButton Content="不显示" GroupName="Direction" x:Name="rbNoShow"  VerticalAlignment="Center" Style="{DynamicResource SelfDefaultRadioButtonStyle}" Foreground="{DynamicResource TextBlockDefaultForground}"
+                                 Margin="16,10,0,10" Grid.Column="1" HorizontalAlignment="Left"  Click="rbNotShow_Click" >
+                            </RadioButton>
+                        </Grid>
+
+                        <TextBlock Background="Transparent" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                                   Foreground="{StaticResource TextBlockDefaultForground}" Margin="10, 10, 0, 0" Text="其他人成交展示"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition Width="auto" ></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+
+                            <RadioButton Content="合并" GroupName="IsSplit" x:Name="rbCombine" Style="{DynamicResource SelfDefaultRadioButtonStyle}" Foreground="{DynamicResource TextBlockDefaultForground}"
+                                 Margin="10,10,0,10" Grid.Column="0"  VerticalAlignment="Center" HorizontalAlignment="Left">
+
+                            </RadioButton>
+                            <RadioButton Content="机构交易员展示" GroupName="IsSplit" x:Name="rbSplit" Style="{DynamicResource SelfDefaultRadioButtonStyle}" Foreground="{DynamicResource TextBlockDefaultForground}"
+                                 Margin="16,10,0,10" Grid.Column="1" HorizontalAlignment="Left" >
+                            </RadioButton>
+                        </Grid>
+
+
+                        <TextBlock  FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                                   Foreground="{StaticResource TextBlockDefaultForground}" Margin="10, 10, 0, 0" Text="合并显示明细的机构："/>
+                        <TextBox x:Name="tbReciveName" Margin="10,10,10,0" Width="246" Height="22" Style="{StaticResource textBoxSearchStyle}" PreviewKeyDown="tbReciveName_PreviewKeyDown" KeyDown="tbReciveName_KeyDown" TextChanged="tbReciveName_TextChanged"/>
+                        <Popup x:Name="popReciveName" PlacementTarget="{Binding ElementName=tbReciveName}" LostFocus="popReciveName_LostFocus" StaysOpen="False">
+                            <DataGrid x:Name="dgRecive"
+                                  Grid.Row="1"
+                                  Background="#282828"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  MouseDoubleClick="dgRecive_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <DataGrid.Resources>
+                                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Binding="{Binding TipsShortnamelist}" Width="1*" >
+                                        <DataGridTextColumn.ElementStyle >
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Binding="{Binding instcode}" Width="1*" Visibility="Collapsed">
+                                        <DataGridTextColumn.ElementStyle >
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                        </Popup>
+                        <ListBox x:Name="lbRecive" BorderThickness="0" MaxHeight="85" Height="85"
+                             ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                            Background="Transparent" 
+                                 Width="246" Margin="10,0,12,5">
+                        </ListBox>
+                        
+                    </StackPanel>
+                </Border>
+                <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="10" HorizontalAlignment="Center" Grid.ColumnSpan="4">
+                    <Button x:Name="btnUpdate" Margin="0,0,10,0" Width="80" Height="22" Background="{StaticResource ColorBrush.Gray2}" Style="{StaticResource buttonCancelStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnCancel_Click">取消</Button>
+                    <Button x:Name="btnCancel"  Width="93" Height="22" Background="#136C5E" Style="{StaticResource buttonStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnOk_Click">确认</Button>
+                </StackPanel>
+            </Grid>
+
+
+        </Border>
+    </Grid>
+</Window>

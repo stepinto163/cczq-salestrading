@@ -1,0 +1,124 @@
+﻿<TabItem x:Class="STC.Mmshe.Plugin.View.HomePage.HomePageTabItemWithClose"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mmshe.Plugin.View.HomePage"
+             xmlns:conv="clr-namespace:STC.Mmshe.Plugin.Convertor" 
+             xmlns:comp="clr-namespace:STC.Mmshe.Plugin.View.Component"
+            x:Name="mm_HomePageTabItemWithClose" 
+             MouseEnter="templateRoot_MouseEnter" MouseLeave="templateRoot_MouseLeave"
+             mc:Ignorable="d">
+    <TabItem.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Mmshe.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="TabItem.MouseOver.Border" Color="#3c3c3c"/>
+            <SolidColorBrush x:Key="green" Color="#00FFD6"/>
+            <conv:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <Style x:Key="EditableTabHeaderControl" TargetType="{x:Type comp:EditableTabHeaderControl}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type comp:EditableTabHeaderControl}">
+                            <Grid>
+                                <TextBox x:Name="PART_TabHeader" Width="80" Height="18" Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content, Mode=TwoWay}" Visibility="Collapsed"/>
+                                <Grid x:Name="PART_Display" HorizontalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!--<Rectangle x:Name="GroupTypeRt" Width="4" Height="4" Fill="#FFFFFF"/>-->
+                                    <TextBlock x:Name="Part_Unify" Text="[单]" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="PART_TextBlock" Grid.Column="1" Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content, Mode=TwoWay}" 
+                                                TextAlignment="Left" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding Text,RelativeSource={RelativeSource Self}}"/>
+                                    <TextBlock x:Name="PART_Unify_Count" Grid.Column="1"
+                                                TextAlignment="Left" Foreground="#FF333A" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+
+                                <Trigger Property="IsInEditMode" Value="True">
+                                    <Trigger.Setters>
+                                        <Setter TargetName="PART_TabHeader" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="PART_Display" Property="Visibility" Value="Collapsed"/>
+                                    </Trigger.Setters>
+                                </Trigger>
+                                <Trigger Property="IsUnify" Value="True">
+                                    <Trigger.Setters>
+                                        <!--<Setter TargetName="GroupTypeRt" Property="Fill" Value="#00FFD6"/>-->
+                                        <Setter TargetName="Part_Unify" Property="Text" Value="[整]"/>
+                                    </Trigger.Setters>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </TabItem.Resources>
+    <TabItem.Style>
+        <Style TargetType="{x:Type TabItem}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="{StaticResource TabItem.Unselected.Foreground}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0,0,0,2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Margin" Value="0 0 4 0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid>
+                            <Border Grid.ColumnSpan="3" BorderThickness="{TemplateBinding BorderThickness}" x:Name="mainBorder" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" Margin="0">
+                                <Border Margin="0,0,0,0" x:Name="innerBorder" Background="Transparent" Visibility="Collapsed"/>
+                            </Border>
+                            <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" TextBlock.TextAlignment="Center" 
+                                                  Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" 
+                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                                    <ContentPresenter.Content>
+                                        <comp:EditableTabHeaderControl x:Name="editControl" Style="{StaticResource EditableTabHeaderControl}" 
+                                                         Content="{Binding Header, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TabItem}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </ContentPresenter.Content>
+                                </ContentPresenter>
+                                <TextBlock x:Name="warnNumtb" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="Red"  Background="#1A1A1A"
+                                           Visibility="{Binding WarnCountMaxZero, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TabItem}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource visibilityConvertor}}">
+                                    <Run Text="("></Run>
+                                    <Run Text="{Binding WarnNumber, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type TabItem}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"></Run>
+                                    <Run Text=")"></Run>
+                                </TextBlock>
+
+                                <Button Grid.Column="2" Name="btn_Close" Width="10" Height="10" Visibility="Hidden" Margin="0 0 8 0" Style="{StaticResource ImageCloseButton}" Click="btn_Close_Click"></Button>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter Property="Panel.ZIndex" Value="1"/>
+                                <!--<Setter Property="Visibility" TargetName="innerBorder" Value="Visible"/>
+                                <Setter Property="Background" TargetName="BorderMask" Value="gray"/>-->
+                                <Setter Property="BorderBrush" TargetName="mainBorder" Value="#136C5E"/>
+                                <Setter TargetName="contentPresenter" Property="TextBlock.Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                <!--<Setter Property="Background" TargetName="mainBorder" Value="Transparent"/>-->
+                                <!--<Setter TargetName="contentPresenter" Property="TextBlock.FontWeight" Value="Bold"/>-->
+                                <!--<Setter TargetName="contentPresenter" Property="TextBlock.Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                <Setter TargetName="contentPresenter" Property="TextBlock.FontWeight" Value="SemiBold"/>-->
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </TabItem.Style>
+</TabItem>

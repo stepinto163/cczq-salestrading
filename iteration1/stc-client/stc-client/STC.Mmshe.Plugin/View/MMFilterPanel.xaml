@@ -1,0 +1,88 @@
+﻿<UserControl x:Class="STC.Mm.Plugin.View.MMFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mm.Plugin.View"
+             xmlns:comp="clr-namespace:STC.Mm.Plugin.View.Component"
+             xmlns:u="clr-namespace:STC.Mm.Plugin.Utils"
+             mc:Ignorable="d" FontSize="12" Height="24"
+             d:DesignHeight="24" d:DesignWidth="1050">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ToggleButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    <Grid>
+        <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Height="16">
+            <RadioButton x:Name="ShowAll_ToggleButton" Width="70" Height="15" Margin="10,0,0,0"  
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="True" Content="Show All" Foreground="White" Style="{StaticResource ShowAllRadioStyle}" 
+                          Checked="ShowAll_ToggleButton_Checked"
+                         Unchecked="ShowAll_ToggleButton_Unchecked"
+                         Click="ShowAll_ToggleButton_Click"/>
+
+            <ListBox x:Name="BondTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="BondTypeListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{StaticResource CommonFilterListBoxItemStyle}" Margin="10,0,0,0" Width="50" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="国债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="50" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="金融债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="58" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="地方债" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="58" HorizontalContentAlignment="Center"/>
+            </ListBox>
+
+            <ListBox x:Name="BondPeriodListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="BondPeriodListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{StaticResource CommonFilterListBoxItemStyle}" Margin="10,0,0,0" Width="48" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="0-1Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="48" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="1-3Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="48" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="3-5Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="48" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="5-7Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="48" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="7-10Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content=">=10Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="Auto" HorizontalContentAlignment="Center"/>
+            </ListBox>
+            
+            <CheckBox x:Name="IsNewBondChk" Content="新发国债" Margin="10,0,0,0" VerticalAlignment="Center"
+                      BorderThickness="2" Height="16"
+                      BorderBrush="{StaticResource ColorBrush.Gray15}" 
+                      Style="{StaticResource CommonCheckBoxStyle}" 
+                      Background="{StaticResource ColorBrush.Transparent}" 
+                      Foreground="{StaticResource ColorBrush.While}" 
+                      Click="IsNewBondChk_Click" 
+                      Checked="IsNewBondChk_Checked"
+                      Unchecked="IsNewBondChk_Unchecked"/>
+            <ListBox x:Name="NewBondPeriodListBox" Background="Transparent" HorizontalAlignment="Left" HorizontalContentAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="NewBondPeriodListBox_SelectionChanged" Width="481"
+                     IsEnabled="{Binding ElementName=IsNewBondChk, Path=IsChecked}">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{StaticResource CommonFilterListBoxItemStyle}" Margin="2,0,0,0" Width="46" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="1Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="45" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="2Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="45" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="5Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="45" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="7Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="45" HorizontalContentAlignment="Center"/>
+                <ListBoxItem Content="10Y" Style="{StaticResource CommonFilterListBoxItemStyle}" Width="45" HorizontalContentAlignment="Center"/>
+            </ListBox>
+        </StackPanel>       
+    </Grid>
+</UserControl>

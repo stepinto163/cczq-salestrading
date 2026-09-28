@@ -1,0 +1,2858 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{756F6622-163E-419A-B853-6F148101979D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>STC.Common</RootNamespace>
+    <AssemblyName>STC.Common</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <!-- NuGet 18 要求 .NET Framework + PackageReference 项目声明 RuntimeIdentifier（否则 Restore 报错） -->
+    <RuntimeIdentifiers>win</RuntimeIdentifiers>
+    <LangVersion>latest</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\client\bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\client\bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\client\bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>..\client\bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Ats.Foundation, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\Ats.Foundation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="common.netapi, Version=1.0.7853.27182, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\common.netapi.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="gateway-api, Version=1.0.7860.5492, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\gateway-api.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=1.3.1.9, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\ICSharpCode.SharpZipLib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MDT.ThirdParty.Control, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\MDT.ThirdParty.Control.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Expression.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\Microsoft.Expression.Drawing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Expression.Interactions, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\Microsoft.Expression.Interactions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationFramework.Aero" />
+    <Reference Include="RocksDbNative, Version=6.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\RocksDbNative.6.2.2\lib\net45\RocksDbNative.dll</HintPath>
+    </Reference>
+    <Reference Include="RocksDbSharp, Version=6.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\RocksDbSharp.6.2.2\lib\net45\RocksDbSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite, Version=1.0.115.5, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\System.Data.SQLite.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Windows" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\bin\System.Windows.Interactivity.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Api\ApiConsts.cs" />
+    <Compile Include="ColumnSetting\ColumnSettingView.xaml.cs">
+      <DependentUpon>ColumnSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ColumnSetting\ColumnsInfo.cs" />
+    <Compile Include="ColumnSetting\ISettingColumnsBase.cs" />
+    <Compile Include="ColumnSetting\SettingSyncHandler.cs" />
+    <Compile Include="Command\DelegateCommand.cs" />
+    <Compile Include="Command\ExecuteCommandAction.cs" />
+    <Compile Include="Command\PopupWindowCommand.cs" />
+    <Compile Include="ConstIndex.cs" />
+    <Compile Include="Convertor\AltBackgroundConverter.cs" />
+    <Compile Include="Convertor\BlackAndWhiteConverter.cs" />
+    <Compile Include="Convertor\BlackListRTLConvertor.cs" />
+    <Compile Include="Convertor\BondFieldConvertor.cs" />
+    <Compile Include="Convertor\BoolAndStringConverter.cs" />
+    <Compile Include="Convertor\BooleanConvertor.cs" />
+    <Compile Include="Convertor\BooleanToBooleanConverter.cs" />
+    <Compile Include="Convertor\BoolVisibilityConvertor.cs" />
+    <Compile Include="Convertor\BrokerSettleTypeConverter.cs" />
+    <Compile Include="Convertor\ComboBoxDisplayConverter.cs" />
+    <Compile Include="Convertor\CopyColorConverter.cs" />
+    <Compile Include="Convertor\DaysOffStrConverter.cs" />
+    <Compile Include="Convertor\FormatDateTimeConvertor2.cs" />
+    <Compile Include="Convertor\GreaterThanZeroConverter.cs" />
+    <Compile Include="Convertor\KLineVisibilityConverter.cs" />
+    <Compile Include="Convertor\LastImageVisibilityConverter.cs" />
+    <Compile Include="Convertor\LastIsValidConverter.cs" />
+    <Compile Include="Convertor\MultiCompareConverter.cs" />
+    <Compile Include="Convertor\MultiVisibilityConverter.cs" />
+    <Compile Include="Convertor\NumberConvertor3.cs" />
+    <Compile Include="Convertor\NumFutureConvert.cs" />
+    <Compile Include="Convertor\RadioButtonConverter.cs" />
+    <Compile Include="Convertor\RelativeDropHorizontalOffsetConverter.cs" />
+    <Compile Include="Convertor\PriceTypeExerciseFlagConvertor.cs" />
+    <Compile Include="Convertor\ClockVisibilityConvertor.cs" />
+    <Compile Include="Convertor\EnumTypeConvertor.cs" />
+    <Compile Include="Convertor\FileSizeConvertor.cs" />
+    <Compile Include="Convertor\FirmFlagConvertor.cs" />
+    <Compile Include="Convertor\FormatDateTimeConvertor.cs" />
+    <Compile Include="Convertor\FormatPriceConvertor.cs" />
+    <Compile Include="Convertor\IntentionStatusConvertor.cs" />
+    <Compile Include="Convertor\IsInnerConvertor.cs" />
+    <Compile Include="Convertor\MoreSettleContainsConvertor.cs" />
+    <Compile Include="Convertor\MultiAndConverter.cs" />
+    <Compile Include="Convertor\MultiOrConverter.cs" />
+    <Compile Include="Convertor\MultiBindingConverter.cs" />
+    <Compile Include="Convertor\NumberConvertor.cs" />
+    <Compile Include="Convertor\PartyNameConvertor.cs" />
+    <Compile Include="Convertor\PriceTypeExerciseFlagVisibleConvertor.cs" />
+    <Compile Include="Convertor\ReverseBooleanConvertor.cs" />
+    <Compile Include="Convertor\SettleTypeConvertor.cs" />
+    <Compile Include="Convertor\SettleVisibilityConvertor.cs" />
+    <Compile Include="Convertor\StrContainsConvertor.cs" />
+    <Compile Include="Convertor\StringContainsConvertor.cs" />
+    <Compile Include="Convertor\StringConvertor.cs" />
+    <Compile Include="Convertor\StringFormatConverter.cs" />
+    <Compile Include="Convertor\StringIsNullOrEmptyConvertor.cs" />
+    <Compile Include="Convertor\SubStringConverter.cs" />
+    <Compile Include="Convertor\TradeDateAndSettlTypeConverter.cs" />
+    <Compile Include="Convertor\TreasuryFutureConvertor.cs" />
+    <Compile Include="Convertor\TrimmedTextBlockVisibilityConverter.cs" />
+    <Compile Include="Convertor\VenuesBgColorConvertor.cs" />
+    <Compile Include="Convertor\VenuesBordreBurshColorConvertor.cs" />
+    <Compile Include="Convertor\ColorConvertor.cs" />
+    <Compile Include="Convertor\VenuesColorConvertor.cs" />
+    <Compile Include="Convertor\VenuesImageConvertor.cs" />
+    <Compile Include="Convertor\VenuesSimpleConvertor.cs" />
+    <Compile Include="Convertor\ReverseVisibilityConvertor.cs" />
+    <Compile Include="Convertor\VisibilityConvertor.cs" />
+    <Compile Include="Convertor\VisibleConverter.cs" />
+    <Compile Include="Convertor\VisibleConverterTwo.cs" />
+    <Compile Include="Convertor\WidthConvertor.cs" />
+    <Compile Include="Data\DataModel\CopyColumnItem.cs" />
+    <Compile Include="Data\DataModel\IntentionExecItem.cs" />
+    <Compile Include="Data\DataModel\IntentionOrderItem.cs" />
+    <Compile Include="Data\DataModel\MsgDetail.cs" />
+    <Compile Include="Data\DataProcesser\CrossOrdersProcesser.cs" />
+    <Compile Include="Data\DataProcesser\MyExecutionProcesser.cs" />
+    <Compile Include="Data\DataProcesser\MyOrderProcesser.cs" />
+    <Compile Include="Data\DataProcesser\QuantMyExecutionProcesser.cs" />
+    <Compile Include="Data\DbHandler\ISTCDbHandler.cs" />
+    <Compile Include="Data\DbHandler\STCRocksDbHandler.cs" />
+    <Compile Include="Data\DbHandler\STCSqliteHandler.cs" />
+    <Compile Include="Data\DesignHandler.cs" />
+    <Compile Include="Data\EmsOrdersHandler.cs" />
+    <Compile Include="Data\ExecutionsHandler.cs" />
+    <Compile Include="Data\FixedSizeCollection.cs" />
+    <Compile Include="Data\IntentionHandler.cs" />
+    <Compile Include="Data\IntentionIRSHandler.cs" />
+    <Compile Include="Data\IntentionOldHandler.cs" />
+    <Compile Include="Data\OrdersHandler.cs" />
+    <Compile Include="Data\CdccHandler.cs" />
+    <Compile Include="Data\DbHandler\STCDbHandler.cs" />
+    <Compile Include="Dispatcher\AsyncBase.cs" />
+    <Compile Include="Dispatcher\DataBus.cs" />
+    <Compile Include="Handler\CRM\CRMDataHandler.cs" />
+    <Compile Include="Handler\CRM\ICRMDataHandler.cs" />
+    <Compile Include="Handler\Cust\CustHandler.cs" />
+    <Compile Include="Handler\Cust\ICustHandler.cs" />
+    <Compile Include="Handler\FinQ\FinQHandler.cs" />
+    <Compile Include="Handler\FinQ\IFinQHandler.cs" />
+    <Compile Include="Handler\GLADAPTERSvr\GLADAPTERHandler.cs" />
+    <Compile Include="Handler\GLADAPTERSvr\IGLADAPTERHandler.cs" />
+    <Compile Include="Handler\Hedge\IHedgeHandler.cs" />
+    <Compile Include="Handler\Hedge\HedgeHandler.cs" />
+    <Compile Include="Handler\IM\IIMHandler.cs" />
+    <Compile Include="Handler\IM\IMHandler.cs" />
+    <Compile Include="Handler\Limit\ILimitHandler.cs" />
+    <Compile Include="Handler\Limit\LimitHandler.cs" />
+    <Compile Include="Handler\Login\LoginHandler.cs" />
+    <Compile Include="Handler\MarketExec\CapacityList.cs" />
+    <Compile Include="Handler\MarketExec\ExecComparer.cs" />
+    <Compile Include="Handler\MarketExec\MarketExecCache.cs" />
+    <Compile Include="Handler\MDHist\Kline1MCache.cs" />
+    <Compile Include="Handler\PP\IPPHandler.cs" />
+    <Compile Include="Handler\PP\PPHandler.cs" />
+    <Compile Include="Handler\PT\GRHandler.cs" />
+    <Compile Include="Handler\PT\IGRHandler.cs" />
+    <Compile Include="Handler\PT\TransactionPopupHandler.cs" />
+    <Compile Include="Handler\QQ\IQQHandler.cs" />
+    <Compile Include="Handler\QQ\QQHandler.cs" />
+    <Compile Include="Handler\QTRS\IQtrsHandler.cs" />
+    <Compile Include="Handler\QTRS\QtrsHandler.cs" />
+    <Compile Include="IDCEnum\Enums.cs" />
+    <Compile Include="IDCEnum\EPluginShareKey.cs" />
+    <Compile Include="Handler\Admin\AdminHandler.cs" />
+    <Compile Include="Handler\Admin\IAdminHandler.cs" />
+    <Compile Include="Handler\Ansshe\AnssheHandler.cs" />
+    <Compile Include="Handler\Ansshe\IAnssheHandler.cs" />
+    <Compile Include="Handler\Ans\AnsHandler.cs" />
+    <Compile Include="Handler\Ans\IAnsHandler.cs" />
+    <Compile Include="Handler\Base\BaseHandler.cs" />
+    <Compile Include="Handler\Base\IBaseHandler.cs" />
+    <Compile Include="Handler\BookManagement\BookMgtHandler.cs" />
+    <Compile Include="Handler\BookManagement\IBookMgtHandler.cs" />
+    <Compile Include="Handler\Cal\CalHandler.cs" />
+    <Compile Include="Handler\Cal\ICalHandler.cs" />
+    <Compile Include="Handler\CDH\CDHHandler.cs" />
+    <Compile Include="Handler\CDH\ICDHHandler.cs" />
+    <Compile Include="Handler\CRM\CRMHandler.cs" />
+    <Compile Include="Handler\CRM\ICRMHandler.cs" />
+    <Compile Include="Handler\Drp\DrpHandler.cs" />
+    <Compile Include="Handler\EMS\EMSHandler.cs" />
+    <Compile Include="Handler\EMS\IEMSHandler.cs" />
+    <Compile Include="Handler\GW\GWHandler.cs" />
+    <Compile Include="Handler\GW\IGWHandler.cs" />
+    <Compile Include="Handler\Inner\IInnerHandler.cs" />
+    <Compile Include="Handler\Inner\InnerHandler.cs" />
+    <Compile Include="Handler\MarketExec\IMarketExecHandler.cs" />
+    <Compile Include="Handler\MarketExec\MarketExecHandler.cs" />
+    <Compile Include="Handler\MDHist\IMDHistHandler.cs" />
+    <Compile Include="Handler\MDHist\MDHistHandler.cs" />
+    <Compile Include="Handler\MMshe\IMMsheHandler.cs" />
+    <Compile Include="Handler\MMshe\MMsheHandler.cs" />
+    <Compile Include="Handler\MM\MMHandler.cs" />
+    <Compile Include="Handler\MM\IMMHandler.cs" />
+    <Compile Include="Handler\Monitor\IMonitorHandler.cs" />
+    <Compile Include="Handler\Monitor\MonitorHandler.cs" />
+    <Compile Include="Handler\OHLC\IOhlcHandler.cs" />
+    <Compile Include="Handler\OHLC\OhlcHandler.cs" />
+    <Compile Include="Handler\OpenWin\IOpenWinHandler.cs" />
+    <Compile Include="Handler\OwnExec\IOwnExecHandler.cs" />
+    <Compile Include="Handler\OwnExec\OwnExecHandler.cs" />
+    <Compile Include="Handler\Parser\ParserHandler.cs" />
+    <Compile Include="Handler\Position\IPositionHandler.cs" />
+    <Compile Include="Handler\Position\PositionHandler.cs" />
+    <Compile Include="Handler\PrePaidList\Event.cs" />
+    <Compile Include="Handler\OpenWin\OpenWinHandler.cs" />
+    <Compile Include="Handler\Price\IMDHandler.cs" />
+    <Compile Include="Handler\Price\MDHandler.cs" />
+    <Compile Include="Handler\Ptr\IPtrHandler.cs" />
+    <Compile Include="Handler\Ptr\PtrHandler.cs" />
+    <Compile Include="Handler\PT\IPTHandler.cs" />
+    <Compile Include="Handler\PT\PTHandler.cs" />
+    <Compile Include="Handler\Quant\IQuantHandler.cs" />
+    <Compile Include="Handler\Quant\QuantHandler.cs" />
+    <Compile Include="Handler\RFQ\RfqHandler.cs" />
+    <Compile Include="Handler\Risk\IRiskHandler.cs" />
+    <Compile Include="Handler\Risk\RiskHandler.cs" />
+    <Compile Include="Handler\Simulate\ISimulateHandler.cs" />
+    <Compile Include="Handler\Simulate\SimulateHandler.cs" />
+    <Compile Include="Handler\SystemParam\ISystemParamHandler.cs" />
+    <Compile Include="Handler\SystemParam\SystemParamHandler.cs" />
+    <Compile Include="Handler\Table\ITableOldHandler.cs" />
+    <Compile Include="Handler\Table\ITableHandler.cs" />
+    <Compile Include="Handler\Table\TableOldHandler.cs" />
+    <Compile Include="Handler\Table\TableHandler.cs" />
+    <Compile Include="Handler\TBook\ITBookHandler.cs" />
+    <Compile Include="Handler\TBook\TBookHandler.cs" />
+    <Compile Include="Interface\IPriceAndOrderViewInterface.cs" />
+    <Compile Include="Model\Admin\AccountAndUsersQueryReplyPo.cs" />
+    <Compile Include="Model\Admin\AccountAndUsersQueryReq.cs" />
+    <Compile Include="Model\Admin\AccountQueryReplyPo.cs" />
+    <Compile Include="Model\Admin\BookBookReplyPo.cs" />
+    <Compile Include="Model\Admin\BookUserReplyPo.cs" />
+    <Compile Include="Model\Admin\BrokerSendQQReq.cs" />
+    <Compile Include="Model\Admin\ContentMsg.cs" />
+    <Compile Include="Model\Admin\DBLogRequest.cs" />
+    <Compile Include="Model\Admin\GroupMsgPo.cs" />
+    <Compile Include="Model\Admin\HomeGroupData.cs" />
+    <Compile Include="Model\Admin\HomeGroupReplyPo.cs" />
+    <Compile Include="Model\Admin\HomeGroupSecurityidsReplyPo.cs" />
+    <Compile Include="Model\Admin\HomeGroupUpdateReplyPo.cs" />
+    <Compile Include="Model\Admin\HomeGroupUpdateReq.cs" />
+    <Compile Include="Model\Admin\HomeGroupSecurityidsUpdateReq.cs" />
+    <Compile Include="Model\Admin\ModulesAction.cs" />
+    <Compile Include="Model\Admin\Order.cs" />
+    <Compile Include="Model\Admin\PositionReq.cs" />
+    <Compile Include="Model\Admin\PositionSum.cs" />
+    <Compile Include="Model\Admin\PriceValue.cs" />
+    <Compile Include="Model\Admin\RoleModulesActionQueryReq.cs" />
+    <Compile Include="Model\Admin\RolesModulesActionUpdateReq.cs" />
+    <Compile Include="Model\Admin\RoleUpdateReq.cs" />
+    <Compile Include="Model\Admin\StcTbookUsers.cs" />
+    <Compile Include="Model\Admin\STCUserReplyPo.cs" />
+    <Compile Include="Model\Admin\SyncPosAndTrd.cs" />
+    <Compile Include="Model\Admin\SystemGlobalParamReq.cs" />
+    <Compile Include="Model\Admin\SystemMessageReq.cs" />
+    <Compile Include="Model\Admin\SystemParameterReq.cs" />
+    <Compile Include="Model\Admin\TBatchMsgReq.cs" />
+    <Compile Include="Model\Admin\TbookAccount.cs" />
+    <Compile Include="Model\Admin\TbookAccountUsers.cs" />
+    <Compile Include="Model\Admin\TBookBookTreeItemModel.cs" />
+    <Compile Include="Model\Admin\TbookPosition.cs" />
+    <Compile Include="Model\Admin\TbookPositionReplyPo.cs" />
+    <Compile Include="Model\Admin\TbookSystemParameterReplyPo.cs" />
+    <Compile Include="Model\Admin\TbookTradeReplyPo.cs" />
+    <Compile Include="Model\Admin\TbookUserGroups.cs" />
+    <Compile Include="Model\Admin\TbookUserGroupsReplyPo.cs" />
+    <Compile Include="Model\Admin\TextMsg.cs" />
+    <Compile Include="Model\Admin\TModulesActionQuery.cs" />
+    <Compile Include="Model\Admin\TModulesQuery.cs" />
+    <Compile Include="Model\Admin\TQueryManagerUser.cs" />
+    <Compile Include="Model\Admin\TradeSum.cs" />
+    <Compile Include="Model\Admin\TRoleModulesActionQuery.cs" />
+    <Compile Include="Model\Admin\TRolesQuery.cs" />
+    <Compile Include="Model\Admin\TRoleUpdate.cs" />
+    <Compile Include="Model\Admin\TrptOtcTradeAll.cs" />
+    <Compile Include="Model\Admin\TSafeMangerReq.cs" />
+    <Compile Include="Model\Admin\TTbookBook.cs" />
+    <Compile Include="Model\Admin\TTbookBookUsers.cs" />
+    <Compile Include="Model\Admin\TTbookSystemMessage.cs" />
+    <Compile Include="Model\Admin\TtrdAccBalanceSecu.cs" />
+    <Compile Include="Model\Admin\TUserRequest.cs" />
+    <Compile Include="Model\Admin\TUsersQuery.cs" />
+    <Compile Include="Model\Admin\UserRequest.cs" />
+    <Compile Include="Model\Ans\ANSMonitorInfo.cs" />
+    <Compile Include="Model\Ans\ANSSummary.cs" />
+    <Compile Include="Model\Ans\IgnoreBreakReq.cs" />
+    <Compile Include="Model\Ans\QueryANSDetailReplyPo.cs" />
+    <Compile Include="Model\Ans\QueryANSDetailReq.cs" />
+    <Compile Include="Model\Ans\QueryAnsMonitorReplyPo.cs" />
+    <Compile Include="Model\Ans\QueryANSOutlineReplyPo.cs" />
+    <Compile Include="Model\Ans\QueryANSOutlineReq.cs" />
+    <Compile Include="Model\Base\BrokerAccount.cs" />
+    <Compile Include="Model\Base\BrokerAccountReplyPo.cs" />
+    <Compile Include="Model\Base\BrokerAccountReq.cs" />
+    <Compile Include="Model\Base\SimpleBondsInfoPo.cs" />
+    <Compile Include="Model\Base\TBondValuationPo.cs" />
+    <Compile Include="Model\Base\TBondValuationReplyPo.cs" />
+    <Compile Include="Model\Base\TBondValuationReq.cs" />
+    <Compile Include="Model\Cal\CalCurveReq.cs" />
+    <Compile Include="Model\Cal\CalCurveResult.cs" />
+    <Compile Include="Model\CDH\QmDataInfo.cs" />
+    <Compile Include="Model\Chrome\QuotationEventArgs.cs" />
+    <Compile Include="Model\Common\PriceType.cs" />
+    <Compile Include="Model\Common\ProxyInfo.cs" />
+    <Compile Include="Model\CRM\BrokerInfoPo.cs" />
+    <Compile Include="Model\CRM\BrokerSearchReplyPo.cs" />
+    <Compile Include="Model\CRM\CrmContact.cs" />
+    <Compile Include="Model\CRM\CrmContactReply.cs" />
+    <Compile Include="Model\CRM\CrmInst.cs" />
+    <Compile Include="Model\CRM\CrmInstReply.cs" />
+    <Compile Include="Model\CRM\CRMRequestParamPo.cs" />
+    <Compile Include="Model\CRM\InstitutionComparer.cs" />
+    <Compile Include="Model\CRM\InstTraderInfo.cs" />
+    <Compile Include="Model\CRM\TraderComparer.cs" />
+    <Compile Include="Model\Cust\BrokerMarketDataSnapshot.cs" />
+    <Compile Include="Model\Cust\Info1.cs" />
+    <Compile Include="Model\Cust\QueryCustMdReplyPo.cs" />
+    <Compile Include="Model\Cust\QueryCustMdReq.cs" />
+    <Compile Include="Model\Drp\BrokerAutoConfirmParam.cs" />
+    <Compile Include="Model\Drp\DqInfo1Model.cs" />
+    <Compile Include="Model\Drp\DRPDetail.cs" />
+    <Compile Include="Model\Drp\DRPInfo2Model.cs" />
+    <Compile Include="Model\Drp\DRPListModel.cs" />
+    <Compile Include="Model\Drp\DRPOrderLogModel.cs" />
+    <Compile Include="Model\Drp\DRPQueryOrderLogReq.cs" />
+    <Compile Include="Model\Drp\DRPQueryOrderLogResult.cs" />
+    <Compile Include="Model\Drp\MMBreakAlarmModel.cs" />
+    <Compile Include="Model\Drp\PointPriceDetailModel.cs" />
+    <Compile Include="Model\FinQ\FQDataModel.cs" />
+    <Compile Include="Model\FinQ\GetUserConfigFinqReplyPo.cs" />
+    <Compile Include="Model\FinQ\GetUserConfigFinqRequest.cs" />
+    <Compile Include="Model\FinQ\GoodsVolumeVoModel.cs" />
+    <Compile Include="Model\FinQ\MultiBestQuoteModel.cs" />
+    <Compile Include="Model\FinQ\QbAssistantModel.cs" />
+    <Compile Include="Model\FinQ\SendFQGroupMessageReq.cs" />
+    <Compile Include="Model\FinQ\SendFQMessageReq.cs" />
+    <Compile Include="Model\Gladapter\TtrdOtcPoolReplyPo.cs" />
+    <Compile Include="Model\Hedge\KrdPositionDataModel.cs" />
+    <Compile Include="Model\Hedge\PositionListDataModel.cs" />
+    <Compile Include="Model\Hedge\PositionSimExecModel.cs" />
+    <Compile Include="Model\Hedge\PositionSimExecReq.cs" />
+    <Compile Include="Model\Hedge\PositionSimExecResult.cs" />
+    <Compile Include="Model\Hedge\SimPositionExecordersDataModel.cs" />
+    <Compile Include="Model\Limit\QueryDetailsReply.cs" />
+    <Compile Include="Model\Limit\QueryDetailsReq.cs" />
+    <Compile Include="Model\Limit\QuerySummaryReply.cs" />
+    <Compile Include="Model\Limit\QuerySummaryReq.cs" />
+    <Compile Include="Model\Login\QQAccountReply.cs" />
+    <Compile Include="Model\MMshe\MMsheUnifyGroupPo.cs" />
+    <Compile Include="Model\MM\MMBondParamsSetting.cs" />
+    <Compile Include="Model\MM\MMBondParamsSettingReplyPo.cs" />
+    <Compile Include="Model\MM\QueryMMSecurityidHistReplyPo.cs" />
+    <Compile Include="Model\MM\QueryMMSecurityidHistRequest.cs" />
+    <Compile Include="Model\PP\BatchCheckRiskReplyPo.cs" />
+    <Compile Include="Model\PP\CheckRiskReplyPo.cs" />
+    <Compile Include="Model\Position\ManualProcessingPositionReq.cs" />
+    <Compile Include="Model\Position\PositionManualPo.cs" />
+    <Compile Include="Model\Position\QueryProcessingRecord.cs" />
+    <Compile Include="Model\Position\QueryProcessingRecordHistReq.cs" />
+    <Compile Include="Model\Position\QueryProcessingRecordResult.cs" />
+    <Compile Include="Model\Hedge\RiskExposureCalclateReq.cs" />
+    <Compile Include="Model\Hedge\RiskExposureCalclateResult.cs" />
+    <Compile Include="Model\PP\FundAccountModel.cs" />
+    <Compile Include="Model\PP\QueryFundAccountResult.cs" />
+    <Compile Include="Model\PP\QueryFundAccountReq.cs" />
+    <Compile Include="Model\PP\QueryTradingAccountReq.cs" />
+    <Compile Include="Model\PP\QueryBondPositionReq.cs" />
+    <Compile Include="Model\PP\QueryBondPositionResult.cs" />
+    <Compile Include="Model\PP\QueryPledgePositionReq.cs" />
+    <Compile Include="Model\PP\QueryPledgePositionResult.cs" />
+    <Compile Include="Model\PP\QueryTradingAccountResult.cs" />
+    <Compile Include="Model\PP\StcBondPositionModel.cs" />
+    <Compile Include="Model\PP\StcPledgePositionModel.cs" />
+    <Compile Include="Model\PP\StcTradingAccountModel.cs" />
+    <Compile Include="Model\PP\PPTradeAccountGroups.cs" />
+    <Compile Include="Model\PT\BridgeHisPo.cs" />
+    <Compile Include="Model\PT\BridgeHistReplyPo.cs" />
+    <Compile Include="Model\PT\BridgeHistRequestPo.cs" />
+    <Compile Include="Model\PT\BridgeReserveReviews.cs" />
+    <Compile Include="Model\PT\BridgeReserveState.cs" />
+    <Compile Include="Model\PT\BridgeReviewsReplyPo.cs" />
+    <Compile Include="Model\PT\CheckBridgeRequestPo.cs" />
+    <Compile Include="Model\PT\CloneRequestPo.cs" />
+    <Compile Include="Model\PT\Enums.cs" />
+    <Compile Include="Model\PT\FeeSettingReply.cs" />
+    <Compile Include="Model\PT\FeeSettingRequest.cs" />
+    <Compile Include="Model\PT\GrExecOrderQueryReq.cs" />
+    <Compile Include="Model\PT\GrExecOrders.cs" />
+    <Compile Include="Model\PT\GrExecOrdersReplyPo.cs" />
+    <Compile Include="Model\PT\GrTBookOrderModel.cs" />
+    <Compile Include="Model\PT\GrFeedBackViewModel.cs" />
+    <Compile Include="Model\PT\GrLayoutSettingModel.cs" />
+    <Compile Include="Model\PT\IssueGroup.cs" />
+    <Compile Include="Model\PT\IssueGroupSettingRequest.cs" />
+    <Compile Include="Model\PT\IssueInst.cs" />
+    <Compile Include="Model\PT\IssueInstTrader.cs" />
+    <Compile Include="Model\PT\InstAssociatedReply.cs" />
+    <Compile Include="Model\PT\InstAssociatedRequest.cs" />
+    <Compile Include="Model\PT\OperateIssueInstReply.cs" />
+    <Compile Include="Model\PT\PayFeeReply.cs" />
+    <Compile Include="Model\PT\PayFeeRequest.cs" />
+    <Compile Include="Model\PT\PaymentInstReplyPo.cs" />
+    <Compile Include="Model\PT\PaymentInstRequestPo.cs" />
+    <Compile Include="Model\PT\PopupERCollect.cs" />
+    <Compile Include="Model\PT\PopupERPo.cs" />
+    <Compile Include="Model\PT\PtExecOrderQueryReq.cs" />
+    <Compile Include="Model\PT\PtExecOrderSaveReq.cs" />
+    <Compile Include="Model\PT\PtExecordersReplyPo.cs" />
+    <Compile Include="Model\PT\PtExecSendReplyPo.cs" />
+    <Compile Include="Model\PT\PtExecUpdateReplyPo.cs" />
+    <Compile Include="Model\PT\QueryIssueGroupReply.cs" />
+    <Compile Include="Model\PT\QueryIssueGroupRequest.cs" />
+    <Compile Include="Model\PT\OperateIssueInstRequest.cs" />
+    <Compile Include="Model\PT\RecognizeDealReply.cs" />
+    <Compile Include="Model\PT\RecognizeDealReq.cs" />
+    <Compile Include="Model\PT\SendQQMsgReq.cs" />
+    <Compile Include="Model\PT\SettlRequest.cs" />
+    <Compile Include="Model\PT\SettlResult.cs" />
+    <Compile Include="Model\PT\GrSystemParameter.cs" />
+    <Compile Include="Model\PT\StrongNotifySettingModel.cs" />
+    <Compile Include="Model\PT\SystemPowerReplay.cs" />
+    <Compile Include="Model\PT\SystemPowerRequest.cs" />
+    <Compile Include="Model\PT\TradeInfo.cs" />
+    <Compile Include="Model\PT\UserBridge.cs" />
+    <Compile Include="Model\PT\TbookPtExecorders.cs" />
+    <Compile Include="Model\PT\TbookPtOrders.cs" />
+    <Compile Include="Model\PT\userBridgeChangeReplyPo.cs" />
+    <Compile Include="Model\PT\userBridgeChangeRequestPo.cs" />
+    <Compile Include="Model\PT\GrUserConfigModel.cs" />
+    <Compile Include="Model\PT\UserRoleSettingReply.cs" />
+    <Compile Include="Model\PT\UserRoleSettingRequest.cs" />
+    <Compile Include="Model\PT\ValuationReply.cs" />
+    <Compile Include="Model\PT\ValuationRequest.cs" />
+    <Compile Include="Model\QQ\IMConfigPO.cs" />
+    <Compile Include="Model\QQ\QQUserConfigPo.cs" />
+    <Compile Include="Model\FinQ\SendDesktopFinQReq.cs" />
+    <Compile Include="Model\QQ\SendFinQFriendReq.cs" />
+    <Compile Include="Model\QTR\QtrOrder.cs" />
+    <Compile Include="Model\QTR\QtrQuote.cs" />
+    <Compile Include="Model\QTR\QtrTrade.cs" />
+    <Compile Include="Model\Quant\ParaOptionalValues.cs" />
+    <Compile Include="Model\Quant\QuantParameter.cs" />
+    <Compile Include="Model\Quant\SubParam.cs" />
+    <Compile Include="Model\Quant\TTbookQuantParameterReplyAlter.cs" />
+    <Compile Include="Model\Quant\TTbookQuantParameterRequest.cs" />
+    <Compile Include="Model\Risk\BatchCheckRiskReplyPo.cs" />
+    <Compile Include="Model\Table\BrokerQuoteRecord.cs" />
+    <Compile Include="Model\Table\BrokerQuoteRecordReply.cs" />
+    <Compile Include="Model\Table\BrokerReq.cs" />
+    <Compile Include="Model\Table\BrokerWhiteList.cs" />
+    <Compile Include="Model\Table\BrokerWhiteListReplyPo.cs" />
+    <Compile Include="Model\Table\BrokerWhiteReplyPo.cs" />
+    <Compile Include="Model\Table\IntentionInquiryPo.cs" />
+    <Compile Include="Model\Table\IntentionInquiryRequest.cs" />
+    <Compile Include="Model\Table\LastWorkDayUnRefMsgModel.cs" />
+    <Compile Include="Model\Table\TableIntentionInquiry.cs" />
+    <Compile Include="Model\Table\UpdateUnrefParamReq.cs" />
+    <Compile Include="Model\Table\QueryUnrefParamReq.cs" />
+    <Compile Include="Model\Table\QueryUnrefParamReplyPo.cs" />
+    <Compile Include="Model\Table\QueryHistoryIntentionOrderReplyPo.cs" />
+    <Compile Include="Model\Table\UnRefHistoryIntentionOrderReq.cs" />
+    <Compile Include="Model\Table\QueryHistoryIntentionOrderReq.cs" />
+    <Compile Include="Model\Table\QueryQuoteTagGroupReplyPo.cs" />
+    <Compile Include="Model\Table\QueryQuoteTagGroupRequest.cs" />
+    <Compile Include="Model\Table\QueryQuoteTagReplyPo.cs" />
+    <Compile Include="Model\Table\QueryTagsCountReplyPo.cs" />
+    <Compile Include="Model\Table\QueryTagsCountRequest.cs" />
+    <Compile Include="Model\Table\QueryTagsLoadReplyPo.cs" />
+    <Compile Include="Model\Table\QueryTagsLoadRequest.cs" />
+    <Compile Include="Model\Table\VirtualPoModel.cs" />
+    <Compile Include="Model\Table\RecognizeVirtualPoModelReplyPo.cs" />
+    <Compile Include="Model\Table\WorkBrench\BatchPublishIntentionQuoteReq.cs" />
+    <Compile Include="Model\Table\WorkBrench\InsertIntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\WorkBrench\IntentionExecutionAssociateReplyPo.cs" />
+    <Compile Include="Model\Table\WorkBrench\IntentionExecutionAssociateReq.cs" />
+    <Compile Include="Model\Table\WorkBrench\TableIntentionExecution.cs" />
+    <Compile Include="Skin.cs" />
+    <Compile Include="Utils\BondGroupHandler.cs" />
+    <Compile Include="Utils\MenuDropAlignmentHelper.cs" />
+    <Compile Include="Utils\ConstantsBDB.cs" />
+    <Compile Include="Utils\ConstCode.cs" />
+    <Compile Include="Utils\DataGridUtil.cs" />
+    <Compile Include="Utils\Dps\DpsUtil.cs" />
+    <Compile Include="Utils\FQHelper.cs" />
+    <Compile Include="Utils\ImageHelper.cs" />
+    <Compile Include="Utils\MachineHelper.cs" />
+    <Compile Include="Utils\MathEx.cs" />
+    <Compile Include="Utils\ProxyInfo.cs" />
+    <Compile Include="Utils\ProxyUtils.cs" />
+    <Compile Include="Utils\Proxy\IniFileReader.cs" />
+    <Compile Include="Utils\Proxy\ProxyUtils.cs" />
+    <Compile Include="Utils\QBShowBondUtil.cs" />
+    <Compile Include="Utils\ResulfApiHelper.cs" />
+    <Compile Include="Utils\SignParser.cs" />
+    <Compile Include="Utils\SqlLite\BondsInfoSqliteManager.cs" />
+    <Compile Include="Utils\SqlLite\TagsSqliteManager.cs" />
+    <Compile Include="Utils\SqlLite\UserConfigPo.cs" />
+    <Compile Include="Utils\STCConstants.cs" />
+    <Compile Include="Utils\STCHelper.cs" />
+    <Compile Include="Utils\TopicUtil.cs" />
+    <Compile Include="Utils\Win32Helper.cs" />
+    <Compile Include="Utils\WriteDBLogHelper.cs" />
+    <Compile Include="ViewModel\Component\AddSubscriptionGroupViewModel.cs" />
+    <Compile Include="ViewModel\Component\EditGroupWindowViewModel.cs" />
+    <Compile Include="ViewModel\Data\FilterGroupItem.cs" />
+    <Compile Include="ViewModel\Drp\Component\Broker\FeedBackAUIViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\Broker\IntentionBUIViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\Broker\IntentionUIViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\Broker\OrderMatchFailedUIViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\Broker\UnconfirmDetailViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\Broker\UnderlineExecTpicUIViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\ConfirmRef_BuyTrader_ViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\DRPOrderLogViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\MMAgencyMsgViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Component\OrderComfirmViewModel.cs" />
+    <Compile Include="ViewModel\Drp\DirectionalReturnPriceViewModel.cs" />
+    <Compile Include="ViewModel\Drp\DRPNotificationViewModel.cs" />
+    <Compile Include="ViewModel\Drp\LastWorkDayUnRefViewModel.cs" />
+    <Compile Include="ViewModel\Drp\MMBreakAlarmReminderViewModel.cs" />
+    <Compile Include="ViewModel\Drp\NofirmPointPriceViewModel.cs" />
+    <Compile Include="ViewModel\Drp\Utils\DRPTools.cs" />
+    <Compile Include="Model\Drp\DRPValue.cs" />
+    <Compile Include="Model\GW\SignalData.cs" />
+    <Compile Include="Model\GW\SignalMsgPo.cs" />
+    <Compile Include="Model\MDHist\kLineData.cs" />
+    <Compile Include="Model\MDHist\KLineSearchParam.cs" />
+    <Compile Include="Model\MDHist\MDHistDReq.cs" />
+    <Compile Include="Model\MDHist\MDHistDReply.cs" />
+    <Compile Include="Model\MDHist\TKLineReply.cs" />
+    <Compile Include="Model\MMshe\MMshe.cs" />
+    <Compile Include="Model\MMshe\MMsheCancelWidenSettingReq.cs" />
+    <Compile Include="Model\MMshe\MMsheCheckSecurityUserReplyPo.cs" />
+    <Compile Include="Model\MMshe\MMsheCheckSecurityUserReq.cs" />
+    <Compile Include="Model\MMshe\MMsheFilterQuoteReq.cs" />
+    <Compile Include="Model\MMshe\MMsheGroupReplyPo.cs" />
+    <Compile Include="Model\MMshe\MMsheGroupReq.cs" />
+    <Compile Include="Model\MMshe\MMsheOrderParamReq.cs" />
+    <Compile Include="Model\MMshe\MMsheQuerySecurityCirulSizeReplyPo.cs" />
+    <Compile Include="Model\MMshe\MMsheQueryWidenSettingReplyPo.cs" />
+    <Compile Include="Model\MMshe\MMsheReq.cs" />
+    <Compile Include="Model\MMshe\MMsheSysStatus.cs" />
+    <Compile Include="Model\MMshe\MMsheUpdateAllEnableReq.cs" />
+    <Compile Include="Model\MMshe\MMsheUpdateEnableReq.cs" />
+    <Compile Include="Model\MMshe\MMsheUpdateWidenSettingReq.cs" />
+    <Compile Include="Model\MMshe\NewSettingMsg.cs" />
+    <Compile Include="Model\MMshe\RiskQtyBySecurityReplyPo.cs" />
+    <Compile Include="Model\MMshe\MMsheUserSetting.cs" />
+    <Compile Include="Model\MMshe\UserSettingReplyPo.cs" />
+    <Compile Include="Model\MM\DealCloseEnableReply.cs" />
+    <Compile Include="Model\MM\DealCloseGroupObj.cs" />
+    <Compile Include="Model\MM\NewSettingMsg.cs" />
+    <Compile Include="Model\MM\MMFilterQuoteReq.cs" />
+    <Compile Include="Model\Monitor\LastZookeeperResult.cs" />
+    <Compile Include="Model\Monitor\MonitorInfoReq.cs" />
+    <Compile Include="Model\Monitor\MonitorInfoModel.cs" />
+    <Compile Include="Model\Monitor\MonitorInfoDetailResult.cs" />
+    <Compile Include="Model\Monitor\MonitorInfoResult.cs" />
+    <Compile Include="Model\OHLC\OhlcPo.cs" />
+    <Compile Include="Model\OrderTimeModel.cs" />
+    <Compile Include="Model\BaseViewModel.cs" />
+    <Compile Include="Model\Base\BondsInfoPo.cs" />
+    <Compile Include="Model\Base\BondsSearchReplyPo.cs" />
+    <Compile Include="Model\Base\BondsSearchRequestPo.cs" />
+    <Compile Include="Model\Base\ClearPo.cs" />
+    <Compile Include="Model\Base\InstInfoPo.cs" />
+    <Compile Include="Model\Base\InstSearchParamPo.cs" />
+    <Compile Include="Model\Base\InstSearchReplyPo.cs" />
+    <Compile Include="Model\Base\PartydealerReq.cs" />
+    <Compile Include="Model\Base\TPartydealerInfo.cs" />
+    <Compile Include="Model\BookManagement\BlockDeleteReq.cs" />
+    <Compile Include="Model\BookManagement\BlockNumQueryPo.cs" />
+    <Compile Include="Model\BookManagement\BlockNumQueryReq.cs" />
+    <Compile Include="Model\BookManagement\BlockQueryReplyPo.cs" />
+    <Compile Include="Model\BookManagement\BlockQueryReq.cs" />
+    <Compile Include="Model\BookManagement\BlockReSendReq.cs" />
+    <Compile Include="Model\BookManagement\SorExecAckQueryParas.cs" />
+    <Compile Include="Model\Cal\CalReq.cs" />
+    <Compile Include="Model\Cal\CalResult.cs" />
+    <Compile Include="Model\Cal\CalWeekDateReq.cs" />
+    <Compile Include="Model\Cal\CalWeekDateResult.cs" />
+    <Compile Include="Model\Cfg\IsDcsBrokerCfgContainer.cs" />
+    <Compile Include="Model\Cfg\IsDcsBrokerCfgSection.cs" />
+    <Compile Include="Model\Cfg\IsDcsBrokerSection.cs" />
+    <Compile Include="Model\Cfg\ServerCfgContainer.cs" />
+    <Compile Include="Model\Cfg\ServerCfgSection.cs" />
+    <Compile Include="Model\Cfg\ServerSection.cs" />
+    <Compile Include="Model\Cfg\ServerStatusCfgContainer.cs" />
+    <Compile Include="Model\Cfg\ServerStatusCfgSection.cs" />
+    <Compile Include="Model\Cfg\ServerStatusSection.cs" />
+    <Compile Include="Model\Chart\ChartModel.cs" />
+    <Compile Include="Model\Chart\MarketKLine.cs" />
+    <Compile Include="Model\CRM\DataGridDataPo.cs" />
+    <Compile Include="Model\DisplayModel.cs" />
+    <Compile Include="Model\EMS\MarketCount.cs" />
+    <Compile Include="Model\EMS\UpdateOrderReq.cs" />
+    <Compile Include="Model\Execute\ExecuteConfirmRequest.cs" />
+    <Compile Include="Model\Execute\ExecuteOrder.cs" />
+    <Compile Include="Model\Execute\ExecuteOrderCondition.cs" />
+    <Compile Include="Model\Execute\HistoryExecuteOrderCondition.cs" />
+    <Compile Include="Model\Execute\UpdateRemarkRequest.cs" />
+    <Compile Include="Model\Execute\ExeOrderSearchResp.cs" />
+    <Compile Include="Model\Export\ExportPo.cs" />
+    <Compile Include="Model\FrameAdapter.cs" />
+    <Compile Include="Model\IApplication.cs" />
+    <Compile Include="Model\IForm.cs" />
+    <Compile Include="Model\Inner\InnerOrderReq.cs" />
+    <Compile Include="Model\IPlugin.cs" />
+    <Compile Include="Model\IPluginManager.cs" />
+    <Compile Include="Model\ISetting.cs" />
+    <Compile Include="Model\MenuPo.cs" />
+    <Compile Include="Model\MM\MMCancelWidenSettingReq.cs" />
+    <Compile Include="Model\MM\MMCheckSecurityUserReplyPo.cs" />
+    <Compile Include="Model\MM\MMCheckSecurityUserReq.cs" />
+    <Compile Include="Model\MM\MMGroupReplyPo.cs" />
+    <Compile Include="Model\MM\MMGroupReq.cs" />
+    <Compile Include="Model\MM\MM.cs" />
+    <Compile Include="Model\MM\MMOrderParamReq.cs" />
+    <Compile Include="Model\MM\MMQuerySecurityCirulSizeReplyPo.cs" />
+    <Compile Include="Model\MM\MMQueryWidenSettingReplyPo.cs" />
+    <Compile Include="Model\MM\MMReq.cs" />
+    <Compile Include="Model\MM\MMSysStatus.cs" />
+    <Compile Include="Model\MM\MMUpdateAllEnableReq.cs" />
+    <Compile Include="Model\MM\MMUpdateEnableReq.cs" />
+    <Compile Include="Model\MM\MMUpdateWidenSettingReq.cs" />
+    <Compile Include="Model\MM\RiskQtyBySecurityReplyPo.cs" />
+    <Compile Include="Model\MM\UserSetting.cs" />
+    <Compile Include="Model\MM\UserSettingReplyPo.cs" />
+    <Compile Include="Model\ODM\MdSecurityIdReq.cs" />
+    <Compile Include="Model\ODM\MdSecurityidsReplyPo.cs" />
+    <Compile Include="Model\ODM\StcTbookMdSecurityids.cs" />
+    <Compile Include="Model\Fix\BaseMessage.cs" />
+    <Compile Include="Model\Fix\Component\StandardHeader.cs" />
+    <Compile Include="Model\Fix\Component\StandardTrailer.cs" />
+    <Compile Include="Model\Fix\DataTypeConverter.cs" />
+    <Compile Include="Model\Fix\FixMessage.cs" />
+    <Compile Include="Model\Fix\MessageDictionary.cs" />
+    <Compile Include="Model\Fix\Message\ExecutionAcknowledgement.cs" />
+    <Compile Include="Model\Fix\Message\ExecutionReport.cs" />
+    <Compile Include="Model\Fix\Message\LoginResult.cs" />
+    <Compile Include="Model\Fix\Message\MarketDataRequest.cs" />
+    <Compile Include="Model\Fix\Message\MarketDataRequestReject.cs" />
+    <Compile Include="Model\Fix\Message\MarketDataSnapshotFullRefresh.cs" />
+    <Compile Include="Model\Fix\Message\NewOrderSingle.cs" />
+    <Compile Include="Model\Fix\Message\OrderCancelReject.cs" />
+    <Compile Include="Model\Fix\Message\OrderCancelRequest.cs" />
+    <Compile Include="Model\Fix\Message\PResult.cs" />
+    <Compile Include="Model\Fix\Message\SessionStatus.cs" />
+    <Compile Include="Model\BaseReplyPo.cs" />
+    <Compile Include="Model\OHLC\OhlcCount.cs" />
+    <Compile Include="Model\PluginBroadcast.cs" />
+    <Compile Include="Model\PluginManager.cs" />
+    <Compile Include="Model\PluginUtils.cs" />
+    <Compile Include="Model\Position\ExecutionReportReq.cs" />
+    <Compile Include="Model\Position\QueryPositionReq.cs" />
+    <Compile Include="Model\Position\QueryPositionResult.cs" />
+    <Compile Include="Model\Position\TradeStatisticsModel.cs" />
+    <Compile Include="Model\Position\PositionDetailModel.cs" />
+    <Compile Include="Model\Position\PostionBookModel.cs" />
+    <Compile Include="Model\Position\QueryExternalReq.cs" />
+    <Compile Include="Model\Position\QueryExternalResult.cs" />
+    <Compile Include="Model\Position\QueryExternalResultData.cs" />
+    <Compile Include="Model\Position\QueryPositionBookReq.cs" />
+    <Compile Include="Model\Position\QueryPositionBookResult.cs" />
+    <Compile Include="Model\Position\QueryPositionMvtReq.cs" />
+    <Compile Include="Model\Position\QureyHistoryDetailResult.cs" />
+    <Compile Include="Model\Position\UpdatePositionReq.cs" />
+    <Compile Include="Model\Quant\TbookQuantIndicator.cs" />
+    <Compile Include="Model\Quant\TbookQuantIndicatorReplyPo.cs" />
+    <Compile Include="Model\Quant\TbookQuantIndicatorReq.cs" />
+    <Compile Include="Model\Quant\TbookQuantTemplet.cs" />
+    <Compile Include="Model\Quant\QuantGroupReq.cs" />
+    <Compile Include="Model\Quant\QuantLogSelReq.cs" />
+    <Compile Include="Model\Quant\QuantParameterReq.cs" />
+    <Compile Include="Model\Quant\QuantStrategyReq.cs" />
+    <Compile Include="Model\Quant\TbookQuantTempletReplyPo.cs" />
+    <Compile Include="Model\Quant\TTbookQuantLog.cs" />
+    <Compile Include="Model\Quant\TbookQuantLogReplyPo.cs" />
+    <Compile Include="Model\Quant\TbookQuantGroupsReplyPo.cs" />
+    <Compile Include="Model\Quant\TTbookQuantGroups.cs" />
+    <Compile Include="Model\Quant\TTbookQuantParameter.cs" />
+    <Compile Include="Model\Quant\TTbookQuantParameterReplyPo.cs" />
+    <Compile Include="Model\Quant\TTbookQuantStrategys.cs" />
+    <Compile Include="Model\Quant\TTbookQuantStrategysReplyPo.cs" />
+    <Compile Include="Model\RFQ\RfqstgActStrategyReq.cs" />
+    <Compile Include="Model\RFQ\RfqUpdateEnableReq.cs" />
+    <Compile Include="Model\RFQ\RfqstgViewReq.cs" />
+    <Compile Include="Model\RFQ\RfqstgActReq.cs" />
+    <Compile Include="Model\RFQ\RfqstgViewModel.cs" />
+    <Compile Include="Model\RFQ\RfqStgActModelReq.cs" />
+    <Compile Include="Model\RFQ\RfqstgViewResult.cs" />
+    <Compile Include="Model\RFQ\RfqGroupReq.cs" />
+    <Compile Include="Model\RFQ\RfqGroupReplyPo.cs" />
+    <Compile Include="Model\RFQ\QueryRfqOrderReq.cs" />
+    <Compile Include="Model\RFQ\QueryRfqOrderResult.cs" />
+    <Compile Include="Model\RFQ\RfqNewOrderReq.cs" />
+    <Compile Include="Model\RFQ\RfqChangeAcceptOrderReq.cs" />
+    <Compile Include="Model\Risk\AppointRiskParameter.cs" />
+    <Compile Include="Model\Risk\DefaultRiskParameter.cs" />
+    <Compile Include="Model\Risk\PartyPositionRiskParameter.cs" />
+    <Compile Include="Model\Risk\QueryRisFilterReq.cs" />
+    <Compile Include="Model\Risk\QueryRiskParameter.cs" />
+    <Compile Include="Model\Risk\RisBlackModel.cs" />
+    <Compile Include="Model\Risk\RisBlackResult.cs" />
+    <Compile Include="Model\Risk\RiskHistoryReplyPo.cs" />
+    <Compile Include="Model\Risk\RiskHistoryReq.cs" />
+    <Compile Include="Model\Risk\RiskIndicator.cs" />
+    <Compile Include="Model\Risk\RiskParaReplyPo.cs" />
+    <Compile Include="Model\Risk\SetRisFilterReq.cs" />
+    <Compile Include="Model\Risk\RiskParaReq.cs" />
+    <Compile Include="Model\RunTimeConfig.cs" />
+    <Compile Include="Model\Table\ConfirmIntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\ConfirmIntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\DeleteIntentionQuoteReq.cs" />
+    <Compile Include="Model\Table\InsertIntentionQuoteReq.cs" />
+    <Compile Include="Model\Table\IntentionExecInfo.cs" />
+    <Compile Include="Model\Table\IntentionOrderInfo.cs" />
+    <Compile Include="Model\Table\IntentionExecReplyPo.cs" />
+    <Compile Include="Model\Table\IntentionExecRequest.cs" />
+    <Compile Include="Model\Table\IntentionQuoteInfo.cs" />
+    <Compile Include="Model\Table\IntentionOrderReplyPo.cs" />
+    <Compile Include="Model\Table\IntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\IntentionOrderRequest.cs" />
+    <Compile Include="Model\Table\IntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\QueryEmsOrderReplyPo.cs" />
+    <Compile Include="Model\Table\QueryEmsOrderReq.cs" />
+    <Compile Include="Model\Table\QueryRolesReplyPo.cs" />
+    <Compile Include="Model\Table\RecognizeIntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\RecognizeIntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\RelateIntentionReq.cs" />
+    <Compile Include="Model\Table\UpdateIntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\WorkBrench\ConfirmIntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\WorkBrench\ConfirmIntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\WorkBrench\DeleteIntentionQuoteReq.cs" />
+    <Compile Include="Model\Table\WorkBrench\InsertIntentionQuoteReq.cs" />
+    <Compile Include="Model\Table\WorkBrench\IntentionQuoteInfo.cs" />
+    <Compile Include="Model\Table\WorkBrench\IntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\WorkBrench\IntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\WorkBrench\RecognizeIntentionQuoteReplyPo.cs" />
+    <Compile Include="Model\Table\WorkBrench\RecognizeIntentionQuoteRequest.cs" />
+    <Compile Include="Model\Table\WorkBrench\UpdateIntentionQuoteRequest.cs" />
+    <Compile Include="Model\TBook\Bond.cs" />
+    <Compile Include="Model\TBook\BondOperationPo.cs" />
+    <Compile Include="Model\TBook\DepthEntry.cs" />
+    <Compile Include="Model\TBook\OrderMassCancelRequest.cs" />
+    <Compile Include="Model\TBook\PriceCondition.cs" />
+    <Compile Include="Model\TBook\QueryOrderReq.cs" />
+    <Compile Include="Model\TBook\OrderCancelRequest.cs" />
+    <Compile Include="Model\TBook\TBondOrder.cs" />
+    <Compile Include="Model\TBook\OrderMassCancelReplyPo.cs" />
+    <Compile Include="Model\TBook\TBookCancelReplyPo.cs" />
+    <Compile Include="Model\TBook\TBookOrder.cs" />
+    <Compile Include="Model\TBook\TPlaceOrderResult.cs" />
+    <Compile Include="Model\TBook\UserSetting.cs" />
+    <Compile Include="Model\TBook\UserVenue.cs" />
+    <Compile Include="Model\TBook\Venue.cs" />
+    <Compile Include="Model\TBook\XBondReplyPo.cs" />
+    <Compile Include="Model\Chrome\ChromeWinModel.cs" />
+    <Compile Include="ViewModel\Data\AccountUserItem.cs" />
+    <Compile Include="ViewModel\MyTrading\BatchIntentionWarnViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\BuySellPopupViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\IntentionQuoteItem.cs" />
+    <Compile Include="ViewModel\Order\DRPParamInfoModel.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\InnerPlaceOrderAdapter.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\InnerPriceViewAdapter.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\NoteData.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\RequireParseViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\SendIRSViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\SendRequireViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\TagData.cs" />
+    <Compile Include="ViewModel\Order\InnerPanel\TagViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\DetailConditionViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\QtyViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\SniperViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\CancelOrderTimeConditionViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\TagConditionViewModel.cs" />
+    <Compile Include="ViewModel\Order\SendPointPriceModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\ConditionCancelViewModel.cs" />
+    <Compile Include="ViewModel\Order\SendPointPriceModel_PA.cs" />
+    <Compile Include="ViewModel\Order\SendPriceCommodityViewModelLite.cs" />
+    <Compile Include="ViewModel\Order\SendPriceCommodityClickViewModelLite.cs" />
+    <Compile Include="ViewModel\Order\InnerView\CrossViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\IceViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\OCOViewModel.cs" />
+    <Compile Include="ViewModel\Order\InnerView\StopProfitLossViewModel.cs" />
+    <Compile Include="ViewModel\Order\PermisionHelper.cs" />
+    <Compile Include="ViewModel\Order\SendPriceViewDomain.cs" />
+    <Compile Include="ViewModel\Order\SendPriceViewModel.cs" />
+    <Compile Include="ViewModel\Order\SendPriceViewModelLite.cs" />
+    <Compile Include="ViewModel\Card\PriceAndOrderViewModel.cs" />
+    <Compile Include="ViewModel\Setting\InnerSettingViewModel.cs" />
+    <Compile Include="ViewModel\TradeBookHandler\TBookViewHandler.cs" />
+    <Compile Include="ViewModel\UI\MsgAlertDataModel.cs" />
+    <Compile Include="ViewModel\UI\MsgAlertModel.cs" />
+    <Compile Include="ViewModel\WorkTable\InquiryInfo3.cs" />
+    <Compile Include="View\Card\PriceAndOrderViewMmshe.xaml.cs">
+      <DependentUpon>PriceAndOrderViewMmshe.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\AddGroupWindow.xaml.cs">
+      <DependentUpon>AddGroupWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\AddSubscriptionGroupWindow.xaml.cs">
+      <DependentUpon>AddSubscriptionGroupWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\BookHierarchicalComboBox.xaml.cs">
+      <DependentUpon>BookHierarchicalComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\CustomFilterPanel.xaml.cs">
+      <DependentUpon>CustomFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\EditGroupWindow.xaml.cs">
+      <DependentUpon>EditGroupWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\FilterOptions.xaml.cs">
+      <DependentUpon>FilterOptions.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\IssueRecogizationWin.xaml.cs">
+      <DependentUpon>IssueRecogizationWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\MultiSelectTreeViewControl.xaml.cs">
+      <DependentUpon>MultiSelectTreeViewControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\MultiTreeComboBox.xaml.cs">
+      <DependentUpon>MultiTreeComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\QBPrompt3Seconds.xaml.cs">
+      <DependentUpon>QBPrompt3Seconds.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\SecurityFilterPanel.xaml.cs">
+      <DependentUpon>SecurityFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\SettleTypeSelector.xaml.cs">
+      <DependentUpon>SettleTypeSelector.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\TagComboBox.xaml.cs">
+      <DependentUpon>TagComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\TreeComboBox.xaml.cs">
+      <DependentUpon>TreeComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\TreeNodeModel.cs" />
+    <Compile Include="View\Drp\Component\Broker\AmountUI.xaml.cs">
+      <DependentUpon>AmountUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\BrokerMessageBoxGUI.xaml.cs">
+      <DependentUpon>BrokerMessageBoxGUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\FeedBackAUI.xaml.cs">
+      <DependentUpon>FeedBackAUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\IntentionBUI.xaml.cs">
+      <DependentUpon>IntentionBUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\IntentionUI.xaml.cs">
+      <DependentUpon>IntentionUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\OrderMatchFailedUI.xaml.cs">
+      <DependentUpon>OrderMatchFailedUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\TransactionFlowGUI.xaml.cs">
+      <DependentUpon>TransactionFlowGUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\UnderlineExecTpicUI.xaml.cs">
+      <DependentUpon>UnderlineExecTpicUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\Broker\UnMatchReasonUI.xaml.cs">
+      <DependentUpon>UnMatchReasonUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\ConfirmRef_BuyTrader.xaml.cs">
+      <DependentUpon>ConfirmRef_BuyTrader.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\OrderComfirmView.xaml.cs">
+      <DependentUpon>OrderComfirmView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\BatchIntentionWarnView.xaml.cs">
+      <DependentUpon>BatchIntentionWarnView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPointPriceView_PA.xaml.cs">
+      <DependentUpon>SendPointPriceView_PA.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\PlainView.cs" />
+    <Compile Include="View\PopupWindow.xaml.cs">
+      <DependentUpon>PopupWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\FQ\FQSendWindow.xaml.cs">
+      <DependentUpon>FQSendWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Setting\InnerSettingView.xaml.cs">
+      <DependentUpon>InnerSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\StrongNotify\IStrongNotifyInterface.cs" />
+    <Compile Include="View\StrongNotify\PanleDragDropAdorner.cs" />
+    <Compile Include="View\StrongNotify\RightToLeftBottomToTopPanel.cs" />
+    <Compile Include="View\StrongNotify\StrongNoBorderWin.xaml.cs">
+      <DependentUpon>StrongNoBorderWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\StrongNotify\StrongNotifyHandler.cs" />
+    <Compile Include="View\StrongNotify\StrongNotifyMainWindow.xaml.cs">
+      <DependentUpon>StrongNotifyMainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\StrongNotify\StrongNotifyManager.cs" />
+    <Compile Include="View\StrongNotify\TestMessageControl.xaml.cs">
+      <DependentUpon>TestMessageControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\BalloonWindow.xaml.cs">
+      <DependentUpon>BalloonWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\QBAssistantWin.xaml.cs">
+      <DependentUpon>QBAssistantWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\BdbBorderWin.xaml.cs">
+      <DependentUpon>BdbBorderWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\ClientSettingView.xaml.cs">
+      <DependentUpon>ClientSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\LoadingWaiting.xaml.cs">
+      <DependentUpon>LoadingWaiting.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\MessageBoxGUI2.xaml.cs">
+      <DependentUpon>MessageBoxGUI2.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\CloneMessageBoxGUI.xaml.cs">
+      <DependentUpon>CloneMessageBoxGUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\MsgAlertSettingSelector.cs" />
+    <Compile Include="ViewModel\UI\MsgAlertSettingViewModel.cs" />
+    <Compile Include="ViewModel\WorkTable\AssignVenuesWindowViewModel.cs" />
+    <Compile Include="ViewModel\WorkTable\RandomBtnModel.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\AppUtils.cs" />
+    <Compile Include="Utils\AsyncThreadQueue.cs" />
+    <Compile Include="Utils\BaseMachineHelper.cs" />
+    <Compile Include="Utils\ClipboardHelper.cs" />
+    <Compile Include="Utils\ComboSourceUtil.cs" />
+    <Compile Include="Utils\CommonConstants.cs" />
+    <Compile Include="Utils\CommonMapUtil.cs" />
+    <Compile Include="Utils\CommonUtils.cs" />
+    <Compile Include="Utils\Consts.cs" />
+    <Compile Include="Data\DataProcesser\EmsOrderProcesser.cs" />
+    <Compile Include="Data\DataProcesser\LastExecutionProcesser.cs" />
+    <Compile Include="Utils\CustomCollectionView.cs" />
+    <Compile Include="Utils\DataTimeSequence.cs" />
+    <Compile Include="Utils\DateTimeEx.cs" />
+    <Compile Include="Utils\DelegateHelper.cs" />
+    <Compile Include="Utils\EncrypterHelper.cs" />
+    <Compile Include="Utils\Events\EventHub.cs" />
+    <Compile Include="Utils\Events\EventType.cs" />
+    <Compile Include="Utils\ExtensionHelper.cs" />
+    <Compile Include="Utils\FileHelper.cs" />
+    <Compile Include="Utils\HomePageDataHandler.cs" />
+    <Compile Include="Utils\HotKey\EHotKeySetting.cs" />
+    <Compile Include="Utils\HotKey\EKey.cs" />
+    <Compile Include="Utils\HotKey\HotKeyHelper.cs" />
+    <Compile Include="Utils\HotKey\HotKeyManager.cs" />
+    <Compile Include="Utils\HotKey\HotKeyModel.cs" />
+    <Compile Include="Utils\IComboSourceUtil.cs" />
+    <Compile Include="Utils\IniFileHelper.cs" />
+    <Compile Include="Utils\JsonSplit.cs" />
+    <Compile Include="Utils\ListBoxItemData.cs" />
+    <Compile Include="Utils\LoadConfig.cs" />
+    <Compile Include="Model\Login\LoginResult.cs" />
+    <Compile Include="Model\Login\RSACertContent.cs" />
+    <Compile Include="Utils\EngineHelper.cs" />
+    <Compile Include="Utils\LocalEnv.cs" />
+    <Compile Include="Utils\LogHandler.cs" />
+    <Compile Include="Utils\PermissionConsts.cs" />
+    <Compile Include="Utils\PriceHandler.cs" />
+    <Compile Include="Utils\ComRelayCommand.cs" />
+    <Compile Include="Utils\ProcessSync.cs" />
+    <Compile Include="Utils\ProcessWatcher.cs" />
+    <Compile Include="Utils\ReflectionHelper.cs" />
+    <Compile Include="Utils\TabPageHelper.cs" />
+    <Compile Include="Utils\ThreadPoolHelper.cs" />
+    <Compile Include="Utils\ComThreadQueue.cs" />
+    <Compile Include="Utils\ComWindowKeyHelper.cs" />
+    <Compile Include="Utils\ThreadQueue.cs" />
+    <Compile Include="Utils\TimeUtils.cs" />
+    <Compile Include="Utils\WindowManager.cs" />
+    <Compile Include="Utils\SharpZip.cs" />
+    <Compile Include="ViewModel\Adapter\SendPriceModelAdapter.cs" />
+    <Compile Include="ViewModel\Card\PriceModel.cs" />
+    <Compile Include="ViewModel\CTPriceControler.cs" />
+    <Compile Include="ViewModel\Data\BestPrice.cs" />
+    <Compile Include="ViewModel\Data\MarketExecutionsItem.cs" />
+    <Compile Include="ViewModel\Data\PriceMatchParam.cs" />
+    <Compile Include="ViewModel\Data\QuotationCloneRowData.cs" />
+    <Compile Include="ViewModel\Data\SendPriceItem.cs" />
+    <Compile Include="ViewModel\LastExecutionViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\BatchResultWindowViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\BatchWarnViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\CrossQtyPopupViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\MyExesViewModel.cs" />
+    <Compile Include="ViewModel\MyTrading\MyOrdersViewModel.cs" />
+    <Compile Include="ViewModel\Order\RiskViewUIViewModel.cs" />
+    <Compile Include="ViewModel\Order\SendPriceFutureClickViewModelLite.cs" />
+    <Compile Include="ViewModel\Order\SendPriceFutureViewModelLite.cs" />
+    <Compile Include="ViewModel\Order\SendPriceWarnViewModel.cs" />
+    <Compile Include="Utils\ComPermissionHandler.cs" />
+    <Compile Include="ViewModel\PriceCalHelper.cs" />
+    <Compile Include="ViewModel\QuotationListViewModel.cs" />
+    <Compile Include="ViewModel\TradeBookHandler\QuickOrderHandler.cs" />
+    <Compile Include="ViewModel\UI\WhiteSecuritySettingViewModel.cs" />
+    <Compile Include="ViewModel\ViewModelBase.cs" />
+    <Compile Include="View\BindingProxy.cs" />
+    <Compile Include="View\Card\MarketCardOrderView.xaml.cs">
+      <DependentUpon>MarketCardOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Card\PriceAndOrderViewMm.xaml.cs">
+      <DependentUpon>PriceAndOrderViewMm.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Card\PriceAndOrderView.xaml.cs">
+      <DependentUpon>PriceAndOrderView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Card\PriceAndOrderViewSHE.xaml.cs">
+      <DependentUpon>PriceAndOrderViewSHE.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Card\PriceAndOrderViewQDMESP.xaml.cs">
+      <DependentUpon>PriceAndOrderViewQDMESP.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\AlertSign.xaml.cs">
+      <DependentUpon>AlertSign.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\AutoCompleteComboBox.xaml.cs">
+      <DependentUpon>AutoCompleteComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\BpNumericUpDown.xaml.cs">
+      <DependentUpon>BpNumericUpDown.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\CustomExecDataGrid.cs" />
+    <Compile Include="View\Component\CustomMessageBox.xaml.cs">
+      <DependentUpon>CustomMessageBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\CustomTermControl.xaml.cs">
+      <DependentUpon>CustomTermControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\DescriptionCtrl.xaml.cs">
+      <DependentUpon>DescriptionCtrl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\ExDataGrid.cs" />
+    <Compile Include="View\Component\HierarchicalComboBox.xaml.cs">
+      <DependentUpon>HierarchicalComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\HoverButton.cs" />
+    <Compile Include="View\Component\MultiAutoCompleteComboBox.xaml.cs">
+      <DependentUpon>MultiAutoCompleteComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\MultiSelectComboBox.xaml.cs">
+      <DependentUpon>MultiSelectComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\DrpNumericUpDown.xaml.cs">
+      <DependentUpon>DrpNumericUpDown.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\HierarchicalTreeItemModel.cs" />
+    <Compile Include="View\Component\RowCountBar.xaml.cs">
+      <DependentUpon>RowCountBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\SettingSearchTextBox.xaml.cs">
+      <DependentUpon>SettingSearchTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\CustomTradeSearchTextBox.xaml.cs">
+      <DependentUpon>CustomTradeSearchTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\NumericTextBox.cs" />
+    <Compile Include="View\Component\NumericUpDown.xaml.cs">
+      <DependentUpon>NumericUpDown.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\PageControl.xaml.cs">
+      <DependentUpon>PageControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\PopupEx.cs" />
+    <Compile Include="View\Component\Prompt2Seconds.xaml.cs">
+      <DependentUpon>Prompt2Seconds.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\SearchTextBox.xaml.cs">
+      <DependentUpon>SearchTextBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\SettleFilterView.xaml.cs">
+      <DependentUpon>SettleFilterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Component\WatermarkTextBox.cs" />
+    <Compile Include="View\Component\WaveProgressControl.cs" />
+    <Compile Include="View\Component\WindowBase.cs" />
+    <Compile Include="View\Drp\Component\DRPOrderLogView.xaml.cs">
+      <DependentUpon>DRPOrderLogView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\LastWorkDayUnRefView.xaml.cs">
+      <DependentUpon>LastWorkDayUnRefView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\MMAgencyMsgView.xaml.cs">
+      <DependentUpon>MMAgencyMsgView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\NofirmPointPriceView.xaml.cs">
+      <DependentUpon>NofirmPointPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\NotificationArea.cs" />
+    <Compile Include="View\Drp\Component\NotificationWindow.xaml.cs">
+      <DependentUpon>NotificationWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\ReversibleStackPanel.cs" />
+    <Compile Include="View\Drp\Component\DirectionalReturnPriceView.xaml.cs">
+      <DependentUpon>DirectionalReturnPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Component\MMBreakAlarmReminder.xaml.cs">
+      <DependentUpon>MMBreakAlarmReminder.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\INotificationManager.cs" />
+    <Compile Include="ViewModel\Drp\MsgPo.cs" />
+    <Compile Include="View\Drp\NotificationContent.cs" />
+    <Compile Include="View\Drp\NotificationManager.cs" />
+    <Compile Include="View\Drp\NotificationsOverlayWindow.xaml.cs">
+      <DependentUpon>NotificationsOverlayWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Drp\Utils\VisualTreeHelperExtensions.cs" />
+    <Compile Include="View\MyTrading\BatchResultWindow.xaml.cs">
+      <DependentUpon>BatchResultWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\BatchWarnView.xaml.cs">
+      <DependentUpon>BatchWarnView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\CrossQtyPopup.xaml.cs">
+      <DependentUpon>CrossQtyPopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\MyExecutionsFilterPanel.xaml.cs">
+      <DependentUpon>MyExecutionsFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\MyExes.xaml.cs">
+      <DependentUpon>MyExes.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\MyOrders.xaml.cs">
+      <DependentUpon>MyOrders.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\MyTrading\MyOrdersFilterPanel.xaml.cs">
+      <DependentUpon>MyOrdersFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\CalAdapter.cs" />
+    <Compile Include="View\Order\InnerPanel\InnerPanelHelper.cs" />
+    <Compile Include="View\Order\InnerPanel\RequireParseView.xaml.cs">
+      <DependentUpon>RequireParseView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerPanel\SendIRSView.xaml.cs">
+      <DependentUpon>SendIRSView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerPanel\SendRequireView.xaml.cs">
+      <DependentUpon>SendRequireView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerPanel\TagView.xaml.cs">
+      <DependentUpon>TagView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\DetailConditionView.xaml.cs">
+      <DependentUpon>DetailConditionView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\ConditionCancelView.xaml.cs">
+      <DependentUpon>ConditionCancelView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\CrossView.xaml.cs">
+      <DependentUpon>CrossView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\IceView.xaml.cs">
+      <DependentUpon>IceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\OCOView.xaml.cs">
+      <DependentUpon>OCOView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\QtyView.xaml.cs">
+      <DependentUpon>QtyView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\RoundedCornersPolygon.cs" />
+    <Compile Include="View\Order\InnerView\SniperView.xaml.cs">
+      <DependentUpon>SniperView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\StopProfitLossView.xaml.cs">
+      <DependentUpon>StopProfitLossView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\CancelOrderTimeConditionView.xaml.cs">
+      <DependentUpon>CancelOrderTimeConditionView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\InnerView\TagConditionView.xaml.cs">
+      <DependentUpon>TagConditionView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\PlaceOrderAdapter.cs" />
+    <Compile Include="View\Order\PriceViewAdapter.cs" />
+    <Compile Include="View\Order\RiskViewUI.xaml.cs">
+      <DependentUpon>RiskViewUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPointPriceView.xaml.cs">
+      <DependentUpon>SendPointPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceCommodityClickViewLite.xaml.cs">
+      <DependentUpon>SendPriceCommodityClickViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceFutureClickViewLite.xaml.cs">
+      <DependentUpon>SendPriceFutureClickViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceCommodityViewLite.xaml.cs">
+      <DependentUpon>SendPriceCommodityViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceFutureViewLite.xaml.cs">
+      <DependentUpon>SendPriceFutureViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceRiskView.xaml.cs">
+      <DependentUpon>SendPriceRiskView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceView.xaml.cs">
+      <DependentUpon>SendPriceView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceViewLite.xaml.cs">
+      <DependentUpon>SendPriceViewLite.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\SendPriceWarnView.xaml.cs">
+      <DependentUpon>SendPriceWarnView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\Order\UserSettingAdapter.cs" />
+    <Compile Include="View\UI\MsgAlertSettingView.xaml.cs">
+      <DependentUpon>MsgAlertSettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\WhiteSecuritySettingView.xaml.cs">
+      <DependentUpon>WhiteSecuritySettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\SuccessBoxView.xaml.cs">
+      <DependentUpon>SuccessBoxView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\DeleteBoxView.xaml.cs">
+      <DependentUpon>DeleteBoxView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\LoadingMask.xaml.cs">
+      <DependentUpon>LoadingMask.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\LogoButton.xaml.cs">
+      <DependentUpon>LogoButton.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\LogoInfoGrid.xaml.cs">
+      <DependentUpon>LogoInfoGrid.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\MessageBoxGUI.xaml.cs">
+      <DependentUpon>MessageBoxGUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\BorderWin.xaml.cs">
+      <DependentUpon>BorderWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\NoBorderWin.xaml.cs">
+      <DependentUpon>NoBorderWin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\PopupNoBorder.xaml.cs">
+      <DependentUpon>PopupNoBorder.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\ServerStatusUI.xaml.cs">
+      <DependentUpon>ServerStatusUI.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\UI\SettingView.xaml.cs">
+      <DependentUpon>SettingView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\WorkTable\AssignVenuesWindow.xaml.cs">
+      <DependentUpon>AssignVenuesWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="View\WorkTable\ElectronicChannelView.xaml.cs">
+      <DependentUpon>ElectronicChannelView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="ColumnSetting\ColumnSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BaseSkin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\BondThemes.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ButtonDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\CheckBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ComboBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ContextMenuStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\DataGridStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\DataGridStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\DatePickerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\GridSplitterDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\GridSplitterStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ListBoxStyleDictinary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\QuoteStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\RadioButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ScrollViewerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ScrollViewerDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\StcLiteSkinStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\StyleDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\TabControlStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\TextBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ToggleButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\ToolBarStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB\zh-CHS.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BDB.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ButtonDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\CheckBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ComboBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ContextMenuStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\DataGridStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\DataGridStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\DatePickerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\GridSplitterStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ListBoxStyleDictinary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\QuoteStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\RadioButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ScrollViewerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ScrollViewerDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\STC.SkinStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\StyleDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\TabControlStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\TextBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\BlueSkin\ToggleButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ComboBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ConstCode.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ContextMenuStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DataGridStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ButtonDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\CheckBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ComboBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ContextMenuStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\DataGridStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\DataGridStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\DatePickerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\GridSplitterStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ListBoxStyleDictinary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\QuoteStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\RadioButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ScrollViewerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ScrollViewerDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\STC.SkinStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\StyleDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\TabControlStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\TextBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DefaultSkin\ToggleButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\GridSplitterStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ListBoxStyleDictinary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\RadioButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ScrollViewerDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\STC.SkinStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\StyleDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\TabControlStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\TextBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ToggleButtonStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\zh-CHS.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\CheckBoxStyleDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Card\MarketCardOrderView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Card\PriceAndOrderViewMm.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Card\PriceAndOrderView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Card\PriceAndOrderViewMmshe.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Card\PriceAndOrderViewSHE.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Card\PriceAndOrderViewQDMESP.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Component\AddGroupWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\AddSubscriptionGroupWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\AlertSign.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\AutoCompleteComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\BookHierarchicalComboBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\BpNumericUpDown.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\CustomFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\CustomMessageBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\CustomTermControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\DescriptionCtrl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\EditGroupWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\FilterOptions.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\HierarchicalComboBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\IssueRecogizationWin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\MultiAutoCompleteComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\MultiSelectComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\DrpNumericUpDown.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\MultiSelectTreeViewControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\MultiTreeComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\QBPrompt3Seconds.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\RowCountBar.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\SecurityFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Component\SettingSearchTextBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\CustomTradeSearchTextBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\NumericUpDown.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\PageControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\Prompt2Seconds.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\SearchTextBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\SettleFilterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Component\SettleTypeSelector.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Component\TagComboBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Component\TreeComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\AmountUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\BrokerMessageBoxGUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\FeedBackAUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\IntentionBUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\IntentionUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\OrderMatchFailedUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\TransactionFlowGUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\UnderlineExecTpicUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\Broker\UnMatchReasonUI.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\ConfirmRef_BuyTrader.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\DRPOrderLogView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\LastWorkDayUnRefView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Drp\Component\MMAgencyMsgView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\NofirmPointPriceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Drp\Component\NotificationWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Drp\Component\DirectionalReturnPriceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Drp\Component\MMBreakAlarmReminder.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Drp\Component\OrderComfirmView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Drp\NotificationsOverlayWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\FQ\FQSendWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\MyTrading\BatchIntentionWarnView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\MyTrading\BatchResultWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\MyTrading\BatchWarnView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\MyTrading\CrossQtyPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\MyTrading\MyExecutionsFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\MyTrading\MyExes.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\MyTrading\MyOrders.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\MyTrading\MyOrdersFilterPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerPanel\RequireParseView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Order\InnerPanel\SendIRSView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerPanel\SendRequireView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Order\InnerPanel\TagView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Order\InnerView\DetailConditionView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\InnerView\ConditionCancelView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\InnerView\CrossView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerView\IceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerView\OCOView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerView\QtyView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\InnerView\SniperView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\InnerView\StopProfitLossView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerView\CancelOrderTimeConditionView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\InnerView\TagConditionView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\RiskViewUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPointPriceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPointPriceView_PA.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\Order\SendPriceDictionary.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceCommodityClickViewLite.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceFutureClickViewLite.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceCommodityViewLite.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceFutureViewLite.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Order\SendPriceRiskView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Order\SendPriceViewLite.xaml">
+      <SubType>Designer</SubType>
+      <Generator>XamlIntelliSenseFileGenerator</Generator>
+    </Page>
+    <Page Include="View\Order\SendPriceWarnView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ButtonDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\DatePickerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\PopupWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\Setting\InnerSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\StrongNotify\StrongNoBorderWin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\StrongNotify\StrongNotifyMainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\StrongNotify\TestMessageControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\BalloonWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\UI\QBAssistantWin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\BdbBorderWin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\ClientSettingView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\UI\LoadingWaiting.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="View\UI\MessageBoxGUI2.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\CloneMessageBoxGUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\MsgAlertSettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\WhiteSecuritySettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\SuccessBoxView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\DeleteBoxView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\LoadingMask.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\LogoButton.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\LogoInfoGrid.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\MessageBoxGUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\BorderWin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\NoBorderWin.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\PopupNoBorder.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\QuoteStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ScrollViewerDict.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\ServerStatusUI.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\UI\SettingView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\WorkTable\AssignVenuesWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="View\WorkTable\ElectronicChannelView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\005.png" />
+    <Resource Include="Images\1.png" />
+    <Resource Include="Images\4.png" />
+    <Resource Include="Images\double-left copy 2.png" />
+    <Resource Include="Images\double-left.png" />
+    <Resource Include="Images\stc-status-yellow.png" />
+    <Resource Include="Images\stclite-asc.png" />
+    <Resource Include="Images\stclite-card.png" />
+    <Resource Include="Images\stclite-desc.png" />
+    <Resource Include="Images\stclite-filter.png" />
+    <Resource Include="Images\stclite-invalid.png" />
+    <Resource Include="Images\stclite-ok.png" />
+    <Resource Include="Images\stclite-search.png" />
+    <Resource Include="Images\stclite-settle-able.png" />
+    <Resource Include="Images\stclite-settle-enable.png" />
+    <Resource Include="Images\stclite-smile.png" />
+    <Resource Include="Images\stclite-sort.png" />
+    <Resource Include="Images\stclite-table.png" />
+    <Resource Include="Images\stclite-warn.png" />
+    <Resource Include="Images\stc_button_dropdownarrow_disable.png" />
+    <Resource Include="Images\stc_button_dropdownarrow_normal.png" />
+    <Resource Include="Images\stc_button_nonfirm_bid_hover.png" />
+    <Resource Include="Images\stc_button_nonfirm_bid_normal.png" />
+    <Resource Include="Images\stc_button_nonfirm_disable.png" />
+    <Resource Include="Images\stc_button_nonfirm_normal.png" />
+    <Resource Include="Images\stc_button_nonfirm_no_hover.png" />
+    <Resource Include="Images\stc_button_nonfirm_no_normal.png" />
+    <Resource Include="Images\stc_button_nonfirm_ofr_hover.png" />
+    <Resource Include="Images\stc_button_nonfirm_ofr_normal.png" />
+    <Resource Include="Images\stc_button_noticewidget_delete_hover.png" />
+    <Resource Include="Images\stc_button_noticewidget_delete_normal.png" />
+    <Resource Include="Images\stc_button_noticewidget_delete_press.png" />
+    <Resource Include="Images\stc_button_noticewidget_ok_hover.png" />
+    <Resource Include="Images\stc_button_noticewidget_ok_normal.png" />
+    <Resource Include="Images\stc_button_noticewidget_ok_press.png" />
+    <Resource Include="Images\stc_execute.png" />
+    <Resource Include="Images\stc_iamge_noticewidget_normal_hover.png" />
+    <Resource Include="Images\stc_iamge_noticewidget_normal_normal.png" />
+    <Resource Include="Images\stc_iamge_noticewidget_urgebt_hover.png" />
+    <Resource Include="Images\stc_iamge_noticewidget_urgebt_noraml.png" />
+    <Resource Include="Images\stc_iamge_noticewidget_warning_hover.png" />
+    <Resource Include="Images\stc_iamge_noticewidget_warning_normal.png" />
+    <Resource Include="Images\stc_icon_add_disable.png" />
+    <Resource Include="Images\stc_icon_add_hover.png" />
+    <Resource Include="Images\stc_icon_add_normal.png" />
+    <Resource Include="Images\stc_icon_add_press.png" />
+    <Resource Include="Images\stc_icon_add_seleted.png" />
+    <Resource Include="Images\stc_icon_calendar2_normal.png" />
+    <Resource Include="Images\stc_icon_calendar_normal.png" />
+    <Resource Include="Images\stc_icon_cardsviewhover.png" />
+    <Resource Include="Images\stc_icon_cardsview_disable.png" />
+    <Resource Include="Images\stc_icon_cardsview_normal.png" />
+    <Resource Include="Images\stc_icon_cardsview_press.png" />
+    <Resource Include="Images\stc_icon_cardsview_seleted.png" />
+    <Resource Include="Images\stc_icon_chart2_hover.png" />
+    <Resource Include="Images\stc_icon_chart2_normal.png" />
+    <Resource Include="Images\stc_icon_chart2_selected.png" />
+    <Resource Include="Images\stc_icon_chart_disable.png" />
+    <Resource Include="Images\stc_icon_chart_hover.png" />
+    <Resource Include="Images\stc_icon_chart_normal.png" />
+    <Resource Include="Images\stc_icon_chart_press.png" />
+    <Resource Include="Images\stc_icon_delet_disable.png" />
+    <Resource Include="Images\stc_icon_delet_hover.png" />
+    <Resource Include="Images\stc_icon_delet_normal.png" />
+    <Resource Include="Images\stc_icon_delet_press.png" />
+    <Resource Include="Images\stc_icon_delet_seleted.png" />
+    <Resource Include="Images\stc_icon_edit_disable.png" />
+    <Resource Include="Images\stc_icon_edit_hover.png" />
+    <Resource Include="Images\stc_icon_edit_normal.png" />
+    <Resource Include="Images\stc_icon_edit_press.png" />
+    <Resource Include="Images\stc_icon_edit_seleted.png" />
+    <Resource Include="Images\stc_icon_export_disable.png" />
+    <Resource Include="Images\stc_icon_export_hover.png" />
+    <Resource Include="Images\stc_icon_export_normal.png" />
+    <Resource Include="Images\stc_icon_export_press.png" />
+    <Resource Include="Images\stc_icon_export_seleted.png" />
+    <Resource Include="Images\stc_icon_favorite_disable.png" />
+    <Resource Include="Images\stc_icon_favorite_hover.png" />
+    <Resource Include="Images\stc_icon_favorite_normal.png" />
+    <Resource Include="Images\stc_icon_favorite_press.png" />
+    <Resource Include="Images\stc_icon_favorite_seleted.png" />
+    <Resource Include="Images\stc_icon_filter_disable.png" />
+    <Resource Include="Images\stc_icon_filter_hover.png" />
+    <Resource Include="Images\stc_icon_filter_normal.png" />
+    <Resource Include="Images\stc_icon_filter_press.png" />
+    <Resource Include="Images\stc_icon_filter_seleted.png" />
+    <Resource Include="Images\stc_icon_history_disable.png" />
+    <Resource Include="Images\stc_icon_history_hover.png" />
+    <Resource Include="Images\stc_icon_history_normal.png" />
+    <Resource Include="Images\stc_icon_history_press.png" />
+    <Resource Include="Images\stc_icon_history_seleted.png" />
+    <Resource Include="Images\stc_icon_import_disable.png" />
+    <Resource Include="Images\stc_icon_import_hover.png" />
+    <Resource Include="Images\stc_icon_import_normal.png" />
+    <Resource Include="Images\stc_icon_import_press.png" />
+    <Resource Include="Images\stc_icon_import_seleted.png" />
+    <Resource Include="Images\stc_icon_info_disable.png" />
+    <Resource Include="Images\stc_icon_info_hover.png" />
+    <Resource Include="Images\stc_icon_info_normal.png" />
+    <Resource Include="Images\stc_icon_info_press.png" />
+    <Resource Include="Images\stc_icon_info_seleted.png" />
+    <Resource Include="Images\stc_icon_input_pause_disable.png" />
+    <Resource Include="Images\stc_icon_input_pause_normal.png" />
+    <Resource Include="Images\stc_icon_input_playall_disable.png" />
+    <Resource Include="Images\stc_icon_input_playall_normal.png" />
+    <Resource Include="Images\stc_icon_input_play_disable.png" />
+    <Resource Include="Images\stc_icon_input_play_normal.png" />
+    <Resource Include="Images\stc_icon_input_search_normal.png" />
+    <Resource Include="Images\stc_icon_input_search_typing.png" />
+    <Resource Include="Images\stc_icon_input_stop_disable.png" />
+    <Resource Include="Images\stc_icon_input_stop_normal.png" />
+    <Resource Include="Images\stc_icon_linked_normal .png" />
+    <Resource Include="Images\stc_icon_linked_normal.png" />
+    <Resource Include="Images\stc_icon_listview2_hover.png" />
+    <Resource Include="Images\stc_icon_listview2_normal.png" />
+    <Resource Include="Images\stc_icon_listview2_selected.png" />
+    <Resource Include="Images\stc_icon_listview_disable.png" />
+    <Resource Include="Images\stc_icon_listview_hover.png" />
+    <Resource Include="Images\stc_icon_listview_normal.png" />
+    <Resource Include="Images\stc_icon_listview_press.png" />
+    <Resource Include="Images\stc_icon_listview_seleted.png" />
+    <Resource Include="Images\stc_icon_login_close.png" />
+    <Resource Include="Images\stc_icon_newdelet_disable.png" />
+    <Resource Include="Images\stc_icon_newdelet_hover.png" />
+    <Resource Include="Images\stc_icon_newdelet_normal.png" />
+    <Resource Include="Images\stc_icon_newdelet_press.png" />
+    <Resource Include="Images\stc_icon_newedit_disable.png" />
+    <Resource Include="Images\stc_icon_newedit_hover.png" />
+    <Resource Include="Images\stc_icon_newedit_normal.png" />
+    <Resource Include="Images\stc_icon_opensecurity_hover.png" />
+    <Resource Include="Images\stc_icon_opensecurity_normal.png" />
+    <Resource Include="Images\stc_icon_people_normal.png" />
+    <Resource Include="Images\stc_icon_popup_disable.png" />
+    <Resource Include="Images\stc_icon_popup_hover.png" />
+    <Resource Include="Images\stc_icon_popup_normal.png" />
+    <Resource Include="Images\stc_icon_popup_press.png" />
+    <Resource Include="Images\stc_icon_popup_seleted.png" />
+    <Resource Include="Images\stc_icon_toppressed_hover.png" />
+    <Resource Include="Images\stc_icon_toppressed_normal.png" />
+    <Resource Include="Images\stc_icon_top_hover.png" />
+    <Resource Include="Images\stc_icon_top_normal.png" />
+    <Resource Include="Images\stc_image_menulist_fengkongshezhi.png" />
+    <Resource Include="Images\stc_image_menulist_jiaoyibao.png" />
+    <Resource Include="Images\stc_image_menulist_lishichaxun.png" />
+    <Resource Include="Images\stc_image_menulist_qudaozhixing.png" />
+    <Resource Include="Images\stc_image_menulist_shuangbianzuoshi.png" />
+    <Resource Include="Images\stc_image_menulist_tradebook.png" />
+    <Resource Include="Images\stc_image_menulist_xbondzuoshi.png" />
+    <Resource Include="Images\stc_image_menulist_zhuye.png" />
+    <Resource Include="Images\stc_operation_history_dark_disabled.png" />
+    <Resource Include="Images\stc_operation_history_dark_hover.png" />
+    <Resource Include="Images\stc_operation_history_dark_normal.png" />
+    <Resource Include="Images\stc_operation_history_dark_pressed.png" />
+    <Resource Include="Images\stc_tag_brokers_cfets.png" />
+    <Resource Include="Images\stc_tag_brokers_guoji.png" />
+    <Resource Include="Images\stc_tag_brokers_guoli.png" />
+    <Resource Include="Images\stc_tag_brokers_pingan.png" />
+    <Resource Include="Images\stc_tag_brokers_rfq.png" />
+    <Resource Include="Images\stc_tag_brokers_shuangbian.png" />
+    <Resource Include="Images\stc_tag_brokers_xbond.png" />
+    <Resource Include="Images\stc_tag_brokers_xintang.png" />
+    <Resource Include="Images\stc_tag_brokers_zhongcheng.png" />
+    <Resource Include="Images\stc_tag_list_nonfirm_1star_14x14.png" />
+    <Resource Include="Images\stc_tag_list_nonfirm_2stars_14x14.png" />
+    <Resource Include="Images\stc_tag_list_shandian_14x14.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_logo.png" />
+    <Resource Include="Images\stc_smallbell.png" />
+    <Resource Include="Images\btnFwd_24x24_disabled.png" />
+    <Resource Include="Images\btnFwd_24x24_hover.png" />
+    <Resource Include="Images\btnFwd_24x24_normal.png" />
+    <Resource Include="Images\btnFwd_24x24_pressed.png" />
+    <Resource Include="Images\Check-Rectangle.png" />
+    <Resource Include="Images\icon_operation_bid_disabled.png" />
+    <Resource Include="Images\icon_operation_bid_normal.png" />
+    <Resource Include="Images\icon_operation_bid_selected.png" />
+    <Resource Include="Images\icon_operation_bid_standby.png" />
+    <Resource Include="Images\icon_operation_delete_disabled.png" />
+    <Resource Include="Images\icon_operation_delete_hover.png" />
+    <Resource Include="Images\icon_operation_delete_normal.png" />
+    <Resource Include="Images\icon_operation_delete_pressed.png" />
+    <Resource Include="Images\icon_operation_history_dark_disabled.png" />
+    <Resource Include="Images\icon_operation_history_dark_hover.png" />
+    <Resource Include="Images\icon_operation_history_dark_normal.png" />
+    <Resource Include="Images\icon_operation_history_dark_pressed.png" />
+    <Resource Include="Images\icon_operation_ofr_disabled.png" />
+    <Resource Include="Images\icon_operation_ofr_normal.png" />
+    <Resource Include="Images\icon_operation_ofr_selected.png" />
+    <Resource Include="Images\icon_operation_ofr_standby.png" />
+    <Resource Include="Images\icon_operation_setting_disabled.png" />
+    <Resource Include="Images\icon_operation_setting_hover.png" />
+    <Resource Include="Images\icon_operation_setting_normal.png" />
+    <Resource Include="Images\icon_operation_setting_pressed.png" />
+    <Resource Include="Images\icon_operation_tag_disabled.png" />
+    <Resource Include="Images\icon_operation_tag_normal.png" />
+    <Resource Include="Images\icon_operation_tag_selected.png" />
+    <Resource Include="Images\icon_operation_tag_standby.png" />
+    <Resource Include="Images\loginBack.png" />
+    <Resource Include="Images\quote_1_normal.png" />
+    <Resource Include="Images\Rectangle.png" />
+    <Resource Include="Images\stc_button_checkbox_off_disable.png" />
+    <Resource Include="Images\stc_button_checkbox_off_hover.png" />
+    <Resource Include="Images\stc_button_checkbox_off_normal.png" />
+    <Resource Include="Images\stc_button_checkbox_on_disable.png" />
+    <Resource Include="Images\stc_button_checkbox_on_hover.png" />
+    <Resource Include="Images\stc_button_checkbox_on_normal.png" />
+    <Resource Include="Images\stc_button_checkbox_press.png" />
+    <Resource Include="Images\stc_button_loginpage_close_hover.png" />
+    <Resource Include="Images\stc_button_loginpage_close_normal.png" />
+    <Resource Include="Images\stc_button_loginpage_close_press.png" />
+    <Resource Include="Images\stc_button_loginpage_setting_hover.png" />
+    <Resource Include="Images\stc_button_loginpage_setting_normal.png" />
+    <Resource Include="Images\stc_button_loginpage_setting_press.png" />
+    <Resource Include="Images\stc_button_loginpage_small_hover.png" />
+    <Resource Include="Images\stc_button_loginpage_small_normal.png" />
+    <Resource Include="Images\stc_button_loginpage_small_press.png" />
+    <Resource Include="Images\stc_button_noticewidget_process_hover.png" />
+    <Resource Include="Images\stc_button_noticewidget_process_normal.png" />
+    <Resource Include="Images\stc_button_noticewidget_process_press.png" />
+    <Resource Include="Images\stc_button_reduce_disable.png" />
+    <Resource Include="Images\stc_button_reduce_normal.png" />
+    <Resource Include="Images\stc_button_system_big_hover.png" />
+    <Resource Include="Images\stc_button_system_big_normal.png" />
+    <Resource Include="Images\stc_button_system_big_press.png" />
+    <Resource Include="Images\stc_button_system_close_hover.png" />
+    <Resource Include="Images\stc_button_system_close_normal.png" />
+    <Resource Include="Images\stc_button_system_close_press.png" />
+    <Resource Include="Images\stc_button_system_small_hover.png" />
+    <Resource Include="Images\stc_button_system_small_normal.png" />
+    <Resource Include="Images\stc_button_system_small_press.png" />
+    <Resource Include="Images\stc_icon_input_search_disable.png" />
+    <Resource Include="Images\stc_icon_input_search_normal_search.png" />
+    <Resource Include="Images\stc_icon_login_phone.png" />
+    <Resource Include="Images\stc_icon_login_reduce.png" />
+    <Resource Include="Images\stc_icon_login_setting.png" />
+    <Resource Include="Images\stc_icon_logouthover.png" />
+    <Resource Include="Images\stc_icon_logout_disable.png" />
+    <Resource Include="Images\stc_icon_logout_normal.png" />
+    <Resource Include="Images\stc_icon_logout_press.png" />
+    <Resource Include="Images\stc_icon_logout_seleted.png" />
+    <Resource Include="Images\stc_icon_reflash_disable.png" />
+    <Resource Include="Images\stc_icon_reflash_hover.png" />
+    <Resource Include="Images\stc_icon_reflash_normal.png" />
+    <Resource Include="Images\stc_icon_reflash_press.png" />
+    <Resource Include="Images\stc_icon_reflash_seleted.png" />
+    <Resource Include="Images\stc_icon_setting_disable.png" />
+    <Resource Include="Images\stc_icon_setting_hover.png" />
+    <Resource Include="Images\stc_icon_setting_normal.png" />
+    <Resource Include="Images\stc_icon_setting_press.png" />
+    <Resource Include="Images\stc_icon_setting_seleted.png" />
+    <Resource Include="Images\stc_image_loginguanli_bg.png" />
+    <Resource Include="Images\stc_image_login_bg.jpg" />
+    <Resource Include="Images\STC_image_login_bg.png" />
+    <Resource Include="Images\stc_image_login_redbg.png" />
+    <Resource Include="Images\STC_image_login_stclogo.png" />
+    <Resource Include="Images\stc_image_quant.png" />
+    <Resource Include="Images\stc_image_shanxiloginpage_stclogo.png" />
+    <Resource Include="Images\stc_image_shanxi_logo.png" />
+    <Resource Include="Images\stc_image_systemlogo_hover.png" />
+    <Resource Include="Images\stc_image_systemlogo_mg_hover copy.png" />
+    <Resource Include="Images\stc_image_systemlogo_mg_normal.png" />
+    <Resource Include="Images\stc_image_systemlogo_normal.png" />
+    <Resource Include="Images\stc_image_transparentbg_64x64.ico" />
+    <Resource Include="Images\stclite-logo-2x2.png" />
+    <Resource Include="Images\SXLogin.png" />
+    <Resource Include="Images\window_bg_idb.png" />
+    <Resource Include="Images\win_close_2_disabled.png" />
+    <Resource Include="Images\win_close_2_hover.png" />
+    <Resource Include="Images\win_close_2_normal.png" />
+    <Resource Include="Images\win_close_2_pressed.png" />
+    <Resource Include="Images\win_close_disabled.png" />
+    <Resource Include="Images\win_close_hover.png" />
+    <Resource Include="Images\win_close_normal.png" />
+    <Resource Include="Images\win_close_pressed.png" />
+    <Resource Include="Images\win_full_disabled.png" />
+    <Resource Include="Images\win_full_hover.png" />
+    <Resource Include="Images\win_full_normal.png" />
+    <Resource Include="Images\win_full_pressed.png" />
+    <Resource Include="Images\win_min_disabled.png" />
+    <Resource Include="Images\win_min_hover.png" />
+    <Resource Include="Images\win_min_normal.png" />
+    <Resource Include="Images\win_min_pressed.png" />
+    <Resource Include="Images\win_restore_disabled.png" />
+    <Resource Include="Images\win_restore_hover.png" />
+    <Resource Include="Images\win_restore_normal.png" />
+    <Resource Include="Images\win_restore_pressed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\detail_hover.png" />
+    <Resource Include="Images\detail_normal.png" />
+    <Resource Include="Images\detail_pressed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_image_menu_hover.png" />
+    <Resource Include="Images\stc_image_menu_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_kline_hover.png" />
+    <Resource Include="Images\stc_icon_kline_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\dmart-logo-2x2.png" />
+    <Resource Include="Images\dmart-logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\dmart_windows_ico_64.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_windows_icon_64.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\dmart_windows_ico_32.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\dmart_windows_ico_128.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_bg_bid.png" />
+    <Resource Include="Images\stc_bg_ofr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_cross_bid.png" />
+    <Resource Include="Images\stc_cross_ofr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_oco_bid.png" />
+    <Resource Include="Images\stc_oco_ofr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_win_logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_oco_bid_first.png" />
+    <Resource Include="Images\stc_oco_ofr_first.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_image_menulist_xiazaizhongxin.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\win_close_new_hover.png" />
+    <Resource Include="Images\win_close_new_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\close_hover.png" />
+    <Resource Include="Images\close_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\drp_toproc_hover.png" />
+    <Resource Include="Images\drp_toproc_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\drp_refuse_hover.png" />
+    <Resource Include="Images\drp_refuse_normal.png" />
+    <Resource Include="Images\drp_reply_hover.png" />
+    <Resource Include="Images\drp_reply_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\保存.png" />
+    <Resource Include="Images\保存h.png" />
+    <Resource Include="Images\刷新.png" />
+    <Resource Include="Images\刷新h.png" />
+    <Resource Include="Images\展开hover.png" />
+    <Resource Include="Images\展开normal.png" />
+    <Resource Include="Images\收起hover.png" />
+    <Resource Include="Images\收起normal.png" />
+    <Resource Include="Images\查询.png" />
+    <Resource Include="Images\查询h.png" />
+    <Resource Include="Images\订阅.png" />
+    <Resource Include="Images\订阅选中.png" />
+    <Resource Include="Images\设置.png" />
+    <Resource Include="Images\设置h.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\大拇指.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_sniper_bid.png" />
+    <Resource Include="Images\stc_sniper_ofr.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\icon 更多信息.png" />
+    <Resource Include="Images\icon 更多信息h.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_qq_msg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_newcopy_hover_msg.png" />
+    <Resource Include="Images\stc_icon_newcopy_msg.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Firm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\DY hover.png" />
+    <Resource Include="Images\DY.png" />
+    <Resource Include="Images\日历.png" />
+    <Resource Include="Images\日历hover.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\copy.png" />
+    <Resource Include="Images\copy2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_gtja_cwjry.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_gtja_icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_gtja_mainlogo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\gtja_windows_ico_64.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_gtja_ficc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_gtja_daohe.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_gtja_login.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\清除.png" />
+    <Resource Include="Images\清除h.png" />
+    <Resource Include="Images\放大镜.png" />
+    <Resource Include="Images\放大镜h.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_listview_blue_selected.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_chart_blue_selected.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_chart2_blue_selected.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\导入.png" />
+    <Resource Include="Images\导入hover.png" />
+    <Resource Include="Images\导入p.png" />
+    <Resource Include="Images\导出.png" />
+    <Resource Include="Images\导出hover.png" />
+    <Resource Include="Images\导出p.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\BlueSkin\stc_image_menulist_execute.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_chicangguanli.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_chicangguanli_hover.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_fengkongshezhi.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_jiaoyibao.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_lishichaxun.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_neibukanban.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_qudaozhixing.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_shuangbianzuoshi.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_tradebook.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_xbondzuoshi.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_zhuye.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_kline.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_pt.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_pt_active.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_quant.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_rfq.png" />
+    <Resource Include="Images\BlueSkin\stc_image_menulist_rfq_active.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_execute.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_chicangguanli.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_chicangguanli_hover.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_fengkongshezhi.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_jiaoyibao.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_lishichaxun.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_neibukanban.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_qudaozhixing.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_shuangbianzuoshi.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_tradebook.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_xbondzuoshi.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_zhuye.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_kline.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_pt.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_pt_active.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_quant.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_rfq.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_rfq_active.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\BlueSkin\stc_image_menulist_xiazaizhongxin.png" />
+    <Resource Include="Images\DefaultSkin\stc_image_menulist_xiazaizhongxin.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_button_system_setting.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_button_system_close.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_button_system_minwindow.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_button_system_maxwindow.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_button_system_logout.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_button_system_smallbell.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\win_min_hover.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\win_min_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\win_min_pressed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\win_close_hover.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\win_close_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\drp_toproc_hover.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\drp_toproc_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_icon_calendar_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_msg_arrow.png" />
+    <Resource Include="Images\stc_msg_arrow_hover.png" />
+    <Resource Include="Images\stc_msg_close.png" />
+    <Resource Include="Images\stc_msg_close_hover.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Public\stc_icon_history_normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\price_tag_oco.png" />
+    <Resource Include="Images\price_tag_package.png" />
+    <Resource Include="Images\price_tag_switch.png" />
+    <Resource Include="Images\price_tag_x.png" />
+    <Resource Include="Images\price_tag_xx.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\idc_logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\idc_logo_mainlogo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\idbpro_windows_icon_128.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\idbpro_windows_icon_64.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\BlackkishGreenSkin\drp_toproc_hover.png" />
+    <Resource Include="Images\BlackkishGreenSkin\drp_toproc_normal.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_button_system_close.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_button_system_logout.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_button_system_maxwindow.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_button_system_minwindow.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_button_system_setting.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_button_system_smallbell.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_icon_calendar_normal.png" />
+    <Resource Include="Images\BlackkishGreenSkin\stc_icon_history_normal.png" />
+    <Resource Include="Images\BlackkishGreenSkin\win_close_hover.png" />
+    <Resource Include="Images\BlackkishGreenSkin\win_close_normal.png" />
+    <Resource Include="Images\BlackkishGreenSkin\win_min_hover.png" />
+    <Resource Include="Images\BlackkishGreenSkin\win_min_normal.png" />
+    <Resource Include="Images\BlackkishGreenSkin\win_min_pressed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\popup_disabled.png" />
+    <Resource Include="Images\popup_hover.png" />
+    <Resource Include="Images\popup_normal.png" />
+    <Resource Include="Images\popup_pressed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_icon_kline_blue_selected.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\window_top_act_disabled.png" />
+    <Resource Include="Images\window_top_act_hover.png" />
+    <Resource Include="Images\window_top_act_normal.png" />
+    <Resource Include="Images\window_top_act_pressed.png" />
+    <Resource Include="Images\window_top_disabled.png" />
+    <Resource Include="Images\window_top_hover.png" />
+    <Resource Include="Images\window_top_normal.png" />
+    <Resource Include="Images\window_top_pressed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\bdb_logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\bdb_windows_icon_128.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\bdb_logo_mainlogo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\stc_cornor_right.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\radio_button_normal.png" />
+    <Resource Include="Images\radio_button_selected.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\monitor_l_normal.png" />
+    <Resource Include="Images\monitor_l_selected.png" />
+    <Resource Include="Images\monitor_s_normal.png" />
+    <Resource Include="Images\monitor_s_selected.png" />
+    <Resource Include="Images\monitor_v_normal.png" />
+    <Resource Include="Images\monitor_v_selected.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Left.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Right.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Add.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\qq.png" />
+    <Resource Include="Images\qq_group.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\wechat.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\qq_igroup.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\扫把.png" />
+  </ItemGroup>
+  <!-- ===================== CommunityToolkit.Mvvm（全插件共享） =====================
+       接入细节见 <repo>\build\Mvvm.targets 与 <repo>\nuget\README.md。
+       PackageReference 显式声明在此, 让 VS 引用树可见; 构建期逻辑(LangVersion/去重/裁剪/补挂分析器)
+       在 Import 的 Mvvm.targets 里。
+       $(MvvmRuntimeDll) 列出运行期必需的程序集 —— 只有本工程落盘(输出目录即宿主 client\bin),
+       各插件工程 Import 同一 targets 但不设该属性, 故一个都不落, 复用 bin 下这份。 -->
+  <ItemGroup>
+    <Compile Include="Utils\Events\EventAggregator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- 运行期必需程序集白名单(v4.7.2 实测):
+         System.Runtime.InteropServices.RuntimeInformation 自 4.7.1 起内置(mscorlib),无需落盘;
+         Microsoft.Bcl.AsyncInterfaces 在 net472 下由 NuGet 选中 net462 资产(4.6.1 时代走 netstandard2.0 被裁剪),
+         AsyncRelayCommand 的 IAsyncDisposable 运行期需要,故显式保留。 -->
+    <MvvmRuntimeDll>;CommunityToolkit.Mvvm;System.Memory;System.Buffers;System.Numerics.Vectors;System.Runtime.CompilerServices.Unsafe;Microsoft.Bcl.AsyncInterfaces;</MvvmRuntimeDll>
+  </PropertyGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Mvvm.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

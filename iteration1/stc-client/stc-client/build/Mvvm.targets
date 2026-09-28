@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    CommunityToolkit.Mvvm 8.4.0 接入（共享构建逻辑）。任何要使用 ObservableObject /
+    [ObservableProperty] / [RelayCommand] / WeakReferenceMessenger 的工程，在
+    Microsoft.CSharp.targets 之后 Import 本文件，并在 csproj 显式声明：
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    包体随仓库提交在 <repo>\nuget，包源与还原目录见根 NuGet.config（离线可构建）。
+
+    本文件解决旧式（非 SDK 式）csproj + .NET Framework v4.7.2 的三个构建期问题：
+      1) 包内三套 Roslyn 源生成器（roslyn4.0/4.3/4.12）被同时加载 → 生成代码重复 CS0102/CS0579；
+      2) WPF 临时工程（*_wpftmp.csproj）拿不到 obj\*.nuget.g.props → 分析器缺失 →
+         [ObservableProperty] 生成的属性在那一遍编译里不存在，报 CS0103；
+      3) PackageReference 会把 netstandard2.0 门面与传递依赖整串复制到输出目录（100+ dll），
+         污染宿主 probing 路径、撑大更新包。
+
+    落盘策略 —— 由 $(MvvmRuntimeDll) 白名单控制（分号包裹，便于 Contains 精确匹配）：
+      · STC.Common : 设置该属性，把运行期必需的程序集落到 client\bin（宿主 probing 路径）；
+      · 各插件工程 : 留空（默认），一个 dll 都不落，运行期复用 client\bin 里 STC.Common 落下的那份。
+    v4.7.2 说明：System.Runtime.InteropServices.RuntimeInformation 自 .NET Framework 4.7.1 起内置
+    （mscorlib 提供），运行期不需要独立 dll；白名单保留该条目只为兼容旧配置，落不落盘均无害。
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- LangVersion 不在这里设：必须由使用方在 csproj 顶部 PropertyGroup 显式写
+         <LangVersion>latest</LangVersion>。放在 csproj 顶部而非本文件，是因为 IDE 设计期编译
+         对 Import 的 targets 里的 PropertyGroup 读取不可靠。 -->
+    <!-- 传递依赖（System.Memory 等）声明不支持 net461/net472，已实测编译与运行均正常，压掉噪音警告 -->
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <!-- 运行期需落盘的程序集白名单，默认空 = 不落盘 -->
+    <MvvmRuntimeDll Condition="'$(MvvmRuntimeDll)' == ''">;</MvvmRuntimeDll>
+    <!-- 包展开目录。不能用 $(NuGetPackageRoot) —— 它由 obj\*.nuget.g.props 提供，
+         而 WPF 临时工程拿不到那个文件。路径需与根 NuGet.config 的 globalPackagesFolder 一致。 -->
+    <MvvmPackageDir>$(MSBuildThisFileDirectory)..\packages\gpf\communitytoolkit.mvvm\8.4.0\</MvvmPackageDir>
+  </PropertyGroup>
+
+  <!-- 1) 源生成器去重：包自带的去重 target 依赖 SDK 式工程才会设置的
+       $(SupportsRoslynComponentVersioning)，旧式工程下条件不成立故不执行。
+       这里复用它已算好的目录名属性手工去重 —— 必须排在它之后。 -->
+  <Target Name="DedupMvvmAnalyzers"
+          AfterTargets="MVVMToolkitRemoveDuplicateAnalyzersWhenRoslynComponentVersioningIsNotSupported"
+          BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"
+                Condition="$([System.String]::Concat('','%(Analyzer.FullPath)').Contains('CommunityToolkit.Mvvm'))
+                       AND !$([System.String]::Concat('','%(Analyzer.FullPath)').Contains('$(MVVMToolkitSelectedRoslynAnalyzerDirectoryName)'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- 2) WPF 临时工程补挂分析器（GenerateTemporaryTargetAssembly 生成的 *_wpftmp.csproj
+       文件名带随机后缀，找不到 obj\<proj>.nuget.g.props，PackageReference 的分析器全部缺失）。 -->
+  <Target Name="EnsureMvvmAnalyzerForMarkupCompile" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_MvvmAnalyzerPresent>false</_MvvmAnalyzerPresent>
+      <_MvvmAnalyzerPresent Condition="'@(Analyzer)' != '' AND $([System.String]::Concat(';','@(Analyzer)',';').Contains('CommunityToolkit.Mvvm.SourceGenerators.dll'))">true</_MvvmAnalyzerPresent>
+      <!-- 与包内 MVVMToolkitSelectedRoslynAnalyzerDirectoryName 的选择结果保持一致（VS2022+ 均取 roslyn4.3） -->
+      <_MvvmAnalyzerPath>$(MvvmPackageDir)analyzers\dotnet\roslyn4.3\cs\CommunityToolkit.Mvvm.SourceGenerators.dll</_MvvmAnalyzerPath>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_MvvmAnalyzerPresent)' == 'false' AND Exists('$(_MvvmAnalyzerPath)')">
+      <Analyzer Include="$(_MvvmAnalyzerPath)" />
+    </ItemGroup>
+    <Warning Condition="'$(_MvvmAnalyzerPresent)' == 'false' AND !Exists('$(_MvvmAnalyzerPath)')"
+             Text="未找到 CommunityToolkit.Mvvm 源生成器: $(_MvvmAnalyzerPath) 。先执行 MSBuild -t:Restore。" />
+  </Target>
+
+  <!-- 3) 裁剪 netstandard2.0 门面与传递依赖：编译期需要全套，运行期只需白名单里的几个。
+       不裁剪则每个引用方都往自己输出目录落 100+ 个 dll / 数 MB。 -->
+  <Target Name="TrimMvvmFacades" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+        Condition="$(MvvmRuntimeDll.Contains(';%(Filename);')) == 'false'
+               AND ( $([System.String]::Concat('','%(FullPath)').Contains('Microsoft.NET.Build.Extensions'))
+                  OR $([System.String]::Concat('','%(FullPath)').Contains('netstandard2.0'))
+                  OR $([System.String]::Concat('','%(FullPath)').Contains('lib\net461')) )" />
+      <!-- 包里带的 pdb 不进产物。不能用 %(NuGetPackageId) 判断 —— SDK 注入的门面项没有该元数据, 会报 MSB4096 -->
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+        Condition="'%(Extension)' == '.pdb'
+               AND ( $([System.String]::Concat('','%(FullPath)').Contains('netstandard2.0'))
+                  OR $([System.String]::Concat('','%(FullPath)').Contains('packages')) )" />
+    </ItemGroup>
+  </Target>
+
+</Project>

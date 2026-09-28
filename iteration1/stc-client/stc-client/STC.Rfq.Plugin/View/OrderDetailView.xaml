@@ -1,0 +1,1282 @@
+﻿<Window x:Class="STC.Rfq.Plugin.View.OrderDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Rfq.Plugin.View"
+             xmlns:comp ="clr-namespace:STC.Rfq.Plugin.View.Component"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero" 
+             xmlns:conv ="clr-namespace:STC.Rfq.Plugin.Convertor"
+             mc:Ignorable="d" FontSize="12" x:Name="orderDetailView" WindowStyle="None" SizeToContent="Height"
+             Background="#1E1E1E" BorderThickness="0" BorderBrush="#193D37" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" WindowState="Normal"
+             Title="{Binding WinTitle}"
+             Height="681" Width="490" Initialized="orderDetailView_Initialized" MouseLeftButtonDown="Window_MouseLeftButtonDown" >
+    <!--Height="640"-->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Rfq.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DatePickerDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <conv:FormatZeroConverter x:Key="FormatZeroConverter"/>
+            <conv:FormatDigitConverter x:Key="FormatDigitConverter"/>
+            <conv:BooleanConvertor x:Key="booleanConvertor"/>
+            <conv:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <Style x:Key="defaultQtyTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <!--<Setter Property="Foreground" Value="#FFFFFF "/>-->
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="0" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="#ED6D00"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="#ED6D00"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="QuoteModelStyle" TargetType="{x:Type RadioButton}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="Background" Value="{StaticResource GrayButton.Static.Background}"></Setter>
+                <Setter Property="BorderBrush" Value="{StaticResource GrayButton.Static.Border}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Foreground" Value="{StaticResource GrayButton.Static.Foreground}"></Setter>
+                <Setter Property="SnapsToDevicePixels" Value="true"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Width" Value="60"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RadioButton}">
+                            <Grid x:Name="grid">
+                                <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Border>
+                            </Grid>
+                            <!--触发器：设置选中状态符号-->
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Static.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Static.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource RedButton.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="MyDefaultTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+            </Style>
+
+            <Style x:Key="defaultKWTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="kw" Grid.Column="1" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="Background" Value="#515151"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#A0A0A0"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="defaultBPTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="bp" Grid.Column="1" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#70136C5E"/>
+                                    <!--<Setter TargetName="border" Property="Background" Value="#70136C5E"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#238F7E"/>
+                                    <!--<Setter TargetName="border" Property="Background" Value="#70136C5E"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="defaultBPTextBox2" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="bp" Grid.Column="1" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="ComboBoxButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="Height" Value="24"/>
+                <Style.Triggers>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="IsTabStop" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,5,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ComboBoxPopDataGridStyle" TargetType="DataGrid">
+                <!--<Setter Property="CanUserSortColumns" Value="False"/>-->
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="None"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Extended"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <!-- 不需要虚拟模式 -->
+                <!--<Setter Property="EnableRowVirtualization" Value="False"/>-->
+                <!-- 不需要边框 -->
+                <Setter Property="BorderThickness" Value="0"/>
+
+                <Setter Property="EnableColumnVirtualization" Value="True"/>
+                <Setter Property="EnableRowVirtualization" Value="True"/>
+                <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+                <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+                <Setter Property="VirtualizingPanel.IsContainerVirtualizable" Value="True"/>
+                <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+                <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <!--<Setter Property="ColumnHeaderStyle" Value="{StaticResource DataGridColumnHeaderStyle}"/>-->
+                <Setter Property="RowStyle" Value="{StaticResource DataGridRowStyle}"/>
+                <Setter Property="CellStyle" Value="{StaticResource DataGridCellStyle}"/>
+                <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+            </Style>
+
+            <!--取消-->
+            <Style x:Key="SelfCancelButton" TargetType="{x:Type Button}">
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="Foreground" Value="#FFEBC8"/>
+                <Setter Property="BorderBrush" Value="#515151"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="out_border" CornerRadius="1" BorderBrush="#4C000000" BorderThickness="0,0,0,1" Background="Transparent" SnapsToDevicePixels="true">
+                                    <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,1,0,0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                        <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                </Border>
+                                <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#515151"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#788187"/>
+                                    <!--Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource SelectItemForeground}"/-->
+                                    <!--Setter Property="Opacity" TargetName="ShineBorder" Value="0.5"/-->
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.2"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#515151"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--报价或需求-->
+            <Style x:Key="SendPriceButton" TargetType="{x:Type Button}">
+                <Setter Property="Background" Value="#193D37"/>
+                <Setter Property="BorderBrush" Value="#136C5E"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="out_border" CornerRadius="1" BorderBrush="#282828" BorderThickness="0,0,0,1" Background="Transparent" SnapsToDevicePixels="true">
+                                    <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,1,0,0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                        <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                </Border>
+                                <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#136C5E"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#2CAB97 "/>
+                                    <!--Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource SelectItemForeground}"/-->
+                                    <!--Setter Property="Opacity" TargetName="ShineBorder" Value="0.5"/-->
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.2"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="WarkTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="True"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock x:Name="WARKTEXT" Text="{TemplateBinding Tag}" Foreground="#FFFFFF" Visibility="Collapsed" TextAlignment="Left" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#FF7EB4EA"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#FF569DE5"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Text" Value=""/>
+                                        <Condition Property="IsFocused" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Visibility" TargetName="WARKTEXT" Value="Visible"/>
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="True"/>
+                            <Condition Property="IsSelectionActive" Value="False"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <!--DATAPICK-->
+            <SolidColorBrush x:Key="TextBlockForeground" Color="#FFFFFF"/>
+            <Style x:Key="DatePickerTextBoxStyle" TargetType="{x:Type DatePickerTextBox}">
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="Background" Value="Transparent"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <TextBox Text="{Binding SelectedDate, RelativeSource={RelativeSource AncestorType={x:Type DatePicker}}, StringFormat=yyyy-MM-dd}"
+                                     BorderThickness="0" FontSize="12px" Background="{TemplateBinding Background}"
+                                     Foreground="{StaticResource TextBlockForeground}" Padding="0, 4, 0, 0" Tag="不限" Style="{DynamicResource WarkTextBoxStyle}" TextAlignment="Center" FontFamily="Microsoft YaHei"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="DatePickStyleBtns" TargetType="{x:Type Button}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Grid>
+                                <Border x:Name="Back" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="0" Background="Transparent">
+                                    <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Label.Content>
+                                            <Path x:Name="Img"  VerticalAlignment="Center"  HorizontalAlignment="Center"  Fill="#FFFFFF" Data="M0,0 L6,0 3,4 Z"/>
+                                            <!--<Image x:Name="Img"  Height="16" Width="16" Stretch="Uniform" Source="pack://application:,,,/STC.Rfq.Plugin;component/Images/stc_icon_calendar_normal.png"/>-->
+                                        </Label.Content>
+                                    </Label>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="Transparent"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="DatePickStyleClearBtns" TargetType="{x:Type Button}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border x:Name="Back"  BorderThickness="0" BorderBrush="Transparent">
+                                <Image x:Name="Img"  Height="16" Width="16" Stretch="Uniform" Source="pack://application:,,,/STC.Rfq.Plugin;component/Images/stc_icon_login_close.png"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="Transparent"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DatePickerStyle" TargetType="{x:Type DatePicker}">
+                <Setter Property="Foreground" Value="{StaticResource TextBlockForeground}"/>
+                <Setter Property="IsTodayHighlighted" Value="True"/>
+                <Setter Property="SelectedDateFormat" Value="Short"/>
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Padding" Value="0"/>
+
+                <Setter Property="BorderThickness" Value="0.5"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DatePicker}">
+                            <Border x:Name="PART_Border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                <Grid x:Name="PART_Root" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid.Resources>
+                                        <SolidColorBrush x:Key="DisabledBrush" Color="#A5FFFFFF"/>
+                                        <ControlTemplate x:Key="DropDownButtonTemplate" TargetType="{x:Type Button}">
+                                            <Grid>
+                                                <VisualStateManager.VisualStateGroups>
+                                                    <VisualStateGroup x:Name="CommonStates">
+                                                        <VisualStateGroup.Transitions>
+                                                            <VisualTransition GeneratedDuration="0"/>
+                                                            <VisualTransition GeneratedDuration="0:0:0.1" To="MouseOver"/>
+                                                            <VisualTransition GeneratedDuration="0:0:0.1" To="Pressed"/>
+                                                        </VisualStateGroup.Transitions>
+                                                        <VisualState x:Name="Normal"/>
+                                                        <VisualState x:Name="MouseOver">
+                                                            <Storyboard>
+                                                                <ColorAnimation Duration="0" To="#FF448DCA" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="Background"/>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[3].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#7FFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[2].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#CCFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#F2FFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Pressed">
+                                                            <Storyboard>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" Storyboard.TargetName="Background">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#FF448DCA"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <DoubleAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="Highlight">
+                                                                    <SplineDoubleKeyFrame KeyTime="0" Value="1"/>
+                                                                </DoubleAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#EAFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[2].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#C6FFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[3].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#6BFFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                                <ColorAnimationUsingKeyFrames BeginTime="0" Duration="00:00:00.001" Storyboard.TargetProperty="(Border.Background).(GradientBrush.GradientStops)[0].(GradientStop.Color)" Storyboard.TargetName="BackgroundGradient">
+                                                                    <SplineColorKeyFrame KeyTime="0" Value="#F4FFFFFF"/>
+                                                                </ColorAnimationUsingKeyFrames>
+                                                            </Storyboard>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Disabled"/>
+                                                    </VisualStateGroup>
+                                                </VisualStateManager.VisualStateGroups>
+                                                <Grid Background="#11FFFFFF" FlowDirection="LeftToRight" HorizontalAlignment="Center" Height="24" Margin="0" VerticalAlignment="Center" Width="24">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="20*"/>
+                                                        <ColumnDefinition Width="20*"/>
+                                                        <ColumnDefinition Width="20*"/>
+                                                        <ColumnDefinition Width="20*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="23*"/>
+                                                        <RowDefinition Height="19*"/>
+                                                        <RowDefinition Height="19*"/>
+                                                        <RowDefinition Height="19*"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Border x:Name="Highlight" BorderBrush="#FF45D6FA" BorderThickness="1" Grid.ColumnSpan="4" CornerRadius="0,0,1,1" Margin="-1" Opacity="0" Grid.Row="0" Grid.RowSpan="4"/>
+                                                    <Border x:Name="Background" BorderBrush="#FFFFFFFF" BorderThickness="1" Background="#FF1F3B53" Grid.ColumnSpan="4" CornerRadius=".5" Margin="0,-1,0,0" Opacity="1" Grid.Row="1" Grid.RowSpan="3"/>
+                                                    <Border x:Name="BackgroundGradient" BorderBrush="#BF000000" BorderThickness="1" Grid.ColumnSpan="4" CornerRadius=".5" Margin="0,-1,0,0" Opacity="1" Grid.Row="1" Grid.RowSpan="3">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush EndPoint=".7,1" StartPoint=".7,0">
+                                                                <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                                                                <GradientStop Color="#F9FFFFFF" Offset="0.375"/>
+                                                                <GradientStop Color="#E5FFFFFF" Offset="0.625"/>
+                                                                <GradientStop Color="#C6FFFFFF" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+                                                    <Rectangle Grid.ColumnSpan="4" Grid.RowSpan="1" StrokeThickness="1">
+                                                        <Rectangle.Fill>
+                                                            <LinearGradientBrush EndPoint="0.3,-1.1" StartPoint="0.46,1.6">
+                                                                <GradientStop Color="#FF4084BD"/>
+                                                                <GradientStop Color="#FFAFCFEA" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Rectangle.Fill>
+                                                        <Rectangle.Stroke>
+                                                            <LinearGradientBrush EndPoint="0.48,-1" StartPoint="0.48,1.25">
+                                                                <GradientStop Color="#FF494949"/>
+                                                                <GradientStop Color="#FF9F9F9F" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Rectangle.Stroke>
+                                                    </Rectangle>
+                                                    <Path Grid.ColumnSpan="4" Grid.Column="0" Data="M11.426758,8.4305077 L11.749023,8.4305077 L11.749023,16.331387 L10.674805,16.331387 L10.674805,10.299648 L9.0742188,11.298672 L9.0742188,10.294277 C9.4788408,10.090176 9.9094238,9.8090878 10.365967,9.4510155 C10.82251,9.0929432 11.176106,8.7527733 11.426758,8.4305077 z M14.65086,8.4305077 L18.566387,8.4305077 L18.566387,9.3435936 L15.671368,9.3435936 L15.671368,11.255703 C15.936341,11.058764 16.27293,10.960293 16.681133,10.960293 C17.411602,10.960293 17.969301,11.178717 18.354229,11.615566 C18.739157,12.052416 18.931622,12.673672 18.931622,13.479336 C18.931622,15.452317 18.052553,16.438808 16.294415,16.438808 C15.560365,16.438808 14.951641,16.234707 14.468243,15.826504 L14.881817,14.929531 C15.368796,15.326992 15.837872,15.525723 16.289043,15.525723 C17.298809,15.525723 17.803692,14.895514 17.803692,13.635098 C17.803692,12.460618 17.305971,11.873379 16.310528,11.873379 C15.83071,11.873379 15.399232,12.079271 15.016094,12.491055 L14.65086,12.238613 z" Fill="#FF2F2F2F" HorizontalAlignment="Center" Margin="4,3,4,3" Grid.Row="1" Grid.RowSpan="3" RenderTransformOrigin="0.5,0.5" Stretch="Fill" VerticalAlignment="Center"/>
+                                                    <Ellipse Grid.ColumnSpan="4" Fill="#FFFFFFFF" HorizontalAlignment="Center" Height="3" StrokeThickness="0" VerticalAlignment="Center" Width="3"/>
+                                                    <Border x:Name="DisabledVisual" BorderBrush="#B2FFFFFF" BorderThickness="1" Grid.ColumnSpan="4" CornerRadius="0,0,.5,.5" Opacity="0" Grid.Row="0" Grid.RowSpan="4"/>
+                                                </Grid>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Grid.Resources>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="14"/>
+                                        <ColumnDefinition Width="16"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="Clear_Button" Grid.Column="1"  Tag="{TemplateBinding Tag}" Width="16" Style="{StaticResource DatePickStyleClearBtns}" Click="Clear_Button_Click" BorderThickness="0" Background="Transparent" Visibility="Collapsed"></Button>
+                                    <Button x:Name="PART_Button" Grid.Column="2"  Tag="{TemplateBinding Tag}" Width="16"  Style="{StaticResource DatePickStyleBtns}"  Click="PART_Button_Click" Foreground="{StaticResource ColorBrush.While}" BorderThickness="0" Background="Transparent"></Button>
+                                    <DatePickerTextBox x:Name="PART_TextBox" Grid.Column="0" BorderThickness="0"  Style="{StaticResource DatePickerTextBoxStyle}"/>
+                                    <Grid x:Name="PART_DisabledVisual" Grid.ColumnSpan="2" Grid.Column="0" IsHitTestVisible="False" Opacity="0" Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Rectangle Grid.Column="0" Fill="#A5FFFFFF" RadiusY="1" Grid.Row="0" RadiusX="1"/>
+                                        <Rectangle Grid.Column="1" Fill="#A5FFFFFF" Height="24" Margin="0" RadiusY="1" Grid.Row="0" RadiusX="1" Width="19"/>
+                                        <Popup x:Name="PART_Popup" AllowsTransparency="True" Placement="Bottom" PlacementTarget="{Binding ElementName=PART_TextBox}" StaysOpen="False"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Visibility" TargetName="Clear_Button" Value="Visible"/>
+                                </Trigger>
+                                <DataTrigger Binding="{Binding Source={x:Static SystemParameters.HighContrast}}" Value="false">
+                                    <Setter Property="Foreground" TargetName="PART_TextBox" Value="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ElementName=PART_TextBox, Path=Text}"  Value="{x:Null}">
+                                    <Setter Property="Visibility" TargetName="Clear_Button" Value="Collapsed"/>
+                                </DataTrigger>
+                                
+                                <!--<Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="PART_Border" Value="{StaticResource ColorBrush.Gray14}"/>
+                                </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+                <Style x:Key="SelfComboBoxStyle" TargetType="{x:Type ComboBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="BorderBrush" Value="#515151"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="Padding" Value="6,0,5,0"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template" Value="{StaticResource  ComboBoxTemplate}"/>
+                <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItemStyle}"/>
+
+            </Style>
+
+            
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border BorderBrush="#3C3C3C" BorderThickness="2" CornerRadius="4,4,4,4">
+        <Grid Background="{StaticResource ColorBrush.Gray13}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="44"/>
+            </Grid.RowDefinitions>
+                    <!--标题-->
+                    <Grid x:Name="gTitle" Background="{StaticResource ColorBrush.Gray18}" Grid.Row="0">
+                        <Border x:Name="bdSecurity"  BorderThickness="0">
+                            <Grid Background="Transparent">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="32"></ColumnDefinition>
+                                    <ColumnDefinition Width="*"></ColumnDefinition>
+                                    <ColumnDefinition Width="24"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <Image Grid.Column="0" x:Name="TitleIcon" Stretch="Uniform" Height="24" Margin="4,0,0,0"/>
+                                <TextBlock  Grid.Column="1" x:Name="TextBlockSecurity" Text="{Binding WinTitle}" HorizontalAlignment="Left" Margin="8,0,0,0"  VerticalAlignment="Center" Foreground="#FFFFFF"  FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="14" FontWeight="SemiBold"></TextBlock>
+                                <Button x:Name="btnClose" Grid.Column="2" Width="16" Height="16" Margin="0,0,10,0" Style="{StaticResource ImageCloseButton}" Click="btnClose_Click" IsCancel="True" Command="{Binding CloseCommand}" HorizontalAlignment="Left"></Button>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                            
+            <StackPanel Grid.Row="1" Orientation="Vertical">
+                <!--Height="610"-->
+                <comp:ExtendedScrollViewer x:Name="scroll" Height="610" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="scroll_PreviewMouseWheel" Style="{StaticResource DefaultScrollViewer}">
+                    <!--参数内容-->
+                    <Grid x:Name="Body" Background="#141414" Grid.Row="1">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="266"/>
+                                <RowDefinition Height="74"/>
+                                <RowDefinition Height="204"/>
+                                <RowDefinition Height="141"/>
+                                <RowDefinition Height="109"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+
+                            <!--基础报价设置区域-->
+                            <Border BorderBrush="#282828" Grid.Row="0" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="54"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition Width="64"/>
+                                        <ColumnDefinition  Width="110"/>
+                                        <ColumnDefinition Width="32"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock  Text="基础设置" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" FontSize="14" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="10,0,0,0" Width="84" HorizontalAlignment="Left" FontFamily="MicroSoft YaHei" FontWeight="SemiBold"/>
+                                    <CheckBox Style="{StaticResource DefaultCheckBoxStyle}" Grid.Row="0" Grid.Column="5" Grid.ColumnSpan="3"  Content="成交达成后不再自动回复" Foreground="#A0A0A0 " Margin="0,0,10,0" VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                    IsChecked="{Binding Data.autoReply, Converter={StaticResource booleanConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="清算速度" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Row="1" Grid.Column="3" Height="20" Style="{StaticResource SelfComboBoxStyle}" Width="100" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding BaseSettleTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.settltype, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="5" Text="有效方向" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Row="1"  Grid.Column="6" Height="20" Style="{StaticResource SelfComboBoxStyle}" Width="100" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding ValidSideList}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.validSide, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left"/>
+
+                                    <!--策略类型-->
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="策略类型" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Height="Auto"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Width="20" Height="Auto"/>
+
+                                    <ComboBox Grid.Row="2" Grid.Column="3" Width="100" Height="20" Style="{StaticResource SelfComboBoxStyle}" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding Data.bidStrategyModeList}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.strategyTypeBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left">
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="5" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                    <ComboBox  Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="3" Width="100" Height="20" Style="{StaticResource SelfComboBoxStyle}" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding Data.ofrStrategyModeList}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.strategyTypeOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left"/>
+
+                                    <!--预设回量-->
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="预设回量" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="bidBaseQty_tb" Grid.Row="3" Grid.Column ="3" Width="100" Height="24" Style="{StaticResource defaultKWTextBox}" ToolTip="输入范围：[0.01, 9999.90]"
+                                                Foreground="#FFFFFF" Padding="0,0,0,0"  HorizontalContentAlignment="Left" Focusable="True" 
+                                                Tag="bidBaseQty" HorizontalAlignment="Left" VerticalAlignment="Center" ContextMenu="{x:Null}" Text="{Binding Data.quantityBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="5" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="ofrBaseQty_tb" Grid.Row="3" Grid.Column="6" Width="100" Height="24" Style="{StaticResource defaultKWTextBox}" 
+                                        Foreground="#FFFFFF" Padding="0,0,0,0" HorizontalContentAlignment="Left" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                     Tag="ofrBaseQty" HorizontalAlignment="Left" VerticalAlignment="Center" BorderThickness="1" ContextMenu="{x:Null}" ToolTip="输入范围：[0.01, 9999.90]"
+                                     InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.quantityOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+                                    <TextBlock x:Name="WarnOfrBaseQty" Grid.Row="3" Grid.Column="5" Grid.RowSpan="2" Grid.ColumnSpan="3" Text="" Foreground="Red" FontSize="10" VerticalAlignment="Center" Margin="0,3,0,0" Visibility="Collapsed"/>
+
+                                    <!--有效日期-->
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="有效日期" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="5" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <DatePicker x:Name="datePickerbid" Tag="datePickerbid" Grid.Row="4" Grid.Column="3" Width="100" Height="24" HorizontalAlignment="Left" SelectedDate="{Binding Data.StartDateBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            Style="{DynamicResource DatePickerStyle}" Foreground="{StaticResource DefaultForegroup.ColorBrush}">
+                                        <DatePicker.Resources>
+                                            <Style TargetType="DatePickerTextBox">
+                                                <Setter Property="IsReadOnly" Value="True"/>
+                                            </Style>
+                                        </DatePicker.Resources>
+                                    </DatePicker>
+
+                                    <DatePicker x:Name="datePickerofr"  Tag="datePickerofr" Grid.Row="4" Grid.Column="6" Width="100" Height="24" HorizontalAlignment="Left" SelectedDate="{Binding Data.StartdateOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                            Style="{DynamicResource DatePickerStyle}" Foreground="{StaticResource DefaultForegroup.ColorBrush}">
+                                        <DatePicker.Resources>
+                                            <Style TargetType="DatePickerTextBox">
+                                                <Setter Property="IsReadOnly" Value="True"/>
+                                            </Style>
+                                        </DatePicker.Resources>
+                                    </DatePicker>
+
+                                    <!--有效时长-->
+                                    <TextBlock Grid.Row="5" Grid.Column="1"  Text="有效时长" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="5" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                    <ComboBox Grid.Row="5" Grid.Column="3" Height="20" Style="{StaticResource SelfComboBoxStyle}"  Width="100" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding BaseValidUntilTime}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.quoteValidUntilTimeBid, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left"/>
+                                    <ComboBox Grid.Row="5" Grid.Column="6" Height="20" Style="{StaticResource SelfComboBoxStyle}"  Width="100" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding BaseValidUntilTime}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.quoteValidUntilTimeOfr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left"/>
+
+                                    <!--重发阈值-->
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="重发阈值" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="2"   Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBox  Grid.Row="6" Grid.Column="3"  x:Name="bidBaseReSendValue_tb" Style="{StaticResource defaultBPTextBox}" ContextMenu="{x:Null}"
+                                            Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="100"  HorizontalAlignment="Left" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                            Tag="bidBaseReSendValue" VerticalAlignment="Center" ToolTip="输入范围：[0.01, 99.99] "
+                                            InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.resendThresholdBid,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="6" Grid.Column="5"  Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="ofrBaseReSendValue_tb" Grid.Row="6" Grid.Column="6" Style="{StaticResource defaultBPTextBox}" 
+                                        Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="100" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                        Tag="ofrBaseReSendValue" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}" ToolTip="输入范围：[0.01, 99.99] "
+                                        InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.resendThresholdOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <!--回量上限-->
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="回量上限" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="5" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                    <TextBox Grid.Row="7" Grid.Column ="3"  Width="100" Height="24" Style="{StaticResource defaultKWTextBox}" 
+                                                Foreground="#FFFFFF" Padding="0,0,0,0"  HorizontalContentAlignment="Center" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                                Tag="maxQtyBid" HorizontalAlignment="Left" VerticalAlignment="Center" ContextMenu="{x:Null}" ToolTip="输入范围：[0.01, 9999.90]"
+                                                InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.maxQtyBid,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBox Grid.Row="7" Grid.Column ="6"  Width="100" Height="24" Style="{StaticResource defaultKWTextBox}" 
+                                                Foreground="#FFFFFF" Padding="0,0,0,0" HorizontalAlignment="Left" HorizontalContentAlignment="Center" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                                Tag="maxQtyOfr" VerticalAlignment="Center" ContextMenu="{x:Null}" ToolTip="输入范围：[0.01, 9999.90]"
+                                                InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.maxQtyOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+                                </Grid>
+                            </Border>
+
+                            <!--一般报价设置区域-->
+                            <!--手动报价-->
+                            <Border BorderBrush="#282828" Grid.Row="1" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="54"/>
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="30"/>
+                                        <ColumnDefinition Width="64"/>
+                                        <ColumnDefinition  Width="110"/>
+                                        <ColumnDefinition Width="32"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock  Text="一般报价设置" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" FontSize="14" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="10,0,0,0" Width="84" HorizontalAlignment="Left" FontFamily="MicroSoft YaHei" FontWeight="SemiBold"/>
+                                    <!--手动报价-->
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="手动报价" Foreground="#D7D7D7"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" FontFamily="MicroSoft YaHei" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                    <TextBox x:Name="manualBid_tb" Grid.Row="1" Grid.Column ="3"  PreviewTextInput="TextBox_PreviewTextInput"  Width="60" Height="24" InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Right" Margin="0,0,10,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center"
+                                            Foreground="#FFFFFF" BorderBrush="#3C3C3C" BorderThickness="1" ToolTip="输入范围：(-100, 9999.0000]"
+                                            FontSize="12" Focusable="True"  Text="{Binding Data.manualBid,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MyDefaultTextBoxStyle}" Tag="manualBid" TextChanged="TextBox_TextChanged">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="5" Text="Ofr" Foreground="#58B3FF"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="manualOfr_tb" Grid.Row="1" Grid.Column="6" Width="60" Height="24"  PreviewTextInput="TextBox_PreviewTextInput"  Padding="0, 0, 0, 0" InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Right"  Margin="0,0,10,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Foreground="#FFFFFF" BorderBrush="#3C3C3C" BorderThickness="1" ToolTip="输入范围：(-100, 9999.0000]"
+                                            FontSize="12" Focusable="True"  Text="{Binding Data.manualOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Style="{StaticResource MyDefaultTextBoxStyle}" Tag="manualOfr" TextChanged="TextBox_TextChanged">
+                                    </TextBox>
+                                </Grid>
+                            </Border>
+
+                            <!--防守报价-->
+                            <Border BorderBrush="#282828" Grid.Row="2" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="12"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="52"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="62"/>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition  Width="56"/>
+                                        <ColumnDefinition  Width="62"/>
+                                        <ColumnDefinition Width="32"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!--防守报价-->
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="防守报价" Foreground="#D7D7D7"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="MicroSoft YaHei" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"  Height="Auto" Width="20"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="9" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="bidDefenCalPrice_tb" Grid.Row="0" Grid.Column="5" Text="{Binding Data.bidDefenCalPrice, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#FB943C " VerticalAlignment="Center"  HorizontalAlignment="Right" Width="Auto"/>
+                                    <TextBlock x:Name="ofrDefenCalPrice_tb" Grid.Row="0" Grid.Column="11" Text="{Binding Data.ofrDefenCalPrice, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#58B3FF " VerticalAlignment="Center"  HorizontalAlignment="Right" Width="Auto"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="防守点" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Text="最优" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                    <TextBox x:Name="defBid_tb" Grid.Row="1" Grid.Column="5" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF"  BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="defBid" VerticalAlignment="Center" HorizontalAlignment="Right" ContextMenu="{x:Null}" ToolTip="输入范围：[0.00, 1000.00]"
+                                         InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.defBid,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+                                    <TextBlock Grid.Row="1" Grid.Column="4" Text="Bid+" Foreground="#FB943C " VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="9" Text="最优" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="10" Text="Ofr-" Foreground="#58B3FF " VerticalAlignment="Center" HorizontalAlignment="Left"  Margin="4,0,0,0"/>
+                                    <TextBox x:Name="defOfr_tb" Grid.Row="1" Grid.Column="11" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="defOfr" VerticalAlignment="Center" HorizontalAlignment="Right" ContextMenu="{x:Null}" ToolTip="输入范围：[0.00, 1000.00]"
+                                         InputMethod.IsInputMethodEnabled="False"  Text="{Binding Data.defOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="墙设置" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                    <Image Grid.Row="2" Grid.Column="3" Source="/STC.Rfq.Plugin;component/Images/MM_Warn.png"  VerticalAlignment="Center" HorizontalAlignment="Left" Width="16" Height="16" Margin="1,0,0,0">
+                                        <Image.ToolTip>
+                                            <Grid>
+                                                <TextBlock FontSize="14"  TextWrapping="Wrap" Text="防守报价动态处于最优双边外面。&#xA;触墙时，根据墙的价格拉宽后作为防守报价。" />
+                                            </Grid>
+                                        </Image.ToolTip>
+                                    </Image>
+                                    <TextBlock Grid.Row="2" Grid.Column="4" Text="Bid:" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left"  VerticalAlignment="Center" Height="Auto" Width="24"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="10" Text="Ofr:" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,0,0"/>
+
+                                    <TextBlock x:Name="globalWallBid_tb" Grid.Row="2" Grid.Column="5" Text="{Binding Data.defWallPriceBid, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#FB943C " VerticalAlignment="Center"  HorizontalAlignment="Right" Width="Auto"/>
+                                    <TextBlock x:Name="globalWallOfr_tb" Grid.Row="2" Grid.Column="11" Text="{Binding Data.defWallPriceOfr, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#58B3FF " VerticalAlignment="Center" HorizontalAlignment="Right" Width="Auto"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Grid.RowSpan="2" Text="MAX:" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="0,0,2,0"/>
+                                    <Border Grid.Row="3" Grid.RowSpan="2" Grid.Column="2" Width="6" Height="36" BorderBrush="#A0A0A0 " BorderThickness="2,2,0,2" HorizontalAlignment="Right"/>
+                                    <Border Grid.Row="3" Grid.RowSpan="2" Grid.Column="6" Width="6" Height="36" BorderBrush="#A0A0A0 " BorderThickness="0,2,2,2" HorizontalAlignment="Left"/>
+                                    <Border Grid.Row="3" Grid.RowSpan="2" Grid.Column="8" Width="6" Height="36" BorderBrush="#A0A0A0 " BorderThickness="2,2,0,2" HorizontalAlignment="Left"/>
+                                    <Border Grid.Row="3" Grid.RowSpan="2" Grid.Column="12" Width="6" Height="36" BorderBrush="#A0A0A0 " BorderThickness="0,2,2,2" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Row="3" Grid.RowSpan="2" Grid.Column="7" Text="MIN:" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="2" Text="全市场最优Ofr+"  Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12"/>
+
+                                    <TextBox x:Name="bidAlgoSafeValue_tb" Grid.Row="3" Grid.Column="5"  Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Right" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="bidAlgoSafeValue" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.defMaxBid,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="9" Grid.ColumnSpan="2" Text="全市场最优Bid-" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12"/>
+                                    <TextBox x:Name="ofrAlgoSafeValue_tb" Grid.Row="3" Grid.Column="11" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" BorderThickness="1" Width="60" HorizontalContentAlignment="Right" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="ofrAlgoSafeValue" VerticalAlignment="Center" HorizontalAlignment="Right" ContextMenu="{x:Null}"
+                                         InputMethod.IsInputMethodEnabled="False"  Text="{Binding Data.defMaxOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="3" Grid.ColumnSpan="2" Text="全市场次优Bid" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="9" Grid.ColumnSpan="2" Text="全市场次优Ofr" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left" FontSize="12"/>
+
+
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="触墙拉宽" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                    <Run Text="Bid" Foreground="#FB943C "></Run>
+                                    <Run Text="拉宽" Foreground="#A0A0A0 "></Run>
+                                    </TextBlock>
+
+                                    <TextBox x:Name="defWallBid_tb" Grid.Row="5" Grid.Column="5" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="defWallBid" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}" ToolTip="输入范围：[0, 1000.00]"
+                                         InputMethod.IsInputMethodEnabled="False"  Text="{Binding Data.defWallBid,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+                                    <TextBlock Grid.Row="5" Grid.Column="9" Grid.ColumnSpan="2" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="4,0,0,0">
+                                    <Run Text="Ofr" Foreground="#58B3FF "></Run>
+                                    <Run Text="拉宽" Foreground="#A0A0A0 "></Run>
+                                    </TextBlock>
+
+                                    <TextBox x:Name="defWallOfr_tb" Grid.Row="5" Grid.Column="11" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="defWallOfr" VerticalAlignment="Center" HorizontalAlignment="Right" ContextMenu="{x:Null}" ToolTip="输入范围：[0, 1000.00]"
+                                         InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.defWallOfr,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+
+
+                                </Grid>
+                            </Border>
+
+                            <!--算法报价-->
+                            <Border BorderBrush="#282828" Grid.Row="3" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="52"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="62"/>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition  Width="56"/>
+                                        <ColumnDefinition  Width="62"/>
+                                        <ColumnDefinition Width="32"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="算法报价" Foreground="#D7D7D7"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="MicroSoft YaHei" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Height="Auto" Width="20"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="9" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="bidAlgoCalPrice_tb" Grid.Row="0" Grid.Column="5" Text="{Binding Data.bidAlgoCalPrice, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#FB943C " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Width="Auto"/>
+                                    <TextBlock x:Name="ofrAlgoCalPrice_tb" Grid.Row="0" Grid.Column="11" Text="{Binding Data.ofrAlgoCalPrice, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#58B3FF " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="Auto"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="参考中间价" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                    <ComboBox x:Name="algoMidType_cb" Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="4" Height="20" Style="{StaticResource SelfComboBoxStyle}" Width="148" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding AlgoMidTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="algoMidType_cb_SelectionChanged" SelectedValue="{Binding Data.algoMidPriceType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  IsEnabled="True">
+                                    </ComboBox>
+
+                                    <CheckBox x:Name="algoBaseEnable_chk" Grid.Row="1" Grid.Column="9" Grid.ColumnSpan="2" Margin="0,0,0,0" Style="{StaticResource DefaultCheckBoxStyle}" Content="使用基准券" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                    IsChecked="{Binding Data.algoBaseEnable, Converter={StaticResource booleanConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Padding="0,0,0,0" Click="algoBaseEnable_chk_Click"/>
+                                    <comp:NoBtnSearchTextBox x:Name="bond_txt" Grid.Row="1" Grid.Column="10" Grid.ColumnSpan="2" Width="68" Height="24" HorizontalAlignment="Right" BorderThickness="1" BorderBrush="#3C3C3C" Foreground="Red"
+                                    SearchText="{Binding Data.algoBaseSecurityId, Mode =TwoWay, UpdateSourceTrigger=PropertyChanged}" AfterSearch="bond_txt_AfterSearch" ValueChanged="bond_txt_ValueChanged" HintText="" LostFocus="bond_txt_LostFocus" ListMarketFilter="CIB">
+                                    </comp:NoBtnSearchTextBox>
+                                    <!--算法报价-自定义-->
+                                    <TextBox x:Name="algoMidPrice_tb" Tag="algoMidPrice"  Grid.Row="2" Grid.Column ="3" Grid.ColumnSpan="3" PreviewTextInput="TextBox_PreviewTextInput"  Width="60" Height="24" InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" VerticalAlignment="Center"
+                                            Foreground="#FFFFFF" BorderBrush="#3C3C3C" BorderThickness="1" ToolTip="输入范围：[0,1000]"
+                                            Visibility="{Binding Data.algoMidPriceVisible, Converter={StaticResource visibilityConvertor}, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                            FontSize="12" Focusable="True"  Text="{Binding Data.algoMidPrice,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource MyDefaultTextBoxStyle}" TextChanged="TextBox_TextChanged">
+                                    </TextBox>
+                                    <!--参考中间价详情-->
+                                    <TextBlock x:Name="algoMidDetail_tb" Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="5" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left"
+                                           Visibility="{Binding Data.algoMidDetailVisible, Converter={StaticResource visibilityConvertor}, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                           Width="Auto" Text="{Binding Data.algoMidDetail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Text, ElementName=algoMidDetail_tb}"/>
+                                    <!--中债估值详情-->
+                                    <TextBlock x:Name="algoCDCDetail_tb" Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="5" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left"
+                                           Visibility="{Binding Data.algoCDCDetailVisible, Converter={StaticResource visibilityConvertor}, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                           Width="Auto" Text="{Binding Data.algoCDCDetail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Text, ElementName=algoCDCDetail_tb}"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="算法偏离" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                    <TextBox x:Name="algoDeviation_tb" Grid.Row="3" Grid.Column="5" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="algoDeviation" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}" ToolTip="输入范围：[-1000.00，1000.00]"
+                                         InputMethod.IsInputMethodEnabled="False"  Text="{Binding Data.algoDeviation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+                                    <TextBlock Grid.Row="3" Grid.Column="9" Grid.ColumnSpan="2" Margin="4,0,0,0" Text="算法点差" Foreground="#A0A0A0 " VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                    <TextBox x:Name="algoSpread_tb" Grid.Row="3" Grid.Column="11" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="algoSpread" VerticalAlignment="Center" HorizontalAlignment="Right" ContextMenu="{x:Null}" ToolTip="输入范围：(0，1000.00]。注意，点差必须大于0"
+                                         InputMethod.IsInputMethodEnabled="False" Text="{Binding Data.algoSpread, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    </TextBox>
+                                </Grid>
+                            </Border>
+
+                            <!--接口报价-->
+                            <Border BorderBrush="#282828" Grid.Row="4" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                        <RowDefinition Height="32"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="52"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="62"/>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition  Width="56"/>
+                                        <ColumnDefinition  Width="62"/>
+                                        <ColumnDefinition Width="32"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="接口报价" Foreground="#D7D7D7"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="MicroSoft YaHei" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Height="Auto" Width="20"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="9" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="apiBid_tb" Grid.Row="0" Grid.Column="5" Text="{Binding Data.apiBid, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#FB943C " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Width="Auto"/>
+                                    <TextBlock x:Name="apiOfr_tb" Grid.Row="0" Grid.Column="11" Text="{Binding Data.apiOfr, Converter={StaticResource FormatDigitConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#58B3FF " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="Auto"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="接口报量" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Height="Auto" Width="20"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="9" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="5"  HorizontalAlignment="Right" VerticalAlignment="Center" Width="Auto">
+                                <Run Text="{Binding Data.apiBidQty, Converter={StaticResource FormatZeroConverter}}" Foreground="#A0A0A0" FontSize="12"></Run>
+                                <Run Text="kw" Foreground="#A0A0A0"  FontSize="12"></Run>
+                                    </TextBlock>
+                                    <TextBlock Grid.Row="1" Grid.Column="11"  HorizontalAlignment="Right" VerticalAlignment="Center" Width="Auto">
+                                <Run Text="{Binding Data.apiOfrQty, Converter={StaticResource FormatZeroConverter}}" Foreground="#A0A0A0" FontSize="12"></Run>
+                                <Run Text="kw" Foreground="#A0A0A0"  FontSize="12"></Run>
+                                    </TextBlock>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="接口状态" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="4" Text="{Binding Data.apiStatus, Converter={StaticResource FormatZeroConverter}}" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </comp:ExtendedScrollViewer>
+            </StackPanel>
+            <!--确认取消按钮区域-->
+            <Grid Grid.Row="2" Background="#1E1E1E">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160"></ColumnDefinition>
+                        <ColumnDefinition Width="62"></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="160"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Button Style="{StaticResource SelfCancelButton}" Grid.Column="1" Width="60" Height="24" Content="取消" Foreground="#FFFFFF" Command="{Binding CancelBtnCommand}"/>
+                    <Button Style="{StaticResource SendPriceButton}" Grid.Column="2" Width="100" Height="24" Content="确认" Foreground="#FFFFFF" Margin="4,0,0,0" Command ="{Binding ConfirmBtnCommand}"/>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+
+</Window>

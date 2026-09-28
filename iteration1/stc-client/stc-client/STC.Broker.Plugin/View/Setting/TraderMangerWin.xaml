@@ -1,0 +1,228 @@
+﻿<commonComp:WindowBase x:Class="STC.Broker.Plugin.View.Setting.TraderMangerWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" 
+            Title="交易员管理"
+        WindowStartupLocation="CenterOwner"
+         Background="#0A0F0E" BorderThickness="2" 
+        BorderBrush="#282828" ResizeMode="NoResize"
+        WindowState="Normal"
+        Width="380"  Height="460"
+        >
+    <Window.Resources>
+        <ResourceDictionary>
+
+            <DrawingImage x:Key="PersonImage">
+                <DrawingImage.Drawing>
+                    <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                        <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M1024,1024z M0,0z M78.22291438,968.30107625C78.22291438,982.52043031 87.70248407,992 101.92183812,992 116.14119217,992 125.62076187,982.52043031 125.62076187,968.30107625 125.62076187,754.97070969 298.6562825,581.93518906 511.98664812,581.93519 725.31701374,581.93519094 898.36588625,754.97071063 898.36588719,968.30107625 898.36588719,982.52043031 907.84545688,992 922.06481,992 936.28416312,992 945.76373375,982.52043031 945.76373375,968.30107625 945.76373375,771.55328094 813.02305906,605.63411281 635.24775406,551.10656188 725.31701468,506.07193157 786.96091906,413.58604813 786.96091906,306.96091906 786.96091906,155.261105 663.69981406,32 511.98664813,32 360.2734822,32 237.03908094,155.261105 237.03908094,306.96091906 237.03908094,413.62610187 298.66963344,506.07193156 388.738895,551.10656187 208.60037281,603.25754469 78.22291438,769.17671281 78.22291438,968.30107625z M284.45027937,304.54429625C284.45027937,178.91997406 386.37567781,76.98122469 512,76.98122469 637.62432219,76.98122469 739.56307156,178.97338063 739.56307156,304.54429625 739.56307156,430.11521187 637.651025,532.1474225 512,532.1474225 386.348975,532.1474225 284.45027937,430.22202406 284.45027937,304.54429625z M284.45027937,304.54429625" />
+                    </DrawingGroup>
+                </DrawingImage.Drawing>
+            </DrawingImage>
+            
+            <Style x:Key="TraderImageButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#A0A0A0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" BorderThickness="0" BorderBrush="#A0A0A0" Background="{TemplateBinding Background}">
+                                <Image  Grid.Column="1" Width="12" Height="16" >
+                                    <Image.Source>
+                                        <DrawingImage >
+                                            <DrawingImage.Drawing>
+                                                <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                                                    <GeometryDrawing  Brush="{Binding BorderBrush, RelativeSource={ RelativeSource Mode=FindAncestor, AncestorType=Border} }" Geometry="F1 M1024,1024z M0,0z M78.22291438,968.30107625C78.22291438,982.52043031 87.70248407,992 101.92183812,992 116.14119217,992 125.62076187,982.52043031 125.62076187,968.30107625 125.62076187,754.97070969 298.6562825,581.93518906 511.98664812,581.93519 725.31701374,581.93519094 898.36588625,754.97071063 898.36588719,968.30107625 898.36588719,982.52043031 907.84545688,992 922.06481,992 936.28416312,992 945.76373375,982.52043031 945.76373375,968.30107625 945.76373375,771.55328094 813.02305906,605.63411281 635.24775406,551.10656188 725.31701468,506.07193157 786.96091906,413.58604813 786.96091906,306.96091906 786.96091906,155.261105 663.69981406,32 511.98664813,32 360.2734822,32 237.03908094,155.261105 237.03908094,306.96091906 237.03908094,413.62610187 298.66963344,506.07193156 388.738895,551.10656187 208.60037281,603.25754469 78.22291438,769.17671281 78.22291438,968.30107625z M284.45027937,304.54429625C284.45027937,178.91997406 386.37567781,76.98122469 512,76.98122469 637.62432219,76.98122469 739.56307156,178.97338063 739.56307156,304.54429625 739.56307156,430.11521187 637.651025,532.1474225 512,532.1474225 386.348975,532.1474225 284.45027937,430.22202406 284.45027937,304.54429625z M284.45027937,304.54429625" />
+                                                </DrawingGroup>
+                                            </DrawingImage.Drawing>
+                                        </DrawingImage>
+                                    </Image.Source>
+                                </Image>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="BorderBrush" Value="#FFFFFF" TargetName="border"  />
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="BorderBrush" Value="#FFFFFF"  TargetName="border" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" 
+                      UseAeroCaptionButtons="False"
+                      ResizeBorderThickness="1"
+                      GlassFrameThickness="0"/>
+
+    </WindowChrome.WindowChrome>
+
+    <Grid >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition ></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <commonComp:WatermarkTextBox x:Name="tbContact" Height="22" Width="155" Margin="6,0"
+                         input:InputMethod.IsInputMethodEnabled="True" WaterMark="搜索联系人"
+                         input:TextCompositionManager.PreviewTextInput="tbContact_PreviewTextInput"
+                         input:TextCompositionManager.PreviewTextInputUpdate="tbContact_PreviewTextInputUpdate"
+                         KeyDown="tbContact_KeyDown"
+                         PreviewKeyDown="tbContact_PreviewKeyDown"
+                         TextChanged="tbContact_TextChanged"
+                         LostKeyboardFocus="tbContact_LostKeyboardFocus"/>
+        </StackPanel>
+        <Popup x:Name="tbContactPop" PlacementTarget="{Binding ElementName=tbContact}" LostFocus="tbContactPop_LostFocus" StaysOpen="False">
+            <DataGrid x:Name="dgContactResult"
+                                  Grid.Row="1"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="155"
+                                  MaxHeight="200"
+                                  MouseLeftButtonUp="dgContactResult_MouseLeftButtonUp"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                  Style="{DynamicResource DefaultDataGridNoSpaceStyle}">
+                <DataGrid.Resources>
+                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Contact}" Width="1*" >
+                        <DataGridTextColumn.ElementStyle >
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Popup>
+        <Grid Grid.Row="2" >
+            <DataGrid x:Name="TraderDataGrid"  Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                          HorizontalAlignment="Left"  FontSize="12" Opacity="1"   
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          AutoGenerateColumns="False"
+                          ScrollViewer.CanContentScroll="True"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel"
+                          ItemsSource="{Binding InstTraderViewModels}" >
+                <DataGrid.Resources>
+                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Left"/>
+                        <Setter Property="Margin" Value="5,0,5,0"/>
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        <Setter Property="Foreground" Value="#FFEBC8"/>
+                        <Setter Property="ToolTip">
+                            <Setter.Value>
+                                <ToolTip Content="{Binding Path=Text}"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="4*">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="联系人" Margin="10,0,0,0"  Foreground="#8F9598"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock  Text="{Binding Contact}" Margin="15,0,0,0" VerticalAlignment="Center" Foreground = "#FFFFFF"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="4*">
+                        <DataGridTemplateColumn.Header>
+                            <TextBlock Text="发单人" Foreground="#8F9598" Margin="10,0,0,0"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Style="{DynamicResource STCDefaultBoxStyle}" Margin="15,0,0,0" Text="{Binding Issuer}"
+                                            Height="22"
+                                            KeyDown="TextBox_KeyDown" 
+                                            PreviewKeyDown="TextBox_PreviewKeyDown"
+                                            TextChanged="TextBox_TextChanged"
+                                            input:InputMethod.IsInputMethodEnabled="True"
+                                            input:TextCompositionManager.PreviewTextInput="tbInstPInput"
+                                            input:TextCompositionManager.PreviewTextInputUpdate="tbInstPInputUpdate"
+                                             />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="70" >
+                        <DataGridTemplateColumn.Header>
+                            <TextBlock Text="交易所联系" Foreground="#8F9598" Margin="1,0,0,0"/>
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button x:Name="btnEditImage" Width="20" HorizontalAlignment="Center" 
+                                        Height="16"  Style="{DynamicResource TraderImageButtonStyle}"  Click="btnEditImage_Click" Tag="{Binding GroupId}"></Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+        </Grid>
+        <Popup x:Name="tbInstPop"  LostFocus="tbInstPop_LostFocus" IsOpen="False"  StaysOpen="False">
+            <DataGrid x:Name="dgInstResult"
+                                  Grid.Row="1"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                                  MouseLeftButtonUp="dgInstResult_MouseLeftButtonUp"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                  >
+                <DataGrid.Resources>
+                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Contact}" Width="1*" >
+                        <DataGridTextColumn.ElementStyle >
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Popup>
+    </Grid>
+</commonComp:WindowBase>
+

@@ -1,0 +1,174 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.CustomeUI.MsgFloatView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.CustomeUI"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             mc:Ignorable="d" 
+             d:DesignHeight="330" d:DesignWidth="344" Width="344">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="None"/>
+                <Setter Property="AlternationCount" Value="1"/>
+                <Setter Property="Height" Value="Auto"/>
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Margin" Value="0,0,0,2"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridCell">
+                                        <Border x:Name="innerboard" BorderThickness="0">
+                                            <ContentPresenter />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="true">
+                                                <Setter Property="BorderThickness" TargetName="innerboard" Value="1"/>
+                                                <Setter Property="Margin" TargetName="innerboard" Value="0,0,0,0"/>
+                                                <Setter Property="CornerRadius" TargetName="innerboard" Value="4"/>
+                                                <Setter Property="BorderBrush" TargetName="innerboard" Value="{Binding ShowBorderBrush}"/>
+                                                <Setter Property="Background" TargetName="innerboard"  Value="Transparent"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            </Style>
+
+            <Storyboard x:Key="sbFloat" Storyboard.TargetName="border" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                <ColorAnimation 
+                From="#50E63034" To="#20E63034" Duration="00:01:00" />
+            </Storyboard>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <DataGrid x:Name="dgMsg" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" MouseDoubleClick="DgMsg_MouseDoubleClick" MouseUp="dgMsg_MouseUp"
+                                  Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  BorderThickness="0" HeadersVisibility="None"
+                  ScrollViewer.CanContentScroll="True" AllowDrop="True" LoadingRow="DgMsg_LoadingRow"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.IsDeferredScrollingEnabled="True"
+                                VirtualizingPanel.IsVirtualizing="False" VirtualizingPanel.ScrollUnit="Pixel"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  CanUserSortColumns="False" 
+                   ItemsSource="{Binding ShowData}"
+                 Style="{StaticResource DataGridStyle}">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="330">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <local:FloatDetailView x:Name="floatDetailView" Margin="0, 0, 0, 0"></local:FloatDetailView>
+                            <!--
+                            <Border Width="300" x:Name="border" BorderThickness="1" Background="{Binding ShowBG}" BorderBrush="Transparent" Height="{Binding ShowHeight}">
+                                <Grid x:Name="grid">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30"></RowDefinition>
+                                        <RowDefinition Height="{Binding GridHeight}"></RowDefinition>
+                                        <RowDefinition></RowDefinition>
+                                        <RowDefinition ></RowDefinition>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock x:Name="tbContentType" Text="{Binding HeaderTitle}" Grid.Column="0" Grid.Row="0" Margin="10, 10, 0, 0" HorizontalAlignment="Left" 
+                           FontSize="12"  Height="18" Foreground="{Binding ContentTypeBrush}"
+                           FontWeight="Bold" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Content}"/>
+                                    <Grid Grid.Column="1" Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition ></ColumnDefinition>
+                                            <ColumnDefinition ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="tbStatus"  Text="{Binding Status}" Width="{Binding StatusWidth}" Grid.Column="0" Grid.Row="0" FontSize="10"
+                            Margin="0, 10, 0, 0" Visibility="{Binding StatusVisibility}" Foreground="{Binding StatusBrush}"/>
+                                        <TextBlock x:Name="tbValuetime"  Text="{Binding ValueTime}" Width="101" Foreground="{Binding ValueTimeBrush}" Visibility="{Binding ValueTimeVisibility}" Margin="0, 10, 0, 0" 
+                               Grid.Column="1" Grid.Row="0"
+                               FontSize="10">
+                                        </TextBlock>
+                                        
+                                    </Grid>
+
+                                    <TextBlock x:Name="tbUpdatetime"  Text="{Binding UpdateTime}" Foreground="{Binding UpdateTimeBrush}" Grid.Column="0" Grid.Row="3" Margin="10, 3, 10, 0" 
+                            FontSize="10"/>
+                                    <TextBlock Text="{Binding CloseBy}" x:Name="tbCloseBy" Visibility="Collapsed" Foreground="{Binding CloseByBrush}"
+                           Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" FontSize="{StaticResource SmallContentFontSize}" 
+                           FontWeight="Bold" Margin="10, 0, 0, 0" />
+
+                                    <TextBlock x:Name="tbContent" Text="{Binding Content}" Foreground="{Binding ContentBrush}" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" HorizontalAlignment="Left" 
+                           FontSize="{StaticResource SmallContentFontSize}" 
+                                                               FontWeight="Bold" Margin="10, 0, 0, 0" />
+                                    <Grid Grid.Column="1" Grid.Row="2" Grid.RowSpan="2" Margin="20, 0 ,0 ,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60"></ColumnDefinition>
+                                            <ColumnDefinition Width="72"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+
+                                        <Button x:Name="btnPopKnow" Command="{Binding PopKnowClick}" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Right"
+                            Margin="2 , 13, 0, 0" Width="20" Height="20" Style="{StaticResource MainPageNoticeCloseButton}" Visibility="{Binding KnowVisibility}">
+                                            <Button.ToolTip>
+                                                <ToolTip Content="知道了" Background="{StaticResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{StaticResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                                            </Button.ToolTip>
+                                        </Button>
+
+                                        <Button x:Name="btnPopDeal" Command="{Binding PopDealCommand}" Style="{StaticResource MainPageNoticeDealButton}" HorizontalAlignment="Right"
+                            Margin="2 , 13, 35, 0" Width="20" Height="20" Grid.Column="1" Grid.Row="0" Visibility="{Binding PopDealVisibility}">
+                                            <Button.ToolTip>
+                                                <ToolTip Content="去处理" Background="{StaticResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{StaticResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                                            </Button.ToolTip>
+                                        </Button>
+
+                                        <Button x:Name="btnLook" Command="{Binding PopLookClick}" Grid.Column="1" Visibility="{Binding LookVisibility}" Grid.Row="0" HorizontalAlignment="Right"
+                            Margin="2 , 13, 35, 0" Width="20" Height="20" Style="{StaticResource MainPageNoticeLookButton}">
+                                            <Button.ToolTip>
+                                                <ToolTip Content="查看" Background="{StaticResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{StaticResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                                            </Button.ToolTip>
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+-->
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+
+                </DataGridTemplateColumn>
+
+
+            </DataGrid.Columns>
+
+        </DataGrid>
+    </Grid>
+</UserControl>

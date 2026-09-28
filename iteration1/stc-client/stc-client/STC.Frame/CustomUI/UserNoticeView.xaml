@@ -1,0 +1,194 @@
+﻿<Window x:Class="STC.Frame.CustomeUI.UserNoticeView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ed="http://schemas.microsoft.com/expression/2010/drawing"
+        mc:Ignorable="d"
+        Title="用户使用须知" d:DesignHeight="600" d:DesignWidth="900" Width="780" Height="600" WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        WindowState="Normal" WindowStyle="None" MouseLeftButtonDown="Window_MouseLeftButtonDown" Loaded="window_Loaded" BorderThickness="0" Background="Transparent" KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+
+            <Style x:Key="DefalutTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <Style x:Key="WarnTextBlockStyle" TargetType="{x:Type Run}">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontWeight" Value="600"/>
+            </Style>
+
+            <Style x:Key="RedTextBlockStyle" TargetType="{x:Type Run}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Red7}"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontWeight" Value="600"/>
+            </Style>
+            
+            <Style x:Key="GoldTextBlockStyle" TargetType="{x:Type Run}">
+                <Setter Property="Foreground" Value="#F9C152"/>
+                <Setter Property="FontSize" Value="16px"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontWeight" Value="600"/>
+            </Style>
+
+            <Style x:Key="LightYellowTextBlockStyle" TargetType="{x:Type Run}">
+                <Setter Property="Foreground" Value="#FFF6D1"/>
+                <Setter Property="FontSize" Value="12px"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontWeight" Value="400"/>
+            </Style>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                            <Grid x:Name="Grid" Background="{TemplateBinding Background}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <!-- 右下角的占位颜色 -->
+                                <Rectangle x:Name="Corner" Grid.Column="1" Fill="Transparent" Grid.Row="1"/>
+                                <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" CanContentScroll="{TemplateBinding CanContentScroll}" CanHorizontallyScroll="False" CanVerticallyScroll="False" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" Grid.Column="0" Margin="{TemplateBinding Padding}" Grid.Row="0"/>
+                                <ScrollBar x:Name="PART_VerticalScrollBar" AutomationProperties.AutomationId="VerticalScrollBar" Cursor="Arrow" Grid.Column="1" Maximum="{TemplateBinding ScrollableHeight}" Minimum="0" Grid.Row="0" Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" ViewportSize="{TemplateBinding ViewportHeight}"/>
+                                <ScrollBar x:Name="PART_HorizontalScrollBar" AutomationProperties.AutomationId="HorizontalScrollBar" Cursor="Arrow" Grid.Column="0" Maximum="{TemplateBinding ScrollableWidth}" Minimum="0" Orientation="Horizontal" Grid.Row="1" Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}" Value="{Binding HorizontalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" ViewportSize="{TemplateBinding ViewportWidth}"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            
+            <!--查询过滤条件CheckBox Style-->
+            <Style x:Key="CheckBoxThemeColor" TargetType="CheckBox">
+                <Setter Property="Foreground" Value="{DynamicResource NoticeCheckBox.Static.Foreground}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" x:Name="_borderOne" CornerRadius="5" Background="{DynamicResource NoticeCheckBox.Static.Background1}" Width="12" Height="12" >
+                                    <Border x:Name="_borderTwo" CornerRadius="4" Background="{DynamicResource NoticeCheckBox.Static.Background2}" Width="8" Height="8" >
+                                        <Border x:Name="_borderThree" CornerRadius="3" Background="{DynamicResource NoticeCheckBox.Static.Background3}" Width="4" Height="4">
+
+                                        </Border>
+                                    </Border>
+                                </Border>
+                                <ContentPresenter Grid.Column="1" x:Name="contentPresenter" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Background" TargetName="_borderOne" Value="{DynamicResource NoticeCheckBox.IsChecked.Background1}"/>
+                                    <Setter Property="Background" TargetName="_borderTwo" Value="{DynamicResource NoticeCheckBox.IsChecked.Background2}"/>
+                                    <Setter Property="Background" TargetName="_borderThree" Value="{DynamicResource NoticeCheckBox.IsChecked.Background3}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource NoticeCheckBox.IsChecked.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Setter Property="Background" TargetName="_borderOne" Value="{DynamicResource NoticeCheckBox.Unselected.Background1}"/>
+                                    <Setter Property="Background" TargetName="_borderTwo" Value="{DynamicResource NoticeCheckBox.Unselected.Background2}"/>
+                                    <Setter Property="Background" TargetName="_borderThree" Value="{DynamicResource NoticeCheckBox.Unselected.Background3}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource NoticeCheckBox.Unselected.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            
+        </ResourceDictionary>
+    </Window.Resources>
+
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <!--{Binding FailVisibility}-->
+        <Grid Background="Transparent" Visibility="{Binding FailVisibility}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="28"/>
+                <RowDefinition/>
+                <RowDefinition Height="44"/>
+            </Grid.RowDefinitions>
+            <Border BorderThickness="1,1,1,1" Grid.Row="0"  CornerRadius="4,4,0,0" BorderBrush="{DynamicResource Notice.Title.BorderBrush}" Background="{DynamicResource Notice.Title.Background}">
+                <Grid  Background="{DynamicResource Notice.Title.Background}" Margin="4,0,4,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="28"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="用户使用须知" Width="80" Margin="6, 0, 0, 0"  Foreground="{DynamicResource Notice.Title.Foreground}" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Width="20" Height="20" Grid.Column="2" Command="{Binding CloseCommand}" HorizontalAlignment="Right" IsCancel="True" Style="{StaticResource ImageCloseButton}" />
+                </Grid>
+            </Border>
+
+            <Border VerticalAlignment="Stretch" Grid.Row="1" BorderThickness="1, 0, 1, 1"  BorderBrush="{DynamicResource Notice.BorderBrush}" CornerRadius="0,0,0,0" Background="{DynamicResource Notice.Background}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="120"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <Border BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Notice.Outside.BorderBrush}" Grid.Row="0" HorizontalAlignment="Left"  Grid.ColumnSpan="3">
+                        <RichTextBox x:Name="richTextBox" Margin="0" IsReadOnly="True" AcceptsTab="True" AcceptsReturn="True" Height="528" Background="{DynamicResource Notice.Background}"  BorderBrush="{DynamicResource Notice.Background}" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <FlowDocument>
+                                <Paragraph Foreground="{DynamicResource Notice.Foreground}" LineHeight="22" Padding="0,0,0,4">
+                                    用户使用须知
+                                    <LineBreak/> 以下简称"本软件"）的正常运行，同时向用户提供不间断的优质服务，本软件开发者宁波森浦信息技术有限公司（以下简称"我司"）特此发布本用户使用须知（以下简称"本须知"）。建议您在接受本软件服务之前，敬请仔细阅读本须知内容，
+                                    <Bold>特别是以粗体标识的条款</Bold> ，在确认充分理解并同意后使用相关本软件或相关服务。如果您不同意本须知任何内容，您应立即停止使用本软件。
+                                </Paragraph>
+                            </FlowDocument>
+                        </RichTextBox>
+                    </Border>
+
+
+                </Grid>
+            </Border>
+
+
+            <Border Grid.Row="2" Grid.ColumnSpan="3" Background="{DynamicResource Notice.Background}" BorderThickness="1, 0, 1, 1"  BorderBrush="{DynamicResource Notice.BorderBrush}" CornerRadius="0,0,4,4" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="120"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <CheckBox  x:Name="lbAllOrder" Grid.Column="0" Margin="5, 0, 0, 0"  Width="260" HorizontalAlignment="Left"  Content="已完成阅读，并确认接受用户使用须知(条款)"  FontSize="12"  Style="{DynamicResource CheckBoxThemeColor}" Click="LbAllOrder_Click" />
+                    <Button x:Name="btnOk"  Grid.Column="1" IsEnabled="False" Click="BtnOk_Click" Visibility="Visible" HorizontalAlignment="Center"  Content="确定" Command="{Binding OkCommand}" Height="24" Width="100" Style="{DynamicResource BlueGreenStyle}" BorderThickness="0 1 0 0"></Button>
+                </Grid>
+            </Border>
+            <!--<Border Grid.Row="2" HorizontalAlignment="Center" Grid.Column="1" Grid.ColumnSpan="3" Background="#171F1F" Margin="2,0,2,2" BorderThickness="0,1,0,0" BorderBrush="#0A0F0E">
+                <Grid>
+                    
+                </Grid>
+            </Border>-->
+        </Grid>
+       
+    </Grid>
+</Window>

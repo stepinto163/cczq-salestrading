@@ -1,0 +1,47 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Book.IDBEditPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.Book"
+             mc:Ignorable="d" FontSize="12" MinWidth="600" Height="204" 
+             d:DesignHeight="300" d:DesignWidth="300" Background="#141414">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Background="#1E1E1E">
+            <!--标题-->
+            <Border Background="#FFE101" CornerRadius="2" Width="40" Height="16" Margin="10,0,0,0">
+                <TextBlock Text="销售" Foreground="#000000" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <!--idb 账号-->
+            <TextBlock x:Name="idb_tb" Foreground="#FFFFFF" Margin="10,0,0,0" VerticalAlignment="Center"><Run Text="{Binding Name}"/>-<Run Text="{Binding SubName}"/></TextBlock>
+            
+            <!--报价-->
+            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0" DockPanel.Dock="Right" Foreground="#FFFFFF" Visibility="{Binding VisibilitySelfIDBPrice}">
+                ( 报价：<Run Text="{Binding Yield,StringFormat={}{0:N4}}"/>    
+                  成交价：<Run Text="{Binding LastPx,StringFormat={}{0:N4}}"/> )
+            </TextBlock>
+        </DockPanel>
+
+        <local:IDBEditSubPanel Grid.Row="1"/>
+
+    </Grid>
+ 
+</UserControl>

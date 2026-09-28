@@ -1,0 +1,66 @@
+﻿<UserControl x:Class="STC.Common.View.Order.InnerView.CancelOrderTimeConditionView"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Order.InnerView"
+             xmlns:Component="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="50" d:DesignWidth="1400"
+             Height="32">
+    <Grid>
+        <Border BorderThickness="0,0,0,0" BorderBrush="{StaticResource ColorBrush.Gray20}">
+            <StackPanel Orientation="Horizontal">
+                <ComboBox x:Name="cbSettle2" Width="60"  Margin="12,0,0,0"  Height="24" Padding="4, 3, 0, 0" BorderThickness="0 1 0 0" Style="{DynamicResource GreenBlueComboBoxStyle}" FontWeight="Normal" Tag="1" SelectedIndex="{Binding ValidSelectIndex,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center">
+                    <ComboBoxItem Content="默认" Tag="1"></ComboBoxItem>
+                    <ComboBoxItem Content="时长" Tag="2"></ComboBoxItem>
+                    <ComboBoxItem Content="时点" Tag="3"></ComboBoxItem>
+                    <ComboBoxItem Content="无   " Tag="4"></ComboBoxItem>
+                </ComboBox>
+                <TextBlock Grid.Row="0" Margin="10, 0, 0, 0"  Height="16" HorizontalAlignment="Left" Grid.Column="0"  FontSize="12" FontWeight="Bold" Visibility="{Binding DefaultValidTimeQuotationCheck,Converter={StaticResource visibilityConvertor}}">
+                                                            <Run Text="每日" Foreground="{DynamicResource ColorBrush.Gray14}" />
+                                                            <Run Text="6:00、12:00、16:30" Foreground="#F9C152"/>
+                                                            <Run Text="自动撤回"  Foreground="{DynamicResource ColorBrush.Gray14}"/>
+                </TextBlock>
+                <!--时长-->
+                <StackPanel Orientation="Horizontal" Height="24" Grid.Column="0"  Margin="6, 0, 0, 0"  Visibility="{Binding HourValidTimeQuotationCheck,Converter={StaticResource visibilityConvertor}}">
+                    <Component:WatermarkTextBox WaterMark="" ContextMenu="{x:Null}" Tag="1" MaxLength="3" x:Name="ValidMinute" PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput" Text="{Binding ValidMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" InputMethod.IsInputMethodEnabled="False" Width="28"  Height="24" Padding="0, 0, 0, 0" Style="{DynamicResource GreenBlueWatermarkTextBox}">
+                        <TextBox.ToolTip>
+                            <ToolTip Content="输入范围:[0-500]分钟"></ToolTip>
+                        </TextBox.ToolTip>
+                    </Component:WatermarkTextBox>
+                    <TextBlock Grid.Row="0" Text="分" Margin="6, 0, 0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                    <Component:WatermarkTextBox  WaterMark="" ContextMenu="{x:Null}"  Margin="6,0,0, 0" Tag="3"  MaxLength="2"  x:Name="ValidSecond"   PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidSecond, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False"   Width="28" Height="24" Padding="0, 0, 0, 0"  Style="{DynamicResource GreenBlueWatermarkTextBox}">
+                        <TextBox.ToolTip>
+                            <ToolTip Content="输入范围:[0-60)"></ToolTip>
+                        </TextBox.ToolTip>
+                    </Component:WatermarkTextBox>
+                    <TextBlock Grid.Row="0" Text="秒"  Height="16"  Margin="6, 0, 0, 0" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="1" Text="后失效" Margin="6, 0, 0, 0" Height="16" HorizontalAlignment="Left" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                </StackPanel>
+                <!--时点-->
+                <StackPanel Orientation="Horizontal" Height="24"  Grid.Column="0"  Margin="10, 0, 0, 0" Visibility="{Binding TimeValidTimeQuotationCheck,Converter={StaticResource visibilityConvertor}}">
+                    <Component:WatermarkTextBox  WaterMark="时" ContextMenu="{x:Null}" Tag="2" MaxLength="2" x:Name="ValidTimeHour"  PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidTimeHour, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False" Width="28" Height="24" Padding="0, 0, 0, 0" Style="{DynamicResource GreenBlueWatermarkTextBox}">
+                        <TextBox.ToolTip>
+                            <ToolTip Content="输入范围:(0，24]"></ToolTip>
+                        </TextBox.ToolTip>
+                    </Component:WatermarkTextBox>
+                    <TextBlock Grid.Row="0" Text=":"  Margin="6,0,0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" />
+                    <Component:WatermarkTextBox WaterMark="分" ContextMenu="{x:Null}"  Tag="0"  Margin="6,0,0, 0" MaxLength="2" x:Name="ValidTimeMinute"  PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidTimeMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False"   Width="28" Height="24" Padding="0, 0, 0, 0"  Style="{DynamicResource GreenBlueWatermarkTextBox}">
+                        <TextBox.ToolTip>
+                            <ToolTip Content="输入范围:[0-60)"></ToolTip>
+                        </TextBox.ToolTip>
+                    </Component:WatermarkTextBox>
+                    <TextBlock Grid.Row="0" Text=":"   Margin="6, 0,0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" />
+                    <Component:WatermarkTextBox WaterMark="秒" ContextMenu="{x:Null}" Tag="0"  Margin="6,0,0, 0" MaxLength="2" x:Name="ValidTimeSecond"  PreviewKeyDown="ValidMinute_PreviewKeyDown"  PreviewTextInput="ValidMinute_PreviewTextInput"  Text="{Binding ValidTimeSecond, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  InputMethod.IsInputMethodEnabled="False"   Width="28" Height="24" Padding="0, 0, 0, 0"  Style="{DynamicResource GreenBlueWatermarkTextBox}">
+                        <TextBox.ToolTip>
+                            <ToolTip Content="输入范围:[0-60)"></ToolTip>
+                        </TextBox.ToolTip>
+                    </Component:WatermarkTextBox>
+                    <TextBlock Grid.Column="1" Text="失效" Margin="6, 0, 0, 0" Height="16" HorizontalAlignment="Left" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12" FontWeight="Bold"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

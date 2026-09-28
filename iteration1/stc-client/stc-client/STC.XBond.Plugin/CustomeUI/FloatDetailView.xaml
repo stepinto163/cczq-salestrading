@@ -1,0 +1,233 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.CustomeUI.FloatDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.CustomeUI"
+             mc:Ignorable="d"
+             MinHeight="104" Width="328" MouseEnter="UserControl_MouseEnter" MouseLeave="UserControl_MouseLeave">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--<Storyboard x:Key="sbFloat" Completed="Storyboard_Completed" Storyboard.TargetName="border" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)">
+                <ColorAnimation From="#282828" To="#50282828" Duration="00:00:2" />
+            </Storyboard>-->
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+    <Grid>
+        <Border x:Name="border" BorderThickness="1" CornerRadius="4" Background="{Binding ShowBG,Mode=OneWay}" BorderBrush="{Binding ShowBorderBrush,Mode=OneWay}">
+            <!--<Border.Background>
+                <SolidColorBrush Color="Transparent"/>
+            </Border.Background>-->
+
+            <Grid x:Name="grid">
+                <Grid.RowDefinitions>
+                    <!--<RowDefinition Height="30"></RowDefinition>
+                    <RowDefinition Height="{Binding GridHeight}"></RowDefinition>
+                    <RowDefinition ></RowDefinition>-->
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="tbContentType" Text="{Binding HeaderTitle}" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Margin="10, 7, 0, 0" HorizontalAlignment="Left" 
+                           FontSize="16"  Height="18" Foreground="#00B563"
+                           FontWeight="Bold" TextWrapping="WrapWithOverflow" ToolTip="{Binding Content}"/>
+                <Grid Grid.Column="1" Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition ></ColumnDefinition>
+                        <ColumnDefinition ></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.ColumnSpan="2" Margin="0, 0, 20, 0">
+                        <TextBlock x:Name="tbValuetime"  Text="{Binding ValueTime}" Foreground="{DynamicResource ColorBrush.While}" Visibility="{Binding ValueTimeVisibility}" Margin="10, 3, 0, 0" 
+                               Grid.Column="1" Grid.Row="0" TextAlignment="Right" Padding="0, 5, 2, 0"
+                               FontSize="10">
+                        </TextBlock>
+
+                        <TextBlock x:Name="tbUpdatetime"  Text="{Binding UpdateTime}" Foreground="{DynamicResource ColorBrush.Gray14}" Grid.Column="0" Grid.Row="0" Margin="3, 3, 0, 0" 
+                            FontSize="10" TextAlignment="Left" Padding="0, 3, 0, 0" Visibility="{Binding UpdateTimeVisibility}"/>
+
+                        <!--<TextBlock Text="{Binding TimeOutTxt}" Foreground="{StaticResource ColorBrush.Red7}" Grid.Column="0" Grid.Row="0" Margin="3, 3, 0, 0"
+                            FontSize="16" FontWeight="Bold" TextAlignment="Left" Visibility="{Binding TimeOutTxtVisibility}"></TextBlock>-->
+
+                        <Border Grid.Column="0" Grid.Row="0" Height="30" Margin="3, 1, 0, 0" MinWidth="40" Visibility="{Binding TimeOutTxtVisibility}" CornerRadius="2" 
+                                Background="{DynamicResource ColorBrush.Gray22}">
+                            <TextBlock TextAlignment="Right" Visibility="{Binding TimeOutTxtVisibility}" Padding="0, 2,2,0">
+                            
+                            <Run Text="{Binding TimeOutTxt}" Foreground="{DynamicResource ColorBrush.Red16}" FontSize="22" FontWeight="Bold"></Run>
+                            <Run Text="s" Foreground="{DynamicResource ColorBrush.Red7}"/>
+
+                            </TextBlock>
+                        </Border>
+                        
+
+                    </StackPanel>
+                    
+                </Grid>
+
+                <TextBlock x:Name="tbStatus"  Text="{Binding Status}" Width="{Binding StatusWidth}" Grid.Column="0" Grid.Row="2" FontSize="10" Grid.RowSpan="2"
+                            Margin="10, 15, 0, 0" Visibility="{Binding StatusVisibility}" Foreground="{DynamicResource ColorBrush.While}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+                <TextBlock Text="{Binding CloseBy}" x:Name="tbCloseBy" Visibility="Collapsed" Foreground="{DynamicResource ColorBrush.While}"
+                           Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" FontSize="{DynamicResource SmallContentFontSize}" 
+                           FontWeight="Bold" Margin="10, 0, 0, 0" />
+
+                <TextBlock x:Name="tbContent" Text="{Binding Content}" Foreground="{Binding ContentFColor}" VerticalAlignment="Top"
+                           Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Left" TextWrapping="WrapWithOverflow"
+                           FontSize="{DynamicResource BigContentFontSize}"  ToolTip="{Binding Content}" Visibility="{Binding TbContentVisibility, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                           Margin="10, 5, 0, 0"/>
+                <!--DQInfo-->
+                <StackPanel x:Name="DQBContent" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Visibility="{Binding DQVisibility, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10,6,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"></RowDefinition>
+                            <RowDefinition Height="24"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Foreground="#A0A0A0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"  HorizontalAlignment="Left"  VerticalAlignment="Center" FontSize="13" FontFamily="MicrosoftYaHei">
+                            <Run Foreground="#A0A0A0" Text="{Binding DQName}"></Run>
+                            <Run Foreground="#A0A0A0" Text=":"></Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding DQSecurityID}" FontWeight="Bold"></Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding DQShowSide}" FontWeight="Bold"/>
+                            <Run Foreground="{Binding DQForegroundBrush}" Text="{Binding DQShowPrice}" FontWeight="Bold" ></Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding DQAmount}" FontWeight="Bold"></Run>
+                            <Run Foreground="#D7D7D7" Text="万" FontWeight="Bold"></Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding DQFirmType}" FontWeight="Bold"></Run>
+                        </TextBlock>
+                        <TextBlock Grid.Row="1" Foreground="#A0A0A0"  FontSize="13" FontFamily="MicrosoftYaHei" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis">
+                            <Run Foreground="#A0A0A0" Text="{Binding IocDQName}"></Run>
+                            <Run Foreground="#A0A0A0" Text=":"></Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding IocDQShowSide}" FontWeight="Bold"></Run>
+                            <Run Foreground="{Binding IocDQForegroundBrush}" Text="{Binding IocDQShowPrice}" FontWeight="Bold">
+                            </Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding IocDQAmount}" FontWeight="Bold">
+                            </Run>
+                            <Run Foreground="#D7D7D7" Text="万" FontWeight="Bold"></Run>
+                        </TextBlock>
+                        <TextBlock  Grid.Row="2" Foreground="#A0A0A0" FontSize="13" FontFamily="MicrosoftYaHei" Visibility="{Binding DQBVisibility}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis">
+                            <Run Foreground="#A0A0A0" Text="{Binding DQName}" ></Run>
+                            <Run Foreground="#A0A0A0" Text=":"></Run>
+                            <Run Foreground="#D7D7D7" Text="建议" FontWeight="Bold"></Run>
+                            <Run Foreground="#D7D7D7" Text="{Binding DQShowSide}" FontWeight="Bold"></Run>
+                            <Run Foreground="{Binding DQForegroundBrush}" Text="{Binding BargainYield}" FontWeight="Bold">
+                            </Run>
+                            <Run Foreground="#D7D7D7"  Text="{Binding BargainQty}" FontWeight="Bold">
+                            </Run>
+                            <Run Foreground="#D7D7D7" Text="万"></Run>
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+                <!--DQInfo-->
+                <!--<TextBlock Grid.Column="0"  Grid.Row="2" Text="{Binding UpdateTime}" Foreground="{StaticResource ColorBrush.Gray14}" Visibility="{Binding DQVisibility}" Margin="10, 3, 0, 0" 
+                           TextAlignment="Left" Padding="0, 5, 2, 0"  FontSize="10">
+                </TextBlock>-->
+                
+                <Grid Grid.Column="1" Grid.Row="2">
+                   
+                    <StackPanel Orientation="Horizontal" Grid.ColumnSpan="2" HorizontalAlignment="Right" Margin="0, 0, 15, 2">
+                        <!--BDB 复制-->
+                        <Button x:Name="btnCopy" Command="{Binding DataContext.PopCopyCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                Style="{DynamicResource CopyButton}" HorizontalAlignment="Right" 
+                                Width="24" Height="24" Visibility="{Binding BDBVisiblitity}">
+                            <Button.ToolTip>
+                                <ToolTip Content="复制" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                        <!--BDB 行情小窗-->
+                        <Button x:Name="btnBook" Command="{Binding DataContext.PopOpenBookCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                Style="{DynamicResource SvgChartBtn}" HorizontalAlignment="Right"
+                                Width="24" Height="24" Visibility="{Binding BDBVisiblitity}">
+                            <Button.ToolTip>
+                                <ToolTip Content="行情小窗" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                        <!--BDB 知道了-->
+                        <Button x:Name="btnClose" Command="{Binding DataContext.PopKnowCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                HorizontalAlignment="Right"
+                                Width="24" Height="24" Style="{DynamicResource MainPageCloseButton}" Background="Transparent" Visibility="{Binding BDBVisiblitity}">
+                            <Button.ToolTip>
+                                <ToolTip Content="知道了" Background="{StaticResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{StaticResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                        
+                        
+                        <Button x:Name="btnDeal" Command="{Binding DataContext.PopQuickDealCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                            HorizontalAlignment="Right" Grid.Column="3" Grid.Row="0"
+                                             Margin="0 0 15 3" Width="24" Height="24" Style="{DynamicResource MainPageNoticeKnowButton}" Visibility="{Binding PopQuickDealVisibility}">
+                            <Button.ToolTip>
+                                <ToolTip Content="快速成交" Background="{DynamicResource ColorBrush.Gray15}" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                                    FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+
+
+                        <Button x:Name="btnPopDeal" Command="{Binding DataContext.PopDealCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                Style="{DynamicResource MsgArrowButton}" HorizontalAlignment="Right"
+                                Margin="0 0 15 0" Width="24" Height="24" Visibility="{Binding PopDealVisibility, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                            <Button.ToolTip>
+                                <ToolTip Content="去处理" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+
+                        <Button x:Name="btnPopKnow" Command="{Binding DataContext.PopKnowCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                HorizontalAlignment="Right"
+                                Margin="0 0 10 0" Width="24" Height="24" Style="{DynamicResource MsgCloseButton}" Visibility="{Binding KnowVisibility}">
+                            <Button.ToolTip>
+                                <ToolTip Content="知道了" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+
+                        <Button x:Name="btnCopyDeal" Command="{Binding DataContext.PopCopyCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                Style="{DynamicResource CopyButton}" HorizontalAlignment="Right"
+                            Width="24" Height="24" Visibility="{Binding CopyVisibility}">
+                            <Button.ToolTip>
+                                <ToolTip Content="复制" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+
+                        <Button x:Name="btnSendDeal" Command="{Binding DataContext.PopSendCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                Style="{DynamicResource SendToClientButton}" HorizontalAlignment="Right"
+                             Width="24" Height="24" Visibility="{Binding SendVisibility}">
+                            <Button.ToolTip>
+                                <ToolTip Content="推送" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+
+                        <Button x:Name="btnLook" Command="{Binding DataContext.PopLookCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                            HorizontalAlignment="Right" Visibility="{Binding LookVisibility}"
+                            Margin="5 0 0 0" Width="24" Height="24" Style="{DynamicResource MainPageNoticeLookButton}">
+                            <Button.ToolTip>
+                                <ToolTip Content="查看" Background="{DynamicResource ColorBrush.Gray15}" Width="50" Height="24" Foreground="{DynamicResource ColorBrush.white}" 
+                                     FontSize="10"></ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                    </StackPanel>
+                    
+                </Grid>
+            </Grid>
+        </Border>
+
+    </Grid>
+</UserControl>

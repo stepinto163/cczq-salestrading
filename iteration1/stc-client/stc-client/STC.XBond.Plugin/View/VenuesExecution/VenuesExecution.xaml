@@ -1,0 +1,400 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.VenuesExecution"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:utils="clr-namespace:STC.XBond.Plugin.Utils"
+             xmlns:command ="clr-namespace:STC.XBond.Plugin.Command"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero" 
+             mc:Ignorable="d" 
+             xmlns:Component="clr-namespace:STC.XBond.Plugin.View.Component" 
+             d:DesignHeight="146" d:DesignWidth="1430" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="SideStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Status}" Value="已撤销">
+                        <Setter Property="Foreground" Value="#515151" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="CancelStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Status}" Value="已撤销">
+                        <Setter Property="Foreground" Value="#515151" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--下拉按钮-->
+           
+            <Style TargetType="ToggleButton" x:Key="ComboxStyleBtn">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border x:Name="Back"  BorderThickness="0" BorderBrush="Transparent" >
+                                <Border.Background>
+                                    <ImageBrush ImageSource="pack://application:,,,/STC.XBond.Plugin;component/Images/stc_button_dropdownarrow_normal.png"/>
+                                </Border.Background>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <!--Combox-->
+            <Style TargetType="ComboBox" x:Key="ComboBoxStyle">
+
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="BorderBrush" Value="#515151"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="Padding" Value="6,0,5,0"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+
+                <Setter Property="IsEditable" Value="False"></Setter>
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <!--ComBoxItem-->
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="MinHeight" Value="24"></Setter>
+                            <Setter Property="MinWidth" Value="60"></Setter>
+                            <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"></Setter>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ComboBoxItem">
+
+                                        <Border Name="Back" Background="{DynamicResource ColorBrush.Gray15}"  BorderThickness="0,0,0,0" Padding="2, 3, 0, 0">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="20"></ColumnDefinition>
+                                                    <ColumnDefinition></ColumnDefinition>
+                                                </Grid.ColumnDefinitions>
+
+                                                <CheckBox x:Name="check" Grid.Column="0" IsChecked="{Binding IsCheck}" Background="Transparent" Style="{DynamicResource CommonCheckBoxStyle}" Click="CheckBox_Click"/>
+                                                <TextBlock x:Name="tbName" Grid.Column="1" Text="{Binding Name}" MinWidth="60" />
+                                            </Grid>
+                                            
+                                        </Border>
+
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Name}" Value="">
+                                                <Setter TargetName="check" Property="Visibility" Value="Collapsed"></Setter>
+
+                                                <Setter TargetName="tbName" Property="HorizontalAlignment" Value="Stretch"></Setter>
+                                                <Setter TargetName="tbName" Property="VerticalAlignment" Value="Stretch"></Setter>
+                                            </DataTrigger>
+
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource ColorBrush.Gray14}"></Setter>
+                                                <Setter TargetName="Back" Property="BorderThickness" Value="1"></Setter>
+                                                <Setter TargetName="Back" Property="BorderBrush" Value="{DynamicResource ColorBrush.Gray14}"></Setter>
+
+                                                
+                                            </Trigger>
+
+                                        </ControlTemplate.Triggers>
+                                        <!--<Border Name="Back" Background="{StaticResource ColorBrush.Gray15}"  BorderThickness="0,0,0,0" Padding="2, 0, 0, 0">
+                                            <ContentPresenter ContentSource="{Binding Source}" VerticalAlignment="Center" HorizontalAlignment="Left"></ContentPresenter>
+                                        </Border>-->
+                                        <!--<ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                                <Setter TargetName="Back" Property="BorderThickness" Value="1"></Setter>
+                                                <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>-->
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid Background="#3C3C3C">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="0.7*"/>
+                                    <ColumnDefinition Width="0.3*" MaxWidth="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox  Grid.Column="0" BorderThickness="0" Background="{DynamicResource ColorBrush.Gray15}"
+                                  Text="{TemplateBinding Text}" Foreground="{DynamicResource ColorBrush.While}" FontSize="12" Padding="2, 2, 0, 0" ToolTip="{TemplateBinding Text}">
+                                </TextBox>
+                                <Border  Grid.Column="0" BorderThickness="0" BorderBrush="#3C3C3C" CornerRadius="1">
+                                    <TextBlock MouseDown="TextBlock_MouseDown" ToolTip="{TemplateBinding Text}"></TextBlock>
+                                </Border>
+                                <Border Grid.Column="1" BorderThickness="0" BorderBrush="#3C3C3C" CornerRadius="1">
+                                    <ToggleButton  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Style="{StaticResource ComboBoxToggleButton}" IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press"></ToggleButton>
+                                </Border>
+                                <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" x:Name="Popup" Focusable="False" AllowsTransparency="True" PopupAnimation="Slide">
+                                    <Border CornerRadius="1" MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{TemplateBinding ActualWidth}" x:Name="DropDown" SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="0" Opacity="0.5"/>
+                                        </Border.Effect>
+                                        <ScrollViewer Style="{DynamicResource ScrollViewerStyle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True" 
+                                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                                            <!--<StackPanel 用于显示子级，方法是将 IsItemsHost 设置为 True -->
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" Background="{DynamicResource ColorBrush.Green3}"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+
+
+    </UserControl.Resources>
+
+    <Grid x:Name="grid" Background="#141414">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="28"/>
+            <RowDefinition />
+
+            <RowDefinition Height="24"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="70*"/>
+                <ColumnDefinition Width="10*"/>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="29"/>
+            </Grid.ColumnDefinitions>
+
+            <local:VenuesExecutionFilter x:Name="venuesExecutionFilter" Grid.ColumnSpan="4" FilterDicChanged="VenuesExecutionFilter_FilterDicChanged" OnCopyClick="venuesExecutionFilter_OnCopyClick"/>
+
+            <ComboBox x:Name="cbUser" Grid.Column="1" MinWidth="120" Height="18" HorizontalAlignment="Right" Text="{Binding SelectedUser}" Margin="0, 0, 5, 0"
+                               Style="{DynamicResource ComboBoxStyle}" ItemsSource="{Binding UserDatas}" DisplayMemberPath="Name" ToolTip="{Binding Text}">
+            </ComboBox>
+
+            <Component:SearchTextBox x:Name="Search_TextBox" Grid.Column="2"
+                                 SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalAlignment="Center" Width="120" Height="18"/>
+            <Button x:Name="btnFullScreen" Grid.Column="3" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource PopupButton}" 
+                    Command="{x:Static utils:WindowKeyHelper.popupWindowCommand}" CommandParameter="{x:Static command:PopupTypeEnum.VenuesExecution}"/>
+        </Grid>
+        <Component:CustomDataGrid x:Name="dg_VenuesExecution" Grid.Row="1" Style="{StaticResource  DefaultDataGrid}" ItemsSource="{Binding VenuesExecutionDV}"
+                  SelectionMode="Single" SelectedItem="{Binding CurrentSelectItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="序号" Binding="{Binding No}" MinWidth="40"></DataGridTextColumn>
+                <DataGridTextColumn Header="状态" Binding="{Binding Status}" MinWidth="50">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="待处理">
+                                    <Setter Property="Foreground" Value="#E63034"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="已成交">
+                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="处理中">
+                                    <Setter Property="Foreground" Value="#FB943C"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="撤销中">
+                                    <Setter Property="Foreground" Value="#FB943C"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="待撤销">
+                                    <Setter Property="Foreground" Value="#E63034"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="已撤销">
+                                    <Setter Property="Foreground" Value="#515151"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="渠道" Binding="{Binding Venues,Converter={StaticResource EnumTypeConvertor},ConverterParameter='venues'}" ElementStyle="{StaticResource CancelStyle}" MinWidth="40"></DataGridTextColumn>
+                <DataGridTemplateColumn Header="意向" MinWidth="110">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding FirmFlag,Converter={StaticResource EnumTypeConvertor},ConverterParameter='firmflag'}"/>
+                                <TextBlock x:Name="oco_tb" Text="独" Foreground="#E63034" Visibility="Hidden" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsOCO}" Value="1">
+                                    <Setter TargetName="oco_tb" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="方向" Binding="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" ElementStyle="{StaticResource SideStyle}" MinWidth="40"></DataGridTextColumn>
+                <DataGridTextColumn Header="代码" Binding="{Binding SecurityID}" ElementStyle="{StaticResource CancelStyle}" MinWidth="60"></DataGridTextColumn>
+                <DataGridTextColumn Header="简称" Binding="{Binding Symbol}" ElementStyle="{StaticResource CancelStyle}" MinWidth="70"></DataGridTextColumn>
+                <DataGridTemplateColumn Header="操作" MinWidth="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="btnWaitCancel" Visibility="Collapsed" Content="处理" Command="{Binding DataContext.DealCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource OrangeButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>
+                                    <Button x:Name="do_Btn" Visibility="Collapsed" Content="处理" Command="{Binding DataContext.DealCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource RedButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>
+                                    <Button x:Name="exe_Btn" Visibility="Collapsed" Content="成交" Command="{Binding DataContext.ExecuteCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource GreenButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>
+                                    <Button x:Name="copy_Btn" Visibility="Collapsed" Content="复制" Command="ApplicationCommands.Copy"  FontSize="10" Style="{StaticResource GrayNewButtonStyle}" Height="18" Width="30" Margin="0,0,2,0" ></Button>
+                                    <Button x:Name="check_Btn" Visibility="Collapsed" Content="查看" Command="{Binding DataContext.LookCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource GrayButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>
+                                    <Button x:Name="btnCancel" Visibility="Collapsed" Content="撤销" Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource RedButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>
+
+                                    <Button x:Name="btnIgnore" Visibility="Collapsed" Content="忽略" Command="{Binding DataContext.IgnoreCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource BlueButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10" Background="#009AFF"></Button>
+                                    <!--<Button x:Name="btnFail" Visibility="Collapsed" Content="失败" Command="{Binding DataContext.FailCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource RedButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>-->
+                                    <Button x:Name="btnRefuse" Visibility="Collapsed" Content="拒单" Command="{Binding DataContext.RefuseCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Style="{StaticResource RedButtonStyle}" 
+                                        Height="18" Width="30" Margin="0,0,2,0" FontSize="10"></Button>
+
+                                </StackPanel>
+
+                            </Grid>
+                            
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="010000">
+                                    <Setter TargetName="do_Btn" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="000010">
+                                    <Setter TargetName="check_Btn" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="001100">
+                                    <Setter TargetName="exe_Btn" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="copy_Btn" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="000001">
+                                    <Setter TargetName="btnCancel" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="100000">
+                                    <Setter TargetName="btnWaitCancel" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="000010">
+                                    <Setter TargetName="check_Btn" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ButtonStatus}" Value="000010">
+                                    <Setter TargetName="check_Btn" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+
+
+                                <DataTrigger Binding="{Binding PointButtonStatus}" Value="10">
+                                    <Setter TargetName="btnIgnore" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding PointButtonStatus}" Value="01">
+                                    <Setter TargetName="btnRefuse" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTemplateColumn Header="类型" Width="Auto" MinWidth="60" HeaderStyle="{StaticResource DataGridColumnHeaderLeftStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding TimeInForce}"/>
+                                <Image x:Name="clock_img" Height="12" Width="12" Source="/STC.XBond.Plugin;component/Images/stc_icon_history_normal.png" Margin="4, 0, 0, 0" 
+                                       Visibility="Collapsed" MouseEnter="clock_img_MouseEnter" MouseLeave="clock_img_MouseLeave" ToolTip="{Binding RemainingTime}"/>
+
+                            </StackPanel>
+
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding RemainTimeVisibility}" Value="3">
+                                    <Setter TargetName="clock_img" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTextColumn Header="本方报价(%)" Binding="{Binding Px,StringFormat={}{0:N4}}" ElementStyle="{StaticResource SideStyle}" MinWidth="80"></DataGridTextColumn>
+                <DataGridTextColumn Header="报量(万元)" Binding="{Binding Qty,StringFormat={}{0:N2}}" ElementStyle="{StaticResource CancelStyle}" MinWidth="70"></DataGridTextColumn>
+                <DataGridTextColumn Header="清算速度" Binding="{Binding SettlType,Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}" ElementStyle="{StaticResource CancelStyle}" MinWidth="60"></DataGridTextColumn>
+                <DataGridTextColumn Header="本方交易员" Binding="{Binding PartySubID}" ElementStyle="{StaticResource CancelStyle}" MinWidth="70"></DataGridTextColumn>
+                
+                
+                <!--<DataGridTextColumn Header="对应订单号" Binding="{Binding STCCode}" ElementStyle="{StaticResource CancelStyle}" MinWidth="80"></DataGridTextColumn>-->
+                <DataGridTemplateColumn Header="对应订单号" Width="Auto" MinWidth="85" HeaderStyle="{StaticResource DataGridColumnHeaderLeftStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="33"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="{Binding OrderPrefix}" HorizontalAlignment="Right" Padding="0, 1, 1, 0"></TextBlock>
+                                <TextBlock Grid.Column="1" Text="{Binding OrderSuffix}" HorizontalAlignment="Left" FontWeight="Bold" FontSize="13"></TextBlock>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+
+
+                <DataGridTextColumn Header="报价时间" Binding="{Binding QuoteTime}" ElementStyle="{StaticResource CancelStyle}" MinWidth="60"></DataGridTextColumn>
+                <DataGridTextColumn Header="最后操作人" Binding="{Binding LastOperator}" ElementStyle="{StaticResource CancelStyle}" MinWidth="60"></DataGridTextColumn>
+                <DataGridTextColumn Header="操作时间" Binding="{Binding OperationTime}" ElementStyle="{StaticResource CancelStyle}" MinWidth="60"></DataGridTextColumn>
+            </DataGrid.Columns>
+        </Component:CustomDataGrid>
+
+        <Grid  Grid.Row="2">
+            <TextBlock Grid.Row="1" Margin="10,0,0,0" Foreground="#FFFFFF" VerticalAlignment="Center">
+                共<Run Text="{Binding TotalOrder}"/>条单，其中待处理有<Run Text="{Binding WaitDealOrder}"/>条，处理中有<Run Text="{Binding DealingOrder}"/>条，待撤销有<Run Text="{Binding WaitCancelOrder}"/>条
+            </TextBlock>
+        </Grid>
+    </Grid>
+</UserControl>

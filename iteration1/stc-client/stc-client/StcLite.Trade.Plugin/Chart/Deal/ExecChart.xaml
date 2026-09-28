@@ -1,0 +1,221 @@
+﻿<UserControl x:Class="BDB.Price.Plugin.Chart.Deal.ExecChart"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:oxyplot="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf"
+             xmlns:oxyshared="clr-namespace:OxyPlot.Wpf;assembly=OxyPlot.Wpf.Shared"
+             xmlns:local ="clr-namespace:BDB.Price.Plugin.Chart.Deal"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <local:DateConverter x:Key="dateConverter"/>
+            <local:DataPointDataConverter x:Key="dataPointDataConverter"/>
+            <!--买卖样式-->
+            <Style x:Key="TempSizeStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <!--<Setter Property="FontWeight" Value="SemiBold"/>-->
+                <!--<Setter Property="Height" Value="24"></Setter>-->
+                <Setter Property="Width" Value="40"></Setter>
+                <!--<Setter Property="Padding" Value="0,4,0,0"></Setter>-->
+                <Setter Property="FontFamily" Value="{StaticResource Font.MicrosoftYaHei}"/>
+                <Setter Property="FontSize" Value="{StaticResource FontSize-12}"/>
+                <Setter Property="TextAlignment" Value="Center"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <!--国债期货显示-->
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--多换-->
+                            <Condition Binding="{Binding Side}" Value="9"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Red-3}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--空换-->
+                            <Condition Binding="{Binding Side}" Value="10"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Green-2}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--双开-->
+                            <Condition Binding="{Binding Side}" Value="3"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Red-3}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--双平-->
+                            <Condition Binding="{Binding Side}" Value="4"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Green-2}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--多开-->
+                            <Condition Binding="{Binding Side}" Value="5"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Red-3}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--空开-->
+                            <Condition Binding="{Binding Side}" Value="6"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Green-2}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--多平-->
+                            <Condition Binding="{Binding Side}" Value="7"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Green-2}" />
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <!--空平-->
+                            <Condition Binding="{Binding Side}" Value="8"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource Red-3}" />
+                    </MultiDataTrigger>
+
+
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Side}" Value="Y"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}" />
+                    </MultiDataTrigger>
+
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Side}" Value="X"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue_firm}" />
+                    </MultiDataTrigger>
+
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Side}" Value="Z"/>
+                            <Condition Binding="{Binding IsValid}" Value="Y"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Green}" />
+                    </MultiDataTrigger>
+
+                    <DataTrigger Binding="{Binding IsNothingDown}" Value="1">
+                        <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.HOLC.Gray}" />
+                    </DataTrigger>
+                </Style.Triggers>
+
+            </Style>
+            <Style x:Key="DealPlotViewStyle1" TargetType="{x:Type local:DealPlotView}">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="DefaultTrackerTemplate">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <oxyshared:TrackerControl LineExtents="{Binding PlotModel.PlotArea}" Position="{Binding Position}">
+                                <TextBlock Margin="7" Text="{Binding}"/>
+                            </oxyshared:TrackerControl>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="ZoomRectangleTemplate">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Rectangle Fill="#40FFFF00" StrokeDashArray="3,1" Stroke="Black"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type local:DealPlotView}">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                <Grid x:Name="PART_Grid"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+        
+        
+    </UserControl.Resources>
+    <Grid x:Name="mainGrid">
+        <local:DealPlotView Style="{DynamicResource DealPlotViewStyle1}" x:Name="Plot" Grid.Row="1" Grid.Column="1" SizeChanged="Plot_SizeChanged" Padding="0" Margin="0">
+            <oxyplot:PlotView.DefaultTrackerTemplate>
+                <ControlTemplate>
+                    <oxyshared:TrackerControl Position="{Binding Position}" LineExtents="{Binding PlotModel.PlotArea}" VerticalLineVisibility="Visible" HorizontalLineVisibility="Collapsed"
+                                              LineDashArray="1" LineStroke="#FFEBC8" BorderBrush="#308376" Foreground="#FFEBC8" Background="#E5172422" ShowPointer="false" 
+                                              BorderThickness="1" CornerRadius="2" Distance="3">
+                        <oxyshared:TrackerControl.Content>
+                            <Grid Margin="3 3 3 0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="auto" />
+                                    <RowDefinition Height="auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center"
+                                           Grid.ColumnSpan="2"
+                                           Grid.Row="0" 
+                                           FontSize="12">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource dataPointDataConverter}" ConverterParameter="X">
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <!--<TextBlock Text="{Binding Item.Side, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}" HorizontalAlignment="Left"
+                                    FontSize="12"
+                                           Grid.Column="0"
+                                           Grid.Row="1" />-->
+                                <TextBlock HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                    FontSize="12"
+                                           Grid.Column="0"
+                                           Grid.Row="1" >
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource dataPointDataConverter}">
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <TextBlock Foreground="#F0BA77" Margin="4 0 0 0"  HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                           FontSize="12"
+                                           Grid.Column="1"
+                                           Grid.Row="1" >
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource dataPointDataConverter}" ConverterParameter="Y">
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+
+                        </oxyshared:TrackerControl.Content>
+                    </oxyshared:TrackerControl>
+                </ControlTemplate>
+            </oxyplot:PlotView.DefaultTrackerTemplate>
+        </local:DealPlotView>
+    </Grid>
+</UserControl>

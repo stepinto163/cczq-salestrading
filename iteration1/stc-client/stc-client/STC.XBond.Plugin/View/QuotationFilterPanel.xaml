@@ -1,0 +1,107 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.QuotationFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:comp="clr-namespace:STC.XBond.Plugin.View.Component"
+             xmlns:u="clr-namespace:STC.XBond.Plugin.Utils"
+             mc:Ignorable="d" FontSize="12" Height="24"
+             d:DesignHeight="24" d:DesignWidth="1150" >
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+           
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Height="24">
+
+            <RadioButton x:Name="ShowAll_ToggleButton" Width="80" Height="18" Margin="10,0,2,0"  
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="True" Content="Show All" Foreground="White" Style="{DynamicResource ShowAllRadioButtonStyle}" 
+                          Checked="ShowAll_ToggleButton_Checked"
+                         Unchecked="ShowAll_ToggleButton_Unchecked"
+                         Click="ShowAll_ToggleButton_Click"/>
+
+            <ListBox x:Name="FirmTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" 
+                     SelectionChanged="FirmTypeListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="firm" Width="90" HorizontalContentAlignment="Center" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="nonfirm" Width="90" HorizontalContentAlignment="Center" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+            </ListBox>
+
+            <TextBlock x:Name="SourceLbl" Text="来源:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ComboBox x:Name="VenuesListBox" Height="20" Width="80" Grid.Column="1" SelectedIndex="0" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource NonEditableComboBoxStyle}" SelectionChanged="VenuesListBox_SelectionChanged">
+                <ComboBoxItem x:Name="All" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">全部</ComboBoxItem>
+                <ComboBoxItem x:Name="Inner" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">内部</ComboBoxItem>
+                <ComboBoxItem x:Name="IDB" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">IDB</ComboBoxItem>
+                <ComboBoxItem x:Name="QUANT" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">量化</ComboBoxItem>
+                <ComboBoxItem x:Name="MANUAL" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">人工</ComboBoxItem>
+                <ComboBoxItem x:Name="XBond" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">X-Bond</ComboBoxItem>
+                <ComboBoxItem x:Name="Double" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">双边</ComboBoxItem>
+                <ComboBoxItem x:Name="SSE" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">上新债</ComboBoxItem>
+                <ComboBoxItem x:Name="SSF" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">上固收</ComboBoxItem>
+                <ComboBoxItem x:Name="SZE" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">深匹配</ComboBoxItem>
+                <ComboBoxItem x:Name="SZF" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">深点击</ComboBoxItem>
+                <ComboBoxItem x:Name="AllBorker" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">经纪商</ComboBoxItem>
+                <ComboBoxItem x:Name="Borker1" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">国际</ComboBoxItem>
+                <ComboBoxItem x:Name="Borker2" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">国利</ComboBoxItem>
+                <ComboBoxItem x:Name="Borker3" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">平安</ComboBoxItem>
+                <ComboBoxItem x:Name="Borker4" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">信唐</ComboBoxItem>
+                <ComboBoxItem x:Name="Borker5" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">中诚</ComboBoxItem>
+                <ComboBoxItem x:Name="Borker6" Width="{Binding ElementName=VenuesListBox, Path=ActualWidth}">上田</ComboBoxItem>
+            </ComboBox>
+            <!--<ListBox x:Name="VenuesListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="VenuesListBox_SelectionChanged" PreviewMouseDown="VenuesListBox_PreviewMouseDown">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="内部" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="IDB" Width="40" Visibility="Collapsed" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="量化" Width="40" Visibility="Collapsed" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="人工" Width="40" Visibility="Collapsed" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="X-Bond" Width="50" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="双边" Width="50" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="上证" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="上收" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="深交" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+
+
+                <ListBoxItem Content="全部" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal" Margin="10,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="国际" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="国利" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="平安" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="信唐" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="中诚" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="上田" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+
+                
+            </ListBox>-->
+
+
+            <TextBlock x:Name="SettleLbl" Text="清算速度:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="SettlTypeListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"
+                     SelectionChanged="SettlTypeListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="T+1" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="T+0" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+                <ListBoxItem Content="远期" Width="40" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Foreground="#FFFFFF" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,2,0" BorderThickness="0" Height="18"/>
+            </ListBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

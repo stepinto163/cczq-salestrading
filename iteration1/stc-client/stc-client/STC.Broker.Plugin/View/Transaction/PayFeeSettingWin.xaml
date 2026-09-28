@@ -1,0 +1,198 @@
+﻿<Window x:Class="STC.Broker.Plugin.View.Transaction.PayFeeSettingWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.Broker.Plugin.View.Transaction"
+        mc:Ignorable="d"
+        Title="代付" Height="145" Width="324" ResizeMode="NoResize"
+         WindowStartupLocation="CenterScreen" 
+        WindowState="Normal" WindowStyle="None" MouseLeftButtonDown="Window_MouseLeftButtonDown"
+         Background="#0A0F0E" BorderThickness="0" 
+         BorderBrush="#193D37"
+        >
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+    <Window.Effect>
+        <DropShadowEffect BlurRadius="5" Color="#000000" Direction="90" ShadowDepth="3" Opacity="0.5"/>
+    </Window.Effect>
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/IDC.Frame;component/Resources/StyleDict.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Name="text" TargetType="TextBlock">
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Right"></Setter>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei.Semibold}"></Setter>
+                <Setter Property="FontSize" Value="12px"/>
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.PaleGrey}"></Setter>
+                <Setter Property="Margin" Value="0,0,1,0"></Setter>
+            </Style>
+
+
+            <Style x:Key="DefaultValidationTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0E1A18"/>
+                <Setter Property="BorderBrush" Value="#282828"/>
+                <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>-->
+                <Setter Property="Foreground" Value="#F9C152"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <StackPanel Orientation="Vertical">
+                                <Border x:Name="border" CornerRadius="2" Height="{TemplateBinding Height}"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden">
+                                    </ScrollViewer>
+                                </Border>
+                            </StackPanel>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#172422"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFEBC8"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#FF7D00"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#FF9B00"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#000"/>
+                                </Trigger>
+                                <!--<Trigger Property="ValidationResult" Value="False">
+                                    --><!--<Setter TargetName="shouMessage" Property="Visibility" Value="Visible"/>--><!--
+                                    <Setter TargetName="border" Property="BorderBrush" Value="Red"></Setter>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"></Setter>
+                                    <Setter TargetName="border" Property="ToolTip"  Value="{Binding ErrorMessage, RelativeSource={RelativeSource TemplatedParent}}"></Setter>
+                                </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--<ControlTemplate x:Key="CheckBoxTemplate" 
+                     TargetType="RadioButton">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="radioButtonBorder" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="100" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="1,1,2,1" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                        <Grid x:Name="markGrid" Margin="2">
+                            <Ellipse x:Name="optionMark" Fill="{StaticResource RadioButton.Static.Glyph}" MinWidth="6" MinHeight="6" Opacity="0"/>
+                        </Grid>
+                    </Border>
+                    <ContentPresenter Name="content"
+                              Grid.Column="1"
+                              ContentSource="Content"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              Margin="2,0,0,0"
+                              TextElement.FontSize="12"
+                              TextElement.Foreground="{TemplateBinding Foreground}">
+                        <ContentPresenter.ToolTip>
+                            <ToolTip>
+                                <TextBlock Text="{Binding Path=Content}"></TextBlock>
+                            </ToolTip>
+                        </ContentPresenter.ToolTip>
+                    </ContentPresenter>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsChecked"
+                     Value="True">
+                        <Setter TargetName="radioButtonBorder"
+                        Property="Visibility"
+                        Value="Collapsed" />
+                        <Setter TargetName="radioButtonBorder"
+                        Property="Visibility"
+                        Value="Visible" />
+                        <Setter TargetName="radioButtonBorder"
+                        Property="Content">
+                            <Setter.Value>
+                                <Image Source="../Images/radio_button_selected.png"
+                               Width="12"
+                               Height="12" />
+                            </Setter.Value>
+                        </Setter>
+                        <Setter TargetName="content"
+                        Property="TextElement.Foreground"
+                        Value="#F9C152" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <Style x:Key="DefaultRadioButton" TargetType="{x:Type RadioButton }">
+                <Setter Property="Foreground" Value="#FFEBC8"></Setter>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="Template" Value="{StaticResource CheckBoxTemplate }">
+                </Setter>
+            </Style>-->
+
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border CornerRadius="2" BorderThickness="1" BorderBrush="#282828">
+        <Grid Background="#0A0F0E" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Background="#282828"   Height="30" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="22"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Label x:Name="lbSet" Content="代付" VerticalAlignment="Center" Grid.Column="0" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" ></Label>
+                <Button x:Name="btnCloseWin" Grid.Row="0" Grid.Column="1" Margin="0,0,5,0" Style="{StaticResource ImageCloseButton}" Height="20" Width=" 20" Click="btnCloseWin_Click" IsCancel="True"></Button>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35"></RowDefinition>
+                    <RowDefinition Height="35"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="方向：" TextTrimming="CharacterEllipsis" ></TextBlock>
+                <TextBlock Text="费用：" Grid.Row="1" ></TextBlock>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="3,0,10,0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <RadioButton Content="{Binding PayInstNameA, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}" Tag="{Binding PayInstIdA, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}" IsChecked="{Binding InstAIsChecked, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}" GroupName="pay"  Style="{StaticResource DefaultRadioButtonStyle}" Foreground="{StaticResource ColorBrush.PaleGrey}" Click="RadioButton_Click" ></RadioButton>
+                    <RadioButton Content="{Binding PayInstNameB, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}" Tag="{Binding PayInstIdA, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}" IsChecked="{Binding InstBIsChecked, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}" Margin="5,0,0,0" GroupName="pay" Style="{StaticResource DefaultRadioButtonStyle}"  Foreground="{StaticResource ColorBrush.PaleGrey}" Click="RadioButton_Click"></RadioButton>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"  Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <TextBox  x:Name="vtb_PayFee" Height="20" Margin="3,0,4,0" Width="200" Text="{Binding IssueProxyFee, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:PayFeeSettingWin}}}"   Style="{StaticResource DefaultValidationTextBoxStyle}" ></TextBox>
+                    <TextBlock Text="厘"></TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Button x:Name="btnCancel" Grid.Column="3" Margin="0,0,8,0" Width="80" Height="22" Background="#136C5E" Style="{StaticResource CancelButtonStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnCancel_Click">取消代付</Button>
+                    <Button x:Name="btnOk" Grid.Column="4"  Margin="0,0,10,0" Width="80" Height="22" Background="#136C5E" Style="{StaticResource  ConfirmButtonStyle}" FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="12" Foreground="{StaticResource ColorBrush.PaleGold}" Click="btnOk_Click">确认</Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

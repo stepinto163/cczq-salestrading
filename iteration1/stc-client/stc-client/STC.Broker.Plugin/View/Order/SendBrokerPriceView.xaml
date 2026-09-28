@@ -1,0 +1,804 @@
+﻿<Window x:Class="STC.Broker.Plugin.View.Order.SendBrokerPriceView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+        xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+        xmlns:component="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+        xmlns:localcomp ="clr-namespace:STC.Broker.Plugin.View.Component"
+        xmlns:localconv ="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+        xmlns:local ="clr-namespace:STC.Broker.Plugin.ViewModel.Order"
+        mc:Ignorable="d"
+        Title="提交意向" Height="310" Width="430" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" SizeToContent="Height" UseLayoutRounding ="True"
+        WindowState="Normal" WindowStyle="None" MouseLeftButtonDown="Window_MouseLeftButtonDown" BorderThickness="0" Background="Transparent" KeyDown="Window_KeyDown"
+        Deactivated="Window_Deactivated" Activated="Window_Activated">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <localconv:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <!--点价 标题 LostFocus背景色 DefaultSkin -->
+            <SolidColorBrush x:Key="LostFocusBorderBrush" Color="#282828"/>
+            <!--窗体激活时的边框色-->
+            <SolidColorBrush x:Key="GetFocusBorderBrush" Color="#8F9598"/>
+            <localconv:BrokerSettleTypeConverter x:Key="BrokerSettleTypeConverter"/>
+            <!--点价 窗体背景色 -->
+            <LinearGradientBrush x:Key="BidLinearGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#66FF7D00" Offset="0"/>
+                <GradientStop Color="#00FF7D00" Offset="0.65"/>
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="OfrLinearGradientBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+                <GradientStop Color="#48009AFF" Offset="0"/>
+                <GradientStop Color="#00009AFF" Offset="0.65"/>
+            </LinearGradientBrush>
+            
+            <!--ofr颜色 Green-->
+            <SolidColorBrush x:Key="ColorBrush.Blue" Color="#58B3FF"/>
+            <SolidColorBrush x:Key="ColorBrush.Blue8" Color="#009AFF"></SolidColorBrush>
+            <!--bid颜色 Green-->
+            <SolidColorBrush x:Key="ColorBrush.Orange" Color="#FB943C"/>
+            <SolidColorBrush x:Key="ColorBrush.Orange5" Color="#ED6D00"></SolidColorBrush>
+            <!--定向模式Button-->
+
+            <!--DataGridRow样式-->
+            <Style x:Key="SelfDataGridRowStyle" TargetType="DataGridRow" BasedOn="{StaticResource DataGridRowStyle}">
+                <Setter Property="Height" Value="26"/>
+                <Style.Triggers>
+                    <Trigger Property="AlternationIndex" Value="1">
+                        <Setter Property="Background" Value="#0F0F0F"/>
+                    </Trigger>
+                    <Trigger Property="AlternationIndex" Value="0">
+                        <Setter Property="Background" Value="#181818"/>
+                    </Trigger>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#181818"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#181818"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                            <Condition Property="IsSelected" Value="False"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>
+                    <DataTrigger Binding="{Binding FlashCount}" Value="4">
+                        <Setter Property="Background" Value="#833B3B" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding FlashCount}" Value="3">
+                        <Setter Property="Background" Value="#833B3B" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding FlashCount}" Value="1">
+                        <Setter Property="Background" Value="#833B3B" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            
+            <Style x:Key="SelfDataGridCellStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Padding" Value="0 4 0 0"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <!--价格和数量-->
+            <Style x:Key="CustomQtyTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockForeground}"/>
+                <Setter Property="FontFamily" Value="Roboto"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="3"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ColorBrush.Orange5}"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="2"/>
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ColorBrush.Blue8}"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="true"/>
+                                        <Condition Property="Tag" Value="3"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ColorBrush.Orange5}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                    <Setter Property="SelectionBrush" Value="#009AFF"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="true"/>
+                                        <Condition Property="Tag" Value="2"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ColorBrush.Blue8}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                    <Setter Property="SelectionBrush" Value="#009AFF"/>
+                                </MultiTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <!--不限 CheckBox Dodger 灰色样式-->
+            <Style x:Key="SelfSwitchCheckBoxStyle" TargetType="{x:Type CheckBox}">
+                <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"></Setter>
+                <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Foreground}"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="IsChecked" Value="False"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="MinWidth" Value="24"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="BorderThickness" Value="0 1 0 0"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <!--Setter Property="Content" Value="关市"/-->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type CheckBox}">
+                            <Grid>
+                                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                                    <Grid x:Name="markGrid">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" TextElement.FontFamily="{TemplateBinding FontFamily}" TextElement.FontWeight="{TemplateBinding FontWeight}"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsChecked" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Border}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Foreground}"/>
+                                    <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsChecked" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Border}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Foreground}"/>
+                                    <!--<Setter Property="BorderThickness" TargetName="Bd" Value="0"/>-->
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--总量-->
+            <Style x:Key="SelfTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="#F9C152"/>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="#3C3C3C"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="SelfDataGridTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="#D7D7D7"/>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Foreground" Value="#3C3C3C"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--价格和数量-->
+            <!--过滤筛选闪蓝色ListBoxItem Default-->
+            <Style x:Key="SelfFilterListBoxItemDodgerBlueStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"></Setter>
+                <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="MinWidth" Value="24"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="BorderThickness" Value="0 1 0 0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                                <ContentPresenter x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.MouseOver.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Border}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedInactive.Foreground}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Border}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.SelectedActive.Foreground}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <!-- New Confirm Button 样式  Green Blue Orange Confirm Tag 1 Green Tag 2 Blue  Tag 3 Orange  Tag 4 GraySlate 随系统皮肤变化  Tag x:null GreenBlue随系统皮肤变化-->
+            <Style x:Key="SelfBlueGreenOrangeGraySlateButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+
+                <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusVisual}"/>
+                <Setter Property="Background" Value="{DynamicResource GreenConfirmButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GreenConfirmButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource GreenConfirmButton.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="1"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="80"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <!--Tag 1 Green-->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="1"/>
+                                        <Condition Property="IsMouseOver" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource GreenConfirmButton.Static.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource GreenConfirmButton.Static.Border}"></Setter>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="1"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource GreenConfirmButton.MouseOver.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource GreenConfirmButton.MouseOver.Border}"></Setter>
+                                </MultiTrigger>
+                                <!--Tag 2 Blue-->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="2"/>
+                                        <Condition Property="IsMouseOver" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource BlueConfirmButton.Static.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BlueConfirmButton.Static.Border}"></Setter>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="2"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource BlueConfirmButton.MouseOver.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BlueConfirmButton.MouseOver.Border}"></Setter>
+                                </MultiTrigger>
+                                <!--Tag 3 Orange-->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="3"/>
+                                        <Condition Property="IsMouseOver" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource OrangeConfirmButton.Static.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource OrangeConfirmButton.Static.Border}"></Setter>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="3"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource OrangeConfirmButton.MouseOver.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource OrangeConfirmButton.MouseOver.Border}"></Setter>
+                                </MultiTrigger>
+                                <!--Tag 4 GraySlate-->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="4"/>
+                                        <Condition Property="IsMouseOver" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource GraySlateButton.Static.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Border}"></Setter>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="4"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource GraySlateButton.MouseOver.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.MouseOver.Border}"></Setter>
+                                </MultiTrigger>
+                                <!--Tag null BlueGreen -->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="{x:Null}"/>
+                                        <Condition Property="IsMouseOver" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource BlueGreenButton.Static.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BlueGreenButton.Static.Border}"></Setter>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Tag" Value="{x:Null}"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource BlueGreenButton.MouseOver.Background}"></Setter>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BlueGreenButton.MouseOver.Border}"></Setter>
+                                </MultiTrigger>
+
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource FilterListBoxItemDodgerBlue.Static.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource FilterListBoxItemDodgerBlue.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--datagrid 闪烁-->
+            <Storyboard x:Key="FlashAnimation">
+                <ColorAnimation Storyboard.TargetProperty="(DataGridRow.Background).(SolidColorBrush.Color)" From="Red" To="#181818" Duration="0:0:0.5" AutoReverse="True"/>
+            </Storyboard>
+
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="26"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="1"/>
+            <RowDefinition Height="62"/>
+        </Grid.RowDefinitions>
+        <!-- 标题区 -->
+        <Border BorderThickness="2,2,2,0" x:Name="Border_Left1" Grid.Row="0" CornerRadius="4,4,0,0" BorderBrush="{Binding BorderBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Background="{DynamicResource BackgroundBrush}">
+            <Grid  Margin="0,0,0,0" Background="Transparent">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="64"></ColumnDefinition>
+                        <ColumnDefinition Width="24"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Margin="8, 2, 0, 0" Text="点价" Foreground="#FFFFFF" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="14"></TextBlock>
+                    <TextBlock Grid.Column="1" Margin="8, 2, 0, 0" Text="{Binding TitleBidOrOfr}" Foreground="{Binding BidOrOfrTextBlockForground}" FontFamily="Microsoft YaHei" FontWeight="Bold" FontSize="13"></TextBlock>
+
+                    <Border Grid.Column="3" BorderThickness="0, 0, 0, 0"  CornerRadius="0,0,4,0" Margin="0,0,1,0" BorderBrush="{Binding BorderBrush}">
+                        <Button Width="24" Height="24" Command="{Binding CancelCommand}" IsCancel="True" Style="{DynamicResource DrpImageCloseButton}" Background="{DynamicResource BackgroundBrush}"/>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- 主内容区 -->
+        <Border BorderThickness="2,0,2,0" x:Name="Border_Left2" Grid.Row="1"  BorderBrush="{Binding BorderBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+            <Grid ShowGridLines="False" Background="{Binding BGBackground}">
+                <Grid.RowDefinitions>
+                    <RowDefinition  Height="118"></RowDefinition>
+                    <RowDefinition  MinHeight="54" Height="Auto"></RowDefinition>
+                    <RowDefinition  MinHeight="43" Height="Auto"></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <!--债券信息区报价区-->
+                <Border Grid.Row="0" Grid.Column="0" Background="Transparent" BorderBrush="Violet" BorderThickness="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="8"></RowDefinition>
+                            <RowDefinition Height="24"></RowDefinition>
+                            <RowDefinition MinHeight="66"></RowDefinition>
+                            <RowDefinition Height="8"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16"></ColumnDefinition>
+                            <ColumnDefinition MinWidth="76"></ColumnDefinition>
+                            <ColumnDefinition MinWidth="334"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <!--债券信息-->
+                        <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Orientation="Horizontal">
+                            <TextBlock  Margin="0, 0, 0, 0"  Text="{Binding Security}" Foreground="#F9C152" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="20"></TextBlock>
+                            <TextBlock  Margin="8, 0, 0, 0"  Text="{Binding Symbol}" Foreground="#F9C152" TextTrimming="CharacterEllipsis" ToolTip="{Binding Symbol}" MaxWidth="300" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="20"></TextBlock>
+                        </StackPanel>
+                        <!--方向报价-->
+                        <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="1" Orientation="Vertical" Margin="0 10 0 0">
+                            <TextBlock Text="{Binding TitleBidOrOfr}" Foreground="{Binding BidOrOfrTextBlockForground}" Margin="0 4 0 0" FontFamily="Microsoft YaHei" FontWeight="Bold" FontSize="18"></TextBlock>
+
+                            <TextBlock Text="{Binding CustomPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#FFFFFF" Margin="0 0 0 0" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="19"></TextBlock>
+                        </StackPanel>
+                        
+                        <!--量-->
+                        <Border Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="4" Margin="0 0 0 0" >
+                            <Grid Background="Transparent">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition></RowDefinition>
+                                    <RowDefinition></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="114"></ColumnDefinition>
+                                    <ColumnDefinition Width="72" ></ColumnDefinition>
+                                    <ColumnDefinition Width="90" ></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!--点价量-->
+                                <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Margin="0 8 0 0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="26"></RowDefinition>
+                                            <RowDefinition Height="40"></RowDefinition>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition></ColumnDefinition>
+                                            <ColumnDefinition></ColumnDefinition>
+                                            <ColumnDefinition></ColumnDefinition>
+                                            <ColumnDefinition></ColumnDefinition>
+                                         </Grid.ColumnDefinitions>
+
+                                        <Button Grid.Row="0" Grid.Column="0" Margin="0 -4 0 0" Width="24" Height="24" Content="2" Command="{Binding Add1QtyCommand}" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0 1 0 0" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#D7D7D7" FontSize="12"/>
+                                        <Button Grid.Row="0" Grid.Column="1" Margin="0 -4 0 0" Width="24" Height="24" Content="3" Command="{Binding Add3QtyCommand}" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0 1 0 0" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#D7D7D7" FontSize="12"/>
+                                        <Button Grid.Row="0" Grid.Column="2" Margin="0 -4 0 0" Width="24" Height="24" Content="5" Command="{Binding Add5QtyCommand}" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0 1 0 0" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#D7D7D7" FontSize="12"/>
+                                        <Button Grid.Row="0" Grid.Column="3" Margin="0 -4 0 0" Width="24" Height="24" Content="ALL" Command="{Binding AddAllQtyCommand}" Style="{DynamicResource GraySlateButtonStyle}" BorderThickness="0 1 0 0" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="#D7D7D7" FontSize="12"/>
+
+                                        <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" x:Name="AmountTxt" Width="110"  TabIndex="1"  Height="32" FontSize="24" input:InputMethod.IsInputMethodEnabled="False"
+                                            PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" BorderThickness="1" MaxLength="9"
+                                            Text="{Binding CustomShowQty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Margin="2,0,0,0" Tag="{Binding ConfirmButtonTag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource CustomQtyTextBox}" Foreground="White" HorizontalContentAlignment="Left"  
+                                            HorizontalAlignment="Left" VerticalAlignment="Top"  Padding="6, 2, 18, 0" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" x:Name="AmountTxtKw" Text="{Binding QtyTxt}"  Foreground="#A0A0A0"  Background="Transparent" 
+                                            FontFamily="Roboto" FontSize="12" FontWeight="Bold" Margin="92 14 0 0" HorizontalAlignment="Left"/>
+                                    </Grid>     
+                                </StackPanel>
+                                
+                                <!--Add Reduce-->
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                                    <Button x:Name="btnAddQty" Margin="0 -5 0 0" Width="32" Height="32" BorderThickness="0 1 0 0" VerticalAlignment="Top" Command="{Binding AddQtyCommand}" Style="{DynamicResource AddPlusButton}" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Button x:Name="btnReduceQty" Margin="2 -5 0 0" Width="32" Height="32" BorderThickness="0 1 0 0" VerticalAlignment="Top" Command="{Binding ReduceQtyCommand}" Style="{DynamicResource MinusButton}" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                                
+                                <!--统计量-->
+                                <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal">
+                                    <TextBlock Text="总量(kw)" Foreground="#8F9598" Margin="0 4 0 0" FontFamily="Microsoft YaHei" FontSize="14"></TextBlock>
+                                    <TextBlock Text="{Binding SumShowQty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SelfDataGridTextBlockStyle}"  Margin="4 4 0 0" FontFamily="Microsoft YaHei" FontSize="14" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ></TextBlock>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        
+                        
+                    </Grid>
+                </Border>
+                
+                <!--清算速度区-->
+                <Border Grid.Row="1" Grid.Column="0" Background="Transparent" BorderThickness="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="72"/>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="4"/>
+                        </Grid.ColumnDefinitions>
+                        <!--清算速度-->
+                        <TextBlock Text="清算速度:" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="#8F9598" Margin="0 0 0 0" FontFamily="Microsoft YaHei" FontSize="12"></TextBlock>
+                        <!--不限-->
+                        <CheckBox x:Name="LstSettleBoxNoLimit"  Grid.Row="1" Grid.Column="1" Margin="0 3 4 4" Tag="1,2,3" Width="60" Checked="LstSettleBoxNoLimit_Checked" Unchecked="LstSettleBoxNoLimit_Checked"  Height="24"  Content="不限" Style="{DynamicResource SelfSwitchCheckBoxStyle}"  HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <!--清算速度列表-->
+                        <ListBox x:Name="LstSettleBox" Grid.Row="1" Grid.Column="2" SelectionMode="Extended" SelectionChanged="LstSettleBox_SelectionChanged" 
+                                 ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="12"
+                                 VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                 BorderBrush="Transparent">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="5" Width="328" HorizontalAlignment="Left"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBoxItem Width="60" Height="24" Content="不限" Tag="1,2,3" TabIndex="2" Visibility="Collapsed" Margin="0 0 4 4" Style="{StaticResource FilterListBoxItemDodgerBlueStyle}" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="14" ToolTip="REQ" ToolTipService.IsEnabled="False"/>
+                            <ListBoxItem Width="60" Height="24" Content="+0" Tag="1" TabIndex="3" Margin="0 0 4 4" Style="{DynamicResource SelfFilterListBoxItemDodgerBlueStyle}" FontFamily="Microsoft YaHei" FontWeight="SemiBold" FontSize="14" ToolTip="REQ" ToolTipService.IsEnabled="False" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <ListBoxItem Width="60" Height="24" Content="+1" Tag ="2" TabIndex="4" Margin="0 0 4 4" Style="{DynamicResource SelfFilterListBoxItemDodgerBlueStyle}"  FontFamily="Microsoft YaHei"  FontWeight="SemiBold" FontSize="14" ToolTip="REQ" ToolTipService.IsEnabled="False" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <ListBoxItem Width="60" Height="24" Content="明+0" Tag="3" TabIndex="5" Margin="0 0 4 4" Style="{DynamicResource SelfFilterListBoxItemDodgerBlueStyle}" FontFamily="Microsoft YaHei"  FontWeight="SemiBold" FontSize="14" ToolTip="REQ" ToolTipService.IsEnabled="False" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <!-- Datagrid 列表 和 统计总量-->
+                <Border Grid.Row="2" Grid.Column="0" Background="Transparent" BorderThickness="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="26"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="16"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- Datagrid列表 -->
+                        <DataGrid x:Name="dgQtyList" Grid.Row="0" Grid.Column="1" ItemsSource="{Binding BestQuotationsMV.View}"
+                                HeadersVisibility="None" BorderThickness="0" Background="Transparent" 
+                                VirtualizingPanel.ScrollUnit="Pixel" ScrollViewer.CanContentScroll="True"
+                                Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{DynamicResource DefaultDataGrid}" RowStyle="{StaticResource SelfDataGridRowStyle}" CellStyle="{StaticResource SelfDataGridCellStyle}" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                            <DataGrid.Columns>
+                                <!--<DataGridTextColumn Binding="{Binding quoteInternalFlag}" Width="20" >
+                                    <DataGridTextColumn.ElementStyle >
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                            <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                            <Setter Property="Margin" Value="0,0,0,0"></Setter>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>-->
+                                
+                                <DataGridTemplateColumn Width="150">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Grid.Column="0" Height="24" Text="{Binding InstitutionNameAndTradeName}" Width="145" Margin="5, 0, 0, 0"  Style="{StaticResource SelfDataGridTextBlockStyle}" FontFamily="Microsoft YaHei" FontSize="14" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource self}, Path=Text}">
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Height="24" x:Name="txtbroker" Text="{Binding ShowBrokerName}"  Style="{StaticResource SelfDataGridTextBlockStyle}"  Width="95" Margin="5 0 0 0" FontFamily="Microsoft YaHei" FontSize="14" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource self}, Path=Text}">
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsMe}" Value="True"/>
+                                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter TargetName="txtbroker" Property="Foreground" Value="#00CDAD"/>
+                                                </MultiDataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0 2 0 0">
+                                                    <TextBlock  Height="24" x:Name="txtqty" Text="{Binding qty, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#}}"  Style="{StaticResource SelfDataGridTextBlockStyle}"  FontFamily="Roboto" FontSize="14"  FontWeight="Bold"  VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelativeSource={RelativeSource self}, Path=Text}">
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding HandlInst}" Value="1"/>
+                                                        <Condition Binding="{Binding IsEnabled, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Value="True"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter TargetName="txtqty" Property="TextBlock.Foreground" Value="#00FFB4"/>
+                                                </MultiDataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Width="80">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                <TextBlock Height="24" Width="80" x:Name="txtsettltype" Text="{Binding settlType, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BrokerSettleTypeConverter}}" ToolTip="{Binding settlType, Converter={StaticResource BrokerSettleTypeConverter}}"  TextTrimming="CharacterEllipsis"   Style="{StaticResource SelfDataGridTextBlockStyle}"  FontSize="12" FontFamily="Microsoft YaHei" ></TextBlock>
+                                            </StackPanel>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding settlType}" Value="2,3">
+                                                    <Setter TargetName="txtsettltype" Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+ 
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                
+
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!-- 统计总量 -->
+                        <StackPanel  Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0 0 0 0">
+                            <TextBlock Text="总量" HorizontalAlignment="Left" VerticalAlignment="Top"   Margin="4 0 0 0" FontFamily="Microsoft YaHei" FontSize="14" Style="{StaticResource SelfTextBlockStyle}" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBlock Text="{Binding SumQty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#}}"  HorizontalAlignment="Left" VerticalAlignment="Top" Style="{StaticResource SelfTextBlockStyle}" Margin="219 0 0 0" FontFamily="Microsoft YaHei" FontSize="14" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ></TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 分割线 -->
+        <Border Grid.Row="2" BorderThickness="2, 0, 2, 0" CornerRadius="0,0,0,0" BorderBrush="{Binding BorderBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource ColorBrush.Gray13}">
+            <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Main.BorderBrush}"></Border>
+        </Border>
+
+        <!--提交-->
+        <Border Grid.Row="3" BorderThickness="2, 0, 2, 2"  CornerRadius="0,0,4,4" BorderBrush="{Binding BorderBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="24"></RowDefinition>
+                    <RowDefinition Height="36"></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="64"></ColumnDefinition>
+                    <ColumnDefinition Width="102"></ColumnDefinition>
+                    <ColumnDefinition Width="10"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <CheckBox Grid.Row="0" Grid.Column="2" Content="内部成交" IsChecked="{Binding HandlInstCheck, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 4 0 0" Padding="4 -3 0 0" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxTextBox.Disabled.Foreground}" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontFamily="MicroSoft YaHei" FontSize="14" Foreground="#FFFFFF"></CheckBox>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" Margin="14,0,0,0">
+                    <TextBlock HorizontalAlignment="Left" Foreground="#D7D7D7" FontSize="12px" FontFamily="Microsoft YaHei" VerticalAlignment="Top" Visibility="{Binding WarningVisibility,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                            <Run Text="价格失效" Foreground="#B74C4A"></Run>
+                    </TextBlock>
+                </StackPanel>
+
+                <Button Grid.Row="1" Grid.Column="1"  Margin="0,2,2,0" Content="取消" TabIndex="8" Command="{Binding CancelCommand}" FontFamily="MicroSoft YaHei"  FontSize="14" FontWeight="SemiBold" Style="{DynamicResource GraySlateButtonStyle}" Width="60" Height="24" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#D7D7D7" BorderThickness="0 1 0 0"/>
+
+                <Button Grid.Row="1" Grid.Column="2" Margin="2,2,0,0" Content="{Binding TitleBidOrOfr}"  TabIndex="7" FontFamily="Roboto" FontSize="14" FontWeight="SemiBold" Command="{Binding OkCommand}" Tag="{Binding ConfirmButtonTag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource SelfBlueGreenOrangeGraySlateButtonStyle}" Width="100" Height="24" IsEnabled="{Binding IsEnableConfirm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Top" Foreground="#D7D7D7" BorderThickness="0 1 0 0"/>
+
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

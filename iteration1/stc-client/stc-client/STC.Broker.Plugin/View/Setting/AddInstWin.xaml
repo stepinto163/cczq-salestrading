@@ -1,0 +1,99 @@
+﻿<commonComp:WindowBase x:Class="STC.Broker.Plugin.View.Setting.AddInstWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Setting"
+             xmlns:commonUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="500"
+        Title="添加机构" Width="248"  Height="303"
+         Background="#0A0F0E" BorderThickness="2" 
+        BorderBrush="#282828" ResizeMode="NoResize"
+        WindowState="Normal"
+        WindowStartupLocation="CenterScreen"
+        >
+
+    <Window.Resources>
+        <ResourceDictionary>
+           
+
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid Grid.Row="1" Margin="10,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="40"></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="3,8,0,0">
+
+                <CheckBox x:Name="CheckAll" Grid.Column="0" Width="20" Style="{DynamicResource DefaultCheckBoxStyle}"
+                              HorizontalAlignment="Center" 
+                              VerticalAlignment="Center"
+                              Click="CheckBox_Click"
+                                      />
+
+                <commonComp:WatermarkTextBox x:Name="tbInstSearch"  Height="22" WaterMark="搜索" Width="200"
+                                 PreviewKeyDown="tb_Organization_PreviewKeyDown"
+                                 TextChanged="tb_Organization_TextChanged"
+                                 HorizontalAlignment="Left">
+                </commonComp:WatermarkTextBox>
+            </StackPanel>
+
+            <DataGrid x:Name="dgRecive"  Margin="0,8,0,0"
+                          Grid.Row="1"
+                          HeadersVisibility="None"
+                          BorderThickness="0"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          AutoGenerateColumns="False"
+                          Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ItemsSource="{Binding InstInfoViewModels}" >
+                <DataGrid.Resources>
+                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox Grid.Column="0" Margin="0, 0, 0, 0" Height="15" Width="auto"
+                                                  Style="{DynamicResource DefaultCheckBoxStyle}"
+                                                  HorizontalAlignment="Center" IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Click="CheckBox_Click_1"
+                                                   />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Binding="{Binding InstShortName}" Width="1*" >
+                        <DataGridTextColumn.ElementStyle >
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+
+            <Grid  Grid.Row="2"  HorizontalAlignment="Center" Margin="10, 0, 30, 10" VerticalAlignment="Bottom" >
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="btnUpdate" Margin="0,0,10,0" Width="80" Height="22" Style="{DynamicResource GrayButtonStyle}" FontFamily="{DynamicResource DefaultFont}" FontSize="12" Click="btnCancel_Click">取消</Button>
+                    <Button x:Name="btnCancel"  IsEnabled="False" Width="80" Height="22" Style="{DynamicResource BlueGreenStyle}" FontFamily="{DynamicResource DefaultFont}" FontSize="12" Click="btnOk_Click">确认</Button>
+                </StackPanel>
+            </Grid>
+
+        </Grid>
+        <commonUI:LoadingWaiting x:Name="_loading" Grid.Row="1"  CanvasSize="130" EllipseCount="8" EllipseSize="15" StepAngle="36" TimeSpan="50"  Visibility="Collapsed"/>
+    </Grid>
+</commonComp:WindowBase>
+

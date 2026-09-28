@@ -1,0 +1,1134 @@
+﻿<!--<comp:WindowBase-->
+<UserControl x:Class="STC.Broker.Plugin.View.Transaction.CopyDetailUI"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		     xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Transaction"
+			 xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+			 xmlns:data="clr-namespace:STC.Broker.Plugin.View.Component"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             mc:Ignorable="d" d:DesignHeight="800" d:DesignWidth="1024"
+       
+           ContextMenuOpening="Window_ContextMenuOpening"
+        MouseLeftButtonUp="Window_MouseLeftButtonUp"
+        MouseRightButtonUp="Window_MouseRightButtonUp"
+        PreviewMouseRightButtonDown="Window_PreviewMouseRightButtonDown"
+            >
+
+    <!--<comp:WindowBase.Resources>-->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <Image x:Key="PreviousPage" Width="14.5" Height="11" >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V12 H14 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,-536,-393">
+                                        <GeometryDrawing Brush="#FFFFEBC8" Geometry="F1 M14,12z M0,0z M538,397L544,397 544,398 538,398 541,401C540.654895,401.015922 540.715093,401.265124 541,401 540.601958,401.732148 540.437219,401.914495 540,402 540.015509,402.03948 539.790573,401.972625 540,402L536,398C536.064641,397.847504 536,397.675341 536,397 536,397.316192 536.064641,397.14403 536,397L540,393C539.876572,392.933518 540.25755,392.937185 540,393 540.728785,393.459155 540.732095,393.88115 541,394L538,397z M550,404C550,400.1339,547.3138,397,544,397L544,398C546.650967,398.4,548.8,400.907205,549,404L550,404z M550,403L549,403 549,404C549,404.667228 549.223858,405 550,405 549.776142,405 550,404.667228 550,404L550,403z" />
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+            <Image x:Key="NextPage" Width="14.5" Height="11" >
+                <Image.Source>
+                    <DrawingImage>
+                        <DrawingImage.Drawing>
+                            <DrawingGroup ClipGeometry="M0,0 V12 H14 V0 H0 Z">
+                                <DrawingGroup Opacity="1">
+                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,-556,-393">
+                                        <DrawingGroup Transform="-1,0,0,1,1126,0">
+                                            <GeometryDrawing Brush="#FFFFEBC8" Geometry="F1 M14,12z M0,0z M558,397L564,397 564,398 558,398 561,401C560.654895,401.015922 560.715093,401.265124 561,401 560.601958,401.732148 560.437219,401.914495 560,402 560.015509,402.03948 559.790573,401.972625 560,402L556,398C556.064641,397.847504 556,397.675341 556,397 556,397.316192 556.064641,397.14403 556,397L560,393C559.876572,392.933518 560.25755,392.937185 560,393 560.728785,393.459155 560.732095,393.88115 561,394L558,397z M570,404C570,400.1339,567.3138,397,564,397L564,398C566.650967,398.4,568.8,400.907205,569,404L570,404z M570,403L569,403 569,404C569,404.667228 569.223858,405 570,405 569.776142,405 570,404.667228 570,404L570,403z" />
+                                        </DrawingGroup>
+                                    </DrawingGroup>
+                                </DrawingGroup>
+                            </DrawingGroup>
+                        </DrawingImage.Drawing>
+                    </DrawingImage>
+                </Image.Source>
+            </Image>
+            <Style TargetType="{x:Type DataGrid}" x:Key="SDataGrid">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="None"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="AlternationCount" Value="1"/>
+                <Setter Property="AllowDrop" Value="True"/>
+
+                <!--<Setter Property="ColumnHeaderStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Foreground">
+                                <Setter.Value>
+                                    <SolidColorBrush Color="#FFFFFF" Opacity="0.5"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Height" Value="30"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>-->
+                <Setter Property="RowStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridRow">
+                            <!--<Setter Property="Foreground" Value="#FFEBC8"></Setter>-->
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Margin" Value="0,0,0,0"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="20"/>
+
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CellStyle">
+                    <Setter.Value>
+                        <Style TargetType="DataGridCell" >
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <!--<Setter Property="ToolTipService.ToolTip" Value="{Binding ToolText}"/>-->
+                            <Style.Triggers >
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#6EB6CF"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ImageButton" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#A0A0A0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" BorderThickness="0" Background="{TemplateBinding Background}">
+                                <Image  Grid.Column="1" Width="15" Height="15" >
+                                    <Image.Source>
+                                        <DrawingImage >
+                                            <DrawingImage.Drawing>
+                                                <DrawingGroup ClipGeometry="M0,0 V10 H14 V0 H0 Z">
+                                                    <DrawingGroup Opacity="1">
+                                                        <DrawingGroup Opacity="1" Transform="1,0,0,1,-393,-413">
+                                                            <GeometryDrawing Brush="#FF9200" Geometry="F1 M14,10z M0,0z M406.998548,417.539588C406.975758,417.156775,406.692778,416.8349,406.255963,416.698963L394.556919,413.061463C394.156189,412.936463 393.707978,413.005213 393.387014,413.239588 393.06605,413.473963 392.931208,413.831775 393.033764,414.175525L395.481827,422.294275C395.56919,422.5849 395.810388,422.817713 396.144646,422.936463 396.290884,422.988025 396.446618,423.014588 396.600453,423.014588 396.79607,423.014588 396.989788,422.9724 397.166413,422.89115L400.098771,421.5224C400.248807,421.452088,400.436828,421.473963,400.558376,421.573963L401.238288,422.133338C401.511772,422.358338 401.901107,422.455213 402.279047,422.39115 402.656987,422.32865 402.970355,422.114588 403.116593,421.819275L404.343473,419.3349C404.379558,419.263025,404.446029,419.20365,404.529594,419.170838L406.35662,418.4349C406.774443,418.26615,407.021338,417.9224,406.998548,417.539588L406.998548,417.539588z M406.018563,417.867713L404.191537,418.60365C404.041501,418.664588,403.910456,418.750525,403.806,418.855213L396.697312,415.513025C396.503594,415.4224,396.309876,415.62865,396.46561,415.7599L400.964804,419.552088C400.983796,419.567713,400.99899,419.586463,401.008486,419.608338L401.969479,421.770838C401.901107,421.758338,401.836535,421.72865,401.783357,421.6849L401.103445,421.125525C400.883139,420.944275 400.586864,420.848963 400.288691,420.848963 400.094973,420.848963 399.899356,420.889588 399.72273,420.9724L396.790373,422.34115C396.685917,422.389588 396.56057,422.395838 396.450417,422.356775 396.338364,422.317713 396.258598,422.239588 396.23011,422.142713L393.778249,414.023963C393.72697,413.856775 393.842821,413.750525 393.895999,413.711463 393.947277,413.673963 394.089717,413.59115 394.285334,413.652088L405.986277,417.289588C406.204684,417.358338 406.231273,417.520838 406.233172,417.569275 406.235071,417.617713 406.229374,417.783338 406.018563,417.867713z" />
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingGroup>
+                                            </DrawingImage.Drawing>
+                                        </DrawingImage>
+                                    </Image.Source>
+                                </Image>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ImageButton2" TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="#000000"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template" >
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border" BorderThickness="0" Background="{TemplateBinding Background}">
+                                <Image  Grid.Column="1" Width="14" Height="11" >
+                                    <Image.Source>
+                                        <DrawingImage >
+                                            <DrawingImage.Drawing>
+                                                <DrawingGroup ClipGeometry="M0,0 V10 H14 V0 H0 Z">
+                                                    <DrawingGroup Opacity="1">
+                                                        <DrawingGroup Opacity="1" Transform="1,0,0,1,-393,-413">
+                                                            <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M14,10z M0,0z M406.998548,417.539588C406.975758,417.156775,406.692778,416.8349,406.255963,416.698963L394.556919,413.061463C394.156189,412.936463 393.707978,413.005213 393.387014,413.239588 393.06605,413.473963 392.931208,413.831775 393.033764,414.175525L395.481827,422.294275C395.56919,422.5849 395.810388,422.817713 396.144646,422.936463 396.290884,422.988025 396.446618,423.014588 396.600453,423.014588 396.79607,423.014588 396.989788,422.9724 397.166413,422.89115L400.098771,421.5224C400.248807,421.452088,400.436828,421.473963,400.558376,421.573963L401.238288,422.133338C401.511772,422.358338 401.901107,422.455213 402.279047,422.39115 402.656987,422.32865 402.970355,422.114588 403.116593,421.819275L404.343473,419.3349C404.379558,419.263025,404.446029,419.20365,404.529594,419.170838L406.35662,418.4349C406.774443,418.26615,407.021338,417.9224,406.998548,417.539588L406.998548,417.539588z M406.018563,417.867713L404.191537,418.60365C404.041501,418.664588,403.910456,418.750525,403.806,418.855213L396.697312,415.513025C396.503594,415.4224,396.309876,415.62865,396.46561,415.7599L400.964804,419.552088C400.983796,419.567713,400.99899,419.586463,401.008486,419.608338L401.969479,421.770838C401.901107,421.758338,401.836535,421.72865,401.783357,421.6849L401.103445,421.125525C400.883139,420.944275 400.586864,420.848963 400.288691,420.848963 400.094973,420.848963 399.899356,420.889588 399.72273,420.9724L396.790373,422.34115C396.685917,422.389588 396.56057,422.395838 396.450417,422.356775 396.338364,422.317713 396.258598,422.239588 396.23011,422.142713L393.778249,414.023963C393.72697,413.856775 393.842821,413.750525 393.895999,413.711463 393.947277,413.673963 394.089717,413.59115 394.285334,413.652088L405.986277,417.289588C406.204684,417.358338 406.231273,417.520838 406.233172,417.569275 406.235071,417.617713 406.229374,417.783338 406.018563,417.867713z" />
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingGroup>
+                                            </DrawingImage.Drawing>
+                                        </DrawingImage>
+                                    </Image.Source>
+                                </Image>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter Property="Cursor" Value="Hand"></Setter>-->
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+
+
+            <Style TargetType="{x:Type Button}" x:Key="SendMsgImageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <!--<Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="12"/>-->
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value=" #A0A0A0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                    <Image Margin="8,6,0,0" Width="20" Height="20">
+                                        <Image.Source>
+                                            <DrawingImage>
+                                                <DrawingImage.Drawing>
+                                                    <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                        <DrawingGroup Opacity="1">
+                                                            <DrawingGroup Opacity="1" Transform="1,0,0,1,9,5">
+                                                                <DrawingGroup Opacity="1">
+                                                                    <GeometryDrawing Brush="#A0A0A0" Geometry="F0 M24,24z M0,0z M3.1,0.2C3.2,0.1 3.3,0 3.5,0 3.7,0 3.8,0.1 3.9,0.2L6.8,3C6.9,3.1 7,3.2 7,3.4 7,3.6 6.9,3.7 6.8,3.8 6.7,4 6.5,4 6.4,4 6.2,4 6,4 5.9,3.8L4.1,2.1 4.1,7.4C4.1,7.6 4,7.7 3.9,7.8 3.8,7.9 3.7,8 3.5,8 3.3,8 3.2,7.9 3,7.8 2.9,7.7 2.9,7.6 2.9,7.4L2.9,2.1 1.1,3.8C0.9,4 0.8,4 0.6,4 0.4,4 0.3,4 0.2,3.8 0.1,3.7 0,3.6 0,3.4 0,3.2 0.1,3.1 0.2,3L3.1,0.2z" />
+                                                                </DrawingGroup>
+                                                                <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M24,24z M0,0z M3,9L3,9 3,10 4,10 4,9z" />
+                                                                <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M24,24z M0,0z M3,11L3,11 3,13 4,13 4,11z" />
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingImage.Drawing>
+                                            </DrawingImage>
+                                        </Image.Source>
+                                    </Image>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Cursor" Value="Hand"></Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                   
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.Disabled.Background}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type Button}" x:Key="TodayLaterImageButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <!--<Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="12"/>-->
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource GraySlateButton.Static.Background}"/>
+                <Setter Property="Foreground" Value="#269E68"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Background="{TemplateBinding Background}" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                    <Viewbox Width="24" Height="24">
+                                        <Canvas Height="24" Width="24">
+                                            <Canvas>
+                                                <Canvas.RenderTransform>
+                                                    <TransformGroup>
+                                                        <TranslateTransform X="4" Y="4" />
+                                                    </TransformGroup>
+                                                </Canvas.RenderTransform>
+                                                <Canvas>
+                                                    <Path x:Name="svg_path" Margin="0,1,0,0" Fill="{TemplateBinding Foreground}" Data="M14,0 C15.1045695,0 16,0.8954305 16,2 L16,14 C16,15.1045695 15.1045695,16 14,16 L2,16 C0.8954305,16 0,15.1045695 0,14 L0,2 C0,0.8954305 0.8954305,0 2,0 L14,0 Z M14,1 L2,1 C1.44771525,1 1,1.44771525 1,2 L1,14 C1,14.5522847 1.44771525,15 2,15 L14,15 C14.5522847,15 15,14.5522847 15,14 L15,2 C15,1.44771525 14.5522847,1 14,1 Z M7.6171875,8.328125 L7.6171875,9.109375 L5.5078125,11.7265625 C5.28125,11.5520833 5.04296875,11.3958333 4.79296875,11.2578125 L6.55859375,9.1171875 L2.16015625,9.1171875 L2.16015625,8.328125 L7.6171875,8.328125 Z M11.9101562,5.77050781 L11.9101562,7.70410156 L13.8388672,7.70410156 L13.8388672,8.50976562 L11.9101562,8.50976562 L11.9101562,10.4384766 L11.1044922,10.4384766 L11.1044922,8.50976562 L9.17578125,8.50976562 L9.17578125,7.70410156 L11.1044922,7.70410156 L11.1044922,5.77050781 L11.9101562,5.77050781 Z M4.76953125,6.3828125 C5.20442708,6.91145833 5.53255208,7.32291667 5.75390625,7.6171875 L5.07421875,8.1171875 C4.76953125,7.65364583 4.45963542,7.2265625 4.14453125,6.8359375 L4.76953125,6.3828125 Z M4.7109375,4.19140625 L5.69140625,4.2734375 L5.4921875,4.578125 C6.30989583,5.59895833 7.37109375,6.3984375 8.67578125,6.9765625 C8.63151042,7.06510417 8.55989583,7.20572917 8.4609375,7.3984375 C8.3671875,7.58333333 8.29947917,7.71614583 8.2578125,7.796875 C7.55729167,7.42708333 6.953125,7.03776042 6.4453125,6.62890625 C5.91145833,6.20182292 5.44401042,5.72135417 5.04296875,5.1875 C4.24869792,6.1640625 3.12630208,7.06640625 1.67578125,7.89453125 C1.58203125,7.68098958 1.45052083,7.41536458 1.28125,7.09765625 C2.1171875,6.66536458 2.8203125,6.203125 3.390625,5.7109375 C3.91666667,5.25520833 4.35677083,4.74869792 4.7109375,4.19140625 Z" />
+                                                </Canvas>
+                                            </Canvas>
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter x:Name="contentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ListBoxItemSettle.SelectedActive.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                </Trigger>
+                                <!--<Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource SvgButton.Disabled.Background}"/>
+                                    <Setter Property="Fill" TargetName="svg_path" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!--序号-->
+            <Style x:Key="txseq" TargetType="TextBlock">
+                <Setter Property="TextAlignment"  Value="Center"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Center"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei.SemiSold}" ></Setter>
+                <Setter Property="FontSize" Value="14" ></Setter>
+                <Setter Property="FontWeight" Value="Bold" ></Setter>
+                <Setter Property="Foreground" Value="#FFEBC8" ></Setter>
+                <!--<Setter Property="Background" Value="#193D37"></Setter>-->
+                <Setter Property="Height" Value="15"></Setter>
+                <Setter Property="Width" Value="{Binding Path=IsWidth,Converter={StaticResource CopyColorConverter}}"></Setter>
+                <Setter Property="Visibility" Value="{Binding Path=IsHeader,Converter={StaticResource CopyColorConverter}}"></Setter>
+                <Setter Property="Margin" Value="{Binding Path=IsMargin,Converter={StaticResource CopyColorConverter}}"></Setter>
+            </Style>
+            <!--ofr-->
+            <Style x:Key="txofr" TargetType="TextBlock">
+                <Setter Property="TextAlignment"  Value="Center"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Center"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FontFamily" Value="MicrosoftYaHei"></Setter>
+                <!--<Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Regular}"></Setter>-->
+                <Setter Property="FontSize" Value="14" ></Setter>
+                <Setter Property="Foreground" Value="#0082D8"></Setter>
+                <!--<Setter Property="Background" Value="#97CEF2"></Setter>-->
+                <Setter Property="Height" Value="15"></Setter>
+                <Setter Property="Width" Value="{Binding Path=IsWidth,Converter={StaticResource CopyColorConverter}}"></Setter>
+                <Setter Property="Visibility" Value="{Binding Path=IsHeader,Converter={StaticResource CopyColorConverter}}"></Setter>
+                <!--<Setter Property="Margin" Value="0,0,5,0"></Setter>-->
+                <Setter Property="Margin" Value="{Binding Path=IsMargin,Converter={StaticResource CopyColorConverter}}"></Setter>
+            </Style>
+            <!--bid-->
+            <Style x:Key="txbid" TargetType="TextBlock">
+                <Setter Property="TextAlignment"  Value="Center"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Center"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"></Setter>
+                <!--<Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Regular}"></Setter>-->
+                <Setter Property="FontSize" Value="14" ></Setter>
+                <Setter Property="Foreground" Value="#ED6D00" ></Setter>
+                <!--<Setter Property="Background" Value="#F0BA77"></Setter>-->
+                <Setter Property="Height" Value="15"></Setter>
+                <Setter Property="Width" Value="{Binding Path=IsWidth,Converter={StaticResource CopyColorConverter}}"></Setter>
+                <Setter Property="Visibility" Value="{Binding Path=IsHeader,Converter={StaticResource CopyColorConverter}}"></Setter>
+                <!--<Setter Property="Margin" Value="0,0,5,0"></Setter>-->
+                <Setter Property="Margin" Value="{Binding Path=IsMargin,Converter={StaticResource CopyColorConverter}}"></Setter>
+            </Style>
+            <!--文本1-->
+            <Style x:Key="txblock" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <!--<Setter Property="Padding" Value="{Binding Path=Padding,Converter={StaticResource CopyColorConverter} }" ></Setter>-->
+                <Setter Property="FontFamily" Value="{Binding Path=FontFamily,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="FontSize" Value="{Binding Path=FontSize,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="Foreground" Value="{Binding Path=IsShowColor,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="Background" Value="{Binding Path=Isbrokerunread,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="FontWeight" Value="{Binding Path=Isliq,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="TextDecorations"  Value="{Binding Path=IsShowDel,Converter={StaticResource CopyColorConverter} }"/>
+                <Setter Property="TextDecoration.Pen">
+                    <Setter.Value>
+                        <Pen Thickness="1">
+                            <Pen.Brush>
+                                <SolidColorBrush Opacity="0.5" Color="Red"/>
+                            </Pen.Brush>
+                        </Pen>
+                    </Setter.Value>
+                </Setter>
+                <!--<Style.Triggers>
+                    <DataTrigger Binding="{Binding DetailMarkDisplay}" Value="1">
+                        <Setter Property="FontStyle"  Value="Oblique"/>
+                        <Setter Property="TextDecorations"  Value="Baseline"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding DetailMarkDisplay}" Value="0">
+                        <Setter Property="FontStyle"  Value="Normal"/>
+                        <Setter Property="TextDecorations"  Value="None"/>
+                    </DataTrigger>
+                </Style.Triggers>-->
+            </Style>
+            <!--文本2-->
+            <Style x:Key="txblock2" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="Padding" Value="0,20,0,0" ></Setter>
+                <Setter Property="FontFamily" Value="楷体" ></Setter>
+                <Setter Property="FontSize" Value="18" ></Setter>
+                <Setter Property="Foreground" Value="#000000"></Setter>
+            </Style>
+            <Style x:Key="txblockTitleStyle" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                <Setter Property="Margin" Value="0,-3,0,0"></Setter>
+                <Setter Property="FontFamily" Value="{Binding Path=FontFamily,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="FontSize" Value="{Binding Path=FontSize,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="Foreground" Value="{Binding Path=IsShowColor,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="Background" Value="{Binding Path=Isbrokerunread,Converter={StaticResource CopyColorConverter} }" ></Setter>
+                <Setter Property="FontWeight" Value="{Binding Path=Isliq,Converter={StaticResource CopyColorConverter} }" ></Setter>
+            </Style>
+
+            <Style x:Key="SumButton" TargetType="{x:Type Button}">
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+                <Setter Property="Visibility" Value="{Binding Path=SumIsVisible}"></Setter>
+                <Setter Property="Width" Value="{Binding Path=SumIsVisible,Converter={StaticResource CopyColorConverter} }"></Setter>
+                <Setter Property="Height" Value="22"></Setter>
+                <Setter Property="FontSize" Value="12"></Setter>
+                <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#136C5E" >
+                                <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#178674"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="OrangeCheckedNormalCheckBox" TargetType="CheckBox">
+                <Setter Property="Visibility" Value="{Binding Path=SumIsVisible}"></Setter>
+                <!--<Setter Property="Width" Value="{Binding Path=SumIsVisible,Converter={StaticResource CopyColorConverter} }"></Setter>-->
+                <Setter Property="Background" Value="{DynamicResource GreenBlueCheckBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="#515151"/>
+                <Setter Property="Foreground" Value="{DynamicResource GreenBlueCheckBox.Normal.Foreground}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="4,0,0,0"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type CheckBox}">
+                            <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True" VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="checkBoxBorder" CornerRadius="1" Height="14" MaxHeight="14" MinHeight="14" Width="14" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Padding="1" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid x:Name="markGrid">
+                                        <Path x:Name="optionMark"  Data="M0.1,6 3.2,7.5 7.5,2 7.0,0.2 3.2,5.2 1,4 0.2,4 z" Fill="Transparent" Margin="1,0,0,0" Opacity="0" Stretch="None"/>
+                                        <Rectangle x:Name="indeterminateMark" Fill="{DynamicResource GreenBlueCheckBox.Static.Background}" Opacity="0"/>
+                                    </Grid>
+                                </Border>
+                                <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" TextBlock.Foreground="{TemplateBinding Foreground}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Height" Value="16"/>
+                                        <Condition Property="BorderThickness" Value="1"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Data" TargetName="optionMark" Value="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z"/>
+                                    <Setter Property="Margin" TargetName="optionMark" Value="1,1,0,0"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Height" Value="18"/>
+                                        <Condition Property="BorderThickness" Value="1"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Data" TargetName="optionMark" Value="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z"/>
+                                    <Setter Property="Margin" TargetName="optionMark" Value="1,1,0,0"/>
+                                </MultiTrigger>
+
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Height" Value="16"/>
+                                        <Condition Property="BorderThickness" Value="2"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Data" TargetName="optionMark" Value="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z"/>
+                                    <Setter Property="Margin" TargetName="optionMark" Value="0,0,0,0"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Height" Value="18"/>
+                                        <Condition Property="BorderThickness" Value="2"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Data" TargetName="optionMark" Value="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z"/>
+                                    <Setter Property="Margin" TargetName="optionMark" Value="1,0.5,0,0"/>
+                                </MultiTrigger>
+
+                                <Trigger Property="Height" Value="14">
+                                    <Setter Property="Margin" TargetName="optionMark" Value="1,1,0,0"/>
+                                    <Setter Property="BorderThickness" TargetName="checkBoxBorder" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="Height" Value="12">
+                                    <Setter Property="Margin" TargetName="optionMark" Value="0,0,0,0"/>
+                                    <Setter Property="BorderThickness"  TargetName="checkBoxBorder" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.YellowChecked.Border}"/>
+                                    <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.Static.Background}"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource GreenBlueCheckBox.Static.Background}"/>
+                                    <Setter Property="Fill" TargetName="indeterminateMark" Value="{DynamicResource GreenBlueCheckBox.Static.Background}"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="true"/>
+                                        <Condition Property="IsChecked" Value="true"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.Static.Background}"></Setter>
+                                    <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.YellowChecked.Border}"></Setter>
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="1"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource GreenBlueCheckBox.YellowChecked.Border}"/>
+                                    <Setter Property="Fill" TargetName="indeterminateMark" Value="{DynamicResource GreenBlueCheckBox.Static.Background}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                        <Condition Property="IsChecked" Value="true"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.Disabled.Background}"></Setter>
+                                    <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"></Setter>
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="1"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                    <Setter Property="Fill" TargetName="indeterminateMark" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                    <Setter Property="TextBlock.Foreground"  TargetName="contentPresenter"  Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                        <Condition Property="IsChecked" Value="true"/>
+                                        <Condition Property="Tag" Value="Set"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="checkBoxBorder" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" TargetName="checkBoxBorder" Value="0"/>
+                                    <Setter Property="Opacity" TargetName="checkBoxBorder" Value="1"/>
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="1"/>
+                                    <Setter Property="Margin" TargetName="optionMark" Value="2,2,0,0"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource GreenBlueCheckBox.Normal.Foreground}"/>
+                                    <Setter Property="Fill" TargetName="indeterminateMark" Value="{DynamicResource GreenBlueCheckBox.YellowChecked.Border}"/>
+                                    <Setter Property="TextBlock.Foreground"  TargetName="contentPresenter" Value="{DynamicResource GreenBlueCheckBox.Normal.Foreground}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                        <Condition Property="IsChecked" Value="false"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="0"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                    <Setter Property="Fill" TargetName="indeterminateMark" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                    <Setter Property="TextBlock.Foreground"  TargetName="contentPresenter" Value="{DynamicResource GreenBlueCheckBox.Disabled.Border}"/>
+                                </MultiTrigger>
+
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.YellowChecked.Border}"/>
+                                    <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource GreenBlueCheckBox.YellowChecked.Border}"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource GreenBlueCheckBox.Pressed.Glyph}"/>
+                                    <Setter Property="Fill" TargetName="indeterminateMark" Value="{DynamicResource GreenBlueCheckBox.Pressed.Glyph}"/>
+                                </Trigger>
+
+                                <Trigger Property="IsChecked" Value="{x:Null}">
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="0"/>
+                                    <Setter Property="Opacity" TargetName="indeterminateMark" Value="1"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="SendButton" TargetType="{x:Type Button}">
+                <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>
+                <Setter Property="Foreground" Value="#FFFFFF"></Setter>
+                <Setter Property="Visibility" Value="{Binding Path=SendIsVisible}"></Setter>
+                <Setter Property="Width" Value="{Binding Path=SendIsVisible,Converter={StaticResource CopyColorConverter} }"></Setter>
+                <Setter Property="Height" Value="24"></Setter>
+                <Setter Property="FontSize" Value="14"></Setter>
+                <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#136C5E" >
+                                <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#178674"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--颜色转换器-->
+            <!--<local:ColorConverter x:Key="ColorConverter"/>-->
+
+            <fcon:VisibleConverter x:Key="VisibleConverter"/>
+
+            <fcon:VisibleConverterTwo x:Key="VisibleConverterTwo"/>
+
+
+            <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>
+                <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                <Setter Property="Height" Value="24"/>
+                <Style.Triggers>
+                    <Trigger Property="AlternationIndex" Value="0">
+                        <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                    </Trigger>
+                    <Trigger Property="AlternationIndex" Value="1">
+                        <Setter Property="Background" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>
+                    </Trigger>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.SelectedInactive.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedInactive.Border}"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.SelectedActive.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedActive.Border}"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                            <Condition Property="IsSelected" Value="False"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{StaticResource Item.SelectedActive.Background}"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedActive.Border}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+
+    
+    <Grid Background="{StaticResource ColorBrush.Black2}"  >
+       
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0"></RowDefinition>
+            <RowDefinition Height="120"></RowDefinition>
+            <RowDefinition Height="86*"></RowDefinition>
+        </Grid.RowDefinitions>
+        
+        <!--<DockPanel x:Name="dpMain" LastChildFill="True" AllowDrop="True"  Background="{StaticResource ColorBrush.Black2}">-->
+        <Border CornerRadius="2,2,0,0" Grid.Row="0" HorizontalAlignment="Right" Margin="0 -28 72 0">
+            <Button x:Name="btnSet" Width="20" Height="21" Style="{StaticResource MainPageSettingButton}" Click="btnSet_Click"/>
+        </Border>
+
+        <Border CornerRadius="2,2,0,0" DockPanel.Dock="Top" Margin="0,0,0,0.1" Grid.Row="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="10,5,0,0">
+                    <Button x:Name="btn_Back" Margin="0,0,4,0" Background="#136C5E" Foreground=" #A0A0A0" Style="{StaticResource buttonStyle}" Content="{StaticResource PreviousPage}"  Width="36" Height="24" Click="btn_Back_Click"/>
+                    <Button x:Name="btn_Next" Margin="0,0,20,0" Background="#136C5E" Foreground=" #A0A0A0" Style="{StaticResource buttonStyle}" Content="{StaticResource NextPage}"  Width="36" Height="24" Click="btn_Next_Click"/>
+                    <Button x:Name="btnShowAll" Margin="0,0,20,0" Background="#136C5E" Foreground="#FFFFFF" Style="{StaticResource buttonStyle}" Content="SHOW ALL"  Width="80" Height="24" Click="btnShowAll_Click"/>
+                    <CheckBox x:Name="cbStar" Height="24"
+                              Content="智能排序"
+                                  FontSize="{DynamicResource NormalContentFontSize}"
+                              Style="{DynamicResource OrangeCheckedNormalCheckBox}" Click="cbStar_Click" />
+                    <!--<CheckBox x:Name="cbMorethanParty"  IsChecked="{Binding MorethanMarketBPCheck}" Margin="10,0,0,0"  HorizontalAlignment="Center" VerticalAlignment="Center"  FontFamily="{DynamicResource DefaultFont}" 
+                                              FontSize="{DynamicResource SmallContentFontSize}" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" Background="Transparent" 
+                                              Foreground="{DynamicResource ListBoxItem.SelectedActive.Foreground}" Content="与市场最优倒挂" Width="105"></CheckBox>-->
+
+
+                    <Button x:Name="btnTips" Margin="0,0,20,0" Style="{StaticResource InfoButton}" Height="20" Width=" 20" IsCancel="True">
+                        <Button.ToolTip>
+                            <ToolTip Content="按照券码、价格、Ofr方结算、Ofr方机构、Bid方机构依次排序"></ToolTip>
+                        </Button.ToolTip>
+                    </Button>
+                    <CheckBox x:Name="cbMaturityOrder" Margin="0,0,20,0" Content="期限排序"   IsChecked="False"
+                              FontSize="{DynamicResource NormalContentFontSize}"
+                              Style="{DynamicResource OrangeCheckedNormalCheckBox}" Click="cbMaturityOrder_Click"/>
+                    <CheckBox x:Name="cbHist" Margin="0,0,20,0"
+                              Content="显示历史"  
+                              FontSize="{DynamicResource NormalContentFontSize}"
+                              Style="{DynamicResource OrangeCheckedNormalCheckBox}"  IsChecked="False" Click="cbHist_Click"/>
+                    <!--缺桥条件选择框-->
+                    <CheckBox x:Name="cbNeedBridge" Margin="0,0,20,0"
+                              Content="缺桥"  
+                              FontSize="{DynamicResource NormalContentFontSize}"
+                              Style="{DynamicResource OrangeCheckedNormalCheckBox}"  IsChecked="False" Click="cbNeedBridge_Click"/>
+
+                    <!--有效成交-->
+                    <!--<CheckBox x:Name="cbNoLookDel" Visibility="Collapsed" Margin="0,0,20,0"
+                              Content="有效成交"    Width="75" Foreground="#000000"
+                              Style="{StaticResource ShowStarCheckBoxStyle}" IsChecked="True" Click="cbNoLookDel_Click"/>-->
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Grid.Row="1"  Margin="10,0,0,0">
+                    <Grid Height="60">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"></RowDefinition>
+                            <RowDefinition Height="*"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="28"></ColumnDefinition>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition Width="81"></ColumnDefinition>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition Width="81"></ColumnDefinition>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition Width="52"></ColumnDefinition>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition Width="94"></ColumnDefinition>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+
+                        <TextBlock Grid.Column="0" Grid.Row="0" Text="单号"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <TextBox x:Name="tbOrderSeq"   Grid.Column="1" Grid.Row="0" 
+                             Width="144" Height="24" Style="{StaticResource STCDefaultBoxStyle}" 
+                             KeyDown="tbOrderSeq_KeyDown" TextChanged="tbOrderSeq_TextChanged" >
+                            <TextBox.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Grid.Column="0" Grid.Row="1" Text="债券"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <TextBox x:Name="tbCode"  Grid.Column="1" Grid.Row="1"
+                             Width="144" Height="24" Style="{StaticResource STCDefaultBoxStyle}" 
+                             KeyDown="tbCode_KeyDown" PreviewKeyDown="tbCode_PreviewKeyDown"
+                             input:InputMethod.IsInputMethodEnabled="True"  TextChanged="tbCode_TextChanged" LostKeyboardFocus="tbCode_LostKeyboardFocus">
+                            <TextBox.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+                        <Popup x:Name="tbBCodePop" PlacementTarget="{Binding ElementName=tbCode}" LostFocus="tbBCodePop_LostFocus"  StaysOpen="False" MaxHeight="310">
+                            <DataGrid x:Name="dgCodeResult"
+                                  Grid.Row="1"
+                                  Background="#193D37"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="288"
+                                  MouseDoubleClick="dgCodeResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{StaticResource DefaultDataGridNoHeadSpaceStyle}">
+                                <DataGrid.Resources>
+                                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="Transparent">
+                                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding Bond_ID}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForeground}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                        <TextBlock.ToolTip>
+                                                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                                        </TextBlock.ToolTip>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="Transparent">
+                                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding Short_Name}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForeground}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                        <TextBlock.ToolTip>
+                                                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                                        </TextBlock.ToolTip>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Width="*">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="Transparent">
+                                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding RemaingingTime}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForeground}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                        <TextBlock.ToolTip>
+                                                            <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                                        </TextBlock.ToolTip>
+                                                    </TextBlock>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Popup>
+
+                        <TextBlock Grid.Row="0" Grid.Column="2"  Text="类型"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <comp:MultiSelectComboBox x:Name="ucBondTypes" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="3"
+                                                Width="144" Height="24" Background="Black" 
+                                                DefaultText="全部" Tag="StrategyStauts" 
+                                                FilterDicChanged="ucBondTypes_FilterDicChanged"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="2"  Text="交易场所"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <comp:MultiSelectComboBox x:Name="ucTradingPlaces" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="3"
+                                                Width="144" Height="24" Background="Black" 
+                                                DefaultText="全部" Tag="StrategyStauts" 
+                                                FilterDicChanged="ucTradingPlaces_FilterDicChanged"/>
+
+                        <TextBlock Grid.Row="0" Grid.Column="4"  Text="机构"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <TextBox x:Name="tbInst"  Grid.Row="0" Grid.Column="5" 
+                             Width="144" Height="24" Style="{StaticResource STCDefaultBoxStyle}"  KeyDown="tbInst_KeyDown" PreviewKeyDown="tbInst_PreviewKeyDown" TextChanged="tbInst_TextChanged" LostKeyboardFocus="tbInst_LostKeyboardFocus">
+                            <TextBox.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Grid.Row="1" Grid.Column="4"  Text="机构(交易员)"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <TextBox x:Name="tbTrader"  Grid.Row="1" Grid.Column="5" 
+                             Width="144" Height="24" Style="{StaticResource STCDefaultBoxStyle}"  KeyDown="tbTrader_KeyDown" PreviewKeyDown="tbTrader_PreviewKeyDown" TextChanged="tbTrader_TextChanged" LostKeyboardFocus="tbTrader_LostKeyboardFocus">
+                            <TextBox.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <Popup x:Name="tbInstPop" PlacementTarget="{Binding ElementName=tbInst}" MaxHeight="300" LostFocus="tbInstPop_LostFocus"  StaysOpen="False">
+                            <DataGrid x:Name="dgInstResult"
+                                  Grid.Row="1"
+                                  Background="#193D37"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  MouseDoubleClick="dgInstResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{StaticResource DefaultDataGridNoHeadSpaceStyle}">
+                                <DataGrid.Resources>
+                                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Binding="{Binding TipsShortnamelist}" Width="1*" >
+                                        <DataGridTextColumn.ElementStyle >
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Binding="{Binding instcode}" Width="1*" Visibility="Collapsed">
+                                        <DataGridTextColumn.ElementStyle >
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Popup>
+                        <Popup x:Name="tbTraderPop" PlacementTarget="{Binding ElementName=tbTrader}" MaxHeight="300" LostFocus="tbTraderPop_LostFocus"  StaysOpen="False">
+                            <DataGrid x:Name="dgTraderResult"
+                                  Grid.Row="1"
+                                  Background="#193D37"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="206"
+                                  MouseDoubleClick="dgTraderResult_MouseDoubleClick"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Style="{StaticResource DefaultDataGridNoHeadSpaceStyle}">
+                                <DataGrid.Resources>
+                                    <Style x:Key="tbStyle" TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGrid.Resources>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Binding="{Binding InstTraderName}" Width="1*" >
+                                        <DataGridTextColumn.ElementStyle >
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Binding="{Binding instcode}" Width="1*" Visibility="Collapsed">
+                                        <DataGridTextColumn.ElementStyle >
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                                <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                                <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Popup>
+
+                        <TextBlock Grid.Row="0" Grid.Column="6"  Text="价格"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <TextBox x:Name="tbPrice" Grid.Row="0" Grid.Column="7" 
+                             Width="144" Height="24" Style="{StaticResource STCDefaultBoxStyle}" 
+                             KeyDown="tbPrice_KeyDown" LostKeyboardFocus="tbPrice_LostKeyboardFocus">
+                            <TextBox.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                            </TextBox.ToolTip>
+                        </TextBox>
+
+                        <TextBlock Grid.Row="1" Grid.Column="6"  Text="日期"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <DatePicker x:Name="dpMaturityDate" Width="144" Height="24" Focusable="False" Grid.Row="1" Grid.Column="7" Style="{DynamicResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" 
+                        SelectedDateChanged="dpMaturityDate_SelectedDateChanged"></DatePicker>
+
+                        <TextBlock Grid.Row="0" Grid.Column="8"  Text="Broker"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <comp:MultiSelectComboBox x:Name="uc_Broker" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="9"
+                                                Width="100" Height="24" Background="Black" 
+                                                DefaultText="全部" Tag="StrategyStauts" 
+                                                FilterDicChanged="uc_Broker_FilterDicChanged"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="8"  Text="成交单类型"  VerticalAlignment="Center" HorizontalAlignment="Right" Foreground="{DynamicResource ColorBrush.Gray14}" FontSize="12"/>
+                        <comp:MultiSelectComboBox x:Name="ucflagInner" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="9"
+                                                Width="100" Height="24" Background="Black" 
+                                                DefaultText="全部" Tag="StrategyStauts" 
+                                                FilterDicChanged="ucflagInner_FilterDicChanged"/>
+                        <Button x:Name="btSpare"  Width="0"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <data:CopyExDataGrid x:Name="dgOrder"   Margin="0,15,0,0"     BorderThickness="0"  Grid.Row="2"
+                          LoadingRow="dgOrder_LoadingRow"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.IsDeferredScrollingEnabled="False"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          SelectionMode="Extended" SelectionUnit="FullRow" CanUserSortColumns="False"
+                          ItemsSource="{Binding}" AllowDrop="True"
+                          Style="{StaticResource DefaultDataGridNoHeadSpaceStyle}" RowStyle="{StaticResource DataGridRowStyle}" SelectionChanged="dgOrder_SelectionChanged" MouseLeftButtonUp="dgOrder_MouseLeftButtonUp"  PreviewMouseDown="dgOrder_PreviewMouseDown">
+            <data:CopyExDataGrid.Columns>
+                <DataGridTemplateColumn Width="auto" ClipboardContentBinding="{Binding TotalText}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid >
+                                <Grid.Resources />
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="12" ></ColumnDefinition>
+                                        <ColumnDefinition Width="19" ></ColumnDefinition>
+                                        <ColumnDefinition Width="24"></ColumnDefinition>
+                                        <ColumnDefinition Width="20"></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Image Width="13" x:Name="im_fag" Grid.Column="0" Margin="-6,0,0,0">
+                                        <Image.Source>
+                                            <DrawingImage>
+                                                <DrawingImage.Drawing>
+                                                    <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                                                        <GeometryDrawing Brush="#FF9200" Geometry="F1 M1024,1024z M0,0z M512,513.4 M320,513.4A192,192,0,1,0,704,513.4A192,192,0,1,0,320,513.4z" />
+                                                    </DrawingGroup>
+                                                </DrawingImage.Drawing>
+                                            </DrawingImage>
+                                        </Image.Source>
+                                        <Image.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding DetailMarkDisplay}" Value="1">
+                                                        <Setter Property="Image.Visibility"  Value="Visible" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding DetailMarkDisplay}" Value="0" >
+                                                        <Setter Property="Image.Visibility"  Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+
+                                    <Button Name="bt_SendFlagA" Panel.ZIndex="2000" Grid.Column="1" Style="{DynamicResource ImageButton}" Width="14" Visibility="{Binding SendManuallyTag,Converter={StaticResource VisibleConverter}}" Margin="0,0,5,0" Click="bt_SendFlag_Click" ></Button>
+                                    <Button Name="bt_SendFlag" Grid.Column="1" Style="{DynamicResource ImageButton2}" Width="14" Visibility="{Binding SendManuallyTag ,Converter={StaticResource  VisibleConverterTwo}}" Margin="0,0,5,0"   ></Button>
+                                    <Button Name="bt_SendQQMsg" Grid.Column="2"   Style="{DynamicResource SendMsgImageButton}" Visibility="{Binding SendQQMsgVisible }"   Margin="0,0,0,0" Click="bt_SendQQMsg_Click"  ></Button>
+                                    <Button Name="bt_TodayLater" Grid.Column="3"  Style="{DynamicResource TodayLaterImageButton}" Visibility="{Binding TodayLaterVisible }" IsEnabled="False"  Margin="0,0,0,0"  ></Button>
+                                </Grid>
+                                <TextBlock Grid.Column="1"  Style="{StaticResource txblockTitleStyle}" Text="{Binding BrokerCompanyName}" IsHitTestVisible="False" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource txseq}" Text="{Binding Seq}" IsHitTestVisible="False" />
+                                <TextBlock Grid.Column="3" Style="{StaticResource txofr}" Text="{Binding BrokerOfr}" IsHitTestVisible="False" />
+                                <TextBlock Grid.Column="4" Style="{StaticResource txbid}" Text="{Binding BrokerBid}" IsHitTestVisible="False" />
+
+                                <!--<Button Grid.Column="5" x:Name="btSum" Margin ="3,0,3,0" Style="{StaticResource SumButton}"   Content="汇总" Click="btSum_Click"/>
+                                <Button Grid.Column="6" x:Name="btSide" Margin ="3,0,3,0" Style="{StaticResource SumButton}"  Content="方向" Click="btSide_Click"/>-->
+                                <CheckBox x:Name="btSum" Margin ="4,0,3,0" Grid.Column="6" Content="汇总"  FontSize="{DynamicResource NormalContentFontSize}" Style="{DynamicResource OrangeCheckedNormalCheckBox}"  IsChecked="{Binding IsCheckSum, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Click="btSum_Click"/>
+                                <CheckBox x:Name="btSide" Margin ="8,0,3,0" Grid.Column="7" Content="方向"   FontSize="{DynamicResource NormalContentFontSize}" Style="{DynamicResource OrangeCheckedNormalCheckBox}"  IsChecked="{Binding IsCheckSide}" Click="btSide_Click"/>
+
+                                <Button Grid.Column="8" x:Name="btSend" Margin ="3,0,3,0" Style="{StaticResource SendButton}"   Content="发送" Click="btSend_Click"/>
+                                <Button Grid.Column="9" x:Name="btHideSend" Margin ="0,0,3,0" Style="{StaticResource SendButton}" Content="隐藏发送" Click="btHideSend_Click"/>
+
+                                <TextBlock Grid.Column="5"  Style="{StaticResource txblock}" Text="{Binding Text}" IsHitTestVisible="False" />
+                                <!--<TextBlock Grid.Column="10" Style="{StaticResource txblock2}" Text="{Binding Text2}"/>-->
+
+                                <!--内部成交图标-->
+                                <StackPanel Grid.Column="11" Margin="10,0,20,0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" >
+                                    <!--<Image x:Name="image_statussuc" Width="16" Height="16" Visibility="{Binding SynsStatusS}">
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V14 H14 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1" Transform="1,0,0,1,-692,-378">
+                                                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,692,378">
+                                                                        <GeometryDrawing Brush="#FF009836">
+                                                                            <GeometryDrawing.Geometry>
+                                                                                <RectangleGeometry RadiusX="7" RadiusY="7" Rect="0,0,14,14" />
+                                                                            </GeometryDrawing.Geometry>
+                                                                        </GeometryDrawing>
+                                                                        <GeometryDrawing Brush="#FFFFEBC8" Geometry="F0 M14,14z M0,0z M4.20150009,6.84631739C3.66842821,6.67650255,3.11111111,7.02846521,3.11111111,7.02846521L6.18296731,10.1111111 10.0377834,4.94293708C10.0377834,4.94293708 10.2237801,4.6844275 10.5126997,4.29284839 10.8016193,3.90126928 10.0893417,3.55793454 9.15055951,4.45858653 8.03732134,5.52660865 6.18296725,8.10309435 6.18296725,8.10309435 6.18296725,8.10309435 4.78340285,7.03168773 4.20150009,6.84631739z" />
+                                                                    </DrawingGroup>
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                        </Image>
+                                        <Image x:Name="image_statusfia" Width="16" Height="16" Visibility="{Binding SynsStatusF}" Tag="{Binding FailureReason}">
+                                            <Image.Source>
+                                                <DrawingImage>
+                                                    <DrawingImage.Drawing>
+                                                        <DrawingGroup ClipGeometry="M0,0 V14 H14 V0 H0 Z">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1" Transform="1,0,0,1,-692,-401">
+                                                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,692,401">
+                                                                        <GeometryDrawing Brush="#FFE2382C">
+                                                                            <GeometryDrawing.Geometry>
+                                                                                <EllipseGeometry RadiusX="7" RadiusY="7" Center="7,7" />
+                                                                            </GeometryDrawing.Geometry>
+                                                                        </GeometryDrawing>
+                                                                        <GeometryDrawing Brush="#FFFFEBC8" Geometry="F0 M14,14z M0,0z M6.56164551,9.1328125L6.125,4.68261719 6.125,2.625 7.94335938,2.625 7.94335938,4.68261719 7.51269531,9.1328125 6.56164551,9.1328125z M6.19677734,12.2687988L6.19677734,10.5880127 7.87756348,10.5880127 7.87756348,12.2687988 6.19677734,12.2687988z" />
+                                                                    </DrawingGroup>
+                                                                </DrawingGroup>
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingImage.Drawing>
+                                                </DrawingImage>
+                                            </Image.Source>
+                                            <Image.ToolTip>
+                                                <ToolTip BorderThickness="0"  Content="{Binding Path=Tag}"></ToolTip>
+                                                -->
+                                    <!--<TextBlock   Text="{Binding Path=Tag}"></TextBlock>-->
+                                    <!--
+                                            </Image.ToolTip>
+                                        </Image>-->
+                                    <Image x:Name="imageOnLine"    
+                                             Width="24" Height="24" Visibility="{Binding ForbidRefreshFlagVisible}"
+                                             HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <Image.Source>
+                                            <DrawingImage >
+                                                <DrawingImage.Drawing>
+                                                    <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                                                        <DrawingGroup Opacity="1">
+                                                            <DrawingGroup Opacity="1">
+                                                                <DrawingGroup Opacity="1" Transform="1,0,0,1,5,13">
+                                                                    <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M24,24z M0,0z M0,0L0,0 0,7 1,7 1,0z" />
+                                                                    <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M24,24z M0,0z M2,0L2,7 4.56721311,7C5.70819672,7 6.56393443,6.68627451 7.15409836,6.05882353 7.7147541,5.46078431 8,4.60784314 8,3.5 8,2.38235294 7.7147541,1.52941176 7.15409836,0.941176471 6.56393443,0.31372549 5.70819672,0 4.56721311,0L2,0z M3.15081967,0.980392157L4.35081967,0.980392157C5.22622951,0.980392157 5.86557377,1.17647059 6.26885246,1.57843137 6.66229508,1.97058824 6.85901639,2.61764706 6.85901639,3.5 6.85901639,4.3627451 6.66229508,5 6.26885246,5.41176471 5.86557377,5.81372549 5.22622951,6.01960784 4.35081967,6.01960784L3.15081967,6.01960784 3.15081967,0.980392157z" />
+                                                                    <GeometryDrawing Brush="#A0A0A0" Geometry="F1 M24,24z M0,0z M9,0L9,7 12.3931034,7C13.1793103,7 13.8,6.8627451 14.2344828,6.58823529 14.7413793,6.25490196 15,5.73529412 15,5.02941176 15,4.55882353 14.8758621,4.17647059 14.637931,3.90196078 14.3896552,3.61764706 14.0275862,3.43137255 13.5413793,3.34313725 13.9137931,3.20588235 14.1931034,3.01960784 14.3896552,2.76470588 14.5862069,2.49019608 14.6896552,2.15686275 14.6896552,1.76470588 14.6896552,1.23529412 14.4931034,0.81372549 14.1103448,0.5 13.6965517,0.166666667 13.1172414,0 12.3827586,0L9,0z M10.2103448,0.941176471L12.0827586,0.941176471C12.5793103,0.941176471 12.9310345,1.01960784 13.1586207,1.17647059 13.3655172,1.32352941 13.4793103,1.56862745 13.4793103,1.90196078 13.4793103,2.26470588 13.3655172,2.52941176 13.1586207,2.69607843 12.9413793,2.85294118 12.5793103,2.94117647 12.062069,2.94117647L10.2103448,2.94117647 10.2103448,0.941176471z M10.2103448,3.88235294L12.2482759,3.88235294C12.7862069,3.88235294 13.1793103,3.97058824 13.4275862,4.14705882 13.6655172,4.32352941 13.7896552,4.60784314 13.7896552,5.00980392 13.7896552,5.40196078 13.6241379,5.67647059 13.2931034,5.85294118 13.0344828,5.99019608 12.6724138,6.05882353 12.2172414,6.05882353L10.2103448,6.05882353 10.2103448,3.88235294z" />
+                                                                </DrawingGroup>
+                                                                <GeometryDrawing Brush="#A0A0A0" Geometry="F0 M24,24z M0,0z M12.1167101,5.16767258C12.2284918,5.05589086 12.3624156,5 12.5184815,5 12.6745473,5 12.8084711,5.05589086 12.9202528,5.16767258L15.5317667,7.77918646C15.6435484,7.89096818 15.6994393,8.02774901 15.6994393,8.18952895 15.6994393,8.35130888 15.6435484,8.48808971 15.5317667,8.59987143 15.419985,8.71165316 15.2860612,8.76754402 15.1299954,8.76754402 14.9739295,8.76754402 14.8344702,8.71165316 14.7116174,8.59987143L13.104532,6.97617942 13.104532,11.652441C13.104532,11.808864 13.0459626,11.9427878 12.928824,12.0542123 12.8116853,12.1656369 12.6749045,12.2215278 12.5184815,12.2218866 12.3620585,12.2222421 12.2252777,12.1663512 12.108139,12.0542123 11.9910003,11.9420735 11.932431,11.8081497 11.932431,11.652441L11.932431,6.97617942 10.308739,8.59987143C10.1969573,8.71165316 10.0630335,8.76754402 9.90696761,8.76754402 9.75090175,8.76754402 9.61697797,8.71165316 9.50519624,8.59987143 9.39341452,8.48808971 9.33752366,8.35130888 9.33752366,8.18952895 9.33752366,8.02774901 9.39341452,7.89096818 9.50519624,7.77918646L12.1167101,5.16767258z" />
+                                                            </DrawingGroup>
+                                                        </DrawingGroup>
+                                                    </DrawingGroup>
+                                                </DrawingImage.Drawing>
+                                            </DrawingImage>
+                                        </Image.Source>
+                                    </Image>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </data:CopyExDataGrid.Columns>
+        </data:CopyExDataGrid>
+        <!--</DockPanel>-->
+    </Grid>
+    <!--<comp:WindowBase.ContextMenu>-->
+    <UserControl.ContextMenu>
+        <ContextMenu  Closed="uiContextMenu_Closed" Name="uiContextMenu" Width="150"  Foreground="#FFEBC8" FontSize="16" Style="{StaticResource DefaultContextMenu}" Loaded="uiContextMenu_Loaded">
+            <MenuItem Name="btnCopy" Header="带单号复制" Click="btnCopy_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+            <MenuItem Name="btnWithoutBrokerCopy" Header="不带Broker复制" Click="btnWithoutBrokerCopy_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+            <MenuItem Name="btnWithContacts" Header="带联系人复制" Click="btnWithContacts_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+            <MenuItem Name="btn_HideCounterpartyCopy" Header="隐藏对手方复制"  Click="btn_HideCounterpartyCopy_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+            <MenuItem Name="btn_WithTraderCopy" Header="带交易员复制"  Click="btn_WithTraderCopy_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+            <MenuItem Name="btn_CalcExec" Visibility="Collapsed" Header="算量" Click="btn_CalcExec_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}"></MenuItem>
+            <MenuItem Name="btnOfrMerge" Header="Ofr机构合单" Click="btnOfrMerge_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+            <MenuItem Name="btnBidMerge"  Header="Bid机构合单" Click="btnBidMerge_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}">
+            </MenuItem>
+
+            <MenuItem Name="btn_Reminder"  Header="催单" Click="btn_Reminder_Click" Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}"/>
+            <MenuItem Name="btn_Mark" Margin="0, 0, 0,5" Header="标记" Click="btn_Mark_Click"  Style="{StaticResource DefaultMenuItem}" FontFamily="{StaticResource IDCFontFamily.Regular}"/>
+
+        </ContextMenu>
+    </UserControl.ContextMenu>
+    <!--</comp:WindowBase.ContextMenu>-->
+</UserControl>
+<!--</comp:WindowBase>-->

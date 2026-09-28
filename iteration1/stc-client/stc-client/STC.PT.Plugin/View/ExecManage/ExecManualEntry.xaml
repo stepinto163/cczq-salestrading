@@ -1,0 +1,919 @@
+﻿<commComp:WindowBase  x:Class="STC.PT.Plugin.View.ExecManage.ExecManualEntry"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+                      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+                      xmlns:local="clr-namespace:STC.PT.Plugin.View.ExecManage"
+                      xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common" 
+                      xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:comCon ="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+        xmlns:localcomp="clr-namespace:STC.PT.Plugin.View.Component"
+             mc:Ignorable="d"  WindowStartupLocation="CenterScreen" BorderThickness="1" BorderBrush="#A0A0A0"
+             Title="手工录入" Height="680" Width="660">
+    <commComp:WindowBase.Resources>
+        <ResourceDictionary>
+
+            <comCon:RadioButtonConverter x:Key="radioBtnConverter"/>
+            <comCon:BooleanConvertor x:Key="booleanConvertor"/>
+            <comCon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <comCon:ReverseVisibilityConvertor x:Key="reverseVisibilityConvertor"/>
+            <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left" AlignmentY="Top">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="30" FontSize="12" Foreground="{DynamicResource TextBlockDefaultForground}" Text="请输入识别文本，支持修改文本后点击 Enter 进行识别" ToolTip="请输入识别文本，支持修改文本后点击 Enter 进行识别，Ctrl+Enter换行" />
+                </VisualBrush.Visual>
+            </VisualBrush>
+            <SolidColorBrush x:Key="TextBlockForeground" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="PriceButtonDefaultBackground" Color="#172422"></SolidColorBrush>
+            <Style x:Key="TextBoxStyle1" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0F0F0F"/>
+                <Setter Property="BorderBrush" Value="#136C5E"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Padding" Value="2"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="Bd" SnapsToDevicePixels="true" BorderThickness="{TemplateBinding BorderThickness}" 
+                                    Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                                <ScrollViewer x:Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsReadOnly" Value="True">
+                                    <Setter Property="Background" TargetName="Bd" Value="#1E1E1E"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="#3C3C3C"/>
+                                    <!--<Setter Property="Foreground" Value="#3C3C3C"/>-->
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="SelfSendPriceTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource ColorBrush.Black8}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockDefaultForground}"/>
+                <Setter Property="FontFamily" Value="Roboto"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ColorBrush.Gray15}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="#3C3C3C" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#3C3C3C"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="1"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="0"/>
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="true"/>
+                                        <!--<Condition Property="Tag" Value="1"/>-->
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <!--Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray15}"/-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                    <Setter Property="SelectionBrush" Value="#009AFF"/>
+                                </MultiTrigger>
+
+
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="false"/>
+                                        <Condition Property="Text" Value=""/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#3C3C3C"/>
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource HintText}"/>
+                                </MultiTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--清算速度 +0 远 按钮-->
+            <Style x:Key="SendPriceFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!--<Setter Property="Padding" Value="0"/>-->
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{StaticResource TextBlockForeground}"/>
+                <Setter Property="Background" Value="{StaticResource PriceButtonDefaultBackground}"/>
+                <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+                <Setter Property="Width" Value="48"/>
+                <Setter Property="Margin" Value="1, 0, 0, 0"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center"
+                    BorderBrush="#193D37"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}"
+                    SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" 
+                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <!--Condition Property="Selector.IsSelectionActive" Value="True"/-->
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Background}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource TextBlockForeground}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ExecBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource TextBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontSize" Value="{DynamicResource SmallContentFontSize}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Disable.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBox.Focus.Foreground}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Disable.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.MouseOver.Background}"/>
+                                    <!--<Setter Property="Foreground" Value="{DynamicResource TextBox.MouseOver.Foreground}"/>-->
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Focus.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBox.Focus.Foreground}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Focus.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </commComp:WindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="80"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="80"/>
+        </Grid.RowDefinitions>
+        <commComp:WatermarkTextBox Grid.Row="0" x:Name="tbContent" VerticalContentAlignment="Top" 
+                                   IsEnabled="{Binding IsEnableParse, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"                     
+                                   VerticalScrollBarVisibility="Auto"                      
+                                   BorderThickness="1" Style="{DynamicResource SelfSendPriceTextBox}"
+                                   PreviewKeyDown="tbContent_PreviewKeyDown" Margin="4,2,4,3" 
+                                   Text="{Binding BondTxt, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"                     
+                                   AcceptsReturn="True" TextWrapping="Wrap" 
+                                   BorderBrush="{Binding BorderBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"                    
+                                   WaterMark="请输入识别文本" 
+                                   ToolTip="请输入识别文本，支持修改文本后点击 Enter 进行识别，Ctrl+Enter换行" 
+                                   MinHeight="50" ></commComp:WatermarkTextBox>
+        <Grid Grid.Row="1" Margin="0 5 0 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="60"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="债券信息:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="txSecurityid" 
+                       Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                       VerticalAlignment="Center" HorizontalAlignment="Left"
+                       Margin="4,8,0,0" Height="24" Width="188" FontWeight="Bold"
+                       Visibility="{Binding IsAdd,Converter={StaticResource visibilityConvertor}}"/>
+            <StackPanel Orientation="Horizontal" Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2">
+                <commComp:SearchTextBox x:Name="Search_TextBox" Margin="4,0,0,0" 
+                                    SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalAlignment="Center"  Width="160" Height="24" FontSize="12" HorizontalAlignment="Left"
+                                    AfterSearch="Search_TextBox_AfterSearch"
+                                    IsHitTestVisible="{Binding IsAdd,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+                <!--Visibility="{Binding IsAdd,Converter={StaticResource reverseVisibilityConvertor}}"-->
+                <TextBlock x:Name="txSymbol"  Margin="4,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="120" 
+                           Text="{Binding Symbol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+
+            </StackPanel>
+            <Grid Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Margin="40 0 0 0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="方向:" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <ListBox x:Name="SideListBox" Grid.Column="1" SelectionMode="Single" Margin="5, 0, 0, 0" 
+                    ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                     Height="26" 
+                     Background="Transparent" MinWidth="88"
+                     BorderThickness="0"
+                     FontSize="12" SelectedIndex="{Binding SideIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                     BorderBrush="Transparent"
+                     IsHitTestVisible="{Binding IsAdd,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBoxItem x:Name="lbBid" Width="30" Height="24"  Content="买入" Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>
+                    <ListBoxItem x:Name="lbOfr" Width="30"  Height="24" Content="卖出" Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>
+                </ListBox>
+                <TextBlock Text="渠道:" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <CheckBox Content="{Binding VenueDisplay}" Grid.Column="3" Style="{DynamicResource TagCheckBoxStyle}" 
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          VerticalContentAlignment="Center" HorizontalContentAlignment="Center" 
+                          Margin="4 0 0 0" Height="24" Width="35" 
+                          IsTabStop="False" IsChecked="True" IsHitTestVisible="False"/>
+
+            </Grid>
+
+            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Right">
+                <CheckBox Content="到期" Style="{DynamicResource TagCheckBoxStyle}" 
+                          HorizontalAlignment="Right"
+                          VerticalContentAlignment="Center" HorizontalContentAlignment="Center" 
+                          Margin="1 0 0 0" Height="24" Width="35" IsTabStop="False"
+                          IsChecked="{Binding YieldTypeFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+                <CheckBox Content="行权" Style="{DynamicResource TagCheckBoxStyle}" 
+                          HorizontalAlignment="Right"
+                          VerticalContentAlignment="Center" HorizontalContentAlignment="Center" 
+                          Margin="1 0 0 0" Height="24" Width="35" IsTabStop="False"
+                          IsChecked="{Binding YieldTypeFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"
+                          Visibility="{Binding IsExeCdcType,Converter={StaticResource visibilityConvertor}}"/>
+
+
+            </StackPanel>
+            <Grid Grid.Row="1" Grid.Column="1" Margin="4,0,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBox x:Name="txPrice" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                             input:InputMethod.IsInputMethodEnabled="False"
+                             Style="{DynamicResource  STCDefaultBoxStyle}" PreviewTextInput="TxPrice_PreviewTextInput" 
+                             Text="{Binding Price, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding YieldTypeFlag,Converter={StaticResource visibilityConvertor}}"
+                             IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}" />
+                    <TextBox x:Name="txExePrice" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                             input:InputMethod.IsInputMethodEnabled="False"
+                             Style="{DynamicResource  STCDefaultBoxStyle}" PreviewTextInput="TxPrice_PreviewTextInput" 
+                             Text="{Binding ExePrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding YieldTypeFlag,Converter={StaticResource reverseVisibilityConvertor}}"
+                             IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}" />
+                    <TextBlock Text="%" Margin="1 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Grid>
+            <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <CheckBox Content="净价" Style="{DynamicResource TagCheckBoxStyle}" 
+                          HorizontalAlignment="Right"
+                          VerticalContentAlignment="Center" HorizontalContentAlignment="Center" 
+                          Margin="1 0 0 0" Height="24" Width="35" IsTabStop="False"
+                          IsChecked="{Binding NetPriceFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+
+                <CheckBox Content="全价" Style="{DynamicResource TagCheckBoxStyle}" 
+                          HorizontalAlignment="Right"
+                          VerticalContentAlignment="Center" HorizontalContentAlignment="Center" 
+                          Margin="1 0 0 0" Height="24" Width="35" IsTabStop="False"
+                          IsChecked="{Binding NetPriceFlag, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+
+
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="3" >
+                <TextBox x:Name="txNetPrice" FontSize="14"  Margin="4, 0, 0, 0" 
+                         VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                         input:InputMethod.IsInputMethodEnabled="False"
+                         Style="{DynamicResource  STCDefaultBoxStyle}" 
+                         Text="{Binding NetPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         PreviewTextInput="TxPrice_PreviewTextInput"   
+                         PreviewKeyDown="TxNetPrice_PreviewKeyDown" 
+                         Visibility="{Binding NetPriceFlag,Converter={StaticResource visibilityConvertor}}"
+                         IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}" />
+                <TextBox x:Name="txFullPrice" FontSize="14"  Margin="4, 0, 0, 0" 
+                         VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                         input:InputMethod.IsInputMethodEnabled="False"
+                         Style="{DynamicResource  STCDefaultBoxStyle}" 
+                         Text="{Binding FullPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         PreviewTextInput="TxPrice_PreviewTextInput"   
+                         PreviewKeyDown="TxNetPrice_PreviewKeyDown"
+                         Visibility="{Binding NetPriceFlag,Converter={StaticResource reverseVisibilityConvertor}}"
+                         IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}" />
+                
+                <TextBlock  Text="元" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            </StackPanel>
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="量:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" >
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="txQty" Grid.Column="0" FontSize="14" Margin="4,0,1,0" 
+                             VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160"   
+                             Style="{DynamicResource  STCDefaultBoxStyle}"
+                             PreviewTextInput="TxPrice_PreviewTextInput"
+                             input:InputMethod.IsInputMethodEnabled="False" 
+                             Text="{Binding Qty, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+                    <TextBlock Grid.Column="1" Margin="1,0,0,0"  Text="万" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                               Background="Transparent" />
+                </Grid>
+                <!--<TextBlock Text="KW" VerticalAlignment="Center" HorizontalAlignment="Left"/> Foreground="{DynamicResource ColorBrush.Gray14}" -->
+            </StackPanel>
+            <TextBlock Text="终端对手方:" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <localcomp:AutoCompleteComboBox x:Name="CounterInsNameCb_edit" Grid.Row="2" Grid.Column="3" 
+                                            Height="24" Width="160" Margin="4,0,0,0"
+                                            DisplayValuePath="shortnamecn" 
+                                            SelectedItem="{Binding RealcounterpartynameItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Text="{Binding RealcounterpartynameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                            BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                                            PreviewMouseDown="CounterInsNameCb_edit_PreviewMouseDown"
+                                            MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" Background="Black"
+                                            FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}" BorderThickness="1"
+                                            Watermark="终端对手方" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                            VerticalAlignment="Center" VerticalContentAlignment="Center" HorizontalAlignment="Left"
+                                            PatternChanged="CounterInsNameCb_edit_PatternChanged"
+                                            IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+                <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding shortnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                        TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding fullnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                    TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </localcomp:AutoCompleteComboBox.AutoCompColumns>
+            </localcomp:AutoCompleteComboBox>
+            <TextBlock Text="交易日期:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,0">
+                <DatePicker x:Name="datePicker" Grid.Row="3" Grid.Column="1" Width="90" Height="24" Margin="4, 0, 0, 0"
+                            SelectedDate="{Binding TradeDate,Mode=TwoWay}" Style="{DynamicResource GreenBlueDatePickerStyle}" 
+                            DisplayDateStart="{Binding CurrentDate,Mode=TwoWay}"
+                            IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+                    <DatePicker.Resources>
+                        <Style TargetType="DatePickerTextBox">
+                            <Setter Property="IsReadOnly" Value="True"/>
+                        </Style>
+                    </DatePicker.Resources>
+                </DatePicker>
+                <ListBox x:Name="SettlTypeListBox" Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="3" SelectionMode="Single" Margin="1, 0, 0, 0" 
+                         ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                         ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                         Height="26" 
+                         Background="Transparent" MinWidth="64"
+                         BorderThickness="0"
+                         FontSize="12" SelectedIndex="{Binding SettlTypeIndex, Mode=TwoWay}" 
+                         VerticalAlignment="Center" HorizontalAlignment="Left" 
+                         BorderBrush="Transparent"
+                         IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBoxItem x:Name="lbAddOne" Width="32"  Height="24" Content="T+1" Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>
+                    <ListBoxItem x:Name="lbAddZero" Width="32" Height="24"  Content="T+0" Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>
+                </ListBox>
+            </StackPanel>
+            <TextBlock Text="发单方向:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <ComboBox x:Name="comOrderSide" Grid.Row="4" Grid.Column="1"  Style="{DynamicResource ComboBoxStyle}" 
+                      SelectedValuePath="Key" DisplayMemberPath="Value"  
+                      Margin="6,0,0,0" HorizontalAlignment="Left" 
+                      ItemsSource="{Binding OrderSideSource, Mode=TwoWay}"
+                      SelectedValue="{Binding OrderSide_Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      VerticalAlignment="Center" SelectedIndex="0"   Height="24" Width="160"
+                      IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+                    </ComboBox>
+            
+            <TextBlock Text="发单方式:" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <ComboBox x:Name="comOrderMethod" Grid.Row="4" Grid.Column="3" Style="{DynamicResource ComboBoxStyle}" 
+                      SelectedValuePath="Key" DisplayMemberPath="Value"  
+                      Margin="4,0,0,0" HorizontalAlignment="Left" 
+                      ItemsSource="{Binding OrderMethodSource, Mode=TwoWay}"
+                      SelectedValue="{Binding OrderMethod_Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      VerticalAlignment="Center" SelectedIndex="0"   Height="24" Width="160"
+                      IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+            </ComboBox>
+            
+            <TextBlock Text="发单对手方:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <localcomp:AutoCompleteComboBox x:Name="OrderCounter_edit" Grid.Row="5" Grid.Column="1" 
+                    Height="24" Width="160" Margin="4,0,0,0"
+                    DisplayValuePath="shortnamecn" 
+                    SelectedItem="{Binding CounterPartyNameItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Text="{Binding CounterPartyNameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                    BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                    PreviewMouseDown="OrderCounter_edit_PreviewMouseDown"
+                    MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" Background="Black"
+                    FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}" BorderThickness="1"
+                    Watermark="发单对手方" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                    VerticalAlignment="Center" VerticalContentAlignment="Center" HorizontalAlignment="Left"
+                    PatternChanged="OrderCounter_edit_PatternChanged"
+                    IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}">
+                <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding shortnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding fullnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                        TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </localcomp:AutoCompleteComboBox.AutoCompColumns>
+            </localcomp:AutoCompleteComboBox>
+            <TextBlock Text="本方机构:" Grid.Row="5" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+           
+            <TextBox x:Name="txPartyInst" Grid.Row="5" Grid.Column="3"  Margin="4,0,0,0" 
+                     Height="24" Width="160" IsReadOnly="True"
+                     Text="{Binding PartyInstName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                     Style="{DynamicResource  ExecBoxStyle}"/>
+            <TextBlock Text="对手交易员:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="CounterPartySubName_edit" Grid.Row="6" Grid.Column="1"  Margin="4,0,0,0" 
+                     Height="24" Width="160"
+                     Text="{Binding CounterPartySubNameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                     Style="{DynamicResource  ExecBoxStyle}"
+                     IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+            <TextBlock Text="本方交易员:" Grid.Row="6" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="3"  >
+                <TextBox x:Name="txPartySubName" Margin="4,0,0,0" 
+                         Height="24" Width="160" IsReadOnly="True"
+                         Text="{Binding PartySubName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                         VerticalAlignment="Center" HorizontalAlignment="Left" 
+                         Style="{DynamicResource  ExecBoxStyle}"
+                         Visibility="{Binding PartySubNameIsReadOnly,Converter={StaticResource reverseVisibilityConvertor}}"/>
+                <localcomp:AutoCompleteComboBox x:Name="PartySubName_edit" Height="24" Width="160" Margin="4,0,0,0"
+                    DisplayValuePath="Name" 
+                    SelectedItem="{Binding PartySubNameItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Text="{Binding PartySubName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                    BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                    PreviewMouseDown="PartySubName_edit_PreviewMouseDown"
+                    MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                    FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                    Watermark="本方交易员" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                    Background="Black" BorderThickness="1"
+                    VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                    HorizontalAlignment="Left"
+                    PatternChanged="PartySubName_edit_PatternChanged"
+                    Visibility="{Binding PartySubNameIsReadOnly,Converter={StaticResource visibilityConvertor}}">
+                    <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                        <!--<DataGridTemplateColumn MinWidth="80" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding Username}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                    TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>-->
+                        <DataGridTemplateColumn MinWidth="80" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding Name}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                    TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </localcomp:AutoCompleteComboBox.AutoCompColumns>
+                </localcomp:AutoCompleteComboBox>
+            </StackPanel>
+            <TextBlock Text="上交所机构代码:" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+
+            <!--<TextBox x:Name="txShanghaiInstCode" Grid.Row="7" Grid.Column="1"  Margin="4,0,0,0" 
+                     Height="24" Width="160"
+                     Text="{Binding ShanghaiInstCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                     Style="{DynamicResource  ExecBoxStyle}"/>-->
+            <localcomp:AutoCompleteComboBox x:Name="ShanghaiInstCode_edit" Grid.Row="7" Grid.Column="1"
+                    Height="24" Width="160" Margin="4,0,0,0"
+                DisplayValuePath="sseinstitutioncode" 
+                Text="{Binding ShanghaiInstCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                PreviewMouseDown="ShanghaiInstCode_edit_PreviewMouseDown"
+                MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                Watermark="上交所机构代码" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                Background="Black" BorderThickness="1"
+                VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                HorizontalAlignment="Left"
+                PatternChanged="ShanghaiInstCode_edit_PatternChanged"
+                IsHitTestVisible="{Binding SearchText,Converter={StaticResource radioBtnConverter}, ConverterParameter='.SH'}">
+                <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding sseinstitutioncode }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                        TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding fullnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                        TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </localcomp:AutoCompleteComboBox.AutoCompColumns>
+            </localcomp:AutoCompleteComboBox>
+            <TextBlock Text="深交所-交易商代码:" Grid.Row="7" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <!--<TextBox x:Name="txShenzhenTraderCode" Grid.Row="7" Grid.Column="3"  Margin="4,0,0,0" 
+                     Height="24" Width="160"
+                     Text="{Binding ShenzhenInstCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                     Style="{DynamicResource  ExecBoxStyle}"/>-->
+            <localcomp:AutoCompleteComboBox x:Name="ShenzhenInstCode_edit" Grid.Row="7" Grid.Column="3"
+                                Height="24" Width="160" Margin="4,0,0,0"
+                DisplayValuePath="szedealercode" 
+                Text="{Binding ShenzhenInstCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                PreviewMouseDown="ShenzhenInstCode_edit_PreviewMouseDown"
+                MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                Watermark="深交所-交易商代码" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                Background="Black" BorderThickness="1"
+                VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                HorizontalAlignment="Left"
+                PatternChanged="ShenzhenInstCode_edit_PatternChanged"
+                IsHitTestVisible="{Binding SearchText,Converter={StaticResource radioBtnConverter}, ConverterParameter='.SZ'}">
+                <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding szedealercode }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                        TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding fullnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                    TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </localcomp:AutoCompleteComboBox.AutoCompColumns>
+            </localcomp:AutoCompleteComboBox>
+            <TextBlock Text="代付费率:" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="txPaymentRate" Grid.Row="8" Grid.Column="1"  FontSize="14" Margin="4,0,0,0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160"   
+                     Style="{DynamicResource STCDefaultBoxStyle}"
+                     PreviewTextInput="TxPrice_PreviewTextInput" 
+                     input:InputMethod.IsInputMethodEnabled="False" 
+                     Text="{Binding PaymentRate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsHitTestVisible="{Binding IsManual,Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+
+            <TextBlock Text="深交所-交易主体代码:" Grid.Row="8" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <!--<TextBox x:Name="txShenzhenTradingPart" Grid.Row="8" Grid.Column="3"  Margin="4,0,0,0" 
+                     Height="24" Width="160" 
+                     Text="{Binding ShenzhenTradingPart, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" 
+                     Style="{DynamicResource  ExecBoxStyle}"/>-->
+            <localcomp:AutoCompleteComboBox x:Name="ShenzhenTradingPart_edit" Grid.Row="8" Grid.Column="3" 
+                                            Height="24" Width="160" Margin="4,0,0,0"
+                    DisplayValuePath="ssetradingentitycode" 
+                    Text="{Binding ShenzhenTradingPart, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                    BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                    PreviewMouseDown="ShenzhenTradingPart_edit_PreviewMouseDown"
+                    MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                    FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                    Watermark="深交所-交易主体代码" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                    Background="Black" BorderThickness="1"
+                    VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                    HorizontalAlignment="Left"
+                    PatternChanged="ShenzhenTradingPart_edit_PatternChanged"
+                IsHitTestVisible="{Binding SearchText,Converter={StaticResource radioBtnConverter}, ConverterParameter='.SZ'}">
+                <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding ssetradingentitycode }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                        TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn  Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding fullnamecn }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </localcomp:AutoCompleteComboBox.AutoCompColumns>
+            </localcomp:AutoCompleteComboBox>
+
+            <TextBlock Text="其他费率:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="txCouponrate" Grid.Row="9" Grid.Column="1" FontSize="14"  Margin="4, 0, 0, 0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     input:InputMethod.IsInputMethodEnabled="False"
+                     Style="{DynamicResource STCDefaultBoxStyle}" 
+                     Text="{Binding Couponrate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     PreviewTextInput="TxPrice_PreviewTextInput"   
+                     PreviewKeyDown="TxNetPrice_PreviewKeyDown"
+/>
+            <TextBlock Text="费后收益率:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="txPaymentYield" Grid.Row="10" Grid.Column="1" FontSize="14"  Margin="4, 0, 0, 0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     input:InputMethod.IsInputMethodEnabled="False"
+                     Style="{DynamicResource STCDefaultBoxStyle}" 
+                     Text="{Binding PaymentYield, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsReadOnly="True"
+                     Visibility="{Binding IsExeCdcType,Converter={StaticResource reverseVisibilityConvertor}}"/>
+            <TextBox x:Name="txPaymentYieldToExec" Grid.Row="10" Grid.Column="1" FontSize="14"  Margin="4, 0, 0, 0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     input:InputMethod.IsInputMethodEnabled="False"
+                     Style="{DynamicResource STCDefaultBoxStyle}" 
+                     Text="{Binding PaymentExePrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsReadOnly="True"
+                     Visibility="{Binding IsExeCdcType,Converter={StaticResource visibilityConvertor}}"/>
+            <TextBlock Text="深交所-交易员代码:" Grid.Row="9" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <localcomp:AutoCompleteComboBox x:Name="ShenzhenPartySubName_edit" Grid.Row="9" Grid.Column="3"  Height="24" Width="160" Margin="4,0,0,0"
+                                DisplayValuePath="DisplayName" 
+                                SelectedItem="{Binding ShenzhenPartySubNameItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Text="{Binding ShenzhenPartySubNameText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                BackGroundCob="{StaticResource ColorBrush.Black8}" 
+                                PreviewMouseDown="ShenzhenPartySubName_edit_PreviewMouseDown"
+                                MouseOverBorderBrushCob="{StaticResource TextBox.MouseOver.Border}" 
+                                FocusBorderBrushCob="{StaticResource TextBox.Focus.Border}"
+                                Watermark="深交所-交易员代码" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                Background="Black" BorderThickness="1"
+                                VerticalAlignment="Center" VerticalContentAlignment="Center" 
+                                HorizontalAlignment="Left"
+                                PatternChanged="ShenzhenPartySubName_edit_PatternChanged"
+                IsHitTestVisible="{Binding SearchText,Converter={StaticResource radioBtnConverter}, ConverterParameter='.SZ'}">
+                <localcomp:AutoCompleteComboBox.AutoCompColumns>
+                    <DataGridTemplateColumn MinWidth="80" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding id}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn MinWidth="80" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="Transparent">
+                                    <TextBlock Grid.Column="0" Height="22" Text="{Binding namecn}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Text}"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </localcomp:AutoCompleteComboBox.AutoCompColumns>
+            </localcomp:AutoCompleteComboBox>
+            <TextBlock Text="费后净价:" Grid.Row="11" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="txPaymentNetPrice" Grid.Row="11" Grid.Column="1" FontSize="14"  Margin="4, 0, 0, 0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     input:InputMethod.IsInputMethodEnabled="False"
+                     Style="{DynamicResource  STCDefaultBoxStyle}" 
+                     Text="{Binding PaymentNetPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsReadOnly="True"/>
+            <TextBlock Text="结算金额:" Grid.Row="10" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="txSettlAmount" Grid.Row="10" Grid.Column="3" FontSize="14"  Margin="4, 0, 0, 0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     Style="{DynamicResource  ExecBoxStyle}" 
+                     IsReadOnly="True"
+                     Text="{Binding SettlAmount, StringFormat={}{0:N2}}" />
+            <TextBlock Text="费后全价:" Grid.Row="12" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox x:Name="txPaymentFullPrice" Grid.Row="12" Grid.Column="1" FontSize="14"  Margin="4, 0, 0, 0" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     input:InputMethod.IsInputMethodEnabled="False"
+                     Style="{DynamicResource  STCDefaultBoxStyle}" 
+                     Text="{Binding PaymentFullPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsReadOnly="True"/>
+            <TextBlock x:Name="tbTrdMatchId" Grid.Row="11" Grid.Column="2" Text="约定号:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+            <TextBox x:Name="txTrdMatchId" Grid.Row="11" Grid.Column="3" Margin="4,0,0,0"
+                     Text="{Binding TrdMatchId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                     VerticalAlignment="Center" HorizontalAlignment="Left" Height="24" Width="160" 
+                     Style="{DynamicResource  STCDefaultBoxStyle}"/>
+            <TextBlock Text="我的备注:" Grid.Row="13" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0 4 0 0" />
+            <TextBox Name="txRemark" Grid.Row="13" Grid.Column="1" Grid.ColumnSpan="3" 
+                     Height="Auto" Margin="4 0 45 0"
+                     Style="{DynamicResource TextBoxStyle1}" 
+                     TextWrapping="Wrap" 
+                     VerticalScrollBarVisibility="Visible"
+                     Text="{Binding Remark, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                     AcceptsReturn="True"></TextBox>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="btnCancel" Width="60" Height="24" Style="{DynamicResource GrayButtonStyle}"
+                        Click="btnCancel_Click">取消</Button>
+                <Button x:Name="btnOK" Width="60" Height="24" Margin="4,0,0,0" Style="{DynamicResource RedButtonStyle}"
+                        Command="{Binding ConfirmCommand}">保存</Button>
+                <Button x:Name="btnSend" Width="100" Height="24" Margin="4,0,0,0" Style="{DynamicResource RedButtonStyle}"
+                        Command="{Binding ConfirmAndAddCommand}" Visibility="{Binding IsAdd,Converter={StaticResource visibilityConvertor}}" >保存并新建个需</Button>
+            </StackPanel>
+        </Grid>
+
+    </Grid>
+</commComp:WindowBase>

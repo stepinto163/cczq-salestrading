@@ -1,0 +1,115 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.Component.SettleFilterView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="24" d:DesignWidth="210">
+
+    
+    
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/StcLiteSkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDB/ButtonStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="FwdListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!--<Setter Property="Padding" Value="0"/>-->
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="#8F9598"/>
+                <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+                <!--<Setter Property="Width" Value="40"/>-->
+                <!--<Setter Property="Margin" Value="1, 0, 0, 0"/>-->
+                <Setter Property="FontSize" Value="12"/>
+                <!--<Setter Property="Height" Value="24"/>-->
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="#121A19" CornerRadius="2" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{StaticResource ListBoxItem.Normal.Border}"  Padding="{TemplateBinding Padding}" Height="{TemplateBinding Height}"
+                            SnapsToDevicePixels="true">
+
+                                <Grid>
+                                    
+                                    <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}" TextElement.FontSize="{TemplateBinding FontSize}" 
+                                          HorizontalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+
+                                    <Ellipse x:Name="elli" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 ,0, 0, 0"
+                                        Width="5" Visibility="Collapsed"
+                                        Height="5"
+                                        Fill="#FF3C3C" />          
+
+                                </Grid>
+
+
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.MouseOver.Border}"/>
+                                </MultiTrigger>
+                                <!--<MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedInactive.Border}"/>
+                        </MultiTrigger>-->
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <!--Condition Property="Selector.IsSelectionActive" Value="True"/-->
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="#325850"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource ListBoxItem.SelectedActive.Border}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{StaticResource ListBoxItem.SelectedActive.Foreground}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border BorderBrush="#315850" BorderThickness="1" CornerRadius="2">
+        <Grid>
+            <ListBox x:Name="lbSettle" Margin="0, 0, 0, 0" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="LbSettle_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全" Style="{StaticResource CommonFilterListBoxItemStyle}" IsSelected="True"
+                          Height="24"/>
+                <ListBoxItem Content="现" Visibility="Collapsed" Style="{StaticResource CommonFilterListBoxItemStyle}"
+                          Height="24"/>
+                <ListBoxItem Content="+0" Style="{StaticResource CommonFilterListBoxItemStyle}"
+                          Height="24"/>
+                <ListBoxItem Content="+1" Style="{StaticResource CommonFilterListBoxItemStyle}"
+                          Height="24"/>
+                <ListBoxItem x:Name="lbtFwd" Content="远"  Style="{StaticResource CommonFilterListBoxItemStyle}"
+                          Height="24"/>
+            </ListBox>
+        </Grid>
+    </Border>
+</UserControl>

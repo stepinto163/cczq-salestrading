@@ -1,0 +1,314 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.Setting.View.ChanelSettingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.Setting.View"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="300" Initialized="UserControl_Initialized" >
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>-->
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/TabControlStyleDictionary.xaml"/>
+
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/ChanelStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridTextLeftStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontFamily" Value="{StaticResource NotoSansDisplya-SemiBold}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--Combox-->
+            <Style TargetType="ComboBox" x:Key="ComboBoxStyle">
+                <Setter Property="IsEditable" Value="False"></Setter>
+                <Setter Property="Text" Value="33"></Setter>
+                <Setter Property="Foreground" Value="AliceBlue"></Setter>
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <!--ComBoxItem-->
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="MinHeight" Value="24"></Setter>
+                            <Setter Property="MinWidth" Value="60"></Setter>
+                            <Setter Property="Foreground" Value="{StaticResource ColorBrush.While}"></Setter>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ComboBoxItem">
+                                        <Border Name="Back" Background="{StaticResource ColorBrush.Gray15}"  BorderThickness="0,0,0,0" Padding="2, 0, 0, 0">
+                                            <ContentPresenter ContentSource="{Binding Source}" VerticalAlignment="Center" HorizontalAlignment="Left"></ContentPresenter>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                                <Setter TargetName="Back" Property="BorderThickness" Value="1"></Setter>
+                                                <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="true">
+                                                <Setter Property="Background" TargetName="Back" Value="#008aec"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid Background="#3C3C3C">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="0.7*"/>
+                                    <ColumnDefinition Width="0.3*" MaxWidth="30"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" BorderThickness="0" Background="{StaticResource ColorBrush.Gray15}"
+                                  Text="{TemplateBinding Text}" Foreground="{TemplateBinding Foreground}"  FontSize="12" Padding="2, 5, 0, 0">
+                                    <!--Foreground="{StaticResource ColorBrush.While}"-->
+                                </TextBox>
+                                <Border  Grid.Column="0" BorderThickness="0" BorderBrush="#3C3C3C" CornerRadius="1">
+                                    <TextBlock ></TextBlock>
+                                </Border>
+                                <Border Grid.Column="1" BorderThickness="0" BorderBrush="#3C3C3C" CornerRadius="1">
+                                    <ToggleButton Style="{DynamicResource ComboxStyleBtnS}" IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press"></ToggleButton>
+                                </Border>
+                                <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" x:Name="Popup" Focusable="False" AllowsTransparency="True" PopupAnimation="Slide">
+                                    <Border CornerRadius="1" MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{TemplateBinding ActualWidth}" x:Name="DropDown" SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="0" Opacity="0.5"/>
+                                        </Border.Effect>
+                                        <ScrollViewer Style="{DynamicResource ScrollViewerStyle}" MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True" 
+                                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+                                            <!-- StackPanel 用于显示子级，方法是将 IsItemsHost 设置为 True -->
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" Background="{StaticResource ColorBrush.Green3}"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--下拉按钮-->
+            <Style TargetType="ToggleButton" x:Key="ComboxStyleBtnS">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border x:Name="Back"  BorderThickness="0" BorderBrush="Transparent" >
+                                <Border.Background>
+                                    <ImageBrush ImageSource="../Images/stc_button_dropdownarrow_normal.png"/>
+                                </Border.Background>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter TargetName="Back" Property="Background" Value="{StaticResource ColorBrush.Gray14}"></Setter>-->
+                                    <Setter TargetName="Back" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray14}"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <!--<TabItem x:Name="ChannelSetting_TabItem" Header="渠道设置" Width="160" Initialized="ChannelSetting_TabItem_Initialized">-->
+        <DataGrid x:Name="dgRecordsChannel"
+                                      Margin="10,0,10,10"
+                                      ItemsSource="{Binding VenueList,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      FontSize="12" Foreground="#FFFFFF"
+                                      VirtualizingStackPanel.IsVirtualizing="True" 
+                                      VirtualizingStackPanel.VirtualizationMode="Recycling" HeadersVisibility="Column"
+                          RowHeight="60"   AllowDrop="True"  SelectionMode="Single" SelectionUnit="FullRow"  SelectedCellsChanged="dgRecordsChannel_SelectedCellsChanged" 
+                          >
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Height" Value="30"></Setter>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+                    <Setter Property="Background" Value="#1E1E1E"></Setter>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+            <DataGrid.Style>
+                <StaticResource ResourceKey="DefaultDataGrid"/>
+            </DataGrid.Style>
+            <!--<DataGrid.RowStyle>
+                        <Style  TargetType="DataGridRow">
+                            <EventSetter Event="GotFocus" Handler="Item_GotFocus"/>
+                        </Style>
+                    </DataGrid.RowStyle>-->
+            <DataGrid.Columns>
+                <!--<DataGridTextColumn x:Name="dgtcSort" Header="排序" Width="66" CanUserSort="False" Binding="{Binding Sn}" Foreground="#FFFFFF"></DataGridTextColumn>-->
+
+                <DataGridTemplateColumn  Width="67" Header="排序">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Sn, Mode=OneWay,UpdateSourceTrigger=PropertyChanged}" Foreground="{StaticResource DefaultForegroup.ColorBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                            <!--<TextBlock Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type DataGridRow}}, Path=Header}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#FFFFFF"></TextBlock>-->
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTemplateColumn  Width="67" Header="排序">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type DataGridRow}}, Path=Header}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#FFFFFF"></TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>-->
+                <DataGridTemplateColumn Header="利率债" Width="50*" MinWidth="100"  CanUserSort="False" FocusManager.IsFocusScope="False">
+
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel x:Name="spPrice" Orientation="Horizontal" VerticalAlignment="Center" >
+                                <!--<Image x:Name="dgcontrol" Source="/STC.XBond.Plugin;component/Setting/Images/stc_icon_ranking_normal.png" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding ShowStar}"/>-->
+                                <Button x:Name="dgcontrol" Height="16" Width="16" Style="{StaticResource DragButton}"/>
+
+
+                                <Border x:Name="SourceVenueBorder" Background="{StaticResource TPSC.ColorBrush}" CornerRadius="2" Height="16" Width="40" Margin="18,0,0,0" HorizontalAlignment="Left">
+                                    <TextBlock x:Name="SourceVenueText" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Text="{Binding Name, Mode=TwoWay}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                </Border>
+                                <ComboBox x:Name="comLevel" Width="70" Height="24" Padding="0, 3, 0, 0" Margin="16,0,0,0" Text="{Binding Levelformat}" SelectedValue="{Binding Levelformat, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ComboBoxStyle}"   SelectionChanged="comLevel_SelectionChanged"
+                                                  >
+                                    <ComboBoxItem Content="禁止" Foreground="#FFFFFF" Tag="0"></ComboBoxItem>
+                                    <ComboBoxItem Content="1档" Foreground="#E63034" Tag="1"></ComboBoxItem>
+                                    <ComboBoxItem Content="2档" Foreground="#ED6D00" Tag="2"></ComboBoxItem>
+                                </ComboBox>
+                                <!--<TextBox Width="70"  Height="24" Text="分数" FontSize="12" Margin="10,0,0,0" Foreground="#A0A0A0" BorderBrush="#3C3C3C" Style="{StaticResource DefaultTextBoxStyle}"></TextBox>-->
+                                <TextBox x:Name="tbWeight" Width="70" Height="24" Style="{StaticResource DefaultTextBox}" PreviewTextInput="tbWeight_PreviewTextInput"  Text="{Binding Weight, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"   
+                                        Margin="12,10"  KeyDown="tbWeight_KeyDown" >
+                                    <TextBox.ToolTip>
+                                        <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                    </TextBox.ToolTip>
+                                </TextBox>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Level}" Value="0">
+                                    <Setter Property="Foreground"  TargetName="comLevel" Value="#FFFFFF" />
+                                    <Setter Property="Text" TargetName="comLevel" Value="禁止"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Level}" Value="1">
+                                    <Setter Property="Foreground"  TargetName="comLevel" Value="#E63034" />
+                                    <Setter Property="Text" TargetName="comLevel" Value="1档"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Level}" Value="2">
+                                    <Setter Property="Foreground"  TargetName="comLevel" Value="#ED6D00" />
+                                    <Setter Property="Text" TargetName="comLevel" Value="2档"/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding Name}" Value="国利">
+                                    <Setter Property="Background"  TargetName="SourceVenueBorder" Value="{StaticResource TPSC.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Name}" Value="信唐">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource CTTJ.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Name}" Value="国际">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource CNEX.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Name}" Value="中诚">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource CCTB.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Name}" Value="平安">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource PTCN.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Name}" Value="XBOND">
+                                    <Setter Property="Background"  TargetName="SourceVenueBorder" Value="{StaticResource XBond.ColorBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+                <DataGridTemplateColumn Header="信用债" Width="50*" MinWidth="100"  CanUserSort="False" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel x:Name="spPrice" Orientation="Horizontal" VerticalAlignment="Center" >
+                                <Image Source="/STC.XBond.Plugin;component/Setting/Images/stc_icon_ranking_normal.png" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding ShowStar}"/>
+                                <Border x:Name="SourceVenueBorder" Background="{StaticResource TPSC.ColorBrush}" CornerRadius="2" Height="16" Width="40" Margin="18,0,0,0" HorizontalAlignment="Left">
+                                    <TextBlock x:Name="SourceVenueText" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Text="{Binding Namec, Mode=TwoWay}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                </Border>
+                                <ComboBox x:Name="comLevelc" Grid.Column="2" Width="70"  Height="24" Padding="0, 3, 0, 0" Margin="16,0,0,0" Text="{Binding Levelformatc}" SelectedValue="{Binding Levelformatc, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ComboBoxStyle}" SelectionChanged="comLevelc_SelectionChanged" >
+                                    <ComboBoxItem Content="禁止" Foreground="#FFFFFF" Tag="1"></ComboBoxItem>
+                                    <ComboBoxItem Content="1档" Foreground="#E63034" Tag="2"></ComboBoxItem>
+                                    <ComboBoxItem Content="2档" Foreground="#ED6D00" Tag="3"></ComboBoxItem>
+                                </ComboBox>
+
+                                <!--<TextBox Width="70"  Height="24" Text="分数" FontSize="12" Margin="10,0,0,0" Foreground="#A0A0A0" BorderBrush="#3C3C3C" Style="{StaticResource DefaultTextBoxStyle}"></TextBox>-->
+                                <TextBox x:Name="tbWeightc" Width="70" Height="24" Text="{Binding Weightc, Mode=TwoWay}" Style="{StaticResource DefaultTextBox}" PreviewTextInput="tbWeightc_PreviewTextInput"  KeyDown="tbWeightc_KeyDown"  
+                                        Margin="12,10">
+                                    <TextBox.ToolTip>
+                                        <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                    </TextBox.ToolTip>
+                                </TextBox>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Levelc}" Value="0">
+                                    <Setter Property="Foreground"  TargetName="comLevelc" Value="#FFFFFF" />
+                                    <Setter Property="Text" TargetName="comLevelc" Value="禁止"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Levelc}" Value="1">
+                                    <Setter Property="Foreground"  TargetName="comLevelc" Value="#E63034" />
+                                    <Setter Property="Text" TargetName="comLevelc" Value="1档"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Levelc}" Value="2">
+                                    <Setter Property="Foreground"  TargetName="comLevelc" Value="#ED6D00" />
+                                    <Setter Property="Text" TargetName="comLevelc" Value="2档"/>
+                                </DataTrigger>
+
+                                <DataTrigger Binding="{Binding Namec}" Value="国利">
+                                    <Setter Property="Background"  TargetName="SourceVenueBorder" Value="{StaticResource TPSC.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Namec}" Value="信唐">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource CTTJ.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Namec}" Value="国际">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource CNEX.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Namec}" Value="中诚">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource CCTB.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Namec}" Value="平安">
+                                    <Setter Property="Background" TargetName="SourceVenueBorder" Value="{StaticResource PTCN.ColorBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Namec}" Value="XBOND">
+                                    <Setter Property="Background"  TargetName="SourceVenueBorder" Value="{StaticResource XBond.ColorBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+
+                        </DataTemplate>
+
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Popup  x:Name="popup1" IsHitTestVisible="False" Placement="RelativePoint"  AllowsTransparency="True">
+            <Border BorderBrush="LightSteelBlue"  BorderThickness="2" Background="White" Opacity="0.95">
+                <TextBlock x:Name="txpop"  FontSize="14"  FontWeight="Bold" VerticalAlignment="Center"
+                          Margin="8,0,0,0" />
+                <!--<StackPanel  Orientation="Horizontal" Margin="4,3,8,3">
+                    <Image Source="/STC.XBond.Plugin;component/Setting/Images/stc_icon_ranking_normal.png" Height="16" Width="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                    -->
+                <!--<TextBlock  FontSize="14"  FontWeight="Bold" VerticalAlignment="Center"
+                        Text="{Binding Path=SelectedMusic.Path}"  Margin="8,0,0,0" />-->
+                <!--
+                </StackPanel>-->
+            </Border>
+        </Popup>
+
+    </Grid>
+</UserControl>

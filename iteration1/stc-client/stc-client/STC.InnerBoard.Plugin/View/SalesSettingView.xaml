@@ -1,0 +1,276 @@
+﻿<UserControl x:Class="STC.InnerBoard.Plugin.View.SalesSettingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.InnerBoard.Plugin.View"
+             xmlns:con="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+
+            <con:RadioButtonConverter x:Key="radioBtnConverter"/>
+            <con:VisibilityConvertor x:Key="visibilityConvertor"/>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Margin="20 0 0 0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <!--金融Q-->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="auto"/>
+                <RowDefinition MaxHeight="100"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="金融Q" Foreground="#788187" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+
+            <Grid x:Name="InnerBoard_Part" Grid.Row="1" Grid.Column="1" Height="160">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="内部看板对接范围" Foreground="#D7D7D7" VerticalAlignment="Center"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="内部群聊" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center"/>
+                <RadioButton Grid.Row="1" Grid.Column="1" x:Name="rbInnerGroupEnter" Content="全部进入" GroupName="innerGroup" Foreground="#D7D7D7" Margin="160 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsInnerGroupChatType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="外部群聊" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center"/>
+                <RadioButton Grid.Row="2" Grid.Column="1" x:Name="rbGroupEnter" Content="全部进入" GroupName="group" Foreground="#D7D7D7" Margin="160 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsGroupChatType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                <RadioButton Grid.Row="2" Grid.Column="1" x:Name="rbGroupNotEnter" Content="全部不进" GroupName="group" Foreground="#D7D7D7" Margin="260 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsGroupChatType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+
+
+
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="私聊" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center"/>
+                <RadioButton Grid.Row="3" Grid.Column="1" Content="全部进入" GroupName="chat" Foreground="#D7D7D7" Margin="160 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsPrivateChatType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                <RadioButton Grid.Row="3" Grid.Column="1" Content="全部不进" GroupName="chat" Foreground="#D7D7D7" Margin="260 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsPrivateChatType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+                <RadioButton Grid.Row="3" Grid.Column="1" Content="按名单进入" GroupName="chat" Foreground="#D7D7D7" Margin="360 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsPrivateChatType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}"/>
+                <Button Grid.Row="3" Grid.Column="1" Content="名单管理" Margin="375 0 0 0" Command="{Binding ListManagementCommand}" FontSize="12"  Style="{DynamicResource BlueGreenStyle}" BorderThickness="0,1,0,0"  Width="80" Height="24"/>
+
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="聊天信息对接" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="100 0 0 0"/>
+                <RadioButton Grid.Row="4" Grid.Column="1" Content="自动确认" GroupName="chat1" Foreground="#D7D7D7" Margin="200 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                <RadioButton Grid.Row="4" Grid.Column="1" Content="弹窗人工确认" GroupName="chat1" Foreground="#D7D7D7" Margin="300 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType_FQ, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+
+                <TextBlock Grid.Row="5" Grid.Column ="1" Text="定价点差" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="100 0 0 0"/>
+                <CheckBox Grid.Row="5" Grid.Column ="1" IsChecked="{Binding IsChecked_FQ, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="200 0 0 0" VerticalAlignment="Center" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}"/>
+                <comp:NumericTextBox Grid.Row="5" Grid.Column ="1" NumericValue="{Binding BpValue_FQ, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="220 0 0 0" HorizontalAlignment="Left" Width="60" Height="24"  Style="{DynamicResource  STCDefaultBoxStyle}" MinValue="0" MaxValue="100" DecimalLength="2" />
+                <TextBlock Grid.Row="5" Grid.Column ="1" Text="bp" Foreground="#D7D7D7" Margin="282 0 0 0" VerticalAlignment="Center"/>
+
+            </Grid>
+
+            <Grid x:Name="Intention_Part" Grid.Row="2" Grid.Column="1" Height="100">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="个需对接范围" Foreground="#D7D7D7" VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="私聊" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center"/>
+                <RadioButton Grid.Row="1" Grid.Column="1" Content="按名单进入" GroupName="intention" Foreground="#D7D7D7" Margin="160 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding If_Intention_WhiteList, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                <Button Grid.Row="1" Grid.Column="1" Content="名单管理" Margin="275 0 0 0" Command="{Binding ListManagementCommand}" FontSize="12"  Style="{DynamicResource BlueGreenStyle}" BorderThickness="0,1,0,0"  Width="80" Height="24" HorizontalAlignment="Left"/>
+
+
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="聊天信息对接" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="100 0 0 0"/>
+                <RadioButton Grid.Row="2" Grid.Column="1" Content="自动确认" GroupName="intention1" Foreground="#D7D7D7" Margin="200 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding If_Auto_Insert, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+                <RadioButton Grid.Row="2" Grid.Column="1" Content="弹窗人工确认" GroupName="intention1" Foreground="#D7D7D7" Margin="300 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding If_Auto_Insert, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+
+                <StackPanel x:Name="intention_bp_part" Orientation="Horizontal" Grid.Row="3" >
+                    <TextBlock Text="定价点差" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="100 0 0 0"/>
+                    <CheckBox IsChecked="{Binding IsChecked_Broker_Spread, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="54 0 0 0" VerticalAlignment="Center" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}"/>
+                    <comp:NumericTextBox NumericValue="{Binding Broker_Spread, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="2 0 0 0" HorizontalAlignment="Left" Width="60" Height="24"  Style="{DynamicResource  STCDefaultBoxStyle}" MinValue="0" MaxValue="100" DecimalLength="2" />
+                    <TextBlock Text="bp" Foreground="#D7D7D7" Margin="2 0 0 0" VerticalAlignment="Center"/>
+                </StackPanel>
+               
+            </Grid>
+           
+        </Grid>
+
+        <!--企业微信-->
+        <Grid x:Name="FQ_Part" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="企业微信"  Foreground="#788187" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="聊天信息对接" Foreground="#D7D7D7" VerticalAlignment="Center"/>
+            <RadioButton Grid.Row="1" Grid.Column="1" Content="自动确认" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType_WX, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+            <RadioButton Grid.Row="1" Grid.Column="1" Content="弹窗人工确认" Foreground="#D7D7D7" Margin="200 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType_WX, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+            <RadioButton Grid.Row="1" Grid.Column="1" Content="全部不进" Foreground="#D7D7D7" Margin="300 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType_WX, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}"/>
+
+            <TextBlock Grid.Row="2" Grid.Column ="1" Text="定价点差" Foreground="#D7D7D7" VerticalAlignment="Center"/>
+            <CheckBox Grid.Row="2" Grid.Column ="1" IsChecked="{Binding IsChecked_WX, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}"/>
+            <comp:NumericTextBox Grid.Row="2" Grid.Column ="1" NumericValue="{Binding BpValue_WX, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="120 0 0 0" HorizontalAlignment="Left" Width="60" Height="24"  Style="{DynamicResource  STCDefaultBoxStyle}" MinValue="0" MaxValue="100" DecimalLength="2" />
+            <TextBlock Grid.Row="2" Grid.Column ="1" Text="bp" Foreground="#D7D7D7" Margin="182 0 0 0" VerticalAlignment="Center"/>
+        </Grid>
+        
+        <!--对客端-->
+        <Grid x:Name="Client_Part" Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="对客端"  Foreground="#788187" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="聊天信息对接" Foreground="#D7D7D7" VerticalAlignment="Center"/>
+            <RadioButton Grid.Row="1" Grid.Column="1" Content="自动确认" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}"/>
+            <RadioButton Grid.Row="1" Grid.Column="1" Content="弹窗人工确认" Foreground="#D7D7D7" Margin="200 0 0 0" VerticalAlignment="Center" Style="{DynamicResource DefaultRadioButtonStyle}" IsChecked="{Binding IsAutoType, Converter={StaticResource radioBtnConverter}, ConverterParameter='0'}"/>
+
+            <TextBlock Grid.Row="2" Grid.Column ="1" Text="定价点差" Foreground="#D7D7D7" VerticalAlignment="Center"/>
+            <CheckBox Grid.Row="2" Grid.Column ="1" IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="100 0 0 0" VerticalAlignment="Center" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}"/>
+            <comp:NumericTextBox Grid.Row="2" Grid.Column ="1" NumericValue="{Binding BpValue, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Foreground="#D7D7D7" Margin="120 0 0 0" HorizontalAlignment="Left" Width="60" Height="24"  Style="{DynamicResource  STCDefaultBoxStyle}" MinValue="0" MaxValue="100" DecimalLength="2" />
+            <TextBlock Grid.Row="2" Grid.Column ="1" Text="bp" Foreground="#D7D7D7" Margin="182 0 0 0" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!--复制行情-->
+        <Grid x:Name="Copy_Part" Grid.Row="3" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="64"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="行情复制"  Foreground="#788187" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+
+            <StackPanel x:Name="copyModeSp" Orientation="Horizontal" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="行情复制" Foreground="#D7D7D7"/>
+                <RadioButton x:Name="InnerModeChk" Content="个需报价" Style="{DynamicResource  DefaultRadioButtonStyle}" Foreground="#D7D7D7" Margin="5 0 0 0" IsChecked="{Binding IsInnerCopyModeChk, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <!--<RadioButton x:Name="BrokerModeChk" Content="经纪商最优" Style="{DynamicResource  DefaultRadioButtonStyle}" Foreground="#D7D7D7"  Margin="5 0 0 0" IsChecked="{Binding IsBrokerCopyModeChk, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>-->
+            </StackPanel>
+
+            <StackPanel x:Name="rateSP" Orientation="Horizontal" Grid.Row="2" Grid.Column="1">
+                <TextBlock Text="利率" Foreground="SkyBlue"  VerticalAlignment="Top" Margin="0 8 5 0"/>
+                <ItemsControl x:Name="RateListBox"  Background="Transparent" VerticalAlignment="Center"
+                                     ItemsSource="{Binding RateList}"   Width="420">
+                    <ItemsControl.Template>
+                        <ControlTemplate>
+                            <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" Foreground="#D7D7D7" Padding="5 0 0 0"  Margin="0 0 10 10"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+
+            <StackPanel x:Name="creditSP" Orientation="Horizontal" Grid.Row="3" Grid.Column="1">
+                <TextBlock Text="信用" Foreground="SkyBlue"  VerticalAlignment="Top" Margin="0 0 5 0"/>
+                <ItemsControl x:Name="CreditListBox"  Background="Transparent" VerticalAlignment="Center"
+                                     ItemsSource="{Binding CreditList}"  Width="420"
+                                     >
+                    <ItemsControl.Template>
+                        <ControlTemplate>
+                            <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}"  Foreground="#D7D7D7" Padding="5 0 0 0" Margin="0 0 10 10"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+
+            <Border BorderThickness="0 1 0 0" BorderBrush="#282828" Margin="10 0 10 0" Grid.Row="4" Grid.Column="1"/>
+
+            <StackPanel Orientation="Horizontal"  Grid.Row="4" Grid.Column="1">
+                <TextBlock Text="排序" Foreground="#D7D7D7" VerticalAlignment="Center"  Margin="0 0 5 0"/>
+                <ItemsControl x:Name="CommonBox"  Background="Transparent" VerticalAlignment="Center"
+                                     ItemsSource="{Binding CommonList}"  Width="420">
+                    <ItemsControl.Template>
+                        <ControlTemplate>
+                            <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                        </ControlTemplate>
+                    </ItemsControl.Template>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource  GreenBlueCheckedNormalCheckBox}"  Foreground="#D7D7D7" Padding="5 0 0 0" Margin="0 0 10 5"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="1">
+                <TextBlock Text="分割符" Foreground="#D7D7D7"/>
+
+                <RadioButton x:Name="SpaceChk" Content="空格" Style="{DynamicResource  DefaultRadioButtonStyle}" Foreground="#D7D7D7" Margin="5 0 0 0" IsChecked="{Binding IsSpaceChk, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <RadioButton x:Name="LongSpaceChk" Content="长空格" Style="{DynamicResource  DefaultRadioButtonStyle}" Foreground="#D7D7D7"  Margin="5 0 0 0" IsChecked="{Binding IsLongSpaceChk, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <RadioButton x:Name="TagChk" Content="Tab制表符" Style="{DynamicResource  DefaultRadioButtonStyle}" Foreground="#D7D7D7"  Margin="5 0 0 0" IsChecked="{Binding IsTagChk, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            </StackPanel>
+
+            <Grid Grid.Row="6" Height="130" Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="加减点步长" Foreground="#D7D7D7"/>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="20 0 0 0" VerticalAlignment="Top">
+                    <comp:DrpNumericUpDown x:Name="bp1" Height="24" Width="80" NumericValue="{Binding BP1, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                                TextContentAlignment="Left" TextForeground="White" Foreground="White"  VerticalAlignment ="Center" DecimalLength="2" RangeValue="1" MaxValue="100" MinValue="0" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True"/>
+                    <TextBlock Text="bp" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="2 0 10 0"/>
+                    <comp:DrpNumericUpDown x:Name="bp2" Height="24" Width="80" NumericValue="{Binding BP2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                                TextContentAlignment="Left" TextForeground="White" Foreground="White"  VerticalAlignment ="Center" DecimalLength="2" RangeValue="1" MaxValue="100" MinValue="0" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True"/>
+                    <TextBlock Text="bp" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="2 0 10 0"/>
+                    <comp:DrpNumericUpDown x:Name="bp3" Height="24" Width="80" NumericValue="{Binding BP3, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                                TextContentAlignment="Left" TextForeground="White" Foreground="White"  VerticalAlignment ="Center" DecimalLength="2" RangeValue="1" MaxValue="100" MinValue="0" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True"/>
+                    <TextBlock Text="bp" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="2 0 10 0"/>
+                </StackPanel>
+                <TextBlock  Grid.Row="2" Text="推荐语" Foreground="#D7D7D7"/>
+                <TextBox x:Name="RecommedTB" Grid.Row="3" Text="{Binding Recommendation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource STCDefaultBoxStyle}" Width="296" Height="24" HorizontalAlignment="left" VerticalAlignment="Top" Margin="20 0 0 0" MaxLength="200"/>
+                <TextBlock Grid.Row="4" Margin="280 0 0 0"><Run Foreground="#D7D7D7" Text="{Binding CurrentRecommendationLength}"></Run><Run Foreground="#A0A0A0">/200</Run></TextBlock>
+            </Grid>
+        </Grid>
+
+    </Grid>
+</UserControl>

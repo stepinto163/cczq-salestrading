@@ -1,0 +1,150 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Setting.PersonalSettingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Setting"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <!--<UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                --><!--提交前需要注释掉，修改时可打开--><!--
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>-->
+    <Border BorderThickness="1" BorderBrush="{DynamicResource ColorBrush.Gray20}">
+
+        <StackPanel Grid.Row="1" x:Name="gd_Setting" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}" Margin="18 0 18 0">
+            <TextBox x:Name="txtVis" Width="0" Grid.Row="0" />
+
+            <TextBlock x:Name="txtDetail" FontWeight="Bold" Foreground="{DynamicResource ColorBrush.While}"
+                            Text="明细设置" VerticalAlignment="Center" TextWrapping="Wrap"/>
+
+            <StackPanel Orientation="Horizontal" Height="40">
+                <CheckBox x:Name="cbShortName"  HorizontalAlignment="Left"
+                            Content="带简称" Foreground="{DynamicResource ColorBrush.While}"
+                            Margin="20,0,0,0" Grid.Column="0" Padding="4 0 0 0" VerticalContentAlignment="Center"
+                            Style="{DynamicResource DefaultCheckBoxStyle}" Width="60"
+                            Checked="cbShortName_Checked" Unchecked="cbShortName_Unchecked"/>
+                <CheckBox x:Name="cbLGBShortName"  HorizontalAlignment="Left" Padding="4 0 0 0" VerticalContentAlignment="Center"
+                            Content="带简称(地方债)" Foreground="{DynamicResource ColorBrush.While}"
+                            Margin="10,0,0,0" Grid.Column="0"
+                            Style="{DynamicResource DefaultCheckBoxStyle}" Width="105"
+                            Checked="cbLGBShortName_Checked" Unchecked="cbLGBShortName_Unchecked"/>
+                <CheckBox x:Name="cbTenor" HorizontalAlignment="Left"
+                            Content="带期限" Foreground="{DynamicResource ColorBrush.While}"
+                            Margin="10,0,0,0" Grid.Column="1" VerticalContentAlignment="Center"
+                            Style="{DynamicResource DefaultCheckBoxStyle}" Padding="4 0 0 0" VerticalAlignment="Center"
+                        Checked="cbTenor_Checked" Unchecked="cbTenor_Unchecked"/>
+                <CheckBox x:Name="cb_bondType" HorizontalAlignment="Left"
+                            Content="带地方债类型" Foreground="{DynamicResource ColorBrush.While}"
+                            Margin="10,0,0,0"  Width="100"  Grid.Column="2"
+                            Style="{DynamicResource DefaultCheckBoxStyle}" Padding="4 0 0 0" VerticalAlignment="Center" Click="cb_bondType_Click"
+                        />
+                <CheckBox x:Name="cb_ppnBondType" HorizontalAlignment="Left"
+                            Content="带私募债类型" Foreground="{DynamicResource ColorBrush.While}"
+                            Margin="10,0,0,0"  Width="100"  Grid.Column="2"
+                            Style="{DynamicResource DefaultCheckBoxStyle}" Padding="4 0 0 0" VerticalAlignment="Center" Click="cb_ppnBondType_Click"
+                        />
+            </StackPanel>
+
+            <Border BorderThickness="0 1 0 0" BorderBrush="{DynamicResource ColorBrush.Gray20}"/>
+
+            <TextBlock x:Name="tb_SendQQAssistant" FontWeight="Bold" Foreground="{DynamicResource ColorBrush.While}"
+                           Text="发送QQ消息设置" Margin="0,10,0,0" VerticalAlignment="Center"  TextWrapping="Wrap"/>
+
+            <StackPanel Orientation="Horizontal" Height="40">
+                <CheckBox x:Name="cb_SendQQ"  HorizontalAlignment="Left" VerticalAlignment="Center"
+                              Content="明细发送QQ消息带要素变化" Padding="4 0 0 0" Foreground="{DynamicResource ColorBrush.While}"
+                              Margin="20,0,0,0" Grid.Column="0" 
+                              Style="{DynamicResource DefaultCheckBoxStyle}"
+                              Click="cb_SendQQ_Click"/>
+
+                <CheckBox x:Name="cb_SendQQAssistant"  HorizontalAlignment="Left"  VerticalAlignment="Center"
+                              Content="通过经纪人QQ发送消息" Padding="4 0 0 0" Foreground="{DynamicResource ColorBrush.While}"
+                              Margin="20,0,0,0" Grid.Column="0" 
+                              Style="{DynamicResource DefaultCheckBoxStyle}"
+                              Click="cb_SendQQAssistant_Click"/>
+
+            </StackPanel>
+
+
+            <Border BorderThickness="0 1 0 0" BorderBrush="{DynamicResource ColorBrush.Gray20}"/>
+
+            <TextBlock x:Name="txtShortcutKey" FontWeight="Bold" Foreground="{DynamicResource ColorBrush.While}"
+                             Text="快捷键设置" Margin="0,10,0,0"  VerticalAlignment="Center"  TextWrapping="Wrap"/>
+
+            <Grid Height="40" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"  VerticalAlignment="Center" Background="Transparent"
+                                        Foreground="{DynamicResource ColorBrush.While}" Margin="20,0, 0, 0" Text="线下成交"/>
+                <comp:WatermarkTextBox x:Name="tbOffLineTransaction" Margin="10,0,0,0" Grid.Column="1" Width="112" Height="24" BorderThickness="1" BorderBrush="{DynamicResource ColorBrush.Gray15}"
+                                             Foreground="{DynamicResource ColorBrush.While}" WaterMark="录入快捷键" HorizontalContentAlignment="Center"
+                                 KeyDown="tbOffLineTransaction_KeyDown" KeyUp="tbOffLineTransaction_KeyUp" >
+                </comp:WatermarkTextBox>
+                <Button  Width="20" Grid.Column="2" Margin="2,0,0,0" Height="20" Style="{DynamicResource InfoButton}">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <TextBlock Text="仅支持F1-F12"></TextBlock>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+                <!--<Button  Width="20"  Grid.Column="2"  Margin="2,0,0,0"   Height="20" Style="{StaticResource ImageButtonStyle}">
+                    <Button.Background>
+                        <ImageBrush ImageSource="pack://application:,,,/IDC.Frame;component/Images/icon_operation_history_dark_disabled.png"/>
+                    </Button.Background>
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <TextBlock Text="仅支持F1-F12"></TextBlock>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>-->
+            </Grid>
+
+            <Grid Height="40" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontSize="12" VerticalAlignment="Center" Background="Transparent" 
+                                    Foreground="{DynamicResource ColorBrush.While}" Margin="20,0, 0, 0" Text="行情切换"/>
+                <comp:WatermarkTextBox x:Name="tbPricingTabTransaction" Margin="10,0,0,0" Grid.Column="1" Width="112" Height="24"
+                              WaterMark="录入快捷键" HorizontalContentAlignment="Center"
+                             PreviewKeyDown="tbPricingTabTransaction_KeyDown"  KeyUp="tbPricingTabTransaction_KeyUp" >
+                </comp:WatermarkTextBox>
+                <Button x:Name="btnEditImage" Width="20"  Grid.Column="2"  Margin="2,0,0,0"   
+                                        Height="20" Style="{DynamicResource InfoButton}">
+                    <Button.ToolTip>
+                        <ToolTip>
+                            <TextBlock Text="仅支持Shift、Ctrl、Tab、空格"></TextBlock>
+                        </ToolTip>
+                    </Button.ToolTip>
+                </Button>
+            </Grid>
+
+            <Border BorderThickness="0 1 0 0" BorderBrush="{DynamicResource ColorBrush.Gray20}"/>
+
+            <StackPanel x:Name="spSendLog" Height="65" Visibility="Collapsed">
+                <TextBlock  x:Name="tb_SendLog" FontWeight="Bold" Foreground="{DynamicResource ColorBrush.While}"
+                                Text="错误日志" Margin="0,10,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+
+                <Grid Height="40" >
+                    <Button x:Name="btn_SendLog" Content="发送日志" IsEnabled="True" HorizontalAlignment="Left"
+                             Margin="20,0,0,0"  Foreground="{DynamicResource ColorBrush.While}"
+                             Width="90"  VerticalAlignment="Center" Height="24" Style="{DynamicResource GraySlateButtonStyle}"
+                             BorderThickness="0,1,0,0" Click="btn_SendLog_Click"/>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

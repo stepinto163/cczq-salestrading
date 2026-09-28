@@ -1,0 +1,92 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.HistoryFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             mc:Ignorable="d" 
+             d:DesignHeight="24" d:DesignWidth="900">
+    <!--<UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>-->
+    <Grid>
+        <StackPanel Orientation="Horizontal" Height="30">
+            <DatePicker x:Name="dpFrom" Width="120px" Height="24" Style="{DynamicResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" SelectedDateChanged="dpFrom_SelectedDateChanged"></DatePicker>
+            <TextBlock  Text="-" Margin="5,0,5,0" VerticalAlignment="Center"  HorizontalAlignment="Right" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"></TextBlock>
+            <DatePicker x:Name="dpTo" Width="120" Height="24" Style="{DynamicResource DefaultDatePickerStyle}" VerticalContentAlignment="Center" SelectedDateChanged="dpTo_SelectedDateChanged"></DatePicker>
+            <TextBlock  Text="状态:" Margin="10,0,5,0" VerticalAlignment="Center"  HorizontalAlignment="Right" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"></TextBlock>
+
+            <ComboBox x:Name="orderStatusComBox"
+                Margin="0,0,0,0" Width="80" Height="18" VerticalAlignment="Center" 
+                      SelectedIndex="0" 
+                      Style="{DynamicResource ComboBoxStyle}" 
+                      SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBoxItem Content="全部" Tag="1"></ComboBoxItem>
+                <ComboBoxItem Content="新建中" Tag="2"></ComboBoxItem>
+                <ComboBoxItem Content="正常" Tag="3"></ComboBoxItem>
+                <ComboBoxItem Content="部分成交" Tag="4"></ComboBoxItem>
+                <ComboBoxItem Content="完全成交" Tag="5"></ComboBoxItem>
+                <ComboBoxItem Content="已撤销" Tag="6"></ComboBoxItem>
+                <ComboBoxItem Content="撤销中" Tag="7"></ComboBoxItem>
+                <ComboBoxItem Content="已拒绝" Tag="8"></ComboBoxItem>
+                <ComboBoxItem Content="异常" Tag="9"></ComboBoxItem>
+            </ComboBox>
+            <TextBlock x:Name="ContractTypeLbl" Text="合约种类:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="ContractTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="ContractTypeListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{DynamicResource CommonFilterListBoxItemStyle}" IsSelected="True" />
+                <ListBoxItem Content="债券" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="期货" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="IRS" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+            </ListBox>
+            <TextBlock x:Name="FirmFlagLbl" Text="意向:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="FirmFlagListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="FirmFlagListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{DynamicResource CommonFilterListBoxItemStyle}" IsSelected="True" />
+                <ListBoxItem Content="firm" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="nonfirm" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+            </ListBox>
+            <TextBlock x:Name="SourceLbl" Text="方式:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="VenuesListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="VenuesListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{DynamicResource CommonFilterListBoxItemStyle}" IsSelected="True" />
+                <ListBoxItem Content="内部" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="做市" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <!--<ListBoxItem Content="人工" Style="{StaticResource CommonFilterListBoxItemStyle}"/>-->
+                <ListBoxItem Content="IDB" Visibility="Collapsed" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="量化" Visibility="Collapsed" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+            </ListBox>
+            <TextBlock x:Name="tbCodeType" Text="债券类型:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="lbCodeType" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="LbCodeType_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="全部" Style="{DynamicResource CommonFilterListBoxItemStyle}" IsSelected="True" />
+                <ListBoxItem Content="利率" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+                <ListBoxItem Content="信用" Style="{DynamicResource CommonFilterListBoxItemStyle}"/>
+            </ListBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

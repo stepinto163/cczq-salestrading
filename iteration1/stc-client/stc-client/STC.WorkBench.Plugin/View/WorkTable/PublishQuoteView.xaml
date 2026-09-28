@@ -1,0 +1,633 @@
+﻿<comp:WindowBase x:Class="STC.WorkBench.Plugin.View.WorkTable.PublishQuoteView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkBench.Plugin.View.WorkTable"
+             xmlns:localComp="clr-namespace:STC.WorkBench.Plugin.View.Component"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:comCon ="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             mc:Ignorable="d" Title="发布询价" Width="1158" Height="400"
+             d:DesignHeight="350" d:DesignWidth="800" Closed="WindowBase_Closed">
+    <comp:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/TextBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/GridSplitterStyleDictionary.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <comCon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <comCon:NumberConvertor x:Key="numConvertor"/>
+            <comCon:MultiCompareConverter x:Key="multiCompareConverter"/>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+
+
+            <Style x:Key="SelfVGridSplitterStyle2" TargetType="{x:Type GridSplitter}">
+                <Setter Property="PreviewStyle" Value="{DynamicResource GridSplitterPreviewStyle}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GridSplitter}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <Rectangle Width="1" Height="12" Stroke="#515151" Margin="0,0,2,0"/>
+                                    <Rectangle Width="1" Height="12" Stroke="#515151" Margin="-2,0,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 居中 -->
+            <Style x:Key="SelfDataGridColumnHeaderCenterStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                <Setter Property="HorizontalContentAlignment"  Value="Center"/>
+                <Setter Property="Margin" Value="0,0,0,0"/>
+            </Style>
+            <!-- 居右 -->
+            <Style x:Key="SelfDataGridColumnHeaderRightStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                <Setter Property="HorizontalContentAlignment"  Value="Right"/>
+                <Setter Property="Margin" Value="0,0,0,0"/>
+            </Style>
+            <!-- 居左 -->
+            <Style x:Key="SelfDataGridColumnHeaderLeftStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderStyle}">
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Margin" Value="0,0,0,0"/>
+            </Style>
+
+            <Style x:Key="SideTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </comp:WindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition />
+            <RowDefinition Height="46"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4 0 0 0">
+            <TextBlock Text="{Binding CurrentItem.RemainingTime}"/>
+            <TextBlock Text="{Binding CurrentItem.SecurityId}" Margin="8 0 0 0"/>
+            <TextBlock Text="{Binding CurrentItem.Symbol}"  Margin="8 0 0 0"/>
+            <TextBlock Text="{Binding CurrentItem.Side, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"  Margin="8 0 0 0"/>
+            <!--<TextBlock Text="{Binding CurrentItem.Price, Converter={StaticResource numConvertor}}"  Margin="8 0 0 0"/>
+            <TextBlock Text="%"/>
+            <TextBlock Text="{Binding CurrentItem.Qty, Converter={StaticResource numConvertor}}"  Margin="8 0 0 0"/>
+            <TextBlock Text="万"/>
+            <TextBlock Text="{Binding CurrentItem.SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"  Margin="8 0 0 0"/>-->
+        </StackPanel>
+
+        <DataGrid Grid.Row="1" x:Name="publishDG" ItemsSource="{Binding Datas}"
+                    SelectedItem="{Binding SelectedItem,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                    Style="{DynamicResource DefaultDataGrid}" >
+            <DataGrid.Columns>
+                <!--删除-->
+                <DataGridTemplateColumn MinWidth="25" Width="25" MaxWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button x:Name="DelBtn" Height="14" Width="14" 
+                                        Command="{Binding DataContext.DelQuoteCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                        Style="{DynamicResource DeleteButton}" FontSize="10" Visibility="Collapsed" CommandParameter="{Binding ElementName=DelBtn}"
+                                        IsTabStop="False"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="">
+                                    <Setter TargetName="DelBtn" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--勾选-->
+                <DataGridTemplateColumn x:Name="checkedColumn" MinWidth="40" Width="40" MaxWidth="40" HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.Header>
+                        <CheckBox x:Name="CheckBox_All" Click="CheckBox_All_Click" 
+                                                    IsChecked="{Binding DataContext.IsAllChecked, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor},UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                    Style="{DynamicResource DefaultCheckBoxStyle}"/>
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox x:Name="Selected_Chk" Click="Selected_Chk_Click" IsChecked="{Binding IsChecked,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+                                                VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                Style="{DynamicResource DefaultCheckBoxStyle}"></CheckBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--to-->
+                <DataGridTemplateColumn Header="To" Width="160" HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <!--Visibility="{Binding IsChecked, Converter={StaticResource reverseVisibilityConverter}}"-->
+                                <TextBlock x:Name="To_Txt" Grid.ColumnSpan="2" Text="{Binding ReceiverNumber}" Visibility="Collapsed" ToolTip="{Binding ReceiverNumber}" TextTrimming="CharacterEllipsis" Margin="4 0 0 0"/>
+                                <Border x:Name="SourceTraderBorder" Background="{Binding SourceTrader,Converter={StaticResource venuesColorConvertor}}"  CornerRadius="2" Height="16" Width="40" HorizontalAlignment="Left" Margin="4 0 4 0">
+                                    <TextBlock x:Name="SourceTraderText" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"  Text="{Binding SourceTrader,Converter={StaticResource EnumTypeConvertor},ConverterParameter=venuesxb}" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                           Style="{DynamicResource  SourceTraderStyle}"/>
+                                </Border>
+                                <comp:AutoCompleteComboBox x:Name="SourceTrader_edit" Height="20" Margin="5 0 0 0" Grid.Column="1"
+                                                       DisplayValuePath="DispayName"
+                                                       SelectedItem="{Binding Receiver_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding ReceiverNumber_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       PreviewMouseDown="QQ_edit_PreviewMouseDown"
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="对方"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="SourceTrader_edit_PatternChanged">
+                                    <comp:AutoCompleteComboBox.AutoCompColumns>
+                                        <DataGridTemplateColumn  Width="*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="Transparent">
+                                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding DispayName }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                                            TextTrimming="CharacterEllipsis" >
+                                                            <TextBlock.ToolTip>
+                                                                <ToolTip Content="{Binding DispayName}"/>
+                                                            </TextBlock.ToolTip>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </comp:AutoCompleteComboBox.AutoCompColumns>
+                                </comp:AutoCompleteComboBox>
+
+
+                                <!--Visibility="{Binding IsChecked, Converter={StaticResource visibilityConvertor}}"-->
+                                <comp:AutoCompleteComboBox x:Name="QQ_edit" Height="20" Margin="5 0 0 0" Grid.ColumnSpan="2"
+                                                       DisplayValuePath="DispayName"
+                                                       SelectedItem="{Binding Receiver_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding ReceiverNumber_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       PreviewMouseDown="QQ_edit_PreviewMouseDown"
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="对方"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="QQ_PatternChanged">
+                                    <comp:AutoCompleteComboBox.AutoCompColumns>
+                                        <DataGridTemplateColumn  Width="*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="Transparent">
+                                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding DispayName }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                                            TextTrimming="CharacterEllipsis" >
+                                                            <TextBlock.ToolTip>
+                                                                <ToolTip Content="{Binding DispayName}"/>
+                                                            </TextBlock.ToolTip>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </comp:AutoCompleteComboBox.AutoCompColumns>
+                                </comp:AutoCompleteComboBox>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding OptionType}" Value="sendIntentBrokers">
+                                    <Setter TargetName="SourceTraderBorder" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="SourceTrader_edit" Property="Visibility" Value="Visible"/>
+                                    
+                                    <Setter TargetName="QQ_edit" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding OptionType}" Value="Inner">
+                                    <Setter TargetName="SourceTraderBorder" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="SourceTrader_edit" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="QQ_edit" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding DataContext.IsToEnabled, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Value="false">
+                                    <Setter TargetName="SourceTraderBorder" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="SourceTrader_edit" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="QQ_edit" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="To_Txt" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="ReceiverNumber_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="ReceiverNumber"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="SourceTrader_edit" Property="BackGroundCob" Value="Orange"/>
+                                    <Setter TargetName="QQ_edit" Property="BackGroundCob" Value="Orange"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--状态--><!--
+                <DataGridTextColumn Header="状态" Width="Auto" MinWidth="40"
+                                    HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}"
+                                    CellStyle="{StaticResource ColumnColorStyle}" 
+                                    Binding="{Binding Status,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"/>-->
+                <!--方向-->
+                <DataGridTextColumn Header="方向" Width="Auto" MinWidth="40"
+                                    HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}"
+                                    CellStyle="{StaticResource ColumnColorStyle}" 
+                                    Binding="{Binding Side,Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"/>
+                
+                <!--价格-->
+                <DataGridTemplateColumn Header="价格" Width="100" HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <!--<TextBlock Text="{Binding Price}" Visibility="{Binding IsChecked, Converter={StaticResource reverseVisibilityConverter}}"/>-->
+
+                                <!--编辑部分 Visibility="{Binding IsChecked, Converter={StaticResource visibilityConvertor}}"-->
+                                <comp:NumericUpDown x:Name="PriceNU_Edit" NumericValue="{Binding Price_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                                    Background="#0F0F0F" OriginalFormat="0.00##"
+                                                     MinValue="0.0001" MaxValue="999.9999" DecimalLength="4" RangeValue="0.0001" VerticalAlignment="Center" AllowEmpty="True"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="Price_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="Price"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="PriceNU_Edit" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="报价标准" MinWidth="55" Width="100" MaxWidth="120" CanUserSort="True" SortMemberPath="Side">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <!--编辑部分-->
+                            <ComboBox x:Name="cbPriceType_edit" Height="18" VerticalContentAlignment="Center"
+                                          ItemsSource="{Binding DataContext.PriceTypeEmptyDic,RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" 
+                                          DisplayMemberPath="Value"  SelectedValuePath="Key" Grid.Column="2"
+                                          SelectedValue="{Binding PriceType_Edit,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                          Style="{DynamicResource NonEditableComboBoxStyle}"
+                                          FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}">
+                            </ComboBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--报量-->
+                <DataGridTemplateColumn Header="量(万)" Width="100" HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <!--<TextBlock Text="{Binding Qty}" Visibility="{Binding IsChecked, Converter={StaticResource reverseVisibilityConverter}}"/>-->
+
+                                <!--Visibility="{Binding IsChecked, Converter={StaticResource visibilityConvertor}}"-->
+                                <comp:NumericUpDown x:Name="QuantityNU_edit" NumericValue="{Binding Qty_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                    Background="#0F0F0F"
+                                                    MinValue="1" MaxValue="100000000" DecimalLength="0" RangeValue="1000" VerticalAlignment="Center"
+                                                FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}" AllowEmpty="True"
+                                                ToolTip="输入范围:[1,100000000]"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="Qty_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="Qty"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="QuantityNU_edit" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--清算速度-->
+                <DataGridTemplateColumn Header="清算速度" MinWidth="80" Width="350" MaxWidth="500" CanUserSort="True" SortMemberPath="SettlType" 
+                                        HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+
+                            <Grid>
+                                <!--<TextBlock Text="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}" Visibility="{Binding IsChecked, Converter={StaticResource reverseVisibilityConverter}}"/>-->
+
+                                <!--编辑部分 Visibility="{Binding IsChecked, Converter={StaticResource visibilityConvertor}}"-->
+                                <!--<localComp:SettleTypeSelector x:Name="SettlType_eidt" SettleType="{Binding SettlType_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"
+                                                     Height="22"
+                                                     CreateTime="{Binding CreateTime}"
+                                                     FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"/>-->
+
+                                <!--清算速度 选择处理区-->
+                                <Grid x:Name="SettlType_eidt">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="3"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                        <!--普通包教清算速度-->
+                                        <ComboBox x:Name="SettlTypeCombox" Grid.Column="2" Width="60" Tag="{Binding AddOneOpenedTag}"  Text="{Binding AddOneShowText}"  Margin="0, 0, 0, 0"  Height="24" ToolTip="REQ" ToolTipService.IsEnabled="False"
+                                            ItemsSource="{Binding DataContext.SettlTypeList, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                                  Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" SelectedIndex="{Binding SettleBoxIndex2,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Right" Padding="0 0 0 0" IsDropDownOpen="{Binding SettleIsDropDownOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsTabStop="False"
+                                                  PreviewMouseLeftButtonDown="SettlTypeCombox_PreviewMouseLeftButtonDown">
+                                            <!--<ComboBoxItem Content="+1"></ComboBoxItem>
+                                            <ComboBoxItem Content="今+1"></ComboBoxItem>
+                                            <ComboBoxItem Content="明+0"></ComboBoxItem>-->
+                                        </ComboBox>
+                                        <ListBox x:Name="SettlTypeListBox" Grid.Column="0" SelectionMode="Single" Margin="0, 0, 0, 0" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                             Height="26" 
+                                             Background="Transparent" MinWidth="126"
+                                             BorderThickness="0"
+                                             FontSize="12" SelectedIndex="{Binding SettleBoxIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                             VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                             BorderBrush="Transparent" IsTabStop="False">   
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <!--<ListBoxItem x:Name="lbOne" Width="60" Visibility="{Binding LbOneVisibility, Mode=TwoWay}" Height="24" Content="+1"  Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>-->
+                                            <ListBoxItem x:Name="lbTomOne" Width="60" Height="24"  Content="+0"  Style="{DynamicResource DailanGreenOrangeListBoxItemStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" IsTabStop="False"/>
+                                            <ListBoxItem x:Name="lbOther" Width="60"  Height="24" Content="远"  Style="{DynamicResource DailanGreenOrangeListBoxItemStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" IsTabStop="False"/>
+                                        </ListBox>
+
+                                        <DatePicker x:Name="datePicker" Grid.Column="1" Width="90" Height="24" Margin="2, 0, 0, 0"
+                                                    SelectedDate="{Binding FwdSelectDate,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding DateVisible}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}" IsTabStop="False">
+                                            <DatePicker.Resources>
+                                                <Style TargetType="DatePickerTextBox">
+                                                    <Setter Property="IsReadOnly" Value="True"/>
+                                                </Style>
+                                            </DatePicker.Resources>
+                                        </DatePicker>
+
+                                        <ComboBox x:Name="cbSettle" Grid.Column="2" Width="50"  Margin="4,0,0,0"  Height="24" SelectedIndex="{Binding FwdComboBoxSelectIndex,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.IsEnabled="False"
+                                                  Visibility="{Binding SettleTypeVisible}" Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" ToolTip="REQ" HorizontalContentAlignment="Right" Padding="0 0,0,0"  Tag="0"  IsTabStop="False">
+                                            <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                            <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="SettlType_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="SettlType"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="SettlType_eidt" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--标签-->
+                <DataGridTemplateColumn Header="标签" MinWidth="20" Width="190" MaxWidth="300" IsReadOnly="True" HeaderStyle="{StaticResource SelfDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid x:Name="tag_grid">
+                                <!--编辑部分-->
+                                <Grid x:Name="inner_edit_tags" Height="24" Visibility="Collapsed">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Content="急" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 4 0" Height="18" Width="18"
+                                        IsChecked="{Binding HurryFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="0" Click="Tags_Click"/>
+                                    <CheckBox Content="荐" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="18"
+                                        IsChecked="{Binding SuggestFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="1" Click="Tags_Click"/>
+                                    <CheckBox Content="火" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 10 0"  Height="18" Width="18"
+                                        IsChecked="{Binding FireFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="2" Click="Tags_Click"/>
+
+                                    <CheckBox Content="底" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="18" Width="18" Margin="0 0 4 0" 
+                                        IsChecked="{Binding FloorPrice_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="3" Click="Tags_Click"/>
+                                    <CheckBox Content="OCO" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                        IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="4" Click="Tags_Click"/>
+                                    <CheckBox Content="打包" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                        IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" Grid.Column="5" Click="Tags_Click"/>
+                                </Grid>
+                                <!--Visibility="{Binding IsChecked, Converter={StaticResource visibilityConvertor}}"-->
+                                <Grid x:Name="edit_tags" Height="24">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Content="*" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 4 0" Height="18" Width="18"
+                                    IsChecked="{Binding PFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="0"/>
+                                    <CheckBox Content="P*" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="18"
+                                    IsChecked="{Binding PFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" Grid.Column="1"/>
+                                    
+                                    <CheckBox Content="OCO" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                    IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="2"/>
+                                    <CheckBox Content="打包" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                    IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" Grid.Column="3"/>
+                                </Grid>
+                                <!--显示部分--><!--
+                                <Grid x:Name="display_tags" Visibility="{Binding IsChecked, Converter={StaticResource reverseVisibilityConverter}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border x:Name="PointFlagBd" Grid.Column="0" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                        <TextBlock Text="*" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Border x:Name="PointStartFlagBd" Grid.Column="1" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                        <TextBlock Text="P*" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Border x:Name="OcoFlagBd" Grid.Column="2" Background="{DynamicResource TextBox.Focus.Border}" Width="36" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                        <TextBlock Text="OCO" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                    <Border x:Name="PackBd" Grid.Column="3" Background="{DynamicResource TextBox.Focus.Border}" Width="36" Height="18" CornerRadius="1" Visibility="Collapsed">
+                                        <TextBlock Text="打包" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Border>
+                                </Grid>-->
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding OptionType}" Value="Inner">
+                                    <Setter TargetName="inner_edit_tags" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="edit_tags" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="HurryFlag_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="HurryFlag"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="inner_edit_tags" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="SuggestFlag_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="SuggestFlag"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="inner_edit_tags" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="FireFlag_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="FireFlag"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="inner_edit_tags" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="FloorPrice_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="FloorPrice"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="inner_edit_tags" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="PFlag_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="PFlag"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="edit_tags" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="OCOFlag_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="OCOFlag"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="edit_tags" Property="Background" Value="Orange"/>
+                                    <Setter TargetName="inner_edit_tags" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                            <!--<DataTemplate.Triggers>
+                                --><!--<DataTrigger Binding="{Binding Status}" Value="0">
+                                    <Setter TargetName="edit_tags" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="display_tags" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>--><!--
+                                <DataTrigger Binding="{Binding IsP}" Value="1">
+                                    <Setter TargetName="PointFlagBd" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsPS}" Value="1">
+                                    <Setter TargetName="PointStartFlagBd" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding OCOFlag}" Value="1">
+                                    <Setter TargetName="OcoFlagBd" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding OCOFlag}" Value="2">
+                                    <Setter TargetName="PackBd" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>-->
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--<DataGridTemplateColumn Header="操作" Width="70" MinWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="editBtn" Grid.Column="0" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{DynamicResource EditButton}" Visibility="{Binding EditBtnVisible ,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                <Button Grid.Row="0" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Left" Style="{DynamicResource SaveButton}" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.SaveCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                <Button Grid.Column="1" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{DynamicResource EditCloseButton}" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+                <DataGridTemplateColumn Header="备注" Width="140" MinWidth="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox x:Name="remark_eidt" Height="24" Style="{DynamicResource TextBoxStyle1}" Text="{Binding Remark_Edit,UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"/>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Value="False">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource multiCompareConverter}">
+                                            <Binding Path="Remark_Edit"/>
+                                            <!-- 第一个要比较的属性 -->
+                                            <Binding Path="Remark"/>
+                                            <!-- 第二个要比较的属性 -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                    <Setter TargetName="remark_eidt" Property="Background" Value="Orange"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Grid Grid.Row="2">
+            <Button Content="+ 询价" HorizontalAlignment="Left" Margin="10 0 0 0" Style="{DynamicResource BlueButtonStyle}" Padding="0 0 6 0" Command="{Binding AddQuoteCommand}" IsEnabled="{Binding ConfirmEnable}" Visibility="{Binding BtnVisibility}"/>
+            <Button x:Name="CancelBtn" Content="取消" HorizontalAlignment="Right" Margin="0 0 100 0" Style="{DynamicResource BlueButtonStyle}" Click="CancelBtn_Click" IsEnabled="{Binding ConfirmEnable}"/>
+            <Button x:Name="SendBtn" Content="发送" HorizontalAlignment="Right" Margin="0 0 10 0" Style="{DynamicResource BlueButtonStyle}" Command="{Binding SendQuoteCommand}" CommandParameter="{Binding ElementName=SendBtn}" IsEnabled="{Binding ConfirmEnable}"/>
+        </Grid>
+    </Grid>
+</comp:WindowBase>

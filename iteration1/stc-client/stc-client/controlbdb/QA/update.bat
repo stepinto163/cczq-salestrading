@@ -1,0 +1,1 @@
+MDT.Tools.AutoUpdater.Config.exe -u http://172.16.129.107:80/ -uc http://172.16.129.107:80/dev/ -v %Version%.%BUILD_NUMBER% -m %Version%.%BUILD_NUMBER% -p dev/ -t \\STC.Setup\\salt-formula\\configbdb.yaml -e %env% -ae %AppExe% -ap %AppName%

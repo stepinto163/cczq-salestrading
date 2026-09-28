@@ -1,0 +1,142 @@
+﻿<local:WindowBase x:Class="STC.Common.View.Component.IssueRecogizationWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" Title="发行人识别" ResizeMode="CanResize"
+             Height="450" Width="800" Activated="WindowBase_Activated"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <local:WindowBase.Resources>
+        <ResourceDictionary>
+            <Style x:Key="SelfVGridSplitterStyle2" TargetType="{x:Type GridSplitter}">
+                <Setter Property="PreviewStyle" Value="{DynamicResource GridSplitterPreviewStyle}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GridSplitter}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                    <Rectangle Width="1" Height="12" Stroke="#515151" Margin="0,0,2,0"/>
+                                    <Rectangle Width="1" Height="12" Stroke="#515151" Margin="-2,0,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="SelfHGridSplitterStyle2" TargetType="{x:Type GridSplitter}">
+                <Setter Property="PreviewStyle" Value="{DynamicResource GridSplitterPreviewStyle}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type GridSplitter}">
+                            <Grid Background="{TemplateBinding Background}">
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                    <Rectangle Width="12" Height="1" Stroke="#515151" Margin="0"/>
+                                    <Rectangle Width="12" Height="1" Stroke="#515151" Margin="0"/>
+                                </StackPanel>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </local:WindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="Col1" Width="300" MinWidth="200"/>
+            <ColumnDefinition x:Name="Col2" MinWidth="200"/>
+        </Grid.ColumnDefinitions>
+
+        <Border BorderBrush="#3B3C3E" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <local:WatermarkTextBox x:Name="contentTxt"  WaterMark="粘贴发行人文本至框内&#x000A;支持用空格、回车、逗号、顿号分隔" VerticalContentAlignment="Top"
+                             BorderThickness="0" Background="{DynamicResource MainBackgroup.ColorBrush}"
+                             AcceptsReturn="True" TextWrapping="Wrap"></local:WatermarkTextBox>
+            </ScrollViewer>
+        </Border>
+        <!--分割-->
+        <GridSplitter x:Name="gridSplitter" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Right" Width="3" Background="{DynamicResource BackgroundBrush}" Style="{StaticResource SelfVGridSplitterStyle2}"/>
+
+        <Border Grid.Column="1" BorderBrush="#3B3C3E" BorderThickness="1" MinWidth="200">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="120"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="成功识别发行人:" Foreground="#3C3C3C" Margin="4 0 0 0"/>
+                
+                <DataGrid x:Name="dg" Grid.Row="1"
+                  Style="{DynamicResource DefaultDataGrid}" 
+                  SelectionMode="Single" IsReadOnly="True"
+                  LoadingRow="DataGrid_LoadingRow" 
+                  UnloadingRow="DataGrid_UnloadingRow">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn x:Name="checkedColumn" MinWidth="40" Width="40" MaxWidth="40">
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox x:Name="CheckBox_All"
+                                                    Click="CheckBox_All_Click" Margin="8 0 0 0"
+                                                    VerticalAlignment="Center" HorizontalAlignment="Center" 
+                                                    Style="{DynamicResource DefaultCheckBoxStyle}"/>
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox x:Name="Selected_Chk" Click="Selected_Chk_Click" IsChecked="{Binding IsChecked,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+                                                VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                Style="{DynamicResource DefaultCheckBoxStyle}"></CheckBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="序号" Binding="{Binding No}" Width="Auto" MinWidth="40" MaxWidth="80" IsReadOnly="True"/>
+
+                        <DataGridTemplateColumn Header="发行人" MinWidth="80" Width="*" CanUserSort="True" SortMemberPath="NodeInfo.Title" IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock x:Name="Symbol" Text="{Binding NodeInfo.Title}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Symbol}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!--分割-->
+                <GridSplitter x:Name="gridSplitterH" Grid.Column="0" Grid.Row="2" Height="3" Background="{DynamicResource BackgroundBrush}" Style="{DynamicResource SelfHGridSplitterStyle2 }"/>
+
+                <TextBlock Text="无法识别发行人:" Foreground="#3C3C3C" Margin="4 0 0 0" Grid.Row="3"/>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Grid.Row="4">
+                    <local:WatermarkTextBox x:Name="contentTxt1"  WaterMark="" VerticalContentAlignment="Top"
+                             BorderThickness="0" Background="{DynamicResource MainBackgroup.ColorBrush}"
+                             AcceptsReturn="True" TextWrapping="Wrap"></local:WatermarkTextBox>
+                </ScrollViewer>
+            </Grid>
+            
+        </Border>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <Button x:Name="btnClear" Content="清除" Style="{DynamicResource GrayButtonStyle}" Height="24" Margin="10 0 0 0" Click="btnClear_Click" />
+            <Button x:Name="btnRecognize" Content="识别" Style="{DynamicResource BlueGreenStyle}" Height="24" Margin="10 0 0 0" Click="btnRecognize_Click"/>
+            <TextBlock x:Name="RowStr" Text="共0条" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="#A0A0A0" Margin="8 0 0 0" FontSize="14" FontWeight="Bold"/>
+        </StackPanel>
+
+        <TextBlock x:Name="CountStr" Text="共0,无法识别0条" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="#A0A0A0" Margin="8 0 0 0" FontSize="14" FontWeight="Bold"/>
+
+        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 0 10 0">
+            <CheckBox x:Name="isFuzzyChk" Content="模糊" Width="50" VerticalContentAlignment="Center" Style="{DynamicResource DefaultCheckBoxStyle}" Padding="4 0 0 0" Foreground="#A0A0A0"/>
+            <Button x:Name="btnClear_right" Content="清除" Style="{DynamicResource GrayButtonStyle}" Height="24" Margin="10 0 0 0" Click="btnClear_right_Click"/>
+            <Button x:Name="btnOK" Content="确定" Style="{DynamicResource BlueGreenStyle}" Height="24" Margin="10 0 0 0" Click="btnOK_Click" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</local:WindowBase>

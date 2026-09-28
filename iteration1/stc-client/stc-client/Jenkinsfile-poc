@@ -1,0 +1,86 @@
+library 'sslib@0.0.3'
+
+def jobInfo = [
+    nodeName: "qa_build_windows",
+	downloadInfo: [
+    [
+      serverName: "artifactory",
+      filePattern: "stc-lite/NDP461-KB3102436-x86-x64-AllOS-ENU.exe",
+      target: "D:/jenkins-slave/workspace/.Net 4.6.1/NDP461-KB3102436-x86-x64-AllOS-ENU.exe"
+	  //target: "./STC.Setup/.Net 4.6.1/NDP461-KB3102436-x86-x64-AllOS-ENU.exe"
+    ]
+  ],
+    buildInfo: [
+      msbuildName: "msbuild",
+      solutionFile: "STC.sln",
+      options: "/p:Configuration=Release"
+    ],
+    packageInfo: [
+      packageScript: "package.bat",
+	  archiveFiles: "**.zip, **.exe"
+    ],
+    deployInfo: [
+      DEV:[
+          [
+              hostName: "DEV_172.16.138.77_linux",
+              packageFile: "*-DEV-*.zip",
+              targetFolder: "stc-client",
+              preCommands: "rm -rf stc-client",
+              postCommands: "cd stc-client && mv stc-client dev"
+          ] 
+      ],
+      QA:[
+		  [
+              hostName: "POC_172.16.138.37_linux",
+              packageFile: "*POC-*.zip",
+              targetFolder: "stc-client",
+              preCommands: "rm -rf stc-client",
+              postCommands: "cd stc-client && mv stc-client poc"
+          ],
+          [
+            hostName: "STC__linux_172.16.139.29",
+            packageFile: "*POC2-*.zip",
+            targetFolder: "stc-client",
+            preCommands: "rm -rf stc-client",
+            postCommands: "cd stc-client && mv stc-client poc"
+         ]
+      ]
+    ],
+   releaseInfo: [ 
+	 serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+      packages: [
+		[ //发布信息
+        fileName: "*-PRD.SHANXI*", //需要发布的文件名，可以使用通配符
+        serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+        repoName: "generic-release", //仓库名称
+        projectName: "stc-shanxi", //项目名称
+        packageName: "broker-client", //服务名称
+        props: "proj=stc-shanxi" //包标签，用来在Artifactory中标记包
+    ],
+    [ //发布信息
+			fileName: "*-UAT.SHANXI-*", //需要发布的文件名，可以使用通配符
+			serverName: "artifactory", //发布目标，必须是在Jenkins中配置好的Artifactory服务器
+			repoName: "generic-release", //仓库名称
+			projectName: "stc-shanxi", //项目名称
+			packageName: "stc-client", //服务名称
+			props: "proj=stc-shanxi" //包标签，用来在Artifactory中标记包
+		]
+      ]
+    ]
+]
+
+// determine version
+def version = "1.0.0"
+def minimalVersion = "0.1.0"
+if(env.BRANCH_NAME.startsWith("rel_")){
+  version = env.BRANCH_NAME.substring(4)
+  minimalVersion=version.substring(0,version.indexOf(".", 2)<0?version.length():version.indexOf(".", 2))+".0"
+}
+
+// inject necessary vars for package.bat
+env.AppExe = "STC"
+env.AppName = "stc-client"
+env.Version = version
+env.MinimalVersion = minimalVersion
+// do the build
+building.buildDotnetSolution(jobInfo)

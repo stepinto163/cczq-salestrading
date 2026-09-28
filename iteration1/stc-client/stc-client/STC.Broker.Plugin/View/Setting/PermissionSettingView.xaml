@@ -1,0 +1,260 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Setting.PermissionSettingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Setting"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:design ="clr-namespace:STC.Broker.Plugin.View.Transaction.Design"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <Style TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" Margin="0,0,0,0" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"
+                                            BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="Cp" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                             TextBlock.Foreground="{TemplateBinding Foreground}"/>
+                                </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource Item.MouseOver.Background}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource Item.SelectedActive.Background}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource Item.SelectedActive.Background}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    <Grid x:Name="mainGrid" Margin="2" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180"></ColumnDefinition>
+            <ColumnDefinition Width="1"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <ListBox x:Name="listBox" BorderThickness="0"  Grid.Column="0"  Height="auto" Margin="25 0 0 0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                            Background="Transparent" SelectionChanged="listBox_SelectionChanged">
+            <ListBox.Resources>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="SnapsToDevicePixels" Value="True"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="MinWidth" Value="40"/>
+                    <Setter Property="MinWidth" Value="24"/>
+                    <Setter Property="Height" Value="22"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" Margin="0,0,0,0" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"
+                              BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="Cp" TextElement.Foreground="{TemplateBinding Foreground}"  TextElement.FontFamily="{TemplateBinding  FontFamily}" TextElement.FontWeight="{TemplateBinding FontWeight}" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Border>
+
+                                <ControlTemplate.Triggers>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsMouseOver" Value="True"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" TargetName="Bd" Value="{DynamicResource Item.MouseOver.Background}"/>
+                                    </MultiTrigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                            <Condition Property="IsSelected" Value="True"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" TargetName="Bd" Value="{DynamicResource Item.SelectedActive.Background}"/>
+                                        <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                                    </MultiTrigger>
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                            <Condition Property="IsSelected" Value="True"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="Background" TargetName="Bd" Value="{DynamicResource Item.SelectedActive.Background}"/>
+                                        <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource TabItem.Selected.Foreground}"/>
+                                    </MultiTrigger>
+                                    <Trigger Property="IsEnabled" Value="False">
+                                        <Setter Property="TextElement.Foreground" TargetName="Cp" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+
+            </ListBox.Resources>
+            <ListBoxItem IsEnabled="False" Height="24">
+                <TextBlock Foreground="{DynamicResource ColorBrush.Gray14}"  Text="权限列表"/>
+            </ListBoxItem>
+            <ListBoxItem x:Name="lbOpenClose" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="开/闭市设置"/>
+            <ListBoxItem x:Name="lbBridgeExe" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="桥专员权限" />
+            <ListBoxItem x:Name="lb_OtherBridge" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="查看他人过桥成交" />
+            <ListBoxItem x:Name="lbPersonExe" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="查看指定人成交" />
+            <ListBoxItem x:Name="lbUpdatePersonExe" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="助理权限" />
+            <ListBoxItem x:Name="lbOwnHistory" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="不可查看他人历史成交" />
+            <!--<ListBoxItem Tag="adminSetting" x:Name="lbDesignExe" BorderThickness="0" Foreground="{DynamicResource ColorBrush.While}" Height="30" Content="管理员权限"/>-->
+        </ListBox>
+
+        <Border BorderThickness="1" Width="1"   Grid.Column="1" BorderBrush="{DynamicResource ColorBrush.Gray20}" Margin="0, 10, 0, 10"></Border>
+
+        <StackPanel x:Name="spRecive" Orientation="Vertical" Grid.Column="2"  >
+            <TextBlock Foreground="{DynamicResource ColorBrush.Gray14}"
+                            Margin="10, 0, 0, 0" Text="选择被授权人"/>
+
+            <comp:WatermarkTextBox x:Name="tbReciveName" Margin="10, 10, 0, 0" Width="160" Height="22" WaterMark="搜索" HorizontalAlignment="Left"
+                                 PreviewKeyDown="tbReciveName_PreviewKeyDown" KeyDown="tbReciveName_KeyDown" TextChanged="tbReciveName_TextChanged"
+                                 input:TextCompositionManager.PreviewTextInput="tbTraderAInfoChange_PreviewTextInput"
+                                 input:TextCompositionManager.PreviewTextInputUpdate="tbTraderAInfoChange_PreviewTextInputUpdate">
+            </comp:WatermarkTextBox>
+
+            <Popup x:Name="popReciveName" PlacementTarget="{Binding ElementName=tbReciveName}" LostFocus="popReciveName_LostFocus" StaysOpen="False">
+                <DataGrid x:Name="dgRecive"
+                                  Grid.Row="1"
+                                  Background="Transparent"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="160" 
+                                  MouseUp="dgRecive_MouseUp" Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding AccountName}" Width="1*" >
+                            <DataGridTextColumn.ElementStyle >
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                    <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                    <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Binding="{Binding Account}" Width="1*" Visibility="Collapsed">
+                            <DataGridTextColumn.ElementStyle >
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                    <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                    <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+            </Popup>
+
+            <ListBox x:Name="lbRecive" BorderThickness="0"  Grid.Column="0"
+                            ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                            Background="Transparent" HorizontalAlignment="Left"
+                            Width="160" Margin="10,0,0,0" Foreground="#FFFFFF"
+                            SelectionChanged="lbRecive_SelectionChanged">
+                <!--<local:UserCheckUI Margin="-6, 0, 0, 0"></local:UserCheckUI>-->
+
+            </ListBox>
+
+
+        </StackPanel>
+
+        <StackPanel x:Name="spName" Orientation="Vertical" Grid.Column="3">
+            <TextBlock Foreground="{DynamicResource ColorBrush.Gray14}"
+                            Margin="10, 0, 0, 0" Text="选择指定人"/>
+
+            <comp:WatermarkTextBox x:Name="tbName" Margin="10, 10, 0, 0" Width="160" Height="22" PreviewKeyDown="tbName_PreviewKeyDown" KeyDown="tbName_KeyDown" 
+                                 TextChanged="tbName_TextChanged" HorizontalAlignment="Left" WaterMark="搜索"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  input:TextCompositionManager.PreviewTextInput="tbTraderAInfoChange_PreviewTextInput"
+                                 input:TextCompositionManager.PreviewTextInputUpdate="tbTraderAInfoChange_PreviewTextInputUpdate">
+            </comp:WatermarkTextBox>
+
+            <Popup x:Name="popName"  PlacementTarget="{Binding ElementName=tbName}" LostFocus="popName_LostFocus" StaysOpen="False">
+                <DataGrid x:Name="dgResult"
+                                  Grid.Row="1"
+                                  Background="Transparent"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="160"
+                                  MouseUp="dgResult_MouseUp"  Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding AccountName}" Width="*" >
+                            <DataGridTextColumn.ElementStyle >
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                    <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                    <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Popup>
+
+
+            <ListBox x:Name="lbName" BorderThickness="0"  Grid.Column="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Hidden" HorizontalAlignment="Left"
+                            Background="Transparent" Foreground="#FFFFFF"
+                                 Width="160" Margin="10,0,0,0">
+                <ListBox.Resources>
+                   
+
+                </ListBox.Resources>
+                <!--<local:UserCheckUI Margin="-6, 0, 0, 0"></local:UserCheckUI>-->
+            </ListBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

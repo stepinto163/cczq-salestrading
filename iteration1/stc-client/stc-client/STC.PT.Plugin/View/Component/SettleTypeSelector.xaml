@@ -1,0 +1,146 @@
+﻿<TextBox x:Class="STC.PT.Plugin.View.Component.SettleTypeSelector"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             x:Name="settleTypeSelector"
+             mc:Ignorable="d" IsReadOnly="true"
+             d:DesignHeight="24" d:DesignWidth="120">
+    <TextBox.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.PT.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.PT.Plugin;component/Resources/CalendarStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <!--日历按钮-->
+            <Style x:Key="CalendarButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="Transparent"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="Transparent"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="Transparent"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="Transparent"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </TextBox.Resources>
+
+    <TextBox.Style>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Background" Value="#1E1E1E "/>
+            <Setter Property="BorderBrush" Value="#3C3C3C"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="CaretBrush" Value="#FFFFFF"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="AllowDrop" Value="true"/>
+            <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+            <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="{DynamicResource SmallContentFontSize}"/>
+
+            <Style.Triggers>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                        <Condition Property="IsSelectionActive" Value="false"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="SelectionBrush" Value="{StaticResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+    </TextBox.Style>
+
+    <TextBox.Template>
+        <ControlTemplate>
+            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                <Grid>
+                    <Button x:Name="calendarButton" Style="{DynamicResource CalendarButtonStyle}"
+                                            HorizontalAlignment="Right" 
+                                            Width="20"
+                                            Background="Transparent" BorderThickness="0"
+                                            Margin="0"
+                                            Click="calendarButton_Click">
+                        <Image x:Name="SearchImage" Width="12" Height="12" Source="/STC.PT.Plugin;component/Images/Calendar.png"/>
+                    </Button>
+
+                    <TextBlock x:Name="HintTextBox" IsHitTestVisible="False" Text="清算速度" Visibility="Collapsed"
+                        VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,1,0,0" FontSize="12"
+                        Foreground="#3C3C3C"/>
+
+                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" Margin="1,0,20,0" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+
+                    <Popup x:Name="popup_part" PlacementTarget="{Binding ElementName=settleTypeSelector}" StaysOpen="False" MaxHeight="300"
+                            PopupAnimation="Slide" AllowsTransparency="False" Grid.ColumnSpan="2">
+                        <StackPanel>
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" Height="30">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Height="18" Width="58" Background="#3C3C3C" BorderBrush="#515151" CornerRadius="1">
+                                        <TextBlock x:Name="Date_Part" Foreground="#FFFFFF"  VerticalAlignment="Center" Margin="3 0 0 0"/>
+                                    </Border>
+                                    <ComboBox x:Name="Type_Part" Width="60"  Height="18"  Margin="1,0,0,0" VerticalContentAlignment="Center"
+                                                SelectedIndex="{Binding edit_settletype,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                Style="{DynamicResource NonEditableComboBoxStyle}">
+                                        <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                        <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Border>
+                            <Calendar x:Name="calendar" Grid.Row="1" Style="{DynamicResource BlackRed_CalendarStyle}" IsTabStop="false" Focusable="False" SelectedDatesChanged="calendar_SelectedDatesChanged"
+                                      PreviewMouseUp="calendar_PreviewMouseUp"/>
+                            <Border Grid.Row="2" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" Height="40">
+                                <Button x:Name="okBtn" Content="确定" Height="22" Width="80" Style="{DynamicResource RedButtonStyle}" Foreground="White" Click="okBtn_Click"/>
+                            </Border>
+                        </StackPanel>
+                    </Popup>
+                </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsEnabled" Value="false">
+                    <Setter Property="Background" TargetName="border"  Value="{DynamicResource TextBox.Disable.Background}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextBox.Disable.Foreground}"/>
+                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource TextBox.Disable.Border}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="true">
+                    <!--<Setter Property="Background" TargetName="border"  Value="#1E1E1E"/>-->
+                    <Setter Property="BorderBrush" TargetName="border" Value="#136C5E"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="true">
+                    <!--<Setter Property="Background" TargetName="border"  Value="#0B0C0C"/>-->
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="BorderBrush" TargetName="border" Value="#136C5E"/>
+                </Trigger>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Text}" Value="">
+                    <Setter Property="Visibility" TargetName="HintTextBox" Value="Visible"/>
+                </DataTrigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+    </TextBox.Template>
+</TextBox>

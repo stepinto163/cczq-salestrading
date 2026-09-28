@@ -1,0 +1,137 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Batch.ExecVenueView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.Batch"
+             xmlns:oco="clr-namespace:STC.Common.View.Order.InnerView;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="110" d:DesignWidth="394" Margin="0">
+
+    <UserControl.Resources>
+
+        <ResourceDictionary>
+
+            <!--<ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/View/Order/SendPriceDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>-->
+
+            <!-- Broker -->
+            <Style x:Key="SelfCommonFilterListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <!--<Setter Property="Padding" Value="0"/>-->
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockDefaultForground}"/>
+                <Setter Property="Background" Value="{DynamicResource ListBoxItem.Normal.Border}"/>
+                <Setter Property="Content" Value="{Binding Name}"/>
+                <Setter Property="IsSelected" Value="{Binding Checked}"/>
+                <Setter Property="Visibility" Value="{Binding ItemVisibility}"/>
+                <Setter Property="IsEnabled" Value="{Binding ItemEnable}"/>
+                <!--<Setter Property="Padding" Value="10,0,10,0"/>-->
+                <Setter Property="Width" Value="55"/>
+                <Setter Property="Margin" Value="1, 0, 0, 0"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="2" BorderThickness="0, 1, 0, 0" VerticalAlignment="Center" Margin="0,0,0,0" 
+                            BorderBrush="{DynamicResource ListBoxItem.Normal.Border}" IsEnabled="{TemplateBinding IsEnabled}"  Padding="{TemplateBinding Padding}" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                            SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="Cp" Content="{TemplateBinding Content}" TextElement.Foreground="{TemplateBinding Foreground}"  TextElement.FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.MouseOver.Border}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedInactive.Border}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource TextBlockForeground}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{DynamicResource ListBoxItem.SelectedActive.Border}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.Foreground" Value="{DynamicResource TextBlockForeground}"/>
+                                    <Setter TargetName="Cp" Property="TextBlock.FontWeight" Value="Bold"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="TextElement.Foreground" TargetName="Cp" Value="#788187"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <ImageBrush x:Key="crossBidImageBrush" ImageSource="/STC.Common;component/Images/stc_cross_bid.png"/>
+
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition MinHeight="24"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <TabControl x:Name="tcChannel" BorderThickness="0" Background="Transparent" Grid.Row="0" SelectedIndex="{Binding SelectTabIndex, Mode=TwoWay}" SelectionChanged="TabControl_SelectionChanged" ItemContainerStyle="{DynamicResource TabItemStyle_Button}">
+            <TabItem Header="直通" Width="60" Visibility="{Binding CrossVisibility}"></TabItem>
+            <TabItem Header="OCO" Width="60" Visibility="{Binding OCOVisibility}">
+
+                <oco:OCOView x:Name="ocoView" VerticalAlignment="Top"></oco:OCOView>
+
+            </TabItem>
+            <TabItem Header="Sniper" Width="60" Visibility="{Binding SniperVisibility}">
+                <oco:SniperView x:Name="sniperView" VerticalAlignment="Top"></oco:SniperView>
+            </TabItem>
+            <!--<TabItem Header="冰山" Visibility="Collapsed">
+
+                    <local:IceView x:Name="iceView"></local:IceView>
+
+                </TabItem>
+                <TabItem Header="止盈/损" Visibility="Collapsed">
+
+                    <local:StopProfitLossView x:Name="stopProfitLossView"></local:StopProfitLossView>
+
+                </TabItem>-->
+        </TabControl>
+
+        <!-- 渠道选择 -->
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0, 0, 0, 5" Orientation="Horizontal" VerticalAlignment="Bottom">
+            <ListBox x:Name="lbDirect" SelectionMode="{Binding VenueSelectionMode}" ItemsSource="{Binding DirectionItems}" ItemContainerStyle="{StaticResource SelfCommonFilterListBoxItemStyle}"
+                                 Visibility="{Binding ChannelVisibility}" BorderBrush="Transparent" Background="Transparent" SelectionChanged="LbDirect_SelectionChanged"
+                         SelectedIndex="{Binding SelectVenueIndex, Mode=TwoWay}" VerticalAlignment="Bottom">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+
+            </ListBox>
+        </StackPanel>
+
+    </Grid>
+</UserControl>

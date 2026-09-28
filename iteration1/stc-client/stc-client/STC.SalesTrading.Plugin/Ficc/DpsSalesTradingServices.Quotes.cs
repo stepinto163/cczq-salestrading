@@ -1,0 +1,195 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Abstractions.Models;
+using STC.SalesTrading.Plugin.Abstractions.Queries;
+
+namespace STC.SalesTrading.Plugin.Ficc
+{
+    public sealed partial class DpsSalesTradingServices
+    {
+        private static JObject EmptyFilter()
+        {
+            return new JObject { ["conditions"] = new JArray() };
+        }
+
+        private static void AddCondition(JObject filter, string field, string operation, JToken value)
+        {
+            ((JArray)filter["conditions"]).Add(new JObject { ["field"] = field, ["operator"] = operation, ["value"] = value });
+        }
+
+        private static JObject ManagementFilter(QuoteMgmtQuery query)
+        {
+            if (!string.IsNullOrEmpty(query.Mode) && query.Mode != "全部")
+            {
+                throw new NotSupportedException("当前QuoteSvr尚未提供报价来源筛选接口。");
+            }
+            if (!string.IsNullOrWhiteSpace(query.TraderSearchText))
+            {
+                throw new NotSupportedException("当前QuoteSvr尚未提供长城交易员专属筛选接口。");
+            }
+            JObject filter = EmptyFilter();
+            foreach (string text in new[] { query.BondSearchText, query.InstitutionSearchText })
+            {
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    AddCondition(filter, "searchText", "CONTAINS", text.Trim());
+                }
+            }
+            return filter;
+        }
+
+        public async Task<IReadOnlyList<QuoteConfirmRow>> LoadPendingRowsAsync(CancellationToken ct)
+        {
+            LivePage page = await QueryAsync("pending", "quote", EmptyFilter(), ct);
+            return page.Rows.Select(row => DpsModelMapper.Display(WithReference(row)).ToObject<QuoteConfirmRow>()).ToArray();
+        }
+
+        public Task<QuoteParseResult> ParsePreciseTextAsync(string text, CancellationToken ct)
+        {
+            throw new NotSupportedException("ParseSvr尚未接入。请使用“手工报价”创建真实报价；不会用模拟识别结果提交。");
+        }
+
+        public Task<IReadOnlyList<FuzzyCandidate>> QueryFuzzyCandidatesAsync(FuzzyQuery query, CancellationToken ct)
+        {
+            throw new NotSupportedException("模糊报价服务尚未接入。");
+        }
+
+        public Task SubmitIntentQuotesAsync(IReadOnlyCollection<BoardIntentRow> rows, CancellationToken ct)
+        {
+            throw new NotSupportedException("模糊报价服务尚未接入，未提交任何记录。");
+        }
+
+        public async Task SubmitQuotesAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            JObject[] inputs = rows.Select(row =>
+            {
+                JObject input = DpsModelMapper.Input(row);
+                input["clientQuoteId"] = row.ClientQuoteId;
+                return input;
+            }).ToArray();
+            JArray results = FiccApiClient.RequireQuoteResults(await Api.CreateAsync(inputs));
+            foreach (JObject result in results.OfType<JObject>())
+            {
+                JObject quote = await Api.GetQuoteAsync((string)result["quoteId"]);
+                if ((string)quote["status"] == "PENDING_CONFIRM")
+                {
+                    FiccApiClient.RequireQuoteResults(await Api.OperateAsync("confirm", new[] { quote }));
+                }
+            }
+        }
+
+        public async Task ConfirmRowsAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            JArray quotes = new JArray();
+            foreach (QuoteConfirmRow row in rows)
+            {
+                JObject input = DpsModelMapper.Input(row);
+                input["quoteId"] = row.RecognitionId;
+                input["expectedRevision"] = row.Revision;
+                quotes.Add(input);
+            }
+            FiccApiClient.RequireQuoteResults(await Api.RequestAsync("ficc.quote.confirm", new JObject { ["quotes"] = quotes }));
+        }
+
+        public async Task DeletePendingAsync(IEnumerable<QuoteConfirmRow> rows, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            JObject[] quotes = rows.Select(row => new JObject
+            {
+                ["quoteId"] = row.RecognitionId,
+                ["revision"] = row.Revision
+            }).ToArray();
+            FiccApiClient.RequireQuoteResults(await Api.OperateAsync("delete", quotes));
+        }
+
+        public Task ConfirmQuotesAsync(IReadOnlyCollection<string> recognitionIds, CancellationToken ct)
+        {
+            return OperateDisplayedAsync("confirm", recognitionIds, ct);
+        }
+
+        public Task DeleteQuotesAsync(IReadOnlyCollection<string> recognitionIds, CancellationToken ct)
+        {
+            return OperateDisplayedAsync("delete", recognitionIds, ct);
+        }
+
+        public Task DeleteQuotesAsync(IReadOnlyCollection<string> quoteIds, bool history, CancellationToken ct)
+        {
+            if (history)
+            {
+                throw new InvalidOperationException("历史报价为审计记录，不允许删除。");
+            }
+            return OperateDisplayedAsync("delete", quoteIds, ct);
+        }
+
+        private async Task OperateDisplayedAsync(string operation, IEnumerable<string> ids, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            JObject[] quotes = ids.Select(id => displayedQuotes.TryGetValue(id, out JObject quote) ? quote
+                : throw new InvalidOperationException("请先读取报价：" + id)).ToArray();
+            FiccApiClient.RequireQuoteResults(await Api.OperateAsync(operation, quotes));
+        }
+
+        public async Task OperateAsync(string operation, IEnumerable<MgmtQuoteRow> rows, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            JObject[] quotes = rows.Select(row => new JObject { ["quoteId"] = row.QuoteId, ["revision"] = row.Revision }).ToArray();
+            FiccApiClient.RequireQuoteResults(await Api.OperateAsync(operation, quotes));
+        }
+
+        public async Task<PagedResult<MgmtQuoteRow>> QueryTodayRowsAsync(QuoteMgmtQuery query, CancellationToken ct)
+        {
+            query = query ?? new QuoteMgmtQuery();
+            JArray statuses = query.Status == "有效" ? new JArray("ACTIVE") : query.Status == "撤销" ? new JArray("REFERRED")
+                : new JArray("ACTIVE", "REFERRED");
+            LivePage page = await QueryAsync("management", "quote", ManagementFilter(query), ct, query.Page, query.PageSize, statuses: statuses);
+            return new PagedResult<MgmtQuoteRow>
+            {
+                Items = page.Rows.Select(row => DpsModelMapper.Display(WithReference(row)).ToObject<MgmtQuoteRow>()).ToArray(),
+                TotalCount = page.TotalCount, QueryId = page.Topic, IsPartial = page.TotalCount > page.Rows.Count
+            };
+        }
+
+        public async Task<IReadOnlyList<MgmtQuoteRow>> LoadTodayRowsAsync(CancellationToken ct)
+        {
+            return (await QueryTodayRowsAsync(new QuoteMgmtQuery(), ct)).Items;
+        }
+
+        public async Task<PagedResult<MgmtQuoteRow>> QueryHistoryRowsAsync(QuoteMgmtQuery query, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            JObject result = await Api.RequestAsync("ficc.quote.history.search", new JObject
+            {
+                ["fromDate"] = (query.StartDate ?? DateTime.Today.AddDays(-7)).ToString("yyyy-MM-dd"),
+                ["toDate"] = (query.EndDate ?? DateTime.Today).ToString("yyyy-MM-dd"),
+                ["limit"] = Math.Max(1, Math.Min(query.PageSize, 100)), ["filter"] = ManagementFilter(query)
+            });
+            ct.ThrowIfCancellationRequested();
+            List<MgmtQuoteRow> rows = new List<MgmtQuoteRow>();
+            foreach (JObject item in ((JArray)result["rows"]).OfType<JObject>())
+            {
+                JObject quote = (JObject)item["quote"];
+                if (item["reference"] is JObject reference)
+                {
+                    securities[(string)quote["securityId"]] = reference;
+                }
+                rows.Add(DpsModelMapper.Display(WithReference(quote)).ToObject<MgmtQuoteRow>());
+            }
+            return new PagedResult<MgmtQuoteRow>
+            {
+                Items = rows, TotalCount = (int?)result["totalCount"] ?? rows.Count,
+                IsPartial = (bool?)result["hasMore"] ?? result["nextCursor"]?.Type == JTokenType.String
+            };
+        }
+
+        public async Task<IReadOnlyList<MgmtQuoteRow>> LoadHistoryRowsAsync(DateTime start, DateTime end, CancellationToken ct)
+        {
+            return (await QueryHistoryRowsAsync(new QuoteMgmtQuery { StartDate = start, EndDate = end }, ct)).Items;
+        }
+    }
+}

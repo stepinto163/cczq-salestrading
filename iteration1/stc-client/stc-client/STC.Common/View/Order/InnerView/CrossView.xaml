@@ -1,0 +1,136 @@
+﻿<UserControl x:Class="STC.Common.View.Order.InnerView.CrossView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Order.InnerView"
+             mc:Ignorable="d" 
+             d:DesignHeight="110" d:DesignWidth="394" Margin="0">
+
+
+    <UserControl.Resources>
+
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/View/Order/SendPriceDictionary.xaml"/>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            
+            <Style x:Name="TabItemStyle" TargetType="{x:Type TabItem}">
+                <Setter Property="Width" Value="60"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <!--<Setter Property="Margin" Value="0, 0, 0, 0"/>-->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TabItem}">
+                            <Grid>
+                                <Border x:Name="Border"  Margin="0, 0, 0, 0" Background="Transparent"  CornerRadius="2,2,2,2" BorderThickness="0" >
+
+                                    <Grid>
+                                        <TextBlock x:Name="ContentSite" Text="{TemplateBinding Header}" Grid.Column="0" TextAlignment="Center" VerticalAlignment="Center"/>
+
+                                    </Grid>
+
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <!--<Setter TargetName="Border" Property="Background" Value="{StaticResource ColorBrush.Black8}"></Setter>-->
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Border" Property="CornerRadius" Value="2, 2, 0, 0"/>
+                                    <Setter TargetName="Border" Property="BorderThickness" Value="1,1,1,0"/>
+                                    <!--<Setter TargetName="Border" Property="Background" Value="{Binding ItemBgBrush}"/>-->
+                                    <Setter TargetName="ContentSite" Property="TextBlock.Foreground" Value="{Binding ItemHeadForeground}"/>
+                                    <Setter TargetName="ContentSite" Property="TextBlock.FontFamily" Value="MicrosoftYaHei"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="False">
+                                    <Setter TargetName="ContentSite" Property="TextBlock.Foreground" Value="{DynamicResource ColorBrush.Gray14}"/>
+
+                                </Trigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <ImageBrush x:Key="crossBidImageBrush" ImageSource="/STC.Common;component/Images/stc_cross_bid.png"/>
+
+
+        </ResourceDictionary>
+
+        
+    </UserControl.Resources>
+
+
+    <!--<Border >-->
+
+    <Border>
+
+        <Border.Background>
+            <ImageBrush ImageSource="{Binding BgImageSource}"></ImageBrush>
+            <!--<ImageBrush ImageSource="/STC.Common;component/Images/stc_sniper_bid.png"></ImageBrush>-->
+        </Border.Background>
+        
+        <Grid>
+
+            
+
+            <Grid.RowDefinitions>
+                <RowDefinition MinHeight="24"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <TabControl x:Name="tcChannel" BorderThickness="0" Background="Transparent" Grid.Row="0" SelectedIndex="{Binding SelectTabIndex, Mode=TwoWay}" SelectionChanged="TabControl_SelectionChanged">
+                <TabItem Header="直通" Margin="12, 0, 0, 4" Visibility="{Binding CrossVisibility}"></TabItem>
+                <TabItem Header="OCO" Margin="12, 0, 0, 4" Visibility="{Binding OCOVisibility}">
+
+                    <local:OCOView x:Name="ocoView" VerticalAlignment="Top"></local:OCOView>
+
+                </TabItem>
+                <TabItem Header="Sniper" Margin="12, 0, 0, 4" Visibility="{Binding SniperVisibility}">
+                    <local:SniperView x:Name="sniperView" VerticalAlignment="Top"></local:SniperView>
+                </TabItem>
+                
+                <!--<TabItem Header="冰山" Visibility="Visible">
+
+                    <local:IceView x:Name="iceView"></local:IceView>
+
+                </TabItem>-->
+                <!--<TabItem Header="止盈/损" Visibility="Collapsed">
+
+                    <local:StopProfitLossView x:Name="stopProfitLossView"></local:StopProfitLossView>
+
+                </TabItem>-->
+            </TabControl>
+
+            <!-- 渠道选择 -->
+            <!-- 宽度固定 394 = 每行 7 个渠道项(7*56=392) + 右侧约 2px 间隙；Padding/BorderThickness 置 0，避免挤占 WrapPanel 宽度 -->
+            <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0, 0, 0, 0" VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                <ListBox x:Name="lbDirect" SelectionMode="{Binding VenueSelectionMode}" ItemsSource="{Binding DirectionItems}" ItemContainerStyle="{DynamicResource GreenBlueFilterListBoxItemStyle}"
+                                 Visibility="{Binding ChannelVisibility}" BorderBrush="Transparent" Background="#141414" SelectionChanged="LbDirect_SelectionChanged"
+                         VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="394" Padding="0" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+
+                </ListBox>
+            </Grid>
+
+        </Grid>
+
+       
+
+    </Border>
+</UserControl>

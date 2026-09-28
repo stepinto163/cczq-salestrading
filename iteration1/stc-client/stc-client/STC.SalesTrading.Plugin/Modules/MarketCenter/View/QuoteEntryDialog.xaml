@@ -1,0 +1,526 @@
+﻿<Window x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="编辑报价" Width="880" Height="620"
+        WindowStartupLocation="Manual" ShowInTaskbar="False"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" FontFamily="Segoe UI" UseLayoutRounding="True"
+        SnapsToDevicePixels="True" PreviewKeyDown="OnWindowPreviewKeyDown">
+    <!--
+        报价表单弹窗（原型 0910「新报价 / 编辑报价」，结构 = 遮罩 + .modal.modal-wide）：
+        遮罩 rgba(0,0,0,.6) → 弹窗 880px / bg #161b22 / 边框 #30363d / 圆角 8 / 无阴影；
+        头部 .modal-hdr（padding 14 20 + 下边框 #30363d，h4 14px 600 #e6edf3）→
+        正文 .modal-body（padding 20、padding-top 0、13px #c9d1d9、行高 1.7、max-height 70vh 滚动）→
+        页脚 .modal-footer（padding 12 20 + 上边框 #30363d，左 kbd 提示、右 取消/保存修改 26px）。
+        正文内容依次：债券摘要条 .quote-bond-summary（bg #0d1117，左右 -20 出血）→
+        方向分段 .quote-direction（36px，active 橙/蓝）→ 12 栅格 .quote-fields（gap 10/12）→
+        标签 + 备注 .quote-tags-note-row。
+        尺寸/间距/字号均按 app.css 逐条核对（见 docs/PROTOTYPE_UI_GAP_0910.md）。
+    -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- 原型 .quote-direction active 底色：rgba(245,158,11,.16) / rgba(59,130,246,.16) -->
+            <SolidColorBrush x:Key="QuoteDirBidActiveBrush" Color="#29F59E0B" />
+            <SolidColorBrush x:Key="QuoteDirOfrActiveBrush" Color="#293B82F6" />
+            <!-- 原型 .quote-control:focus{border-color:#58a6ff} -->
+            <SolidColorBrush x:Key="QuoteControlFocusBrush" Color="#58A6FF" />
+
+            <!-- 原型 .quote-field label{font-size:11px;color:#8b949e} -->
+            <Style x:Key="QuoteLabel" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            </Style>
+
+            <!-- 原型 .quote-control：34px 高、bg #0d1117、边框 #30363d、圆角 4、12px、padding 0 10
+                 模板内自带 placeholder（原型 input placeholder）：文本框 Tag 即占位文案，Text 为空时显示。
+                 注意：占位 TextBlock 放在 PART_ContentHost 之前（即正文之下），正文永远绘制在占位之上，
+                 不会出现「正文被占位盖住看不见」的情况。 -->
+            <Style x:Key="QuoteControl" TargetType="TextBox">
+                <Setter Property="Height" Value="34" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Padding" Value="10,0" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Background" Value="{DynamicResource PageBgBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="Bd" CornerRadius="4" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                <Grid>
+                                    <TextBlock x:Name="Wm"
+                                               Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Foreground="{DynamicResource TextDisabledBrush}"
+                                               FontSize="{TemplateBinding FontSize}"
+                                               FontFamily="{TemplateBinding FontFamily}"
+                                               Margin="11,0,0,0" IsHitTestVisible="False"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                 Value="">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                                  VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource QuoteControlFocusBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 原型 .quote-step-wrap .quote-control{padding-right:54px} -->
+            <Style x:Key="QuoteControlStep" TargetType="TextBox" BasedOn="{StaticResource QuoteControl}">
+                <Setter Property="Padding" Value="10,0,54,0" />
+            </Style>
+
+            <!-- 原型 textarea.quote-control{height:34px;padding:7px 10px;resize:none;line-height:1.5}
+                 备注按原型渲染为 34px 单行高。
+                 注意：这里**刻意复用单行控件那套模板**（内容区高度 32px、TextWrapping=NoWrap），
+                 因为「34px 固定高 + 换行 + 内滚」的组合在 WPF 下会因内容溢出 18px 视口而出现
+                 滚动错位，表现为文字被压成一条缝（2026-09-11 实机反馈）。单行配置下文本恒定可见，
+                 与原型「一行高」的可视效果也一致；超长文本按单行输入惯例左右滚动、光标常驻可见。 -->
+            <Style x:Key="QuoteControlNote" TargetType="TextBox" BasedOn="{StaticResource QuoteControl}">
+                <Setter Property="Padding" Value="10,0" />
+                <Setter Property="MaxLength" Value="120" />
+            </Style>
+
+            <!-- 原型 select.quote-control：与输入框同规格 -->
+            <Style x:Key="QuoteSelect" TargetType="ComboBox" BasedOn="{StaticResource StcComboBox}">
+                <Setter Property="Height" Value="34" />
+                <Setter Property="FontSize" Value="12" />
+            </Style>
+
+            <!-- 原型 .quote-step-btn：9px 等宽 600 #8b949e，bg #161b22；.quote-step-btn + .quote-step-btn 有上分隔线 #30363d -->
+            <Style x:Key="QuoteStepButtonBase" TargetType="Button">
+                <Setter Property="FontSize" Value="9" />
+                <Setter Property="FontFamily" Value="{DynamicResource MonoFont}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="Background" Value="{DynamicResource PanelBgBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{DynamicResource BorderStdBrush}"
+                                    BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBgBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="QuoteStepButton" TargetType="Button" BasedOn="{StaticResource QuoteStepButtonBase}">
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+            <Style x:Key="QuoteStepButtonLower" TargetType="Button" BasedOn="{StaticResource QuoteStepButtonBase}">
+                <Setter Property="BorderThickness" Value="0,1,0,0" />
+            </Style>
+
+            <!-- 原型 .quote-dir-btn（36px / 12px 700 / #7d8590；active 橙、蓝） -->
+            <Style x:Key="QuoteDirButton" TargetType="RadioButton">
+                <Setter Property="Height" Value="36" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Bd" Background="Transparent" CornerRadius="4,0,0,4">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource QuoteDirBidActiveBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource BidBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="QuoteDirButtonOfr" TargetType="RadioButton" BasedOn="{StaticResource QuoteDirButton}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Bd" Background="Transparent" CornerRadius="0,4,4,0"
+                                    BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1,0,0,0">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource QuoteDirOfrActiveBrush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource QuoteControlFocusBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 原型 .quote-field-error{font-size:10px;color:#f85149;min-height:12px} -->
+            <Style x:Key="QuoteFieldError" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                <Setter Property="MinHeight" Value="12" />
+                <Setter Property="Margin" Value="0,-2,0,0" />
+            </Style>
+
+            <!-- 原型 kbd{border:1px solid #30363d;border-bottom-color:#484f58;border-radius:3px;background:#0d1117;padding:1px 5px;color:#8b949e} -->
+            <Style x:Key="QuoteKbd" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource PageBgBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                <Setter Property="BorderThickness" Value="1,1,1,2" />
+                <Setter Property="CornerRadius" Value="3" />
+                <Setter Property="Padding" Value="5,1" />
+                <Setter Property="Margin" Value="0,0,6,0" />
+            </Style>
+
+            <!-- 标签勾选：原型是**原生 checkbox**（`accent-color:#3b82f6`），未勾选渲染为白底方框、
+                 勾选为蓝色带勾。插件主题的 StcCheckBox 是深色方框，与原型观感差别明显，故此处自绘。
+                 文字：.quote-tag-check{color:#8b949e;font-size:11px;gap:5px}，勾选/悬停时 #c9d1d9 -->
+            <Style x:Key="QuoteTagCheck" TargetType="CheckBox">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <StackPanel Orientation="Horizontal" Background="Transparent">
+                                <Border x:Name="Box" Width="13" Height="13" CornerRadius="2"
+                                        Background="#FFFFFF" BorderBrush="#767676" BorderThickness="1"
+                                        VerticalAlignment="Center">
+                                    <Path x:Name="Check" Data="M1,5 L4,8 L10,2" Stretch="Uniform" Margin="2"
+                                          Stroke="#FFFFFF" StrokeThickness="2"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                          Visibility="Collapsed" />
+                                </Border>
+                                <ContentPresenter Margin="5,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Box" Property="Background" Value="#3B82F6" />
+                                    <Setter TargetName="Box" Property="BorderBrush" Value="#3B82F6" />
+                                    <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <!-- 宿主客户区（尺寸在 OnLoaded 里对齐宿主；内部分两层：遮罩 / 弹窗） -->
+    <Grid>
+        <!-- 遮罩：原型 .modal-overlay{background:rgba(0,0,0,.6)}，点击空白处关闭 -->
+        <Border x:Name="Backdrop" Background="#99000000" MouseLeftButtonDown="OnBackdropMouseDown" />
+
+        <!-- 弹窗本体：原型 .modal.modal-wide（880px，无阴影） -->
+        <Border x:Name="ModalShell" Width="880" MaxHeight="820"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="{DynamicResource PanelBgBrush}"
+                BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1" CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- ===== 头部：原型 .modal-hdr{padding:14px 20px;border-bottom:1px solid #30363d} ===== -->
+                <Border Grid.Row="0" Padding="20,14" Background="Transparent"
+                        BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,0,0,1"
+                        MouseLeftButtonDown="OnTitleBarMouseDown">
+                    <Grid>
+                        <TextBlock x:Name="FormTitle" Text="编辑报价"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <!-- 原型 .modal-close{padding:4px} + 24×24 图标 → 点击区 32×32（决定头部高度 58px） -->
+<Button Content="✕" Width="32" Height="32" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Style="{DynamicResource StcModalCloseButton}" Click="OnCloseClick" />
+                    </Grid>
+                </Border>
+
+                <!-- ===== 正文：原型 .modal-body{padding:20px;padding-top:0;max-height:70vh;overflow-y:auto} ===== -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <!-- 债券摘要条：原型 .quote-bond-summary{margin:0 -20px;padding:12px 20px;background:#0d1117;gap:20px} -->
+                        <Border Background="{DynamicResource PageBgBrush}" Padding="20,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <!-- .quote-bond-main -->
+                                <StackPanel VerticalAlignment="Center">
+                                    <!-- .quote-bond-name{gap:10px}：名称与代码同为 16px 粗 #e6edf3
+                                         （app.css：.quote-bond-name strong,.quote-bond-code{font-size:16px;color:#e6edf3;font-weight:700}） -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="BondName" FontSize="16" FontWeight="Bold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="BondCode" FontSize="16" FontWeight="Bold" Margin="10,0,0,0"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <!-- .quote-bond-meta{gap:14px;margin-top:6px;11px #7d8590} -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <TextBlock x:Name="MaturityMeta" Style="{StaticResource QuoteLabel}" Margin="0,0,14,0" />
+                                        <TextBlock x:Name="IssuerRatingMeta" Style="{StaticResource QuoteLabel}" Margin="0,0,14,0" />
+                                        <TextBlock x:Name="BondRatingMeta" Style="{StaticResource QuoteLabel}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <!-- .quote-market-metrics{justify-content:flex-end;gap:22px;align-items:baseline} -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" MinWidth="215" VerticalAlignment="Bottom">
+                                        <TextBlock Text="市场最优" Style="{StaticResource QuoteLabel}" VerticalAlignment="Bottom" />
+                                        <TextBlock x:Name="BestBidText" FontSize="13" FontWeight="Bold" Margin="7,0,0,0"
+                                                   FontFamily="{DynamicResource MonoFont}"
+                                                   Foreground="{DynamicResource BidBrush}" VerticalAlignment="Bottom" />
+                                        <TextBlock Text="｜" Margin="7,0" VerticalAlignment="Bottom"
+                                                   Foreground="{DynamicResource TextDisabledBrush}" />
+                                        <TextBlock x:Name="BestOfrText" FontSize="13" FontWeight="Bold"
+                                                   FontFamily="{DynamicResource MonoFont}"
+                                                   Foreground="{DynamicResource OfrBrush}" VerticalAlignment="Bottom" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" MinWidth="185" Margin="22,0,0,0"
+                                                VerticalAlignment="Bottom">
+                                        <TextBlock Text="中债估值" Style="{StaticResource QuoteLabel}" VerticalAlignment="Bottom" />
+                                        <TextBlock x:Name="CbValuationText" FontSize="12" FontWeight="Bold" Margin="7,0,0,0"
+                                                   FontFamily="{DynamicResource MonoFont}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Bottom" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- .quote-modal{gap:12px} 的剩余部分：左右各 20、底部 20 内距 -->
+                        <StackPanel Margin="20,12,20,20">
+                            <!-- 方向分段：原型 .quote-direction -->
+                            <Border BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1" CornerRadius="5"
+                                    Background="{DynamicResource PageBgBrush}">
+                                <UniformGrid Columns="2">
+                                    <RadioButton x:Name="DirBid" Content="Bid 买入" GroupName="dir"
+                                                 Style="{StaticResource QuoteDirButton}" />
+                                    <RadioButton x:Name="DirOfr" Content="Ofr 卖出" GroupName="dir"
+                                                 Style="{StaticResource QuoteDirButtonOfr}" />
+                                </UniformGrid>
+                            </Border>
+
+                            <!-- 字段栅格：原型 .quote-fields{gap:10px 12px}（12 栅格；字段之间 6+6=12px） -->
+                            <Grid Margin="0,12,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- 价格 span-6：输入框(+1bp/-1bp) + 价格类型下拉 112px -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Margin="0,0,6,10">
+                                    <TextBlock Text="价格" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="112" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid>
+                                            <TextBox x:Name="PriceBox" Style="{StaticResource QuoteControlStep}" Text="" Tag="0.0000"
+                                                     FontFamily="{DynamicResource MonoFont}" />
+                                            <!-- .quote-step-buttons{top:1px;right:1px;bottom:1px;width:50px;border-left:1px solid #30363d} -->
+                                            <Border HorizontalAlignment="Right" Width="50" Margin="1"
+                                                    BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1,0,0,0"
+                                                    CornerRadius="0,3,3,0">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <Button Grid.Row="0" Content="+1bp" Style="{StaticResource QuoteStepButton}"
+                                                            Click="OnPriceStepUp" />
+                                                    <Button Grid.Row="1" Content="-1bp" Style="{StaticResource QuoteStepButtonLower}"
+                                                            Click="OnPriceStepDown" />
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                        <ComboBox Grid.Column="1" x:Name="PriceTypeBox" Style="{StaticResource QuoteSelect}"
+                                                  Margin="6,0,0,0">
+                                            <ComboBoxItem Content="到期收益率" IsSelected="True" />
+                                            <ComboBoxItem Content="行权收益率" />
+                                            <ComboBoxItem Content="净价" />
+                                            <ComboBoxItem Content="全价" />
+                                        </ComboBox>
+                                    </Grid>
+                                    <TextBlock x:Name="PriceErrorText" Style="{StaticResource QuoteFieldError}" />
+                                </StackPanel>
+
+                                <!-- 报量 span-6：输入框(+1k/-1k) + 报量单位下拉 112px -->
+                                <StackPanel Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="6" Margin="6,0,0,10">
+                                    <TextBlock Text="报量" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="112" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid>
+                                            <TextBox x:Name="VolumeBox" Style="{StaticResource QuoteControlStep}" Text="" Tag="例如 1000"
+                                                     FontFamily="{DynamicResource MonoFont}" />
+                                            <Border HorizontalAlignment="Right" Width="50" Margin="1"
+                                                    BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1,0,0,0"
+                                                    CornerRadius="0,3,3,0">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <Button Grid.Row="0" Content="+1k" Style="{StaticResource QuoteStepButton}"
+                                                            Click="OnVolumeStepUp" />
+                                                    <Button Grid.Row="1" Content="-1k" Style="{StaticResource QuoteStepButtonLower}"
+                                                            Click="OnVolumeStepDown" />
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                        <ComboBox Grid.Column="1" x:Name="VolumeUnitBox" Style="{StaticResource QuoteSelect}"
+                                                  Margin="6,0,0,0">
+                                            <ComboBoxItem Content="万" IsSelected="True" />
+                                            <ComboBoxItem Content="万面额" />
+                                            <ComboBoxItem Content="手" />
+                                            <ComboBoxItem Content="张" />
+                                        </ComboBox>
+                                    </Grid>
+                                    <TextBlock x:Name="VolumeErrorText" Style="{StaticResource QuoteFieldError}" />
+                                </StackPanel>
+
+                                <!-- 交易日期 span-3 -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,6,0">
+                                    <TextBlock Text="交易日期" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                    <TextBox x:Name="TradeDateBox" Style="{StaticResource QuoteControl}" Text="" Tag="yyyy-MM-dd" />
+                                </StackPanel>
+
+                                <!-- 清算速度 span-2 -->
+                                <StackPanel Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Margin="6,0,6,0">
+                                    <TextBlock Text="清算速度" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                    <ComboBox x:Name="SettlementBox" Style="{StaticResource QuoteSelect}">
+                                        <ComboBoxItem Content="请选择" />
+                                        <ComboBoxItem Content="T+0" IsSelected="True" />
+                                        <ComboBoxItem Content="T+1" />
+                                        <ComboBoxItem Content="T+2" />
+                                        <ComboBoxItem Content="T+3" />
+                                        <ComboBoxItem Content="远期" />
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <!-- 报价机构 span-4 -->
+                                <StackPanel Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="4" Margin="6,0,6,0">
+                                    <TextBlock Text="报价机构" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                    <TextBox x:Name="InstitutionBox" Style="{StaticResource QuoteControl}" Text="" Tag="机构简称" />
+                                </StackPanel>
+
+                                <!-- 报价交易员 span-3 -->
+                                <StackPanel Grid.Row="1" Grid.Column="9" Grid.ColumnSpan="3" Margin="6,0,0,0">
+                                    <TextBlock Text="报价交易员" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                    <TextBox x:Name="TraderBox" Style="{StaticResource QuoteControl}" Text="" Tag="交易员姓名" />
+                                </StackPanel>
+
+                                <!-- 标签 + 备注：原型 .quote-tags-note-row{grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:end} -->
+                                <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="12" Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,14,0" VerticalAlignment="Bottom">
+                                        <TextBlock Text="报价标签" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                        <StackPanel Orientation="Horizontal" MinHeight="34">
+                                            <CheckBox x:Name="FlagUrgent" Content="急" Style="{StaticResource QuoteTagCheck}"
+                                                      Margin="0,0,14,0" VerticalAlignment="Center" />
+                                            <CheckBox x:Name="FlagRec" Content="荐" Style="{StaticResource QuoteTagCheck}"
+                                                      Margin="0,0,14,0" VerticalAlignment="Center" />
+                                            <CheckBox x:Name="FlagWhole" Content="整" Style="{StaticResource QuoteTagCheck}"
+                                                      VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
+                                        <TextBlock Text="备注" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
+                                        <TextBox x:Name="RemarkBox" Style="{StaticResource QuoteControlNote}" Text=""
+                                                 Tag="补充报价约束、有效期或沟通事项" />
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ===== 页脚：原型 .modal-footer{padding:12px 20px;border-top:1px solid #30363d} ===== -->
+                <Border Grid.Row="2" Padding="20,12" Background="Transparent"
+                        BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,1,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <!-- .quote-footer-note{gap:6px;font-size:10px;color:#7d8590} -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Style="{StaticResource QuoteKbd}">
+                                <TextBlock Text="Enter" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                            </Border>
+                            <TextBlock Text="保存修改" FontSize="10" Margin="0,0,8,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                            <Border Style="{StaticResource QuoteKbd}">
+                                <TextBlock Text="Esc" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                            </Border>
+                            <TextBlock Text="取消" FontSize="10" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                        <!-- 原型 .tb-btn：26px 高、14px、文字按钮（取消 = tb-btn-default，保存修改 = tb-btn-primary 红底） -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="取消" Style="{DynamicResource StcButton}" Height="26"
+                                    FontSize="14" Padding="10,0" Click="OnCancel" Margin="0,0,8,0" />
+                            <Button Content="保存修改" Style="{DynamicResource StcButtonDanger}" Height="26"
+                                    FontSize="14" Padding="14,0" Click="OnSubmit" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

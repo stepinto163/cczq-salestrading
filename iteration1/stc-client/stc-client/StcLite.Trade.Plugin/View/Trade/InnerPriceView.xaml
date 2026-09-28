@@ -1,0 +1,530 @@
+﻿<UserControl x:Class="BDB.Trade.Plugin.View.Trade.InnerPriceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BDB.Trade.Plugin.View.Trade"
+             mc:Ignorable="d" 
+             d:DesignHeight="144" d:DesignWidth="332">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDBStcLiteSkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDBDataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/BDBScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+
+            <Style x:Key="TextBlockStyle" TargetType="{x:Type TextBlock}">
+
+                <Setter Property="Foreground" Value="{StaticResource Textblock.Foreground.Gray}"/>
+                <Setter Property="FontFamily" Value="{StaticResource Font.MicrosoftYaHei}"/>
+                <Setter Property="FontSize" Value="{StaticResource FontSize-12}"/>
+
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid  x:Name="gridFrame">
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <Border x:Name="bdBid" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Visibility="{Binding BorderVisibility}" Grid.RowSpan="3" HorizontalAlignment="Left" CornerRadius="2" Height="72" Width="166" Background="{StaticResource Bid.Selected.BorderBrush-16%}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="16"></RowDefinition>
+                    <RowDefinition Height="24"></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="10"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Bid" Grid.Row="0" Margin="0, 2, 0, 0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Bid.textblock.foreground}" TextAlignment="Center" FontSize="{StaticResource FontSize-12}"></TextBlock>
+
+                <TextBlock Text="{Binding BidPrice}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Bid.textblock.foreground}" TextAlignment="Center" FontSize="{StaticResource FontSize-24}"></TextBlock>
+
+                <TextBlock Text="{Binding BidTxt}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 3, 0, 0" Foreground="{StaticResource Button.Static.Foreground}" TextAlignment="Center" 
+                           FontSize="{StaticResource FontSize-12}" ToolTip="{Binding Text}"  TextTrimming="CharacterEllipsis" MaxWidth="140"></TextBlock>
+
+
+                <Canvas x:Name="bidCornerMarket" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="1, 0, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+            </Grid>
+        </Border>
+
+
+        <Border  x:Name="bdOfr" Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Visibility="{Binding BorderVisibility}" Grid.RowSpan="3" HorizontalAlignment="Right" CornerRadius="2" Height="72" Width="166" Background="{StaticResource Ofr.Selected.BorderBrush-16%}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="16"></RowDefinition>
+                    <RowDefinition Height="24"></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="10"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Ofr" Grid.Row="0" Margin="0, 2, 0, 0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Ofr.Selected.BorderBrush}" TextAlignment="Center" FontSize="{StaticResource FontSize-12}"></TextBlock>
+
+                <TextBlock Text="{Binding OfrPrice}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{StaticResource Ofr.Selected.BorderBrush}" TextAlignment="Center" FontSize="{StaticResource FontSize-24}"></TextBlock>
+
+                <TextBlock Text="{Binding OfrTxt}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0, 3, 0, 0" Foreground="{StaticResource Button.Static.Foreground}" TextAlignment="Center" 
+                           FontSize="{StaticResource FontSize-12}" ToolTip="{Binding Text}" TextTrimming="CharacterEllipsis" MaxWidth="140"></TextBlock>
+
+
+                <Canvas x:Name="ofrCornerMarket" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="1, 0, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+            </Grid>
+        </Border>
+
+
+        <!--列头-->
+
+        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Visibility="{Binding headVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Bid.Vol" Grid.Column="1"  HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource TextBlockStyle}" Margin="20, 0, 0, 0"></TextBlock>
+            <TextBlock Text="Bid" Grid.Column="2"  HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource TextBlockStyle}" Margin="0, 0, 10, 0"></TextBlock>
+
+
+            <TextBlock Text="Ofr" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Style="{StaticResource TextBlockStyle}" Margin="10, 0, 0, 0"></TextBlock>
+
+            <TextBlock Text="Ofr.Vol" Grid.Column="4" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource TextBlockStyle}" Margin="0, 0, 20, 0"></TextBlock>
+
+
+        </Grid>
+        
+        <!---->
+        
+        <!--第一行-->
+        <Grid  x:Name="gridOne" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" Visibility="{Binding OneVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0" x:Name="gridInnerOne">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Canvas x:Name="bidCornerOne" Grid.Column="0"  HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CornerOneBidVisibility}"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="0, -5, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+
+
+                <TextBlock Text="{Binding BidOne}" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding BidOneAmount}" Foreground="{StaticResource Bid.textblock.foreground}" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0, 0, 8, 0"></TextBlock>
+
+            </Grid>
+
+            
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding OfrOne}" HorizontalAlignment="Left" Foreground="{StaticResource ColorBrush.Blue_firm}" Grid.Column="0" Margin="8, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding OfrOneAmount}" HorizontalAlignment="Right" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" Margin="0, 0, 10, 0"></TextBlock>
+
+                <Canvas x:Name="ofrCornerOne" Grid.Column="1" ToolTip="{Binding OfrCornerMarketText}" Visibility="{Binding CornerOneOfrVisibility}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, -4, -3, 0" Width="10" >
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Ofr.Selected.BorderBrush}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="0,0" IsClosed="True">
+                                        <LineSegment Point="8,0" />
+                                        <LineSegment Point="8,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+            </Grid>
+
+        </Grid>
+
+
+
+        <!--第二行-->
+        <Grid  x:Name="gridTwo" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"  Visibility="{Binding TwoVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0"  x:Name="gridInnerTwo">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Canvas x:Name="bidCornerTwo" Grid.Column="0"  HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CornerTwoBidVisibility}"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="0, -5, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+
+
+                <TextBlock Text="{Binding BidTwo}" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding BidTwoAmount}" Foreground="{StaticResource Bid.textblock.foreground}" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0, 0, 8, 0"></TextBlock>
+
+            </Grid>
+
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding OfrTwo}" HorizontalAlignment="Left" Foreground="{StaticResource ColorBrush.Blue_firm}" Grid.Column="0" Margin="8, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding OfrTwoAmount}" HorizontalAlignment="Right" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" Margin="0, 0, 10, 0"></TextBlock>
+
+                <Canvas x:Name="ofrCornerTwo" Grid.Column="1" ToolTip="{Binding OfrCornerMarketText}" Visibility="{Binding CornerTwoOfrVisibility}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, -4, -3, 0" Width="10" >
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Ofr.Selected.BorderBrush}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="0,0" IsClosed="True">
+                                        <LineSegment Point="8,0" />
+                                        <LineSegment Point="8,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+            </Grid>
+
+        </Grid>
+
+
+
+        <!--第三行-->
+        <Grid  x:Name="gridThree" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5"  Visibility="{Binding ThreeVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0"  x:Name="gridInnerThree">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding InnerColumnWidth}"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Canvas x:Name="bidCornerThree" Grid.Column="0"  HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CornerThreeBidVisibility}"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="0, -5, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+                <TextBlock Text="+0" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+
+
+                <TextBlock Text="{Binding BidThree}" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding BidThreeAmount}" Foreground="{StaticResource Bid.textblock.foreground}" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0, 0, 8, 0"></TextBlock>
+
+            </Grid>
+
+
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding OfrThree}" HorizontalAlignment="Left" Foreground="{StaticResource ColorBrush.Blue_firm}" Grid.Column="0" Margin="8, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding OfrThreeAmount}" HorizontalAlignment="Right" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" Margin="0, 0, 10, 0"></TextBlock>
+
+                <Canvas x:Name="ofrCornerThree" Grid.Column="1" ToolTip="{Binding OfrCornerMarketText}" Visibility="{Binding CornerThreeOfrVisibility}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, -4, -3, 0" Width="10" >
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Ofr.Selected.BorderBrush}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="0,0" IsClosed="True">
+                                        <LineSegment Point="8,0" />
+                                        <LineSegment Point="8,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+            </Grid>
+
+        </Grid>
+
+
+
+        <!--第四行-->
+        <Grid  x:Name="gridFour" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="5"  Visibility="{Binding FourVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition  Width="{Binding InnerColumnWidth}"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Canvas x:Name="bidCornerFour" Grid.Column="0"  HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CornerFourBidVisibility}"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="0, -5, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+                <TextBlock Text="+1" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+
+
+                <TextBlock Text="{Binding BidFour}" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding BidFourAmount}" Foreground="{StaticResource Bid.textblock.foreground}" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0, 0, 8, 0"></TextBlock>
+
+            </Grid>
+
+
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding OfrFour}" HorizontalAlignment="Left" Foreground="{StaticResource ColorBrush.Blue_firm}" Grid.Column="0" Margin="8, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding OfrFourAmount}" HorizontalAlignment="Right" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" Margin="0, 0, 10, 0"></TextBlock>
+
+                <Canvas x:Name="ofrCornerFour" Grid.Column="1" ToolTip="{Binding OfrCornerMarketText}" Visibility="{Binding CornerFourOfrVisibility}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, -4, -3, 0" Width="10" >
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Ofr.Selected.BorderBrush}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="0,0" IsClosed="True">
+                                        <LineSegment Point="8,0" />
+                                        <LineSegment Point="8,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+            </Grid>
+
+        </Grid>
+
+
+
+        <!--第五行-->
+        <Grid x:Name="gridFive" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"  Visibility="{Binding FiveVisibility}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition  Width="{Binding InnerColumnWidth}"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <Canvas x:Name="bidCornerFive" Grid.Column="0"  HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="{Binding CornerFiveBidVisibility}"
+                                                ToolTip="{Binding BidCornerMarketText}" Margin="0, -5, 0, 0">
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Bid.textblock.foreground}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="8,0" IsClosed="True">
+                                        <LineSegment Point="0,0" />
+                                        <LineSegment Point="0,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+
+                <TextBlock Text="远" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+
+
+                <TextBlock Text="{Binding BidFive}" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding BidFiveAmount}" Foreground="{StaticResource Bid.textblock.foreground}" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0, 0, 8, 0"></TextBlock>
+
+            </Grid>
+
+
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="{Binding OfrFive}" HorizontalAlignment="Left" Foreground="{StaticResource ColorBrush.Blue_firm}" Grid.Column="0" Margin="8, 0, 0, 0"></TextBlock>
+                <TextBlock Text="{Binding OfrFiveAmount}" HorizontalAlignment="Right" Foreground="{StaticResource TextBox.Static.Foreground}" Grid.Column="1" Margin="0, 0, 10, 0"></TextBlock>
+
+                <Canvas x:Name="ofrCornerFive" Grid.Column="1" ToolTip="{Binding OfrCornerMarketText}" Visibility="{Binding CornerFiveOfrVisibility}"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, -4, -3, 0" Width="10" >
+
+                    <Path Stroke="Black" StrokeThickness="0" Fill="{StaticResource Ofr.Selected.BorderBrush}">
+                        <Path.Data>
+                            <PathGeometry>
+                                <PathGeometry.Figures>
+                                    <PathFigure StartPoint="0,0" IsClosed="True">
+                                        <LineSegment Point="8,0" />
+                                        <LineSegment Point="8,8" />
+                                    </PathFigure>
+                                </PathGeometry.Figures>
+                            </PathGeometry>
+                        </Path.Data>
+                    </Path>
+
+
+                </Canvas>
+            </Grid>
+
+        </Grid>
+
+
+    </Grid>
+</UserControl>

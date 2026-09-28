@@ -1,0 +1,499 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>STC.SalesTrading.Plugin</RootNamespace>
+    <AssemblyName>STC.SalesTrading.Plugin</AssemblyName>
+    <!-- 全仓库统一 v4.7.2（2026-08 TFM 升级）；LangVersion 放顶部供 IDE 设计期读取 -->
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <!-- NuGet 18 要求 .NET Framework + PackageReference 项目声明 RuntimeIdentifier（否则 Restore 报错） -->
+    <RuntimeIdentifiers>win</RuntimeIdentifiers>
+    <LangVersion>latest</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- LogHelper(com.gateway.log)由 gateway-api 提供;注意 STC.Common/Utils/LogHelper.cs 是未编译的死文件 -->
+    <Reference Include="gateway-api">
+      <HintPath>..\client\bin\gateway-api.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="common.netapi">
+      <HintPath>..\client\bin\common.netapi.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationFramework.Aero" />
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 插件入口 -->
+    <Compile Include="SalesTradingPlugin.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <!-- Shell -->
+    <Compile Include="Shell\MainViewModel.cs" />
+    <Compile Include="Shell\NavItem.cs" />
+    <Compile Include="Shell\SubTabItem.cs" />
+    <Compile Include="Shell\UserProfile.cs" />
+    <Compile Include="Shell\View\OverlayService.cs" />
+    <Compile Include="Shell\View\MainView.xaml.cs">
+      <DependentUpon>MainView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shell\View\UserCenterWindow.xaml.cs">
+      <DependentUpon>UserCenterWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shell\View\SettingsWindow.xaml.cs">
+      <DependentUpon>SettingsWindow.xaml</DependentUpon>
+    </Compile>
+    <!-- Abstractions: 数据接缝(后端未定,先锁契约) -->
+    <Compile Include="Abstractions\IQuoteService.cs" />
+    <Compile Include="Abstractions\IMarketCenterService.cs" />
+    <Compile Include="Abstractions\IHostQuoteFeed.cs" />
+    <Compile Include="Abstractions\IQuoteMgmtService.cs" />
+    <Compile Include="Abstractions\Models\Enums.cs" />
+    <Compile Include="Abstractions\Models\QuoteConfirmRow.cs" />
+    <Compile Include="Abstractions\Models\QuoteConfirmBatch.cs" />
+    <Compile Include="Abstractions\Models\QuoteParseResult.cs" />
+    <Compile Include="Abstractions\Models\BoardQuoteRow.cs" />
+    <Compile Include="Abstractions\Models\BoardBestRow.cs" />
+    <Compile Include="Abstractions\Models\BestQuoteDetail.cs" />
+    <Compile Include="Abstractions\Models\BoardIntentRow.cs" />
+    <Compile Include="Abstractions\Models\BoardAlertRow.cs" />
+    <Compile Include="Abstractions\Models\InstQuoteRow.cs" />
+    <Compile Include="Abstractions\Models\MarketTradeRow.cs" />
+    <Compile Include="Abstractions\Models\QuoteFeedModels.cs" />
+    <Compile Include="Abstractions\Models\BondDetail.cs" />
+    <Compile Include="Abstractions\Models\BondLookupEntry.cs" />
+    <Compile Include="Abstractions\Models\RecommendationRow.cs" />
+    <Compile Include="Abstractions\Models\MgmtQuoteRow.cs" />
+    <Compile Include="Abstractions\Models\FuzzyCandidate.cs" />
+    <Compile Include="Abstractions\Models\FuzzyQuery.cs" />
+    <Compile Include="Abstractions\Models\QuoteEvent.cs" />
+    <!-- Mock -->
+    <Compile Include="Mock\MockQuoteService.cs" />
+    <Compile Include="Mock\MockMarketCenterService.cs" />
+    <Compile Include="Mock\MockQuoteMgmtService.cs" />
+    <Compile Include="Mock\MockRequestOptions.cs" />
+    <Compile Include="Mock\MockSalesTradingStore.cs" />
+    <Compile Include="Mock\MockQuoteEventProbe.cs" />
+    <!-- Shared -->
+    <Compile Include="Shared\Converters\Converters.cs" />
+    <Compile Include="Shared\Messages\PendingQuotesChangedMessage.cs" />
+    <Compile Include="Shared\Messages\AlertCountChangedMessage.cs" />
+    <Compile Include="Shared\Messages\DataSourceResetMessage.cs" />
+    <Compile Include="Shared\Messages\OpenQuoteEntryOverlayMessage.cs" />
+    <Compile Include="Shared\Messages\LocateQuoteInAllMessage.cs" />
+    <Compile Include="Shared\ViewModel\StatusBarSection.cs" />
+    <Compile Include="Shared\ViewModel\StatusSectionBag.cs" />
+    <Compile Include="Shared\Services\ClipboardHelper.cs" />
+    <Compile Include="Shared\Services\QueryFlow.cs" />
+    <Compile Include="Shared\Services\HostQuoteFeed.cs" />
+    <Compile Include="Shared\Components\BoardColumns.cs" />
+    <Compile Include="Shared\ViewModel\ToastMessage.cs" />
+    <Compile Include="Shared\ViewModel\AlertPopupItem.cs" />
+    <Compile Include="Shared\ViewModel\AlertPopupGroup.cs" />
+    <Compile Include="Shared\ViewModel\MarketGroupChip.cs" />
+    <Compile Include="Shared\ViewModel\FilterProfileModels.cs" />
+    <Compile Include="Shared\Services\IOverlayService.cs" />
+    <Compile Include="Shared\Services\ToastService.cs" />
+    <Compile Include="Shared\Services\AlertPopupService.cs" />
+    <Compile Include="Shared\Services\MarketGroupRowMatcher.cs" />
+    <Compile Include="Shared\Services\MarketGroupSelectionService.cs" />
+    <Compile Include="Shared\Services\IntentMutexService.cs" />
+    <Compile Include="Shared\Services\FilterProfileService.cs" />
+    <Compile Include="Shared\Services\ColumnLayoutManager.cs" />
+    <Compile Include="Shared\Services\LatestRequestCoordinator.cs" />
+    <Compile Include="Shared\Services\OverlayBackdrop.cs" />
+    <Compile Include="Shared\Services\DebouncedRequestScheduler.cs" />
+    <Compile Include="Shared\Gateway\ApiManagerGatewayClient.cs" />
+    <Compile Include="Shared\Components\StatusBar.xaml.cs">
+      <DependentUpon>StatusBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\QueryStateOverlay.xaml.cs">
+      <DependentUpon>QueryStateOverlay.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\PendingQuotesBanner.xaml.cs">
+      <DependentUpon>PendingQuotesBanner.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\FilterTagRow.xaml.cs">
+      <DependentUpon>FilterTagRow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\FilterComboRow.xaml.cs">
+      <DependentUpon>FilterComboRow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\FilterSearchRow.xaml.cs">
+      <DependentUpon>FilterSearchRow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\FilterSectionHeader.xaml.cs">
+      <DependentUpon>FilterSectionHeader.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\ModalWindowBase.cs" />
+    <Compile Include="Shared\Components\KeepAliveContentControl.cs" />
+    <Compile Include="Shared\Components\FilterRangeRow.xaml.cs">
+      <DependentUpon>FilterRangeRow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\BoardRowGroupMenu.cs" />
+    <Compile Include="Shared\Components\PromptDialog.xaml.cs">
+      <DependentUpon>PromptDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\ConfirmDialog.xaml.cs">
+      <DependentUpon>ConfirmDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\SearchBox.xaml.cs">
+      <DependentUpon>SearchBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\AlertPopupWindow.xaml.cs">
+      <DependentUpon>AlertPopupWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Shared\Components\ToastHost.xaml.cs">
+      <DependentUpon>ToastHost.xaml</DependentUpon>
+    </Compile>
+    <!-- Themes -->
+    <Compile Include="Themes\ThemeManager.cs" />
+    <Compile Include="Abstractions\Gateway\GatewayModels.cs" />
+    <Compile Include="Abstractions\Gateway\IGatewayClient.cs" />
+    <Compile Include="Abstractions\Queries\PagedResult.cs" />
+    <Compile Include="Abstractions\Queries\MarketBoardQuery.cs" />
+    <Compile Include="Abstractions\Queries\QueryLoadState.cs" />
+    <Compile Include="Abstractions\Queries\QuoteMgmtQuery.cs" />
+    <Compile Include="Abstractions\Results\MutationResult.cs" />
+    <!-- Modules / QuoteEntry(报价录入) -->
+    <Compile Include="Modules\QuoteEntry\ViewModel\QuoteViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\ViewModel\QuoteConfirmViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\ViewModel\QuoteConfirmRowViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\ViewModel\QuoteConfirmBatchViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\ViewModel\PreciseQuoteViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\ViewModel\FuzzyQuoteViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\ViewModel\FuzzyParseRowViewModel.cs" />
+    <Compile Include="Modules\QuoteEntry\View\QuoteView.xaml.cs">
+      <DependentUpon>QuoteView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\QuoteEntry\View\QuoteConfirmView.xaml.cs">
+      <DependentUpon>QuoteConfirmView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\QuoteEntry\View\PreciseQuoteView.xaml.cs">
+      <DependentUpon>PreciseQuoteView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\QuoteEntry\View\FuzzyQuoteView.xaml.cs">
+      <DependentUpon>FuzzyQuoteView.xaml</DependentUpon>
+    </Compile>
+    <!-- Modules / MarketCenter(行情中心) -->
+    <Compile Include="Modules\MarketCenter\Model\MarketFilterPanelType.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\MarketCenterViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\BoardListViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\BoardBestViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\BoardIntentViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\IntentRowViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\BoardAlertViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\BondDetailViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\View\MarketCenterView.xaml.cs">
+      <DependentUpon>MarketCenterView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\BoardListView.xaml.cs">
+      <DependentUpon>BoardListView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\BoardIntentView.xaml.cs">
+      <DependentUpon>BoardIntentView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\MarketFilterPanel.xaml.cs">
+      <DependentUpon>MarketFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\CreditFilterPanel.xaml.cs">
+      <DependentUpon>CreditFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\RateFilterPanel.xaml.cs">
+      <DependentUpon>RateFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\IntentFilterPanel.xaml.cs">
+      <DependentUpon>IntentFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\AlertFilterPanel.xaml.cs">
+      <DependentUpon>AlertFilterPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\QuoteEntryDialog.xaml.cs">
+      <DependentUpon>QuoteEntryDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\ViewModel\FavBondManagerViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\FilterGroupManagerViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\View\FavBondManagerWindow.xaml.cs">
+      <DependentUpon>FavBondManagerWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\FilterGroupManagerWindow.xaml.cs">
+      <DependentUpon>FilterGroupManagerWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\QuoteFormMode.cs" />
+    <Compile Include="Modules\MarketCenter\View\QuoteEntryOverlayWindow.xaml.cs">
+      <DependentUpon>QuoteEntryOverlayWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\BondDetailPanel.xaml.cs">
+      <DependentUpon>BondDetailPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\BoardAlertView.xaml.cs">
+      <DependentUpon>BoardAlertView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\MarketCenter\View\BoardBestView.xaml.cs">
+      <DependentUpon>BoardBestView.xaml</DependentUpon>
+    </Compile>
+    <!-- Modules / QuoteMgmt(报价管理) -->
+    <Compile Include="Modules\QuoteMgmt\ViewModel\QuoteMgmtViewModel.cs" />
+    <Compile Include="Modules\QuoteMgmt\ViewModel\MgmtTodayViewModel.cs" />
+    <Compile Include="Modules\QuoteMgmt\ViewModel\MgmtHistoryViewModel.cs" />
+    <Compile Include="Modules\QuoteMgmt\View\QuoteMgmtView.xaml.cs">
+      <DependentUpon>QuoteMgmtView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\QuoteMgmt\View\MgmtTodayView.xaml.cs">
+      <DependentUpon>MgmtTodayView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\QuoteMgmt\View\MgmtHistoryView.xaml.cs">
+      <DependentUpon>MgmtHistoryView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\QuoteMgmt\View\MgmtFilterPanel.xaml.cs">
+      <DependentUpon>MgmtFilterPanel.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="Themes\DarkTheme.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\Colors.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\Brushes.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\Controls.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\View\MainView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\View\UserCenterWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shell\View\SettingsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\StatusBar.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\QueryStateOverlay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\PendingQuotesBanner.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\FilterTagRow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\FilterComboRow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\FilterSearchRow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\FilterSectionHeader.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Themes\ModalStyles.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\FilterRangeRow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\PromptDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\ConfirmDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\SearchBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\AlertPopupWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Shared\Components\ToastHost.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteEntry\View\QuoteView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteEntry\View\QuoteConfirmView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteEntry\View\PreciseQuoteView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteEntry\View\FuzzyQuoteView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\MarketCenterView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\BoardListView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\BoardIntentView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\MarketFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\CreditFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\RateFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\IntentFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\AlertFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\QuoteEntryDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\FavBondManagerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\FilterGroupManagerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\QuoteEntryOverlayWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\BondDetailPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\BoardAlertView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\BoardBestView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\BoardRowContextMenu.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteMgmt\View\QuoteMgmtView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteMgmt\View\MgmtTodayView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteMgmt\View\MgmtHistoryView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\QuoteMgmt\View\MgmtFilterPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 公共库由宿主 client\bin 提供,Private=False 避免插件目录出现副本(会导致同类型两份 Assembly) -->
+    <ProjectReference Include="..\STC.Common\STC.Common.csproj">
+      <Project>{756F6622-163E-419A-B853-6F148101979D}</Project>
+      <Name>STC.Common</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\STC.Frame\STC.Frame.csproj">
+      <Project>{71DA583B-72E4-44C1-ABF0-A9D64319CBD6}</Project>
+      <Name>STC.Frame</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Ficc\*.cs" />
+    <Compile Include="View\*.cs" />
+    <Page Include="View\ProductTheme.xaml"><Generator>MSBuild:Compile</Generator></Page>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- CommunityToolkit.Mvvm: PackageReference 显式声明(让 VS 引用树可见) + 构建期逻辑。
+       不设 $(MvvmRuntimeDll), 故不落任何 dll 到 client\plugin —— 运行期复用 client\bin 里
+       由 STC.Common 落下的那份 (STC.exe.config 的 probing privatePath="bin;plugin" 保证能找到)。 -->
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Mvvm.targets" />
+</Project>

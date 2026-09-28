@@ -1,0 +1,282 @@
+﻿<commComp:WindowBase x:Class="STC.PT.Plugin.View.BatchUpdateDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.PT.Plugin.View"
+             xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             xmlns:fconpt="clr-namespace:STC.PT.Plugin.Convertor"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Width="740" Height="380">
+    <commComp:WindowBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+            </ResourceDictionary.MergedDictionaries>
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <fcon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <fcon:ReverseVisibilityConvertor x:Key="reversevisibilityConvertor"/>
+            <fcon:BooleanConvertor x:Key="booleanConvertor"/>
+            <fcon:ReverseBooleanConvertor x:Key="reverseBooleanConvertor"/>
+            <fconpt:BondFieldConvertor x:Key="BondFieldConvertor"/>
+            <Style x:Key="DrpDefaultDataGrid" TargetType="DataGrid">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <!-- 不需要虚拟模式 -->
+                <!--<Setter Property="EnableRowVirtualization" Value="False"/>-->
+                <!-- 不需要边框 -->
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+                <Setter Property="EnableColumnVirtualization" Value="True"/>
+                <Setter Property="EnableRowVirtualization" Value="True"/>
+                <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+                <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+                <Setter Property="VirtualizingPanel.IsContainerVirtualizable" Value="True"/>
+                <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+                <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True"/>
+                <Setter Property="SelectionMode" Value="Single"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource DataGridColumnHeaderBorderBrush}"/>
+                <Setter Property="FontSize" Value="{DynamicResource SmallContentFontSize}"/>
+                <Setter Property="Background" Value="{DynamicResource DataGridBackGround}"/>
+                <Setter Property="RowStyle" Value="{DynamicResource DrpDataGridRowStyle}"/>
+                <Setter Property="CellStyle" Value="{DynamicResource DrpDataGridCellStyle}"/>
+                <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+            </Style>
+
+            <Style x:Key="DrpDataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Background" Value="{DynamicResource MainTitleBackgroup.ColorBrush}"/>
+                <Setter Property="BorderBrush" Value="#000000"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="IsHitTestVisible" Value="False"/>
+                <Style.Triggers>
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{DynamicResource Item.MouseOver.Background}"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,0"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{DynamicResource Item.MouseOver.Background}"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,0"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                            <Condition Property="IsSelected" Value="False"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{DynamicResource Item.SelectedInactive.Background}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="DrpDataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="IsTabStop" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+                <Setter Property="Background" Value="{DynamicResource DataGridBackGround}"/>
+                <Setter Property="MinHeight" Value="32"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="Padding" Value="5,0,5,0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,0">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="{TemplateBinding Padding}"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <!--<Setter Property="Background" Value="#0A2420" />-->
+                        <Setter Property="Foreground" Value="#00CDAD" />
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="False">
+                        <!--<Setter Property="Background" Value="{DynamicResource DataGridBackGround}" />-->
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}" />
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                            <Condition Property="IsSelected" Value="False"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="{DynamicResource HoverDataGridBackGround}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridRowStyle2" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="{DynamicResource DefaultForegroup.ColorBrush}"></Setter>
+                <Setter Property="Background" Value="{DynamicResource DefaultBackgroup.ColorBrush}"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="IsHitTestVisible" Value="False"/>
+                
+            </Style>
+        </ResourceDictionary>
+    </commComp:WindowBase.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="70"></RowDefinition>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <TextBlock  Padding="0,3,0,3" VerticalAlignment="Center" FontSize="12px" TextWrapping="Wrap" Margin="10 0 10 0">            
+                <Run>共选择</Run>
+                <Run x:Name="tbCount" Foreground="{DynamicResource ColorBrush.Yellow}" Text="{Binding SelectCount}"></Run>
+                <Run>笔交易，修改</Run>
+                <Run Foreground="{DynamicResource ColorBrush.Yellow}" Text="{Binding MsgDetails}"></Run>
+                <Run>明细如下，请再次确认</Run>
+            </TextBlock>
+        </StackPanel>
+        <DataGrid x:Name="dg" Grid.Row="1" 
+                  ItemsSource="{Binding Mv}" AutoGenerateColumns="False" Style="{DynamicResource DrpDefaultDataGrid}"
+                  RowHeaderWidth="0"  RowDetailsVisibilityMode="Visible"
+                  VerticalGridLinesBrush="Transparent" HorizontalAlignment="Stretch"
+                  GridLinesVisibility="None" HeadersVisibility="None" 
+                  Background="{DynamicResource MainListTitleBackgroup.ColorBrush}"
+                  VirtualizingPanel.IsVirtualizing="True" Margin="10 0 10 0"
+                  EnableRowVirtualization="True" VirtualizingPanel.IsContainerVirtualizable="True"
+                  PreviewMouseWheel="dg_PreviewMouseWheel">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn  MinWidth="145" Header="成交编号">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ExecID}" x:Name="txtExecID" ToolTip="{Binding ExecID}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  Width="70" Header="交易日期">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding TradeDate}" x:Name="txtTradeDate" ToolTip="{Binding TradeDate}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="70" Header="债券代码">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding SecurityID}" x:Name="txtSecurityID" ToolTip="{Binding SecurityID}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  Width="30" Header="方向">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" x:Name="txtSide" ToolTip="{Binding Side}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="40" Header="价格">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding LastPx}" x:Name="txtLastPrice" ToolTip="{Binding LastPx}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="60" Header="净价">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding NetPrice}" x:Name="txtNetPrice" ToolTip="{Binding NetPrice}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="50" Header="成交量">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding LastQty}" x:Name="txtLastQty" ToolTip="{Binding LastQty}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  Width="30" Header="清算速度">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype_tooltip'}" x:Name="txtSettlType" ToolTip="{Binding SettlType}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="70" Header="客户机构">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding InstitutionName}" x:Name="txtClientInst" ToolTip="{Binding InstitutionName}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="10" Header="客户">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding TraderName}" x:Name="txtClient" ToolTip="{Binding TraderName}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="10" Header="席位号">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding SeatNumber}" x:Name="txtSeatNumber" ToolTip="{Binding SeatNumber}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  MinWidth="10" Header="备注">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Remark}" x:Name="txtRemark" ToolTip="{Binding Remark}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+            <DataGrid.RowDetailsTemplate>
+                <DataTemplate>
+                    <DataGrid ItemsSource="{Binding Details}" AutoGenerateColumns="False" Style="{DynamicResource DefaultDataGridNoHeadSpaceStyle}"
+                              RowHeaderWidth="0"  RowDetailsVisibilityMode="Collapsed"  HorizontalScrollBarVisibility="Disabled" 
+                              RowStyle="{DynamicResource DataGridRowStyle2}" VerticalGridLinesBrush="Transparent"
+                              GridLinesVisibility="None" HeadersVisibility="None" HorizontalAlignment="Stretch"
+                              Background="{DynamicResource MainListTitleBackgroup.ColorBrush}" Margin="10 0 0 0">
+
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="说明" MinWidth="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent" MouseMove="Border_MouseMove">
+                                            <StackPanel Orientation="Horizontal" Margin="134 0 0 0" >
+                                                <TextBlock Text="{Binding OldValue}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"/>
+                                                <TextBlock Text=" -> " HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12"/>
+                                                <TextBlock Text="{Binding NewValue}" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" FontFamily="MicroSoftYaiHei" FontSize="12" Foreground="{DynamicResource ColorBrush.Yellow}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DataTemplate>
+            </DataGrid.RowDetailsTemplate>
+        </DataGrid>
+        <Border Grid.Row="2" BorderBrush="#232323" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="btnCancel" Width="60" Height="24" 
+                        Style="{DynamicResource GrayButtonStyle}"
+                        IsEnabled="{Binding IsUpdating,Converter={StaticResource reverseBooleanConvertor}}"
+                            Click="btnCancel_Click">取消</Button>
+                <Button x:Name="btnOK" Width="100" Height="24" Margin="4,0,0,0" 
+                        Style="{DynamicResource RedButtonStyle}"
+                        IsEnabled="{Binding IsUpdating,Converter={StaticResource reverseBooleanConvertor}}"
+                        Command="{Binding ConfirmCommand}" >确定</Button>
+            </StackPanel>
+
+        </Border>
+    </Grid>
+</commComp:WindowBase>

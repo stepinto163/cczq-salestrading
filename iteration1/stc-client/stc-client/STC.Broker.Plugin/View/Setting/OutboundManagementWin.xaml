@@ -1,0 +1,135 @@
+﻿<commonComp:WindowBase x:Class="STC.Broker.Plugin.View.Setting.OutboundManagementWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Setting"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+            xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterOwner"
+         Background="#0A0F0E" BorderThickness="2" 
+        BorderBrush="#282828" ResizeMode="NoResize"
+        Title="外发管理" Height="450" Width="800">
+    <Window.Resources>
+        <ResourceDictionary>
+            <Style BasedOn="{StaticResource DefaultScrollViewer}" TargetType="ScrollViewer">
+                <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid x:Name="gMain" Grid.Row="1" Background="#090C0C">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Row="0" x:Name="visTextTextBox" Width="0" Height="0"></TextBox>
+                <StackPanel x:Name="spConditions" HorizontalAlignment="Left" Orientation="Horizontal"  VerticalAlignment="Center" Grid.Row="0" Grid.Column="0">
+                    <commonComp:WatermarkTextBox x:Name="tb_Organization" Margin="10,0,10, 0" Grid.Row="1" Width="235" Height="22" WaterMark="搜索机构"
+                                 PreviewKeyDown="tb_Organization_PreviewKeyDown"
+                                 KeyDown="tb_Organization_KeyDown" 
+                                 TextChanged="tb_Organization_TextChanged"
+                                 HorizontalAlignment="Left"
+                                 input:TextCompositionManager.PreviewTextInput="tbTraderAInfoChange_PreviewTextInput"
+                                 input:TextCompositionManager.PreviewTextInputUpdate="tbTraderAInfoChange_PreviewTextInputUpdate">
+                    </commonComp:WatermarkTextBox>
+                    <Popup x:Name="pop_Organization" PlacementTarget="{Binding ElementName=tb_Organization}" LostFocus="popReciveName_LostFocus" StaysOpen="False">
+                        <DataGrid x:Name="dgRecive"
+                                  Grid.Row="1"
+                                  Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="235" 
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                   DataGridRow.MouseUp="dgRecive_MouseUp"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <DataGrid.Resources>
+                                <Style x:Key="tbStyle" TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding shortnamecn}" Width="1*" >
+                                    <DataGridTextColumn.ElementStyle >
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                            <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                            <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                    </Popup>
+                </StackPanel>
+                <StackPanel  HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,10,0" VerticalAlignment="Center"  Grid.Row="0" Grid.Column="1">
+                    <Button  x:Name="btn_Add" Margin="10,0,0,0" FontWeight="SemiBold" Style="{DynamicResource GraySlateButtonStyle}" Foreground="#D7D7D7" BorderThickness="0 1 0 0" Width="60" Height="22" Content="添加" Click="btn_Add_Click"/>
+                    <Button  x:Name="btn_Del" Margin="5,0,0,0" FontWeight="SemiBold" Style="{DynamicResource GraySlateButtonStyle}" Foreground="#D7D7D7" BorderThickness="0 1 0 0" IsEnabled="False" Width="60" Height="22" Content="解除" Click="btn_Del_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+        <Grid x:Name="gDetail" Grid.Row="1" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid Background="Black" Margin="5">
+                <DataGrid x:Name="dgRecords"  HorizontalAlignment="Left" ItemsSource="{Binding}" FontSize="12" Opacity="1"   BorderThickness="1"  BorderBrush="#323232" 
+                          Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.CanContentScroll="True"
+                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel"
+                              >
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                            <Setter Property="Margin" Value="5,0,5,0"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                            <Setter Property="ToolTip">
+                                <Setter.Value>
+                                    <ToolTip Content="{Binding Path=Text}"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.Resources>
+
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="40" CanUserSort="False" SortMemberPath="PriceFormat">
+                            <DataGridTemplateColumn.HeaderTemplate >
+                                <DataTemplate >
+                                    <CheckBox  x:Name="cb_all" Style="{DynamicResource DefaultCheckBoxStyle}"  Margin="6,0,0,0"  IsChecked="{Binding IsAllChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:OutboundManagementWin}}}" Click="cb_all_Click"></CheckBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.HeaderTemplate>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox Style="{DynamicResource DefaultCheckBoxStyle}" Margin="5,0,0,0" IsChecked="{Binding IsChecked,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Click="CheckBox_Click"></CheckBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:Name="dgtcSeq" Header="机构简称" Width="70*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" FontWeight="Bold" Binding="{Binding OrganizationShortName}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcGoodsCode" Header="机构全称" Width="130*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" FontWeight="Bold" Binding="{Binding OrganizationFullName}"></DataGridTextColumn>
+                        <DataGridTextColumn x:Name="dgtcGoodsShortName" Header="城市" Width="50*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsShortName" FontWeight="Bold"  Binding="{Binding City}"></DataGridTextColumn>
+                        <DataGridTextColumn  Header="操作人" Width="60*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsCode" FontWeight="Bold" Binding="{Binding Operator}"></DataGridTextColumn>
+                        <DataGridTextColumn  Header="操作时间" Width="100*" ElementStyle="{StaticResource tbStyle}" CanUserSort="False" SortMemberPath="goodsShortName" FontWeight="Bold"  Binding="{Binding OperateTime}"></DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Grid>
+    </Grid>
+</commonComp:WindowBase>
+

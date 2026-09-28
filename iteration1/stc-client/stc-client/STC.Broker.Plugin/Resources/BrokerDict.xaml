@@ -1,0 +1,509 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:STC.Broker.Plugin">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/STC.Broker.Plugin;component/Resources/StyleDict.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+
+    <Style x:Key="ConfirmButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="FontFamily" Value="MicrosoftYaHei"></Setter>
+        <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+        <Setter Property="FontSize" Value="12"></Setter>
+        <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+        <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#136C5E" >
+                        <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#178674"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" TargetName="border" Value="#464646"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#464646"/>
+                            <Setter Property="Foreground"  Value="#8F9598"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ButtonStyle2" TargetType="Button" BasedOn="{StaticResource ConfirmButtonStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>
+        <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+        <Setter Property="FontSize" Value="12"></Setter>
+        <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+        <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="{TemplateBinding Background}" >
+                        <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#178674"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <Style x:Key="UserControlBorderStyle" TargetType="Border">
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#0f7767"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="False">
+                <Setter Property="BorderThickness" Value="0"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--birgde datagrid style-->
+    <Style x:Key="BrigdeDataGridStyle" TargetType="{x:Type DataGrid}">
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="GridLinesVisibility" Value="None"/>
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="HeadersVisibility" Value="None"/>
+        <Setter Property="AutoGenerateColumns" Value="False"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="AlternationCount" Value="2"/>
+        <Setter Property="Height" Value="Auto"/>
+        <Setter Property="FontSize" Value="{StaticResource NormalContentFontSize}"/>
+        <Setter Property="RowStyle">
+            <Setter.Value>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Margin" Value="0,0,0,0"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="Height" Value="24"/>
+                    <Setter Property="Background" Value="{StaticResource ColorBrush.BlackishGreen}"/>
+                    <Style.Triggers>
+                        <Trigger Property="ItemsControl.AlternationIndex"  Value="1">
+                            <Setter Property="Background" Value="#152421"  />
+                        </Trigger>
+                        <Trigger Property="ItemsControl.AlternationIndex"  Value="0">
+                            <Setter Property="Background" Value="#111917"  />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="CellStyle">
+            <Setter.Value>
+                <Style TargetType="DataGridCell" >
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Style.Triggers >
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#193D37"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!--brigde row ordertext style-->
+    <Style x:Key="RowBrigdeOrderText" TargetType="TextBlock">
+        <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="VerticalAlignment" Value="Center"></Setter>
+        <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei.SemiSold}" ></Setter>
+        <Setter Property="Foreground" Value="{StaticResource DefaultForeground}" ></Setter>
+    </Style>
+    
+    <!--brigde row button style-->
+    <Style x:Key="RowButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+        <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#193D37" >
+                        <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#178674"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+
+                </ControlTemplate>
+
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="BaselineButton" TargetType="{x:Type Button}">
+        <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+        <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+        <Setter Property="Foreground" Value="#FFEBC8"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <TextBlock x:Name="TB_Text" TextDecorations="Baseline" Style="{StaticResource RowBrigdeOrderText}">
+                        <ContentPresenter Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </TextBlock>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="TB_Text" Value="#178674"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" TargetName="TB_Text" Value="#115B4F"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!--可拖动listbox item-->
+    <Style TargetType="{x:Type ListBoxItem}" x:Key="DragListBoxItemStyle">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Height" Value="30"/>
+        <Setter Property="Foreground" Value="#FFEBC8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="ToolTip" Value="{Binding UsedLimitedShow}"/>
+        <Setter Property="AllowDrop" Value="True"></Setter>
+        <!--设置模板-->
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem" >
+                    <Grid   Background="{TemplateBinding Background}" >
+                        <TextBlock Text="{Binding Item1}" x:Name="tbItem1"
+                                           Margin="5,0,35,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                           TextBlock.FontFamily="{TemplateBinding FontFamily}"
+                                           TextBlock.FontSize="{TemplateBinding FontSize}" 
+                                           Foreground="{TemplateBinding Foreground}">
+                            <TextBlock.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"/>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Item2}"  Background="{StaticResource ColorBrush.Green}"
+                                           Padding="4,0,4,0"
+                                           Margin="20,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                           TextBlock.FontFamily="{TemplateBinding FontFamily}"
+                                           TextBlock.FontSize="{TemplateBinding FontSize}" 
+                                           Foreground="{TemplateBinding Foreground}">
+                            <TextBlock.ToolTip>
+                                <ToolTip Content="{Binding Path=Text}"/>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <!--<EventSetter Event="PreviewMouseMove" Handler="lsBridge_PreviewMouseMove"></EventSetter>
+        <EventSetter Event="QueryContinueDrag" Handler="ListBoxItem_QueryContinueDrag"></EventSetter>-->
+        <Style.Triggers>
+            <!--触发器，通过设置 AlternationCount="2"ItemsControl.AlternationIndex 实现颜色交替显示 -->
+            <Trigger Property="ItemsControl.AlternationIndex"  Value="1">
+                <Setter Property="Background" Value="#152421"  />
+            </Trigger>
+            <Trigger Property="ItemsControl.AlternationIndex"  Value="0">
+                <Setter Property="Background" Value="#111917"  />
+            </Trigger>
+            <Trigger Property="ListBoxItem.IsSelected"  Value="True">
+                <Setter Property="Background" Value="#173D37"  />
+                <Setter Property="Foreground" Value="Yellow" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#173D37"  />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--listbox-->
+    <Style TargetType="ListBox" x:Key="DragListBoxStyle">
+        <Setter Property="Background" Value="#162220"/>
+        <Setter Property="Foreground" Value="#D4C6A7"/>
+        <Setter Property="AlternationCount" Value="2"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource DragListBoxItemStyle}"/>
+       
+        <!--设置模板-->
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBox">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel  Orientation="Vertical" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ScrollViewer>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Style x:Key="CommonButtonStyle" TargetType="{x:Type Button}">
+        <!--<Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.Medium}"></Setter>-->
+        <Setter Property="FontFamily" Value="{StaticResource IDCFontFamily.YaHei}"></Setter>
+        <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"></Setter>
+        <Setter Property="VerticalContentAlignment" Value="Center"></Setter>
+        <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" 
+                                    CornerRadius="2" Background="#136C5E" >
+                        <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"></ContentPresenter>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#178674"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#178674"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" TargetName="border" Value="#115B4F"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#115B4F"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" TargetName="border" Value="#464646"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="#464646"/>
+                        </Trigger>
+
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="BrokerNormalFont" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{DynamicResource DefaultFont}"/>
+        <Setter Property="FontSize" Value="12px"/>
+    </Style>
+
+    <!-- 现金流按钮样式-->
+    <Style TargetType="{x:Type Button}" x:Key="ImageCashButton">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid>
+                        <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                            <Border.Background>
+                                <ImageBrush ImageSource="./Images/icon_operation_history_normal.png"/>
+                            </Border.Background>
+                        </Border>
+                        <Grid>
+                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_operation_history_hover.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Control.Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_operation_history_pressed.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Control.Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_operation_history_disabled.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!--正常报价字体颜色-->
+    <SolidColorBrush x:Key="scbNormalPrice" Color="#FFEBC8"/>
+    <!--Bid GVN报价颜色-->
+    <SolidColorBrush x:Key="scbBidPrice" Color="#FF9200"/>
+    <!--Offer TKN报价颜色-->
+    <SolidColorBrush x:Key="scbOfferPrice" Color="#12A1FF"/>    
+    <!--暗盘报价字体颜色-->
+    <SolidColorBrush x:Key="scbActualPrice" Color="#00FFB4"/>
+
+    <Separator x:Key="sSeparator" x:Shared="False"  Margin="0,10,0,10"  Background="#FFFFFF" Opacity="0.19"/>
+
+    <!--流程状态字体颜色-->
+    <SolidColorBrush x:Key="scbConfirm" Color="#7ED321"/>
+    <SolidColorBrush x:Key="scbPartlyConfirm" Color="#A858CA"/>
+    <SolidColorBrush x:Key="scbRefuse" Color="#D04553"/>
+    <SolidColorBrush x:Key="scbWaitConfirm" Color="#FFEBC8"/>
+
+    <!--流程标题颜色-->
+    <SolidColorBrush x:Key="scbTBClickedPrice" Color="#B67700"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbTBConfirmPrice" Color="#449535"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbTBRefusePrice" Color="#A93743"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbTBPartlyConfirmPrice" Color="#6C3883"></SolidColorBrush>
+    
+    <!--流程背景颜色-->
+    <SolidColorBrush x:Key="scbCBClickedPrice" Color="#3B3A32"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbCBConfirmPrice" Color="#1C2E18"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbCBRefusePrice" Color="#342325"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbCBPartlyConfirmPrice" Color="#281E2D"></SolidColorBrush>
+
+    <!--流程边框颜色-->
+    <SolidColorBrush x:Key="scbBClickedPrice" Color="#68654C"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbBConfirmPrice" Color="#375531"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbBRefusePrice" Color="#573A3D"></SolidColorBrush>
+    <SolidColorBrush x:Key="scbBPartlyConfirmPrice" Color="#4F3B59"></SolidColorBrush>
+    <SolidColorBrush x:Key="scb红色删除线" Opacity="0.5" Color="Red"></SolidColorBrush>
+    <!--报价标记-->
+    <Image x:Key="price_x_Image"  x:Shared="False"  Source="./Images/price_tag_x.png"/>
+    <Image x:Key="price_xx_Image"  x:Shared="False"  Source="./Images/price_tag_xx.png"/>
+    <Image x:Key="price_oco_Image" x:Shared="False"  Source="./Images/price_tag_oco.png"/>
+    <Image x:Key="price_package_Image" x:Shared="False" Source="./Images/price_tag_package.png"/>
+
+    <Image x:Key="ExchangeBond_Image" x:Shared="False" Source="./Images/price_tag_switch.png"/>
+
+    <!--订单状态-->
+    <Image x:Key="image_status_confirmed" x:Shared="False"  Source="./Images/trade_tag_confirmed.png"/>
+    <Image x:Key="image_status_denied" x:Shared="False" Source="./Images/trade_tag_denied.png"/>
+    <Image x:Key="image_status_partly_confirmed" x:Shared="False" Source="./Images/trade_tag_partly_confirmed.png"/>
+
+
+    <!-- 现金流按钮样式-->
+    <Style TargetType="{x:Type Button}" x:Key="ImageOrderNrButton">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid>
+                        <Border x:Name="background"  Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                            <Border.Background>
+                                <ImageBrush ImageSource="./Images/icon_quote_internal_normal.png"/>
+                            </Border.Background>
+                        </Border>
+                        <Grid>
+                            <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsRefreshOrder}" Value="true">
+                            <Setter Property="Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_quote_internal_selected.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter Property="Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_quote_internal_normal.png"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Cursor" Value="Hand"></Setter>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Control.Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_quote_internal_normal.png"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Cursor" Value="Hand"></Setter>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Control.Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="./Images/icon_quote_internal_normal.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <Style x:Key="ReFalshDefaultButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Foreground" Value="#FFEBC8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template" >
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" CornerRadius="2,2,2,2" BorderThickness="0" Background="{TemplateBinding Background}" BorderBrush="#FFFFEBC8">
+                        <Image  Grid.Column="1" Width="16" Height="17"  >
+                            <Image.Source>
+                                <DrawingImage >
+                                    <DrawingImage.Drawing>
+                                        <DrawingGroup ClipGeometry="M0,0 V15 H12 V0 H0 Z">
+                                            <DrawingGroup Opacity="1">
+                                                <DrawingGroup Opacity="1" Transform="1,0,0,1,-394,-432">
+                                                    <DrawingGroup Opacity="1" Transform="1,0,0,1,394.588248,432.364964">
+                                                        <GeometryDrawing Brush="{Binding BorderBrush, RelativeSource={ RelativeSource Mode=FindAncestor, AncestorType=Border} }" Geometry="F0 M12,15z M0,0z M3.83588614,4.23023228C3.9856694,4.53326634 3.86143508,4.90034732 3.55840101,5.05013058 2.13546325,5.7534583 1.22411701,7.16574707 1.22411701,8.7321872 1.22411701,11.0110152 3.13811438,12.8662384 5.50852655,12.8662384 7.87893872,12.8662384 9.79293609,11.0110152 9.79293609,8.7321872 9.79293609,7.18432176 8.90322885,5.78618071 7.5065475,5.0741744 7.2053916,4.92064983 7.08571276,4.55205848 7.23923733,4.25090258 7.3927619,3.94974668 7.76135325,3.83006783 8.06250915,3.9835924 9.86223968,4.90106688 11.0170531,6.71581219 11.0170531,8.7321872 11.0170531,11.6957673 8.54660363,14.0903555 5.50852655,14.0903555 2.47044947,14.0903555 0,11.6957673 0,8.7321872 0,6.69167799 1.18267864,4.8589127 3.01598783,3.95274715 3.3190219,3.80296388 3.68610288,3.92719821 3.83588614,4.23023228z M3.43963635,0.685671927C4.65075668,-0.264238452,6.56046649,-0.22666626,7.71658736,0.795281397L9.58089011,2.44322313 9.64642157,2.51057937C9.83965359,2.74350527 9.78156652,3.05366443 9.49444643,3.2365332 9.17861433,3.43768884 8.70525149,3.40864956 8.43716092,3.17167215L6.57285817,1.52373042 6.46997852,1.44022046C6.38034722,1.37351935,6.28502466,1.31742107,6.18582004,1.27193012L6.18594591,7.58434522C6.18594591,7.87957578 5.88265493,8.11890744 5.50852655,8.11890744 5.16557554,8.11890744 4.88214762,7.91780237 4.83729124,7.65688215L4.8311072,7.58434522 4.83092923,1.27553603C4.69569139,1.33845078,4.56776146,1.42117843,4.45174525,1.52373042L2.57987856,3.17835826 2.50194613,3.23781625C2.22702392,3.4187131 1.80971313,3.42608807 1.52259305,3.2432193 1.20676095,3.04206366 1.1680588,2.68688664 1.43614937,2.44990923L3.30801605,0.795281397z" />
+                                                    </DrawingGroup>
+                                                </DrawingGroup>
+                                            </DrawingGroup>
+                                        </DrawingGroup>
+                                    </DrawingImage.Drawing>
+                                </DrawingImage>
+                            </Image.Source>
+                        </Image>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsRefreshOrderEnable}" Value="false">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#8F9598">
+                            </Setter>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#178674" TargetName="border"  />
+                            <Setter Property="Cursor" Value="Hand"></Setter>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Background" Value="#115B4F"  TargetName="border" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

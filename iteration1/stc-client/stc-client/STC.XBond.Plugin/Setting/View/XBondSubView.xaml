@@ -1,0 +1,115 @@
+﻿<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.Setting.View" 
+             xmlns:Component="clr-namespace:STC.XBond.Plugin.Setting.Component" 
+             xmlns:vm="clr-namespace:STC.XBond.Plugin.Setting.ViewModel" 
+             x:Class="STC.XBond.Plugin.Setting.View.XBondSubView"
+             mc:Ignorable="d" d:DesignHeight="300" Width="auto" Height="auto" 
+             Initialized="XBondSubView_Initialized" Margin="10,10,10,10"
+             Loaded="UserControl_Loaded">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/XBondDataGrid.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Setting/Resources/ChanelStyle.xaml"/>
+                <!--<ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/GridSplitterStyleDictionary.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridTextLeftStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontFamily" Value="{StaticResource NotoSansDisplya-SemiBold}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="Title_Part" Height="30"/>
+            <RowDefinition/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
+        <Component:XBondSearchTextBox x:Name="Search_TextBox" SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" Margin="0,0,50,0" Width="160" Height="24"/>
+        <!--<Button x:Name="selectBtn" Content="筛选" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Left" Width="60" Height="24" Margin="170,0,20,0" Click="selectBtn_Click"/>-->
+        <!--<local:MultiSelectComboBox  Width="100" Height="30" ItemsSource="{Binding Items}" SelectedItems="{Binding SelectedItems}" x:Name="MC" ToolTip="{Binding Path=Text, RelativeSource={RelativeSource Self}}"></local:MultiSelectComboBox>-->
+        <TextBlock Text="{Binding TotalText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" FontFamily="{StaticResource IDCFontFamily.NotoSansCJKsc-Regular}" Foreground="{StaticResource ColorBrush.Gray14}" FontSize="12" Margin="10, 9, 10, 0" IsEnabled="False"/>
+        <DataGrid x:Name="dataGrid" Grid.Row="1" AutoGenerateColumns="False" 
+                  ItemsSource="{Binding MDBondView}" Style="{StaticResource DefaultManageDataGrid}" 
+                  SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                  LoadingRow="dataGrid_LoadingRow" RowHeaderWidth="0">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="40" Header="序号">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding RelativeSource={RelativeSource Mode=FindAncestor,AncestorType={x:Type DataGridRow}}, Path=Header}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="债券代码" Width="*" MinWidth="120" IsReadOnly="True" CanUserSort="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock  Visibility="{Binding EditBtnVisible}" Text="{Binding SecurityID}"></TextBlock>
+
+                                <Component:XBondCusSearchTextBox x:Name="SearchBond_TextBox" 
+                                                                 HorizontalAlignment="Stretch" 
+                                                                 Grid.Column="0" 
+                                                                 SearchText="{Binding SecurityID,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                                 VerticalAlignment="Top" Height="24" 
+                                                                 IsEnabled="{Binding SecurityIDIsEdit}"
+                                                                 Visibility="{Binding SaveBtnVisible}"
+                                                                 ValueChanged="SearchBond_TextBox_ValueChanged"/>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding symbol}" Header="简称" Width="*" MinWidth="80" IsReadOnly="True" CanUserSort="False"/>
+                <!--<DataGridTextColumn Binding="{Binding SecurityTypeDesc}" Header="类型" Width="Auto" MinWidth="45" IsReadOnly="True" CanUserSort="True"/>-->
+                <DataGridTemplateColumn Header="清算速度" Width="*" MinWidth="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <!--<local:MultiSelectComboBox  Width="100" Height="30" ItemsSource="{Binding Items}" SelectedItems="{Binding Items}" ToolTip="{Binding Path=Text, RelativeSource={RelativeSource Self}}"></local:MultiSelectComboBox>-->
+                            <Grid>
+                                <TextBlock  Visibility="{Binding EditBtnVisible}" Text="{Binding SettlTypeText}"></TextBlock>
+                                <ComboBox x:Name="settleTypeCombox" Style="{StaticResource ComboBoxStyle}" IsEnabled="{Binding SettlTypeIsEdit}" Visibility="{Binding SaveBtnVisible}" SelectedIndex="{Binding SettlTypeIndex , Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
+                                    <!--<ComboBoxItem Content="T+0" Tag="0"></ComboBoxItem>-->
+                                    <ComboBoxItem Content="T+1" Tag="0"/>
+                                    <ComboBoxItem Content="T+0,T+1" Tag="1"/>
+                                </ComboBox>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding CreateTime}" Header="最后修改时间" Width="*" MinWidth="120" IsReadOnly="True" CanUserSort="True"/>
+                <DataGridTemplateColumn Header="" Width="Auto" MinWidth="40" HeaderStyle="{StaticResource DataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="editBtn" Grid.Column="0" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource EditButton}" Visibility="{Binding EditBtnVisible ,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.EditMdSecurityidsCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                <Button Grid.Row="0" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Left" Style="{StaticResource SaveButton}" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.SaveMdSecurityidsCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                <Button Grid.Column="1" BorderThickness="0" Height="20" Width="20" VerticalAlignment="Center" HorizontalAlignment="Right" Style="{StaticResource CancelButton}" Visibility="{Binding SaveBtnVisible ,Converter={StaticResource visibilityConvertor}}" Command="{Binding DataContext.CancelMdSecurityidsCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Button x:Name="ImportBtn" Grid.Row="2" Content="导入" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Left" Width="60" Height="24" Margin="10,0,0,0"/>
+        <Button x:Name="ExportBtn" Grid.Row="2" Content="导出" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Left" Width="60" Height="24" Margin="80,0,0,0"/>
+        <Button x:Name="AddBtn" Grid.Row="2" Content="新增" Style="{DynamicResource RedButtonStyle}" HorizontalAlignment="Right" Width="60" Height="24" Margin="10,0,10,0" Command="{Binding AddMdSecurityidsCommand}"/>
+        <Button x:Name="DeleteBtn" Grid.Row="2" Content="删除" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Right" Width="60" Height="24" Margin="0,0,80,0" Command="{Binding DelMdSecurityidsCommand}"/>
+    </Grid>
+</UserControl>

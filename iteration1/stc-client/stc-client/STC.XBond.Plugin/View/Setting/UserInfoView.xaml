@@ -1,0 +1,347 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Setting.UserInfoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View.Setting"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+        <Style TargetType="{x:Type Button}" x:Key="ImageButtonStyle">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="background" Height="{TemplateBinding Height}" Background="{TemplateBinding Background}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                            </Border>
+                            <Grid>
+                                <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="Background" TargetName="background">
+                                    <Setter.Value>
+                                        <ImageBrush ImageSource="../Images/stc_operation_history_dark_pressed.png"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                <Setter Property="Control.Background" TargetName="background">
+                                    <Setter.Value>
+                                        <ImageBrush ImageSource="../Images/stc_operation_history_dark_hover.png"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Control.Background" TargetName="background">
+                                    <Setter.Value>
+                                        <ImageBrush ImageSource="../Images/stc_operation_history_dark_disabled.png"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+        <Style x:Key="CheckBoxThemeColor" TargetType="CheckBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" x:Name="_borderOne" CornerRadius="5" Background="#3C3C3C" Width="12" Height="12" Margin="{TemplateBinding Margin}">
+                                <Border x:Name="_borderTwo" CornerRadius="4" Background="#3C3C3C" Width="8" Height="8" Margin="{TemplateBinding Margin}">
+                                    <Border x:Name="_borderThree" CornerRadius="3" Background="#141414" Width="6" Height="6" Margin="{TemplateBinding Margin}">
+
+                                    </Border>
+                                </Border>
+                            </Border>
+                            <ContentPresenter Grid.Column="1" x:Name="contentPresenter" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" TargetName="_borderOne" Value="#E63034"/>
+                                <Setter Property="Background" TargetName="_borderTwo" Value="#141414"/>
+                                <Setter Property="Background" TargetName="_borderThree" Value="#E63034"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter Property="Background" TargetName="_borderOne" Value="#3C3C3C"/>
+                                <Setter Property="Background" TargetName="_borderTwo" Value="#3C3C3C"/>
+                                <Setter Property="Background" TargetName="_borderThree" Value="#141414"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <Style x:Key="itemContainStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Content" Value="{Binding Name}"/>
+            <Setter Property="IsSelected" Value="{Binding Checked}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="IsEnabled" Value="{Binding ItemEnable}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="border" BorderBrush="#515151" Background="{TemplateBinding Background}"
+                                    BorderThickness="1" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+
+                            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="{Binding BgColor}"></Setter>
+                                <!--Value="{Binding SendPriceItem.BorderBH, Mode=TwoWay}"/>-->
+                            </Trigger>
+
+                            <Trigger Property="IsSelected" Value="false">
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource ColorBrush.Gray15}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="true">
+                                    <Setter TargetName="border" Property="TextBlock.Foreground"  Value="{DynamicResource ColorBrush.While}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="border" Property="TextBlock.Foreground"  Value="{DynamicResource ColorBrush.Gray14}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CustomItemContainStyle" TargetType="{x:Type ListBoxItem}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Content" Value="{Binding Name}"/>
+            <Setter Property="IsSelected" Value="{Binding Checked}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="IsEnabled" Value="{Binding ItemEnable}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="border" BorderBrush="#515151" Background="{TemplateBinding Background}"
+                                    BorderThickness="1" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+
+                            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter TargetName="border" Property="Background" Value="{Binding BgColor}"></Setter>
+                                <!--Value="{Binding SendPriceItem.BorderBH, Mode=TwoWay}"/>-->
+                            </Trigger>
+
+                            <Trigger Property="IsSelected" Value="false">
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource ColorBrush.Gray15}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="true">
+                                    <Setter TargetName="border" Property="TextBlock.Foreground"  Value="{DynamicResource ColorBrush.While}"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="border" Property="TextBlock.Foreground"  Value="{DynamicResource ColorBrush.While}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+
+
+        <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="None"/>
+            <!--<Setter Property="AutoGenerateColumns" Value="False"/>-->
+            <!--<Setter Property="BorderThickness" Value="0"/>-->
+            <Setter Property="AlternationCount" Value="1"/>
+            <Setter Property="Height" Value="Auto"/>
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Margin" Value="0,0,0,0"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <!--<Style.Triggers >
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                </Trigger>
+                            </Style.Triggers>-->
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="CellStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridCell" >
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <!--<Setter Property="ToolTipService.ToolTip" Value="{Binding ToolText}"/>-->
+                        <Style.Triggers >
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="BorderBrush" Value="{Binding ShowBorderBrush}"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <Style TargetType="{x:Type Button}" x:Key="MenuButtonStyle">
+                <Setter Property="Background" Value="{DynamicResource ColorBrush.Black8}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid>
+                            <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}">
+                            </Border>
+                            <Grid>
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" TextBlock.Foreground="{TemplateBinding Foreground}"
+                                                      Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ColorBrush.Black8}">
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Red7}"/>
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource ColorBrush.Black8}">
+                                </Setter>
+                            </Trigger>
+                            <!--<Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Control.Background" TargetName="background">
+                                <Setter.Value>
+                                    <ImageBrush ImageSource="../Images/stc_icon_login_setting.png"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>-->
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource DataGridColumnHeaderForeground}"/>
+            <Setter Property="Background" Value="{DynamicResource DataGridColumnHeaderBackground}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment"  Value="Center"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="FontSize" Value="12"/>
+           
+        </Style>
+
+        <Style x:Key="DataGridCellStyle" TargetType="{x:Type DataGridCell}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGridCell}">
+                        <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,0,0"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <ContextMenu x:Key="OrderContextMenu">
+            <!--<MenuItem x:Name="miSample1" Header="曲线Demo1" Click="miSample1_Click"/>
+            <MenuItem x:Name="miSample2" Header="曲线Demo2" Click="miSample2_Click"/>
+                <MenuItem x:Name="miLine" Header="国开债曲线" Click="miLine_Click"/>-->
+                <Separator></Separator>
+                <MenuItem x:Name="miChrome" Header="Chrome独立窗口演示" Click="miChrome_Click"/>
+                <MenuItem x:Name="miAddTradeBook" Header="Chrome非本地网站" Click="miAddTradeBook_Click"/>
+                <MenuItem x:Name="miJsCallBackTest" Header="Chrome 本地网页c#js互相调用" Click="miJsCallBackTest_Click"/>
+                <MenuItem x:Name="miTopo" Header="Topo Monitor" Click="miTopo_Click"/>
+                <MenuItem x:Name="miTopoEditor" Header="监控图编辑器" Click="miTopoEditor_Click"/>
+                <Separator></Separator>
+                <MenuItem x:Name="miGetObject" Header="获取【Chrome独立窗口演示】对象并导航到百度" Click="miGetObject_Click"/>
+                <!--<MenuItem x:Name="miKLineJsCall" Header="K线分析" Click="MiKLineJsCall_Click"/>-->
+            </ContextMenu>
+            
+        </ResourceDictionary>
+
+    </UserControl.Resources>
+
+    <Grid Grid.Column="1" Visibility="{Binding UserGridVisibility}" Margin="20, 0, 20, 0" Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+       
+        <DataGrid x:Name="dgUser" Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                                      HeadersVisibility="Column" Margin="0, 10, 0, 0" Height="80" VerticalAlignment="Top"
+                      ScrollViewer.CanContentScroll="True" AllowDrop="True" CellStyle="{DynamicResource DataGridCellStyle}"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.IsDeferredScrollingEnabled="True"
+                                    VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" BorderBrush="{DynamicResource ColorBrush.Gray20}"
+                      AutoGenerateColumns="False" IsReadOnly="True" HorizontalGridLinesBrush="{DynamicResource ColorBrush.Gray20}" VerticalGridLinesBrush="{DynamicResource ColorBrush.Gray20}"
+                      CanUserSortColumns="False" GridLinesVisibility="All" BorderThickness="1"
+                      MouseRightButtonUp="dgUser_MouseRightButtonUp"
+                       ItemsSource="{Binding UserInfos}"
+                     Style="{StaticResource DataGridStyle}">
+
+            <DataGrid.Columns>
+
+                <DataGridTextColumn Header="STC账号" Width="80" Binding="{Binding StcAccount}"/>
+                <DataGridTextColumn Header="用户姓名" Width="80" Binding="{Binding Name}"/>
+
+                <DataGridTemplateColumn  Header="密码" Width="100" MaxWidth="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Click="Button_Click" Content="修改密码" Foreground="#FFFFFF" Style="{DynamicResource BlueGreenStyle}" Height="24" Width="70"></Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="QB账号" Width="100" Binding="{Binding QbAccount}"/>
+                <DataGridTextColumn Header="CFETS账号" Width="100" Binding="{Binding CfetsAccount}"/>
+                <DataGridTextColumn Header="CFETS姓名" Width="100" Binding="{Binding CfetsName}"/>
+                <DataGridTextColumn Header="角色" Width="100" Binding="{Binding Role}"/>
+                <DataGridTextColumn Header="状态" Width="100" Binding="{Binding Status}"/>
+            </DataGrid.Columns>
+
+        </DataGrid>
+
+    </Grid>
+</UserControl>

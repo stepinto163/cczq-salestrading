@@ -1,0 +1,97 @@
+﻿<commonComp:WindowBase x:Class="STC.Broker.Plugin.View.Setting.AddRelevanceInstWin"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Setting"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+        mc:Ignorable="d"
+        Background="#0A0F0E" BorderThickness="2" 
+        BorderBrush="#282828" ResizeMode="NoResize"
+        WindowState="Normal"
+        WindowStartupLocation="CenterScreen"
+        Title="添加关联机构" Height="150" Width="320">
+    <Grid Margin="10,0,10,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="txt_Inst" Foreground="#A0A0A0" FontFamily="{DynamicResource DefaultFont}"
+                           FontSize="12" Text="机构："  VerticalAlignment="Center"  HorizontalAlignment="Right" TextWrapping="Wrap"/>
+            <commonComp:WatermarkTextBox x:Name="tbInst" Grid.Column="1" WaterMark="搜索"
+                             input:InputMethod.IsInputMethodEnabled="True"
+                             input:TextCompositionManager.PreviewTextInput="tbInstPInput"
+                             input:TextCompositionManager.PreviewTextInputUpdate="tbInstPInputUpdate"
+                             KeyDown="tbInst_KeyDown" 
+                             PreviewKeyDown="tbInst_PreviewKeyDown" 
+                             TextChanged="tbInst_TextChanged" 
+                             Height="22"
+                             Width="200"
+                             Margin="8,0,0,0"
+                             GotFocus="tbInst_GotFocus"
+                             LostKeyboardFocus="tbInst_LostKeyboardFocus"/>
+            <TextBlock x:Name="txt_RelevanceInst" Grid.Row="1" Foreground="#A0A0A0" FontFamily="{DynamicResource DefaultFont}"
+                           FontSize="12" Text="关联机构："  VerticalAlignment="Center"  HorizontalAlignment="Right" TextWrapping="Wrap"/>
+            <commonComp:WatermarkTextBox x:Name="tb_RelevanceInstSearch" Grid.Column="1" Grid.Row="1"  WaterMark="搜索"
+                             input:InputMethod.IsInputMethodEnabled="True"
+                             input:TextCompositionManager.PreviewTextInput="tbInstPInput"
+                             input:TextCompositionManager.PreviewTextInputUpdate="tbInstPInputUpdate"
+                             KeyDown="tbInst_KeyDown" 
+                             PreviewKeyDown="tbInst_PreviewKeyDown" 
+                             TextChanged="tbInst_TextChanged" 
+                             Height="22"
+                             Width="200"
+                             Margin="8,0,0,0"
+                             LostKeyboardFocus="tbInst_LostKeyboardFocus"/>
+            <Popup x:Name="tbInstPop" PlacementTarget="{Binding ElementName=tbInst}" LostFocus="tbInstPop_LostFocus"  StaysOpen="False">
+                <DataGrid x:Name="dgInstResult"
+                                  Grid.Row="1"
+                                  Style="{DynamicResource DefaultDataGridNoSpaceStyle}"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"       
+                                  Margin="0" 
+                                  Width="200"
+                                  MaxHeight="200"
+                                  MouseLeftButtonUp="dgInstResult_MouseLeftButtonUp"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden" >
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding shortnamecn}" Width="1*" >
+                            <DataGridTextColumn.ElementStyle >
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Left"></Setter>
+                                    <Setter Property="VerticalAlignment" Value="Center"></Setter>
+                                    <Setter Property="Padding" Value="10,0,0,0"></Setter>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Popup>
+            <TextBox x:Name="tb_hide" Width="0" Height="0"></TextBox>
+        </Grid>
+        <Grid  Grid.Row="2"  HorizontalAlignment="Center" Margin="10, 0, 30, 10" VerticalAlignment="Bottom" >
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="btnUpdate" Margin="0,0,10,0" Width="80" Height="22"  Style="{DynamicResource GrayButtonStyle}" FontFamily="{DynamicResource DefaultFont}" FontSize="12" Click="btnCancel_Click">取消</Button>
+                <Button x:Name="btn_Ok"  IsEnabled="False" Width="80" Height="22"  Style="{DynamicResource BlueGreenStyle}" FontFamily="{DynamicResource DefaultFont}" FontSize="12" Click="btnOk_Click">确认</Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</commonComp:WindowBase>

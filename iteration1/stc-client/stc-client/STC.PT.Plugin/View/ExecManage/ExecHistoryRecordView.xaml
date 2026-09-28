@@ -1,0 +1,497 @@
+﻿<commComp:WindowBase x:Class="STC.PT.Plugin.View.ExecManage.ExecHistoryRecordView"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:local="clr-namespace:STC.PT.Plugin.View.ExecManage"
+                     xmlns:commComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common" 
+                     xmlns:Component="clr-namespace:STC.PT.Plugin.View.Component" 
+                     xmlns:commConv="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+                     xmlns:fcon="clr-namespace:STC.PT.Plugin.Convertor" 
+                     xmlns:ViewModel="clr-namespace:STC.PT.Plugin.ViewModel.ExecManage"
+                     mc:Ignorable="d"
+                     WindowStartupLocation="CenterScreen" BorderThickness="1" BorderBrush="#A0A0A0"
+                     Title="变更日志" Height="400" Width="800">
+    <commComp:WindowBase.Resources>
+        <ResourceDictionary>
+            <commConv:DaysOffStrConverter x:Key="DaysOffCon"/>
+            <commConv:ReverseVisibilityConvertor x:Key="reverseVisibilityConvertor"/>
+            <commConv:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <fcon:BondFieldConvertor x:Key="BondFieldConvertor"/>
+            <commConv:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <commConv:NumberConvertor3 x:Key="numConvertor3"/>
+            <commConv:TreasuryFutureConvertor x:Key="treasuryFutureConverter"/>
+            <Style x:Key="ColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="ColumnColorStyle2" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Sendstatus}" Value="0">
+                        <Setter Property="Foreground" Value="{StaticResource ColorBrush.Red}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </commComp:WindowBase.Resources>
+    <Grid>
+        <commComp:ExDataGrid  x:Name="historyDataGrid" Margin="10 10 10 10"
+                              Style="{DynamicResource DefaultDataGridNoHeadSpaceStyle}" 
+                              ItemsSource="{Binding PTMvtOrders}" 
+                              SelectionChanged="historyDataGrid_SelectionChanged"
+                    LoadingRow="historyDataGrid_LoadingRow"  MouseRightButtonDown="historyDataGrid_MouseRightButtonDown"
+          SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+           RowHeaderWidth="0"
+                              SelectionUnit="FullRow">
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter='HH:mm:ss'}" 
+                                    Header="操作时间" Width="70" ClipboardContentBinding="{Binding UpdateTime}"/>
+                <DataGridTemplateColumn Header="操作人" Width="Auto" MinWidth="85" 
+                                    ClipboardContentBinding="{Binding CloseBy}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="display" Foreground="#FFFFFF" Text="{Binding CloseBy}"  Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding Operationtype}" Header="操作类型" Width="65" MinWidth="65"
+                                    ClipboardContentBinding="{Binding Operationtype}"/>
+                <DataGridTextColumn Header="状态" Binding="{Binding Delflag,Converter={StaticResource EnumTypeConvertor},ConverterParameter='delflag'}"
+                                    Width="40" MinWidth="40" ClipboardContentBinding="{Binding Delflag}"/>
+                <DataGridTextColumn Binding="{Binding Entrytype}" Header="来源" Width="40" MinWidth="40"
+                                    ClipboardContentBinding="{Binding Entrytype}"/>
+                <DataGridTemplateColumn Header="渠道" ClipboardContentBinding="{Binding Venues, Converter={StaticResource EnumTypeConvertor},ConverterParameter='venues_exept'}" 
+                    Width="Auto" MinWidth="70">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="display" Foreground="#FFFFFF" Text="{Binding Venues, Converter={StaticResource EnumTypeConvertor},ConverterParameter='venues_exept'}"  Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="剩余期限" Width="Auto" MinWidth="105" SortMemberPath="RemaingingTime_convert">
+                    <DataGridTemplateColumn.HeaderStyle>
+                        <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                            <Setter Property="Padding" Value="9,0,5,0"/>
+                        </Style>
+                    </DataGridTemplateColumn.HeaderStyle>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="remainingTimetb" Grid.Column="1" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" Text="{Binding RemainingTime}">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip Content="{Binding Text}"/>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                                <Border Grid.Column="2" x:Name="DayOff_Tag" BorderBrush="#C29B4E" BorderThickness="1" CornerRadius="2" Background="#C29B4E" Margin="2 0 0 0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="休" Background="Black" Foreground="#C29B4E" FontSize="10" FontWeight="Bold" Padding="1"/>
+                                        <TextBlock Text="{Binding DayOffStr, Converter={StaticResource DaysOffCon}}" Grid.Column="1" Foreground="Black" FontSize="10" FontWeight="Bold" Padding="1"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding DayOffStr, Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                    <Setter TargetName="DayOff_Tag" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding RemainingTime}" Value="已到期">
+                                    <Setter TargetName="remainingTimetb" Property="Foreground" Value="#B03131"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                
+                <DataGridTemplateColumn Header="债券代码" Width="Auto" MinWidth="85" ClipboardContentBinding="{Binding SecurityID}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="SecurityID_display" Foreground="#FFFFFF" Text="{Binding SecurityID}"  FontWeight="SemiBold"  Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="债券简称" Width="Auto" MinWidth="90" ClipboardContentBinding="{Binding Symbol}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="TrdNameLb_display" Foreground="#FFFFFF" Text="{Binding Symbol}"  FontWeight="SemiBold"  Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding Symboltype}" Header="债券类型" Width="Auto" MinWidth="60" ClipboardContentBinding="{Binding Symboltype}"/>
+                <DataGridTextColumn Header="方向" Binding="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side_pt'}"
+                    Width="Auto" MinWidth="60" FontWeight="SemiBold" ClipboardContentBinding="{Binding Side}">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource ColumnColorStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SideIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="成交价(%)" Width="Auto" MinWidth="80" SortMemberPath="LastPx"
+                                FontWeight="SemiBold">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource BondFieldConvertor}" ConverterParameter="Price">
+                            <Binding Path="LastPx_Display" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Price" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PriceIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="代付费率" Width="Auto" MinWidth="60">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource BondFieldConvertor}" ConverterParameter="Amount">
+                            <Binding Path="BridgePaymentFixedRate" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Amount" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding BridgePFRateIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="其他费率" Width="Auto" MinWidth="60">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource BondFieldConvertor}" ConverterParameter="Amount">
+                            <Binding Path="Couponrate" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Amount" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CouponrateIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="费后收益率(%)" Width="Auto" MinWidth="70">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource numConvertor3}">
+                            <Binding Path="Yield2" />
+                            <Binding Path="MarketIndicator" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Yield2IsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="费后行权收益率(%)" Width="Auto" MinWidth="90">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource numConvertor3}">
+                            <Binding Path="Yieldtoexecution2" />
+                            <Binding Path="MarketIndicator" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Yieldtoexe2IsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="费后净价(元)" Width="Auto" MinWidth="70">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource numConvertor3}">
+                            <Binding Path="CleanPrice2" />
+                            <Binding Path="MarketIndicator" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CleanPrice2IsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="成交量(万元)" Width="Auto" MinWidth="80">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource BondFieldConvertor}" ConverterParameter="Amount">
+                            <Binding Path="LastQty" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Amount" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding LastQtyIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <!--<DataGridTextColumn Header="已匹配个需量(万元)" Width="Auto" MinWidth="110">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource BondFieldConvertor}" ConverterParameter="Amount">
+                            <Binding Path="MatchQty" />
+                            <Binding Path="MarketIndicator" />
+                            <Binding Source="Amount" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MatchQtyIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>-->
+                <DataGridTextColumn Header="结算金额(元)" Width="Auto" MinWidth="75">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource numConvertor3}" ConverterParameter="settlamount">
+                            <Binding Path="SettlAmount" />
+                            <Binding Path="MarketIndicator" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SettlAmountIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding UpdateTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter='yyyy-MM-dd'}" 
+                                    Header="成交日" Width="85" MinWidth="85" ClipboardContentBinding="{Binding UpdateTime}"/>
+                <DataGridTemplateColumn Header="清算速度" Width="Auto" MinWidth="55" SortMemberPath="SettlType">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="SettlType_display" Foreground="#FFFFFF" Text="{Binding SettlType}" Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding InstitutionName}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SettlTypeIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="本方交易员" Width="Auto" MinWidth="80" MaxWidth="200" ClipboardContentBinding="{Binding PartySubName, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="PartySubName_display" Foreground="#FFFFFF" Text="{Binding PartySubName, Converter={StaticResource StringConvertor}}" 
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}"></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="对手方机构" Width="Auto" MinWidth="80" MaxWidth="200" ClipboardContentBinding="{Binding CounterPartyName, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartyName, Converter={StaticResource StringConvertor}}" TextTrimming="CharacterEllipsis" 
+                                   ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CounterPartyNameIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="对手交易员" Width="Auto" MinWidth="80"  MaxWidth="200" ClipboardContentBinding="{Binding CounterPartySubName, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CounterPartySubName, Converter={StaticResource StringConvertor}}" 
+                                       TextTrimming="CharacterEllipsis" 
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CounterPartySubNameIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="上交所机构代码" Width="Auto" MinWidth="90"  MaxWidth="200" 
+                                        ClipboardContentBinding="{Binding Sseinstitutioncode, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Sseinstitutioncode, Converter={StaticResource StringConvertor}}" 
+                                       TextTrimming="CharacterEllipsis" 
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="深交所-交易商代码" Width="Auto" MinWidth="110"  MaxWidth="200" 
+                                        ClipboardContentBinding="{Binding Szedealercode, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Szedealercode, Converter={StaticResource StringConvertor}}" TextTrimming="CharacterEllipsis" 
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="深交所-交易主体代码" Width="Auto" MinWidth="120"  MaxWidth="200" 
+                                        ClipboardContentBinding="{Binding Szetradingentitycode, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Szetradingentitycode, Converter={StaticResource StringConvertor}}" TextTrimming="CharacterEllipsis" 
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="深交所-交易员代码" Width="Auto" MinWidth="120"  MaxWidth="200" 
+                                        ClipboardContentBinding="{Binding Szetradercode, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Szetradercode, Converter={StaticResource StringConvertor}}" TextTrimming="CharacterEllipsis" 
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="约定号" Width="Auto" MinWidth="50"  MaxWidth="200"
+                                        ClipboardContentBinding="{Binding TrdMatchId, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding TrdMatchId, Converter={StaticResource StringConvertor}}" 
+                                       TextTrimming="CharacterEllipsis" 
+                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding TrdMatchIdIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="终端机构" Width="Auto" MinWidth="60"  MaxWidth="200" 
+                                        ClipboardContentBinding="{Binding Realcounterpartyname, Converter={StaticResource StringConvertor}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Realcounterpartyname, Converter={StaticResource StringConvertor}}" 
+                                       TextTrimming="CharacterEllipsis" 
+                                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCellStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding RealcounterIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTemplateColumn.CellStyle>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="自动生产的备注" Width="Auto" MinWidth="90" MaxWidth="200" Binding="{Binding AllocText}"/>
+                <DataGridTextColumn Header="我的备注" Width="Auto"  MinWidth="60" MaxWidth="200"  Binding="{Binding Remark}"/>
+                <!--<DataGridTextColumn Header="投资经理" Width="Auto"  MinWidth="60" MaxWidth="200"  Binding="{Binding Partymanagername}"/>-->
+                <DataGridTextColumn Header="风控检查标记" 
+                                    Binding="{Binding Riskflag,Converter={StaticResource EnumTypeConvertor},ConverterParameter='riskflag'}" 
+                                    Width="Auto" MinWidth="80" ClipboardContentBinding="{Binding Riskflag}"/>
+
+                <DataGridTextColumn Header="风控检查备注" Width="Auto" MinWidth="80" MaxWidth="200" Binding="{Binding RiskRemark}"/>
+                <!--<DataGridTextColumn Header="匹配个需状态" Binding="{Binding Matchstatus,Converter={StaticResource EnumTypeConvertor},ConverterParameter='matchstatus'}"
+                                    Width="80" FontWeight="SemiBold" ClipboardContentBinding="{Binding Matchstatus}">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource ColumnColorStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding MatchStatusIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>-->
+                <DataGridTextColumn Header="下发交易指令状态" Binding="{Binding Sendstatus,Converter={StaticResource EnumTypeConvertor},ConverterParameter='sendstatus'}"
+                    Width="100" FontWeight="SemiBold" ClipboardContentBinding="{Binding Sendstatus}">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource ColumnColorStyle}">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <!--<Style.Triggers>
+                                <DataTrigger Binding="{Binding SendstatusIsHighlighted}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ColorBrush.Orange}"/>
+                                </DataTrigger>
+                            </Style.Triggers>-->
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+        </commComp:ExDataGrid>
+    </Grid>
+</commComp:WindowBase>

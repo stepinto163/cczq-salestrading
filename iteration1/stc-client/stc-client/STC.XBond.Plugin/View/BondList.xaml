@@ -1,0 +1,536 @@
+﻿<UserControl
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+             xmlns:Component="clr-namespace:STC.XBond.Plugin.View.Component"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             x:Class="STC.XBond.Plugin.View.BondList"
+             mc:Ignorable="d" 
+             Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            
+            <Image x:Key="pauseImage" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_pause_normal.png"/>
+            <Image x:Key="playIamge" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_play_normal.png"/>
+            <Style x:Key="CloseButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="TextElement.FontWeight" TargetName="contentPresenter" Value="ExtraBold"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="TextElement.FontWeight" TargetName="contentPresenter" Value="Bold"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="Gray"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Background="{StaticResource MainBackgroup.ColorBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"/>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="PauseAllBtn" Width="80" Height="16" Margin="1,0,0,0" Style="{StaticResource RedButtonStyle}"
+                    VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="全部暂停" Click="PauseAllBtn_Click"
+                    Content="{StaticResource pauseImage}">
+            </Button>
+            <Button x:Name="StopAllBtn" Width="30" Height="16" Margin="1,0,0,0" Style="{StaticResource GrayButtonStyle}"
+                    VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="全部停止" Click="StopAllBtn_Click">
+                <Image x:Name="stopIamge" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_stop_normal.png"/>
+            </Button>
+            <Button x:Name="StartAllBtn" Width="30" Height="16" Margin="1,0,0,0" Style="{StaticResource GrayButtonStyle}"
+                   VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="全部开启" Click="StartAllBtn_Click">
+                <Image x:Name="startIamge" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_playall_normal.png"/>
+            </Button>
+            <Button x:Name="SearchBtn" Width="30" Height="16" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Style="{StaticResource GrayButtonStyle}" Click="SearchBtn_Click">
+                <Image x:Name="searchIamge" Source="/STC.XBond.Plugin;component/Images/stc_icon_filter_normal.png"/>
+            </Button>
+            <commonComp:PopupEx x:Name="FilterPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SearchBtn}" StaysOpen="True"
+                               PopupAnimation="Slide" AllowsTransparency="False">
+                <Border Width="480" Height="200" BorderBrush="#A0A0A0" BorderThickness="1" Background="#3C3C3C">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid VerticalAlignment="Center">
+                            <TextBlock Text="筛选条件" Foreground="#FFFFFF" FontWeight="Bold" VerticalAlignment="Center" FontSize="12" Margin="10,0,0,0"/>
+                            <Button Content="×" FontSize="16" Background="Transparent" 
+                                    BorderThickness="0" HorizontalAlignment="Right" 
+                                    Foreground="#FFFFFF"  Margin="0,0,10,0"
+                                    Click="CloseFilterButton_Click" Style="{StaticResource CloseButtonStyle}">
+                            </Button>
+                        </Grid>
+                        <Grid Grid.Row="1" Background="#1E1E1E">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="65"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <!--债券类型-->
+                            <TextBlock Text="债券类型:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                            <ListBox x:Name="bondTypeFilterListBox" Grid.Column="1" FontSize="10" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="11" SelectionChanged="bondTypeFilterListBox_SelectionChanged" Loaded="bondTypeFilterListBox_Loaded"
+                                     >
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBoxItem Content="全部" IsSelected='True' Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="国债" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="央行票据" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="金融债" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="短融" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="中票" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="企业债" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="同业存单" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="其他" Style="{StaticResource FilterListBoxItemStyle}"/>
+                            </ListBox>
+                            <!--剩余期限-->
+                            <TextBlock Grid.Row="1" Text="剩余期限:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                            <ListBox x:Name="RemaingingTimeFilterListBox" Grid.Row="1" Grid.Column="1" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="11" FontSize="10"
+                                     
+                                     SelectionChanged="RemaingingTimeFilterListBox_SelectionChanged">
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBoxItem Content="全部" IsSelected='True' Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="0~1Y" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="1~2Y" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="3~5Y" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="5~7Y" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="7~10Y" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content=">10Y" Style="{StaticResource FilterListBoxItemStyle}"/>
+                            </ListBox>
+                            <!--主题评级-->
+                            <TextBlock Grid.Row="2" Text="主题评级:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                            <ListBox x:Name="Rating_CurrentFilterListBox" Grid.Row="2" Grid.Column="1" FontSize="10" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="11"
+                                     SelectionChanged="Rating_CurrentFilterListBox_SelectionChanged"
+                                     Loaded="Rating_CurrentFilterListBox_Loaded">
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBoxItem Content="全部" IsSelected='True' Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="AAA+" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="AAA" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="AAA-" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="AA+" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="AA" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="AA-" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="A+" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="A" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="A-" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="其他" Style="{StaticResource FilterListBoxItemStyle}"/>
+                            </ListBox>
+                            <!--清算速度-->
+                            <TextBlock Grid.Row="3" Text="清算速度:" Foreground="#A0A0A0" FontSize="10" Margin="0,8,5,0" HorizontalAlignment="Right"/>
+                            <ListBox x:Name="SettlTypeFilterListBox" Grid.Row="3" Grid.Column="1" FontSize="10" SelectionMode="Extended"
+                                     Background="Transparent" Foreground="#A0A0A0" AlternationCount="11"
+                                         SelectionChanged="SettlTypeFilterListBox_SelectionChanged">
+                                <ListBox.Template>
+                                    <ControlTemplate>
+                                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                    </ControlTemplate>
+                                </ListBox.Template>
+                                <ListBoxItem Content="全部" IsSelected='True' Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="T+0" Style="{StaticResource FilterListBoxItemStyle}"/>
+                                <ListBoxItem Content="T+1" Style="{StaticResource FilterListBoxItemStyle}"/>
+                            </ListBox>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </commonComp:PopupEx>
+
+
+            <Component:SearchTextBox x:Name="codeSearchTextBox" Width="120" Height="18" Margin="8,0,0,0"  HintText="搜索债券代码..."  
+                                     SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+        </StackPanel>
+        <DataGrid x:Name="XBondDataGrid" Grid.Row="1"
+            ItemsSource="{Binding BondView}" 
+             SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+              Style="{DynamicResource DataGridStyle}" CurrentCellChanged="XBondDataGrid_CurrentCellChanged"
+                  SelectionChanged="XBondDataGrid_SelectionChanged">
+            <DataGrid.Resources>
+                <ResourceDictionary>
+                    <Style x:Key="RowStyle" TargetType="{x:Type DataGridRow}">
+                        <Setter Property="Height" Value="60"/>
+                        <Style.Triggers>
+                            <!--隔行换色-->
+                            <Trigger Property="AlternationIndex" Value="0" >
+                                <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}" />
+                            </Trigger>
+                            <Trigger Property="AlternationIndex" Value="1" >
+                                <Setter Property="Background" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}" />
+                            </Trigger>
+                            <!--选中颜色-->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="{StaticResource Item.SelectedInactive.Background}"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedInactive.Border}"/>
+                                
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="{StaticResource Item.SelectedActive.Background}"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource Item.SelectedActive.Border}"/>
+                            </MultiTrigger>
+                            <!--鼠标移过-->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="{StaticResource Item.MouseOver.Background}"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource Item.MouseOver.Border}"/>
+                            </MultiTrigger>
+                        </Style.Triggers>
+                    </Style>
+                    <Style x:Key="CellStyle" TargetType="{x:Type DataGridCell}">
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type DataGridCell}">
+                                    <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True" BorderBrush="{StaticResource DataGridCellBorderBrush}" BorderThickness="0,0,1,0">
+                                        <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <ControlTemplate x:Key="DataGridColumnHeaderControlTemplate" TargetType="{x:Type DataGridColumnHeader}">
+                        <Grid>
+                            <Themes:DataGridHeaderBorder BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" IsClickable="{TemplateBinding CanUserSort}" IsPressed="{TemplateBinding IsPressed}" IsHovered="{TemplateBinding IsMouseOver}" Padding="{TemplateBinding Padding}" SortDirection="{TemplateBinding SortDirection}" SeparatorBrush="{TemplateBinding SeparatorBrush}" SeparatorVisibility="{TemplateBinding SeparatorVisibility}">
+                                <ContentPresenter ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" ContentStringFormat="{TemplateBinding ContentStringFormat}" HorizontalAlignment="Stretch" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Stretch"/>
+                            </Themes:DataGridHeaderBorder>
+                            <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left">
+                                <Thumb.Style>
+                                    <Style TargetType="{x:Type Thumb}">
+                                        <Setter Property="Width" Value="8"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Cursor" Value="SizeWE"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type Thumb}">
+                                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Thumb.Style>
+                            </Thumb>
+                            <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right">
+                                <Thumb.Style>
+                                    <Style TargetType="{x:Type Thumb}">
+                                        <Setter Property="Width" Value="8"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Cursor" Value="SizeWE"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type Thumb}">
+                                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Thumb.Style>
+                            </Thumb>
+                        </Grid>
+                    </ControlTemplate>
+                    <Style x:Key="ColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Height" Value="33"/>
+                        <Setter Property="Background" Value="{StaticResource DataGridColumnHeaderBackground}"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource DataGridColumnHeaderBorderBrush}"/>
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                        <Setter Property="Foreground" Value="{StaticResource DataGridColumnHeaderForeground}"/>
+                        <Setter Property="Template" Value="{StaticResource DataGridColumnHeaderControlTemplate}"/>
+                        <Setter Property="FontSize" Value="{StaticResource MiniContentFontSize}"/>
+                    </Style>
+                    <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
+                        <Setter Property="ColumnHeaderStyle" Value="{StaticResource ColumnHeaderStyle}"/>
+                        <Setter Property="CellStyle" Value="{StaticResource CellStyle}"/>
+                        <Setter Property="RowStyle" Value="{StaticResource RowStyle}"/>
+                        <Setter Property="Background" Value="{StaticResource DefaultBackgroup.ColorBrush}"/>
+                        <Setter Property="EnableRowVirtualization" Value="False"/>
+                        <Setter Property="GridLinesVisibility" Value="None"/>
+                        <Setter Property="CanUserAddRows" Value="False"/>
+                        <Setter Property="AutoGenerateColumns" Value="False"/>
+                        <Setter Property="IsEnabled" Value="True"/>
+                        <Setter Property="AlternatingRowBackground" Value="{StaticResource DefaultAlternatingRowBackground.ColorBrush}"/>
+                        <Setter Property="RowHeaderWidth" Value="0"/>
+                        <Setter Property="FontSize" Value="{StaticResource MiniContentFontSize}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="FrozenColumnCount" Value="3"/>
+                        <!--<Setter Property="VirtualizingStackPanel.IsVirtualizing" Value="False"/>-->
+                        <Setter Property="CanUserReorderColumns" Value="False"/>
+                        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+                        <Setter Property="VirtualizingStackPanel.IsVirtualizing" Value="True"/>
+                        <Setter Property="VirtualizingStackPanel.VirtualizationMode" Value="Recycling"/>
+                    </Style>
+                </ResourceDictionary>
+            </DataGrid.Resources>
+            <!--字段-->
+            <DataGrid.Columns>
+                <!--开关,债券基本信息-->
+                <DataGridTemplateColumn Width="210" x:Name="BondBaseInfo_Column">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,0,0,0" >
+                                <TextBlock x:Name="textBlock" Text="债券基本信息"/>
+                                <TextBlock x:Name="textBlock1" Text="距离下次报价时间"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid VerticalAlignment="Center">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Component:Switch IsChecked="{Binding Switch}" Grid.Column="0" Grid.RowSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center" MouseLeftButtonDown="Switch_MouseLeftButtonDown" Cursor="Hand"/>
+                                <TextBlock x:Name="securityID_TB" Text="{Binding securityID}" Grid.Column="1" Grid.ColumnSpan="2" Foreground="{StaticResource DefaultForegroup.ColorBrush}" FontWeight="SemiBold" FontSize="{StaticResource NormalContentFontSize}"/>
+                                <Component:TBookPopupButton x:Name="popupTBook_Btn" Grid.Column="3" Width="12" Height="12" HorizontalAlignment="Right" Margin="0,0,10,0" Style="{StaticResource ChartButton}" Cursor="Hand" MouseLeftButtonDown="popupTBook_Btn_MouseLeftButtonDown"/>
+                                <TextBlock x:Name="symbol_TB" Text="{Binding symbol}"  Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="3" Foreground="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                <TextBlock x:Name="RemaingingTime_TB" Text="{Binding RemaingingTime}" Grid.Row="2" Grid.Column="1" Foreground="{StaticResource DataGrid.SubTitle.Foreground}"/>
+                                <TextBlock x:Name="RatingCurrent_TB" Text="{Binding RatingCurrent}" Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" Foreground="{StaticResource DataGrid.SubTitle.Foreground}"/>
+                                <TextBlock x:Name="SettleType_TB" Text="{Binding SettleType, ConverterParameter=settletype, Converter={StaticResource EnumTypeConvertor}}" Grid.Row="2" Grid.Column="3" HorizontalAlignment="Right" Margin="0,0,10,0" Foreground="{StaticResource DataGrid.SubTitle.Foreground}" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="securityID_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="symbol_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="RemaingingTime_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="RatingCurrent_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="SettleType_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--渠道-->
+                <DataGridTemplateColumn Width="80" x:Name="Channel_Column">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0">
+                                <TextBlock x:Name="textBlock" Text="渠道"/>
+                                <TextBlock x:Name="textBlock1" Text="" Grid.Row="1"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0">
+                                <TextBlock x:Name="Channel_TB" Text="{Binding Venue,Converter={StaticResource EnumTypeConvertor},ConverterParameter=venues}" HorizontalAlignment="Center" Foreground="{StaticResource DefaultForegroup.ColorBrush}" FontSize="{StaticResource SmallContentFontSize}"/>
+                                <TextBlock Text="" FontSize="{StaticResource MiniContentFontSize}"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="Channel_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--最后操作-->
+                <DataGridTemplateColumn Width="100" x:Name="LastAction_Column">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0">
+                                <TextBlock x:Name="textBlock" Text="最后操作"/>
+                                <TextBlock x:Name="textBlock1" Text=""/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name ="lastActionStatus_TB" Text="{Binding LastActionStatus}"  Foreground="{StaticResource DefaultForegroup.ColorBrush}"  FontSize="{StaticResource SmallContentFontSize}" HorizontalAlignment="Center"/>
+                                    <Button Height="12" Width="12" Margin="2" Style="{StaticResource InfoButton}" ToolTip="{Binding Info}"/>
+                                </StackPanel>
+                                <TextBlock x:Name="LastActionTime_TB"  Text="{Binding LastActionTime,Converter={StaticResource FormatDateTimeConvertor},ConverterParameter={StaticResource TimeFormatHHMMSS}}" Margin="0,2,0,0" Foreground="{StaticResource DataGrid.SubTitle.Foreground}"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="lastActionStatus_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="LastActionTime_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding LastActionStatus}" Value="自动关闭">
+                                    <Setter TargetName="lastActionStatus_TB" Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding LastActionStatus}" Value="过期撤单">
+                                    <Setter TargetName="lastActionStatus_TB" Property="Foreground" Value="Red"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--我的Bid-->
+                <DataGridTemplateColumn Width="120" x:Name="MyBid_Column">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock x:Name="textBlock" Text="我的Bid" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="textBlock1" Text="%" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock x:Name="MyBidPriceTB" Text="{Binding BidPrice,Converter={StaticResource numConvertor}}" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Orange}" FontWeight="SemiBold" FontSize="{StaticResource NormalContentFontSize}"/>
+                                <TextBlock x:Name="MyBidQtyTB" Text="{Binding BidQty,Converter={StaticResource numConvertor}}" Margin="0,2,0,0" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Orange}" FontWeight="SemiBold" />
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="MyBidPriceTB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="MyBidQtyTB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--市场最优-->
+                <DataGridTemplateColumn Width="140" x:Name="BestMarket_Column">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock x:Name="textBlock" Text="市场最优" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="textBlock1" Text="bid/ofr(%/万)" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="BestBidTrader_TB" Text="{Binding BestBidTrader, ConverterParameter=venues, Converter={StaticResource EnumTypeConvertor}}"  HorizontalAlignment="Center" Foreground="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                    <TextBlock x:Name="BestBidPrice_TB" Text="{Binding BestBidPrice,Converter={StaticResource numConvertor}}" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Orange}" FontWeight="SemiBold" FontSize="{StaticResource NormalContentFontSize}" />
+                                    <TextBlock x:Name="BestBidQty_TB" Text="{Binding BestBidQty,Converter={StaticResource numConvertor}}" Margin="0,2,0,0" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Orange}" FontWeight="SemiBold" />
+                                </StackPanel>
+                                <Rectangle Grid.Column="1" Width="2" Height="30" Fill="{StaticResource Separator.ColorBrush}" HorizontalAlignment="Center" />
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="BestOfrTrader_TB" Text="{Binding BestOfrTrader, ConverterParameter=venues, Converter={StaticResource EnumTypeConvertor}}" HorizontalAlignment="Center" Foreground="{StaticResource DefaultForegroup.ColorBrush}"/>
+                                    <TextBlock x:Name="BestOfrPrice_TB" Text="{Binding BestOfrPrice,Converter={StaticResource numConvertor}}" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Blue}" FontWeight="SemiBold" FontSize="{StaticResource NormalContentFontSize}" />
+                                    <TextBlock x:Name="BestOfrQty_TB" Text="{Binding BestOfrQty,Converter={StaticResource numConvertor}}" Margin="0,2,0,0" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Blue}" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="BestBidTrader_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="BestBidPrice_TB" Property="Foreground" Value="{StaticResource ColorBrush.ClosedStatus.Orange}"/>
+                                    <Setter TargetName="BestBidQty_TB" Property="Foreground" Value="{StaticResource ColorBrush.ClosedStatus.Orange}"/>
+                                    <Setter TargetName="BestOfrTrader_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                    <Setter TargetName="BestOfrPrice_TB" Property="Foreground" Value="{StaticResource ColorBrush.ClosedStatus.Blue}"/>
+                                    <Setter TargetName="BestOfrQty_TB" Property="Foreground" Value="{StaticResource ColorBrush.ClosedStatus.Blue}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!--我的Ofr-->
+                <DataGridTemplateColumn Width="120" x:Name="MyOfr_Column">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock x:Name="textBlock" Text="我的Ofr" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="textBlock1" Text="%" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock x:Name="MyOfrPriceTB" Text="{Binding OfrPrice,Converter={StaticResource numConvertor}}" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Blue}" FontWeight="SemiBold" FontSize="{StaticResource NormalContentFontSize}"/>
+                                <TextBlock x:Name="MyOfrQtyTB" Text="{Binding OfrQty,Converter={StaticResource numConvertor}}" Margin="0,2,0,0" HorizontalAlignment="Center" Foreground="{StaticResource ColorBrush.Blue}" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="MyOfrPriceTB" Property="Foreground" Value="{StaticResource ColorBrush.ClosedStatus.Blue}"/>
+                                    <Setter TargetName="MyOfrQtyTB" Property="Foreground" Value="{StaticResource ColorBrush.ClosedStatus.Blue}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!-- 今日净成交 -->
+                <DataGridTemplateColumn Width="100" x:Name="TodayExecValue_Column" CanUserSort="True" SortMemberPath="ExecValue">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0">
+                                <TextBlock x:Name="textBlock" Text="今日净成交"  />
+                                <TextBlock x:Name="textBlock1" Text="万" HorizontalAlignment="Right"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <TextBlock x:Name="ExecValue_TB" Text="{Binding ExecValue}" HorizontalAlignment="Center" Foreground="{StaticResource DefaultForegroup.ColorBrush}"/>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Switch}" Value="False">
+                                    <Setter TargetName="ExecValue_TB" Property="Foreground" Value="{StaticResource DataGrid.ClosedStatus.Foreground}"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+
+</UserControl>

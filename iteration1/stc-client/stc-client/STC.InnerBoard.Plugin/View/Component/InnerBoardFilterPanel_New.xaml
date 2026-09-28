@@ -1,0 +1,496 @@
+﻿<UserControl x:Class="STC.InnerBoard.Plugin.View.Component.InnerBoardFilterPanel_New"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.InnerBoard.Plugin.View.Component"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             mc:Ignorable="d" d:DesignHeight="500"
+             d:DesignWidth="1300"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:innerComp="clr-namespace:STC.InnerBoard.Plugin.View.Component">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource MainBackgroup.ColorBrush}">
+        <TextBox x:Name="tb" Width="0" Height="0"/>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Grid VerticalAlignment="Top" HorizontalAlignment="Left">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <!--<WrapPanel Orientation="Horizontal">-->
+                <!--<commonComp:HoverButton x:Name="ShowAll_ToggleButton" Content="SHOW ALL" Width="80" Height="24" Margin="10 1 0 4"
+                Background="#141414" Foreground="#C29B4E" BorderBrush="#141414" Style="{DynamicResource HoverButton}"
+                PressBackground="#141414" PressForeground="#C29B4E" PressBorderBrush="#141414"
+                HoverBackground="#141414" HoverForeground="#C29B4E" HoverBorderBrush="#141414"/>-->
+
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="ShowAll_ToggleButton" Content="SHOW ALL" Width="80" Height="24" Margin="4 1 0 4"
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="False" Style="{DynamicResource ShowAllRadioButtonStyle}" />
+
+                    <!--方向不限IsChecked="True" Style="{DynamicResource ShowAllRadioButtonStyle}" />-->
+                    <!--<comp:MultiSelectComboBox x:Name="side" Tag="SIDE" Width="100" Height="24" Background="Black" Margin="4 1 0 4" DefaultText="方向不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>-->
+                    <innerComp:FilterOptions x:Name="side" TagKey="SIDE" Margin="10 1 0 4" TagsListChanged="TagsListChanged"/>
+
+
+                    <!--清算不限-->
+                    <comp:MultiSelectComboBox x:Name="settltype" Tag="SETTL_TYPE" Width="100" Height="24" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 1 0 4" DefaultText="清算不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    <!--意向不限--><!--
+                    <comp:MultiSelectComboBox x:Name="firmflag" Tag="FIRM" Width="100" Height="24" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 1 0 4" DefaultText="意向不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    --><!--业务不限--><!--
+                    <comp:MultiSelectComboBox x:Name="business" Tag="ROLE_TYPE"  Width="100" Height="24" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 1 0 4" DefaultText="业务不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    --><!--客户不限--><!--
+                    <comp:MultiSelectComboBox x:Name="OrgCbb" Tag="ORG_TYPE" Width="140" Height="24" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 1 0 4" DefaultText="客户不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>-->
+                    <CheckBox x:Name="isMeCB" Content="我" VerticalAlignment="Center" Margin="4 1 0 4" Style="{DynamicResource DefaultCheckBoxStyle}" IsChecked="false" Padding="5 0 0 0"
+                      Visibility="Collapsed"
+                      Foreground="#D7D7D7" Checked="isMeCB_Checked" Unchecked="isMeCB_Unchecked"/>
+
+                    <CheckBox x:Name="vipCB" Style="{DynamicResource DefaultCheckBoxStyle}" Content="VIP" Foreground="#D7D7D7" Padding="4 0 0 0" Margin="4 1 0 4"
+                              Checked="vipCB_Checked" Unchecked="vipCB_Unchecked"/>
+                    <CheckBox Style="{DynamicResource DefaultCheckBoxStyle}" Content="收益率" Foreground="#D7D7D7" Padding="4 0 0 0" Margin="4 1 0 4" Visibility="Collapsed"/>
+
+                    <CheckBox Style="{DynamicResource DefaultCheckBoxStyle}" Content="偏移" Foreground="#D7D7D7" Padding="4 0 0 0" Margin="4 1 0 4" Visibility="Collapsed"/>
+
+                    <TextBlock Text="bid-中债" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="8 0 4 2"/>
+                    <StackPanel x:Name="BidBP_Part"  Margin="4 1 0 4"  VerticalAlignment="Center" Orientation="Horizontal">
+                        <TextBox x:Name="SBidBP" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="Bp_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="BP_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Bp_KeyDown" LostFocus="BidBp_LostFocus"/>
+                        <TextBlock Text=" - " Foreground="#7D7D7D"/>
+                        <TextBox x:Name="EBidBP" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="Bp_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="BP_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Bp_KeyDown" LostFocus="BidBp_LostFocus"/>
+                        <!--<Button x:Name="PriceOKBtn" Content="确定" Grid.Column="1" Width="32" Style="{StaticResource GrayButtonStyle}" Height="18" Margin="4 0 0 0"
+                             BorderBrush="#3C3C3C" Foreground="#D7D7D7" BorderThickness="0 1 0 0 " Background="#282828" Click="PriceOKBtn_Click"/>-->
+                    </StackPanel>
+
+                    <TextBlock Text="中债-ofr" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="8 0 4 2"/>
+                    <StackPanel x:Name="OfrBP_Part"  Margin="4 1 0 4"  VerticalAlignment="Center" Orientation="Horizontal">
+                        <TextBox x:Name="SOfrBP" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="Bp_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="BP_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Bp_KeyDown" LostFocus="OfrBp_LostFocus"/>
+                        <TextBlock Text=" - " Foreground="#7D7D7D"/>
+                        <TextBox x:Name="EOfrBP" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="Bp_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="BP_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Bp_KeyDown" LostFocus="OfrBp_LostFocus"/>
+                        <!--<Button x:Name="PriceOKBtn" Content="确定" Grid.Column="1" Width="32" Style="{StaticResource GrayButtonStyle}" Height="18" Margin="4 0 0 0"
+                             BorderBrush="#3C3C3C" Foreground="#D7D7D7" BorderThickness="0 1 0 0 " Background="#282828" Click="PriceOKBtn_Click"/>-->
+                    </StackPanel>
+
+                    <!--<CheckBox x:Name="CouponChk" Style="{StaticResource DefaultCheckBoxStyle}" Content="票面" Foreground="#D7D7D7" Padding="4 0 0 0" Margin="4 1 0 4" Checked="CouponChk_Checked" Unchecked="CouponChk_Unchecked"/>-->
+                    <TextBlock Text="票面" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="8 0 4 2"/>
+                    <StackPanel x:Name="Coupon_Part"  Margin="4 1 0 4"  VerticalAlignment="Center" Orientation="Horizontal">
+                        <TextBox x:Name="SCoupon" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="TextBox_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Coupon_KeyDown" LostFocus="SCoupon_LostFocus"/>
+                        <TextBlock Text="-" Foreground="#7D7D7D"/>
+                        <TextBox x:Name="ECoupon" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="TextBox_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Coupon_KeyDown" LostFocus="ECoupon_LostFocus"/>
+                        <!--<Button x:Name="CouponOKBtn" Content="确定" Grid.Column="1" Width="32" Style="{StaticResource GrayButtonStyle}" Height="18" Margin="4 0 0 0"
+                             BorderBrush="#3C3C3C" Foreground="#D7D7D7" BorderThickness="0 1 0 0 " Background="#282828" Click="CouponOKBtn_Click"/>-->
+                    </StackPanel>
+
+                    <TextBlock Text="报价" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="8 0 4 2"/>
+                    <StackPanel x:Name="Price_Part"  Margin="4 1 0 4"  VerticalAlignment="Center" Orientation="Horizontal">
+                        <TextBox x:Name="SPrice" Style="{DynamicResource defaultPercenTextBox}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="TextBox_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Price_KeyDown" LostFocus="Price_LostFocus"/>
+                        <TextBlock Text=" - " Foreground="#7D7D7D"/>
+                        <TextBox x:Name="EPrice" Style="{DynamicResource defaultPercenTextBox}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="TextBox_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="Price_KeyDown" LostFocus="Price_LostFocus"/>
+                        <!--<Button x:Name="PriceOKBtn" Content="确定" Grid.Column="1" Width="32" Style="{StaticResource GrayButtonStyle}" Height="18" Margin="4 0 0 0"
+                             BorderBrush="#3C3C3C" Foreground="#D7D7D7" BorderThickness="0 1 0 0 " Background="#282828" Click="PriceOKBtn_Click"/>-->
+                    </StackPanel>
+                    <TextBlock Text="中债估值" Foreground="#D7D7D7" VerticalAlignment="Center" Margin="8 0 4 2"/>
+                    <StackPanel x:Name="ChinaBondValue_Part"  Margin="4 1 0 4"  VerticalAlignment="Center" Orientation="Horizontal">
+                        <TextBox x:Name="SChinaBondValue" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="TextBox_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="ChinaBondValue_KeyDown" LostFocus="ChinaBondValue_LostFocus"/>
+                        <TextBlock Text=" - " Foreground="#7D7D7D"/>
+                        <TextBox x:Name="EChinaBondValue" Style="{DynamicResource STCDefaultBoxStyle}" Height="18" Width="50" input:InputMethod.IsInputMethodEnabled="False"
+                         PreviewTextInput="TextBox_PreviewTextInput" Foreground="{DynamicResource ComboBoxItem.MouseOver.Border}"
+                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" KeyDown="ChinaBondValue_KeyDown" LostFocus="ChinaBondValue_LostFocus"/>
+                        <!--<Button x:Name="PriceOKBtn" Content="确定" Grid.Column="1" Width="32" Style="{StaticResource GrayButtonStyle}" Height="18" Margin="4 0 0 0"
+                             BorderBrush="#3C3C3C" Foreground="#D7D7D7" BorderThickness="0 1 0 0 " Background="#282828" Click="PriceOKBtn_Click"/>-->
+                    </StackPanel>
+
+
+                    <CheckBox x:Name="isMMNoReplyCB" Content="做市未回" VerticalAlignment="Center" Margin="4 1 0 4" Style="{DynamicResource DefaultCheckBoxStyle}" IsChecked="true" Padding="5 0 0 0"
+                      Foreground="#D7D7D7" Checked="isMMNoReplyCB_Checked"  Unchecked="isMMNoReplyCB_Unchecked"/>
+
+
+
+                    <CheckBox x:Name="isFuzzyCB" Content="仅模糊" VerticalAlignment="Center" Margin="4 1 0 4" Style="{DynamicResource DefaultCheckBoxStyle}" IsChecked="false" Padding="5 0 0 0"
+                      Foreground="#D7D7D7" Checked="isFuzzyCB_Checked" Unchecked="isFuzzyCB_Unchecked"/>
+                </StackPanel>
+
+                <WrapPanel x:Name="row1" Orientation="Horizontal"  Grid.Row="1" Width="1520" HorizontalAlignment="Left">
+                    <!--债券类型-->
+                    <WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="BondType_All_ToggleButton" Content="ALL" Width="40" Height="24" Margin="4 1 0 4"
+                             VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                              IsChecked="False" Style="{DynamicResource ShowAllOangleRadioButtonStyle}"/>
+                        <ListBox x:Name="BondTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="BondTypeListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="国债" Tag="1011" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24"  Margin="2,1,0,4"/>
+                            <!--<ListBoxItem Content="央票" Tag="1100" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24"  Margin="2,1,0,4"/>-->
+                            <ListBoxItem Content="政金债" Tag="1101" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="52" Height="24"  Margin="2,1,0,4"/>
+                            <ListBoxItem Content="地方债" Tag="1110" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="52" Height="24"  Margin="2,1,0,4"/>
+                            <ListBoxItem Content="商业银行债" Tag="1111" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="72" Height="24"  Margin="2,1,0,4"/>
+                        </ListBox>
+
+                    </WrapPanel>
+
+                    <!--债券类型-->
+                    <WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="FinBondType_All_ToggleButton" Content="ALL" Width="40" Height="24" Margin="10 1 0 4" 
+                            VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                            IsChecked="False" Style="{DynamicResource ShowAllOangleRadioButtonStyle}"/>
+                        <ListBox x:Name="FinBondTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="FinBondTypeListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="国开" Tag="0001" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24"  Margin="2,1,0,4"/>
+                            <ListBoxItem Content="口行" Tag="0010" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24"  Margin="2,1,0,4"/>
+                            <ListBoxItem Content="农发" Tag="0011" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24"  Margin="2,1,0,4"/>
+                        </ListBox>
+                        
+                    </WrapPanel>
+
+                    <!--一般债-->
+                    <innerComp:FilterOptions x:Name="filter2" TagKey="LOCAL_GOV_BOND_TYPE" Margin="10 1 0 4" TagsListChanged="TagsListChanged"/>
+                    <!--还本-->
+                    <innerComp:FilterOptions x:Name="filter13" Margin="10 1 0 4" TagKey="IF_REPAY" TagsListChanged="TagsListChanged"/>
+                    <!--是否免税-->
+                    <local:FilterOptions x:Name="filter15" Margin="10 1 0 4" TagKey="IF_TAX_FREE" TagsListChanged="TagsListChanged"/>
+                </WrapPanel>
+
+                <WrapPanel x:Name="row2" Orientation="Horizontal" Grid.Row="2" Width="1520" HorizontalAlignment="Left">
+                    <innerComp:FilterOptions x:Name="filter1" Margin="4 1 0 4" TagKey="BOND_SUB_TYPE" TagsListChanged="TagsListChanged"/>
+
+                    <innerComp:FilterOptions x:Name="filter3" Margin="10 1 0 4" TagKey="ENTERPRISE_TYPE" TagsListChanged="TagsListChanged"/>
+
+                    <!--<innerComp:FilterOptions x:Name="filter4" Margin="10 1 0 4"/>-->
+
+                    <innerComp:FilterOptions x:Name="filter5" Margin="10 1 0 4" TagKey="FIN_INST_BOND" TagsListChanged="TagsListChanged"/>
+
+                    <!--<innerComp:FilterOptions x:Name="filter6" Margin="10 1 0 4"/>-->
+                    <TextBlock Text="NCD类型" Foreground="#A0A0A0" Margin="10 1 0 4" VerticalAlignment="Center"/>
+                    <!--NCD类型-->
+                    <comp:MultiSelectComboBox x:Name="banktype" Width="100" Height="22" Background="Black" Margin="10 1 0 4" DefaultText="不限" Tag="NCD_TYPE" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+                </WrapPanel>
+
+                <WrapPanel x:Name="row3_1" Orientation="Horizontal" Grid.Row="3" Width="1520" HorizontalAlignment="Left">
+                    <!--债券期限-->
+                    <WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="Term_All_ToggleButton" Content="ALL" Width="40" Height="24" Margin="4 1 0 4" 
+                            VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                            IsChecked="False" Style="{DynamicResource ShowAllOangleRadioButtonStyle}"/>
+                        <comp:CustomTermControl x:Name="TermCtrl" Width="160" Height="24" Margin="4 0 0 0" OKAction="TermCtrl_OKAction"/>
+                        <ListBox x:Name="TermListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="TermListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="&lt;3M" Tag="0001" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="3-6M" Tag="0010" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="6-9M" Tag="0011" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="9-12M" Tag="0100" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="48" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="1-3Y" Tag="0101" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="3-5Y" Tag="0110" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="5-7Y" Tag="1001" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="40" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="7-10Y" Tag="1010" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="46" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="10-20Y" Tag="1011" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="52" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="20-30Y" Tag="1100" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="52" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content=">30Y" Tag="1101" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="46" Height="24" Margin="2,1,0,4"/>
+                            
+                        </ListBox>
+                        
+
+                        <!--<Button x:Name="termBtn" Content="确定" Width="40" Height="24" HorizontalAlignment="Left" Margin="4 0 0 0" Style="{StaticResource GrayButtonStyle2}" 
+                            BorderBrush="#3C3C3C" BorderThickness="0 1 0 0" Background="#282828" Visibility="Collapsed"/>-->
+
+                        <!--银行类型-->
+                        <TextBlock Text="利息类型" Foreground="#A0A0A0" Margin="10 1 0 4" VerticalAlignment="Center"/>
+                        <comp:MultiSelectComboBox x:Name="ratetype" Tag="CAL_INTER_TYPE" Width="140" Height="22" Background="Black" Margin="10 1 0 4" DefaultText="不限" FilterDicChanged="Cbb_FilterDicChanged">
+                        </comp:MultiSelectComboBox>
+
+                        <!--交易所-->
+                        <innerComp:FilterOptions x:Name="exchange" Margin="10 1 0 4" TagKey="LISTED_MARKET" TagsListChanged="TagsListChanged"/>
+                        <!--可质押-->
+                        <innerComp:FilterOptions x:Name="ifPleded" Margin="10 1 0 4" TagKey="IF_PLEDGED" TagsListChanged="TagsListChanged"/>
+                    </WrapPanel>
+                </WrapPanel>
+
+                <WrapPanel x:Name="row3_2" Orientation="Horizontal" Grid.Row="4" Width="1520" HorizontalAlignment="Left">
+                    <!--主体-->
+                    <TextBlock Text="主体" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <innerComp:FilterOptions x:Name="rate" Margin="4 1 0 4" TagKey="RANKING_TYPE" TagsListChanged="TagsListChanged"/>
+
+                    <!--债项-->
+                    <TextBlock Text="债项" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="OrgCbb3" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="RATING_CURRENT" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    <!--中债资信-->
+                    <TextBlock Text="中债资信" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="creditRate" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="ISSUER_RATING_CURRENT_CBR" FilterDicChanged="Cbb_FilterDicChanged"/>
+
+                    <!--中债隐含-->
+                    <TextBlock Text="中债隐含" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4" />
+                    <comp:MultiSelectComboBox x:Name="OrgCbb1" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="CDC_IMPLITED_RATING" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    <!--中证隐含-->
+                    <TextBlock Text="中证隐含" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="OrgCbb2" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="CSI_IMPLIED_RATING" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+
+                </WrapPanel>
+
+                <WrapPanel x:Name="row6" Orientation="Horizontal" Grid.Row="5" Width="1520" HorizontalAlignment="Left">
+                    <innerComp:FilterOptions x:Name="filter7" Margin="4 1 0 4"  TagKey="IF_MUNICIPAL" TagsListChanged="TagsListChanged"/>
+                    <innerComp:FilterOptions x:Name="filter8" Margin="10 1 0 4"  TagKey="IF_PLATFORM" TagsListChanged="TagsListChanged"/>
+                    <innerComp:FilterOptions x:Name="filter9" Margin="10 1 0 4" TagKey="ADMIN_LEVEL" TagsListChanged="TagsListChanged"/>
+                    <innerComp:FilterOptions x:Name="filter10" Margin="10 1 0 4" TagKey="IF_GUARANTEE" TagsListChanged="TagsListChanged"/>
+                    <innerComp:FilterOptions x:Name="filter11" Margin="10 1 0 4" TagKey="ISSUE_TYPE" TagsListChanged="TagsListChanged"/>
+                    <innerComp:FilterOptions x:Name="filter12" Margin="10 1 0 4" TagKey="CUM_TYPE" TagsListChanged="TagsListChanged"/>
+                    
+                </WrapPanel>
+
+                <WrapPanel x:Name="row5" Orientation="Horizontal" Grid.Row="6" Width="1520" HorizontalAlignment="Left">
+
+                    <!--行业-->
+                    <TextBlock Text="行业" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <!--<comp:MultiSelectComboBox x:Name="OrgCbb5" Width="100" Height="22" Background="Black" Margin="10 1 0 4" DefaultText="不限" Visibility="Collapsed">
+                    </comp:MultiSelectComboBox>-->
+                    <comp:HierarchicalComboBox x:Name="OrgCbb5" Width="160" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="INDUSTRY_TYPE" FilterDicChanged="HierarchicalComboBox_FilterDicChanged" IsEditable="True"/>
+
+
+                    <!--地区-->
+                    <TextBlock Text="地区" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="OrgCbb6" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="REGION_TYPE" FilterDicChanged="Cbb_FilterDicChanged" IsEditable="True">
+                    </comp:MultiSelectComboBox>
+
+
+                    <!--年份-->
+                    <TextBlock Text="年份" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="OrgCbb7" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" Tag="ISSUE_YEAR" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+
+                    <!--发行人-->
+                    <TextBlock Text="发行人" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiAutoCompleteComboBox x:Name="OrgCbb8" Width="120" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" Watermark="" Tag="ISSUER" FilterDicChanged="MultiAutoCbb_FilterDicChanged" HasRecognizeBtn="True"
+                                                    PatternChanged="IssuerCbb_PatternChanged" LetterFilterChanged="IssuerCbb_LetterFilterChanged">
+                        
+                    </comp:MultiAutoCompleteComboBox>
+
+
+                    <!--担保人-->
+                    <TextBlock Text="担保人" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiAutoCompleteComboBox x:Name="OrgCbb9" Width="120" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" Watermark="" Tag="GUARANTOR" FilterDicChanged="MultiAutoCbb_FilterDicChanged"
+                                                    PatternChanged="GuarantorCbb_PatternChanged" LetterFilterChanged="GuarantorCbb_LetterFilterChanged">
+                    </comp:MultiAutoCompleteComboBox>
+
+                    <!--永续-->
+                    <TextBlock Text="永续" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="OrgCbb10" Tag="PERPETUAL_TYPE" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    <!--假日-->
+                    <TextBlock Text="假日" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <comp:MultiSelectComboBox x:Name="OrgCbb11" Tag="HOLIDAY_TYPE" Width="100" Height="22" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="10 1 0 4" DefaultText="不限" FilterDicChanged="Cbb_FilterDicChanged">
+                    </comp:MultiSelectComboBox>
+
+                    
+
+                    
+                </WrapPanel>
+
+                <WrapPanel x:Name="row7" Orientation="Horizontal" Grid.Row="7" Width="1520">
+                    <TextBlock Text="热门概念" Foreground="#A0A0A0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4 1 0 4"/>
+                    <ToggleButton x:Name ="IfTier2Perp" Content="二永" Style="{DynamicResource FilterToggleButtonStyle1}" Width="52" Height="24" Margin="4 1 0 4"
+                                  Checked="IfTier2Perp_Checked" Unchecked="IfTier2Perp_Unchecked"/>
+                    <ToggleButton x:Name="KeChuang" Content="科创债" Style="{DynamicResource FilterToggleButtonStyle1}" Width="52" Height="24" Margin="4 1 0 4"
+                                  Checked="KeChuang_Checked" Unchecked="KeChuang_Unchecked"/>
+                    <ToggleButton x:Name="ShuangChuang" Content="双创" Style="{DynamicResource FilterToggleButtonStyle1}" Width="52" Height="24" Margin="4 1 0 4"
+                                  Checked="ShuangChuang_Checked" Unchecked="ShuangChuang_Unchecked"/>
+                    <ToggleButton x:Name="WeiYue" Content="违约债" Style="{DynamicResource FilterToggleButtonStyle1}" Width="52" Height="24" Margin="4 1 0 4"
+                                  Checked="WeiYue_Checked" Unchecked="WeiYue_Unchecked"/>
+                    <ToggleButton x:Name="ZuoShi" Content="做市标的" Style="{DynamicResource FilterToggleButtonStyle1}" Width="52" Height="24" Margin="4 1 0 4"
+                                  Checked="ZuoShi_Checked" Unchecked="ZuoShi_Unchecked"/>
+                </WrapPanel>
+
+                <WrapPanel x:Name="row4" Orientation="Horizontal" Grid.Row="6" Width="1520" Visibility="Collapsed">
+                    <!--机构类型-->
+                    <!--<WrapPanel Orientation="Horizontal">
+                    <RadioButton x:Name="Org_All_ToggleButton" Content="ALL" Width="54" Height="24" Margin="10 1 0 4" 
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="False" Style="{StaticResource ShowAllRadioButtonStyle3}"/>
+                    <ListBox x:Name="OrgListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"
+                     SelectionChanged="OrgListBox_SelectionChanged">
+                        <ListBox.Template>
+                            <ControlTemplate>
+                                <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                            </ControlTemplate>
+                        </ListBox.Template>
+                        <ListBoxItem Content="银行配置户" Tag="0000000000000001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Height="24" Margin="2,1,0,4" Padding="4 0 4 0"/>
+                        <ListBoxItem Content="银行交易户" Tag="0000000000000111" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Height="24" Margin="2,1,0,4" Padding="4 0 4 0"/>
+                        <ListBoxItem Content="券商" Tag="0000000000000010" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        <ListBoxItem Content="基金" Tag="0000000000000011" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        <ListBoxItem Content="保险" Tag="0000000000000101" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        <ListBoxItem Content="理财子" Tag="0000000000001000" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" Padding="2 0 2 0"/>
+                        <ListBoxItem Content="资管" Tag="0000000000000100" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        <ListBoxItem Content="期货" Tag="0000000000001001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" Padding="2 0 2 0"/>
+                        <ListBoxItem Content="信托" Tag="0000000000001010" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        <ListBoxItem Content="其他" Tag="0000000000000110" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                    </ListBox>
+                </WrapPanel>-->
+
+                    <!--标签-->
+                    <!--<WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="Tag_All_ToggleButton" Content="ALL" Width="54" Height="24" Margin="4 1 0 4"
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="False" Style="{StaticResource ShowAllRadioButtonStyle3}"/>
+                        <ListBox x:Name="TagListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="TagListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="VIP" Tag="0001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>
+                        </ListBox>
+                    </WrapPanel>-->
+
+                    <!--FirmFlag-->
+                    <!--<WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="Firm_All_ToggleButton" Content="ALL" Width="54" Height="24" Margin="10 1 0 4"
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="False" Style="{StaticResource ShowAllRadioButtonStyle3}"/>
+                        <ListBox x:Name="FirmFlagListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="FirmFlagListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Tag="0001" ToolTip="firm" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24"  Margin="2,1,0,4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="2"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Firm" />
+                                    <Polygon Fill="#FFB60E" Points="6 -5.31777997e-15 0 7.42857143 4 7.42857143 2 13 8 5.57142857 3.99658203 5.57142857" Grid.Column="2"/>
+                                </Grid>
+                            </ListBoxItem>
+                            <ListBoxItem Content="NF" Tag="0010" ToolTip="nonfirm" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>
+                            --><!--<ListBoxItem Content="需求" Tag="0011" ToolTip="需求" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>--><!--
+                        </ListBox>
+                    </WrapPanel>-->
+
+                    <!--清算速度-->
+                    <!--<WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="SettlType_All_ToggleButton" Content="ALL" Width="54" Height="24" Margin="10 1 0 4" 
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="False" Style="{StaticResource ShowAllRadioButtonStyle3}"/>
+                        <ListBox x:Name="SettlTypeListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"
+                     SelectionChanged="SettlTypeListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="T+1" Tag="0010" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="T+0" Tag="0001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>
+                            <ListBoxItem Content="明+0" Tag="0011" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>
+                            --><!--<ListBoxItem Content="明+1" Tag="0100" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>--><!--
+                            <ListBoxItem Content="远期" Tag="0101" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4"/>
+                        </ListBox>
+                    </WrapPanel>-->
+
+                    <!--方向-->
+                    <!--<WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="Side_All_ToggleButton" Content="ALL" Width="54" Height="24" Margin="10 1 0 4" 
+                         VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                          IsChecked="False" Style="{StaticResource ShowAllRadioButtonStyle3}"/>
+                        <ListBox x:Name="SideListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"
+                     SelectionChanged="SideListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="Bid" Tag="0001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                            <ListBoxItem Content="Ofr" Tag="0010" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        </ListBox>
+                    </WrapPanel>-->
+                    <!--角色类型-->
+                    <!--<WrapPanel Orientation="Horizontal">
+                        <RadioButton x:Name="Role_All_ToggleButton" Content="ALL" Width="54" Height="24" Margin="10 1 0 4"
+                    VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                    IsChecked="False" Style="{StaticResource ShowAllRadioButtonStyle3}"/>
+                        <ListBox x:Name="RoleListBox"  Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended"
+                SelectionChanged="RoleListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBoxItem Content="销交" Tag="0001" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                            <ListBoxItem Content="做市" Tag="0010" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="54" Height="24" Margin="2,1,0,4" />
+                        </ListBox>
+                    </WrapPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                       
+                    </StackPanel>-->
+
+                </WrapPanel>
+                <!--</WrapPanel>-->
+            </Grid>
+        </ScrollViewer>
+        <Button x:Name="savebtn"  Visibility="Collapsed" Style="{DynamicResource SaveButton_24}" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 34 18" Click="Save_Click"/>
+        <Button x:Name="editbtn"  Visibility="Collapsed" Style="{DynamicResource SettingButton_24}" Width="24" Height="24" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0 0 10 18" Click="EditGroup_Click"/>
+    </Grid>
+</UserControl>

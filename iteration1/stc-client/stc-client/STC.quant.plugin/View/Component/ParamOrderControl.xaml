@@ -1,0 +1,402 @@
+﻿<UserControl x:Class="STC.quant.plugin.View.Component.ParamOrderControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.quant.plugin.View.Component"
+             xmlns:conv ="clr-namespace:STC.quant.plugin.Convertor"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:utils="clr-namespace:STC.quant.plugin.Utils;assembly=STC.quant.plugin"
+             xmlns:command ="clr-namespace:STC.quant.plugin.Command"
+             xmlns:CommonComp = "clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+              xmlns:book="clr-namespace:STC.quant.plugin.SelectorTemplate"
+             xmlns:SelectorT="clr-namespace:STC.quant.plugin.SelectorT"   d:DesignHeight="300" d:DesignWidth="500"
+             mc:Ignorable="d" FontSize="12" DataContextChanged="UserControl_DataContextChanged" 
+             BorderThickness="0" Background="Transparent"  BorderBrush="#0C4F44" x:Name="OrderControlMain"
+            >
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/TabControlStyleDictionary.xaml"/>
+                <!--<ResourceDictionary Source="/STC.quant.Plugin;component/Resources/DataGridStyleDictionary.xaml"/>-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/GridSplitterStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <!-- 居中 -->
+            <Style x:Key="MMDataGridColumnHeaderCenterStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderCenterStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+            <!-- 居右 -->
+            <Style x:Key="MMDataGridColumnHeaderRightStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderRightStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+            <!-- 居左 -->
+            <Style x:Key="MMDataGridColumnHeaderLeftStyle" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource DataGridColumnHeaderLeftStyle}">
+                <Setter Property="BorderBrush"  Value="#3C3C3C"/>
+                <Setter Property="BorderThickness" Value="0 0 1 0"/>
+            </Style>
+
+            <!--添加按钮样式-->
+            <Style x:Key="AddButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{StaticResource RedButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RedButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{StaticResource RedButton.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="1"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="80"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Pressed.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Pressed.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource RedButton.Disabled.Foreground}"/>
+                                </Trigger>
+                               
+                                <DataTrigger Binding="{Binding IsParamEnabled}" Value="true">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsParamEnabled}" Value="false">
+                                    <Setter Property="Visibility"  Value="Hidden" />
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+           
+            <!--编辑按钮样式-->
+            <Style x:Key="RedButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="{StaticResource RedButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource RedButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{StaticResource RedButton.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="1"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="80"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Pressed.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Pressed.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource RedButton.Disabled.Foreground}"/>
+                                </Trigger>
+                                <DataTrigger Binding="{Binding IsPublicAlterEnabled}" Value="true">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsPublicAlterEnabled}" Value="false">
+                                    <Setter Property="Visibility"  Value="Hidden" />
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24" />
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="60"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid  Grid.Row="0" Grid.ColumnSpan="2" Background="{StaticResource MainBackgroup.ColorBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition Width="60"></ColumnDefinition>
+                <ColumnDefinition Width="60"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" x:Name="txTitle"  Text="参数管理" Foreground="{StaticResource ColorBrush.While}" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                            Margin="5, 5, 5, 0"  />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock  x:Name="txUpdateTime"  Text="上次更新时间:" Foreground="{StaticResource ColorBrush.While}" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                             Margin="0,5,0,0"  />
+                <TextBlock  Text="{Binding LastUpdateTime}" Foreground="{StaticResource ColorBrush.While}" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                            Margin="5,5,4,0"  />
+            </StackPanel>
+            <Button x:Name="btnAdd" Grid.Column="2" Width="56" Height="16" Margin="0,0,4,0" Style="{StaticResource AddButtonStyle}"
+                       Click="btnAdd_Click"  IsDefault="True" Content="添加"></Button>
+            <Button x:Name="btnEdit" Grid.Column="3" Width="56" Height="16" Margin="0,0,4,0" Style="{StaticResource RedButtonStyle}"
+                        Click="btnEdit_Click2">编辑</Button>
+        </Grid>
+
+        <DataGrid x:Name="QParamListView" Grid.Row="1" Grid.ColumnSpan="2" 
+                  SelectedItem="{Binding SelectedParamItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    ItemsSource="{Binding ParamView}"
+                  Style="{StaticResource DefaultDataGrid}"
+                    SelectionMode="Single" IsReadOnly="True"
+                 LoadingRow="ParamListView_LoadingRow">
+            <DataGrid.Resources>
+                <DataTemplate x:Key="CheckBoxItem">
+                    <book:CheckBoxItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="ComboBoxItem">
+                    <book:ComboBoxItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="TextItem">
+                    <book:TextItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="TextItemMulti">
+                    <book:TextItemMulti IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="TextItem1">
+                    <book:TextItem1 IsEnabled="False"/>
+                </DataTemplate> 
+                <DataTemplate x:Key="TextItem2">
+                    <book:TextItem2 IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="DatePickerItem">
+                    <book:DatePickerItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="TextQtyItem">
+                    <book:TextQtyItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="lableItem">
+                    <book:lableItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="SearchTextBox">
+                    <book:SearchTextBoxItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="TextFieldItem">
+                    <book:TextFieldItem IsEnabled="False"/>
+                </DataTemplate>
+                <DataTemplate x:Key="MultiSelectItem">
+                    <book:MultiSelectItem  IsEnabled="False"/>
+                </DataTemplate>
+                <!--<DataTemplate x:Key="TreeViewComBoxItem">
+                    <book:TreeViewComBoxItem QuantUser="{Binding Username}" 
+                       SelectedId="{Binding ParamValue,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                </DataTemplate>-->
+                <DataTemplate x:Key="TreeViewComBoxItem">
+                    <CommonComp:MultiTreeComboBox IsEnabled="False" DefaultText="{Binding ParamValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center" TreeItemStyle="{DynamicResource GreenBlueTreeViewItemStyle}" Foreground="White"
+                                        TreeItemsSource="{Binding MultiTreeComboxItemsSource}" IsEnableMultiSelect="False"  Width="100"
+                                         >
+                        <!--SelectedTexts="{Binding SelectedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">-->
+                        <!--<CommonComp:MultiTreeComboBox.TreeItemItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Nodes}">
+                                <StackPanel Orientation="Horizontal" Height="24">
+                                    <Button  Margin="0, 0, 4, 0" VerticalAlignment="Center" ToolTip="{Binding Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource TreeCheckBoxButton}" Background="Transparent" Tag="{Binding Id}" Visibility="{Binding IsLeaf, Converter={StaticResource visibilityConvertor}}"/>
+                                    <TextBlock Margin="0, 0, 0, 0" Text="{Binding Name}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Checked}" Value="1">
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsLeaf}" Value="False">
+                                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.PaleGrey}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsLeaf}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Margin="6, 0, 0, 0" Text="{Binding Id}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" Foreground="#F0C49F"></TextBlock>
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </CommonComp:MultiTreeComboBox.TreeItemItemTemplate>-->
+                    </CommonComp:MultiTreeComboBox>
+                </DataTemplate>
+
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <!--<DataGridTemplateColumn  Width="45" HeaderStyle="{StaticResource MMDataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="btnAdd" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" Content="➕" Width="32" Height="20" 
+                                    Style="{StaticResource AddButtonStyle}" Click="btnAdd_Click"
+                            ToolTip="添加" Margin="0 ,0 ,0 ,2"></Button>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsParamEnabled, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Value="true">
+                                    <Setter Property="Visibility"  TargetName="btnAdd" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding DataContext.IsParamEnabled, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}" Value="false">
+                                    <Setter Property="Visibility"  TargetName="btnAdd" Value="Hidden" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Center">
+                                <Button x:Name="btMin" Content="一" Foreground="#A0A0A0" Width="24" Height="24" ToolTip="删除" HorizontalAlignment="Center" Style="{StaticResource GreenDeleteButtonStyle}"
+                                      Click="btnDelete_Click"
+                                          FontSize="10" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsEnabled}" Value="true">
+                                    <Setter Property="Visibility"  TargetName="btMin" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsEnabled}" Value="false">
+                                    <Setter Property="Visibility"  TargetName="btMin" Value="Hidden" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+
+                <DataGridTextColumn Header="参数名"  Width="*" Binding="{Binding ParamKey}" Visibility="Hidden" >
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <!--<DataGridTextColumn Header="参数类型" MinWidth="80" Width="*" Binding="{Binding ParamType}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>-->
+
+                <DataGridTextColumn Header="说明"  Width="*" Binding="{Binding ParamDesc}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+               
+                <!--<DataGridTemplateColumn Header="参数值" MinWidth="100" Width="*" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="tbValue" Text="{Binding ParamValue}" TextTrimming="CharacterEllipsis">
+                                <TextBlock.ToolTip>
+                                    <ToolTip Content="{Binding Path=Text}"></ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>-->
+                <DataGridTemplateColumn Header="参数值" MinWidth="100" Width="*">
+                    <DataGridTemplateColumn.CellTemplateSelector>
+                        <SelectorT:ParamDataTemplateSelector/>
+                    </DataGridTemplateColumn.CellTemplateSelector>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="参数值1"  Width="*">
+                    <DataGridTemplateColumn.CellTemplateSelector>
+                        <SelectorT:Param1DataTemplateSelector />
+                    </DataGridTemplateColumn.CellTemplateSelector>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="参数值2"  Width="*">
+                    <DataGridTemplateColumn.CellTemplateSelector>
+                        <SelectorT:Param2DataTemplateSelector />
+                    </DataGridTemplateColumn.CellTemplateSelector>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="操作" Width="48" MinWidth="40" Visibility="Hidden">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left"  VerticalAlignment="Center" >
+                                <!--<Button x:Name="btnEdit" Height="16" Width="16" Margin="5,0,0,0" ToolTip="编辑"
+                                                       Click="btnEdit_Click"
+                                                        Style="{StaticResource EditButton}"  FontSize="10" IsEnabled="{Binding IsAlterEnabled}"
+                                                        />-->
+                                <Button x:Name="btnDelete" Foreground="#A0A0A0" Width="16" Height="16" HorizontalAlignment="Center" 
+                                        Style="{StaticResource DeleteButton}" Click="btnDelete_Click" Margin="5,0,0,0" ToolTip="删除"
+                                          FontSize="10" />
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsEnabled}" Value="true">
+                                    <Setter Property="IsEnabled"  TargetName="btnDelete" Value="True" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsEnabled}" Value="false">
+                                    <Setter Property="IsEnabled"  TargetName="btnDelete" Value="False" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

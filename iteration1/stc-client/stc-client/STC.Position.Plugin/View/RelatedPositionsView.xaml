@@ -1,0 +1,147 @@
+﻿<Window x:Class="STC.Position.Plugin.View.RelatedPositionsView"
+            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Position.Plugin.View"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+             xmlns:fUI="clr-namespace:STC.Common.View.UI;assembly=STC.Common"
+             xmlns:ViewModel="clr-namespace:STC.Position.Plugin.ViewModel" 
+             mc:Ignorable="d" 
+             Title="成交录入"  ResizeMode="NoResize" AllowsTransparency ="True"
+             WindowState="Normal" WindowStartupLocation="CenterScreen" WindowStyle="None" Topmost="True" MouseLeftButtonDown="Window_MouseLeftButtonDown"  BorderThickness="0" Background="#141414"  BorderBrush="Transparent"
+             Width="320" Height="176">
+
+        <Window.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.MergedDictionaries>
+                    <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                    <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                    <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                    <ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                </ResourceDictionary.MergedDictionaries>
+                <SolidColorBrush x:Key="TextBlockForeColor" Color="#FFFFFF"></SolidColorBrush>
+                <SolidColorBrush x:Key="ButtonSelectedActiveBorderColorBrush" Color="#2CAB97"></SolidColorBrush>
+                <SolidColorBrush x:Key="TextBlockDisableForeground" Color="#788187"/>
+                <SolidColorBrush x:Key="TextBlockForeground" Color="#FFFFFF"/>
+                <!--文本框-->
+                <SolidColorBrush x:Key="TextBox.Static.Border" Color="#3C3C3C"/>
+                <SolidColorBrush x:Key="TextBox.Static.Background" Color="#172422"/>
+                <SolidColorBrush x:Key="TextBox.Static.Foreground" Color="#FFEBC8"/>
+                <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#0F0F0F"/>
+                <SolidColorBrush x:Key="TextBox.MouseOver.Background" Color="#193D37"/>
+                <SolidColorBrush x:Key="TextBox.MouseOver.Foreground" Color="#3C3C3C"/>
+                <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#FF9300"/>
+                <SolidColorBrush x:Key="TextBox.Focus.Background" Color="#0F0F0F"/>
+                <SolidColorBrush x:Key="TextBox.Focus.Foreground" Color="#FFFFFF"/>
+                <SolidColorBrush x:Key="TextBox.Disable.Border" Color="#3C3C3C"/>
+                <SolidColorBrush x:Key="TextBox.Disable.Background" Color="#1E1E1E"/>
+                <SolidColorBrush x:Key="TextBox.Disable.Foreground" Color="#3C3C3C"/>
+
+                <SolidColorBrush x:Key="MainFormBackground" Color="#141414"/>
+                <SolidColorBrush x:Key="LostFocusBorderBrush" Color="#282828"/>
+                <SolidColorBrush x:Key="GetFocusBorderBrush" Color="#8F9598"/>
+
+                <Style TargetType="{x:Type Button}" x:Key="ImageButtonStyle">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type Button}">
+                                <Grid>
+                                    <Border x:Name="background" Height="{TemplateBinding Height}" Background="{TemplateBinding Background}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                                    </Border>
+                                    <Grid>
+                                        <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Grid>
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="true">
+                                        <Setter Property="Background" TargetName="background">
+                                            <Setter.Value>
+                                                <ImageBrush ImageSource="/STC.Common;component/Images/stc_operation_history_dark_pressed.png"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="true">
+                                        <Setter Property="Control.Background" TargetName="background">
+                                            <Setter.Value>
+                                                <ImageBrush ImageSource="/STC.Common;component/Images/stc_operation_history_dark_hover.png"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                    <Trigger Property="IsEnabled" Value="false">
+                                        <Setter Property="Control.Background" TargetName="background">
+                                            <Setter.Value>
+                                                <ImageBrush ImageSource="/STC.Common;component/Images/stc_operation_history_dark_disabled.png"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ResourceDictionary>
+        </Window.Resources>
+        <WindowChrome.WindowChrome>
+            <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+        </WindowChrome.WindowChrome>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"></RowDefinition>
+            <RowDefinition Height="108"></RowDefinition>
+            <RowDefinition Height="44"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Border BorderThickness="2,2,2,0"  Grid.Row="0"  CornerRadius="4,4,0,0" BorderBrush="#A0A0A0"  Background="{StaticResource LostFocusBorderBrush}">
+            <Grid  Background="{StaticResource LostFocusBorderBrush}" Margin="2,0,2,0" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="36"/>
+                    <ColumnDefinition Width="64"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                </Grid.ColumnDefinitions>
+                <Image Grid.Column="0" Source="/STC.Position.Plugin;component/Images/stc_windows_icon_64.ico" Width="32" Height="22" Margin="-2,-11,0,0" Stretch="UniformToFill"/>
+                <TextBlock Text="关联组合" Grid.Column="1" Margin="0, 0, 0, 0" Foreground = "#FFFFFF" FontFamily="MicroSoft YaHei" FontWeight="SemiBold" FontSize="14"/>
+                <!--<TextBlock Text="{Binding ChangedExecId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="2" Margin="4,3,0,0" Foreground="Wheat"></TextBlock>-->
+                <Button Width="16" Height="16" Grid.Column="3" x:Name="btnExit" Margin="0,0,-2,0" Click="btnExit_Click" IsCancel="True" Style="{StaticResource ImageCloseButton}" />
+            </Grid>
+        </Border>
+        <Border BorderThickness="2,0,2,0" Grid.Row="1" CornerRadius="0,0,0,0" BorderBrush="#A0A0A0" Background="#141414">
+            <StackPanel VerticalAlignment="Center" Orientation="Horizontal" HorizontalAlignment="Center">
+
+                        <TextBlock VerticalAlignment="Center"  Text="关联分组" FontSize="12" FontFamily="MicrosoftYaHei" Foreground="#A0A0A0">
+                        </TextBlock>
+                         <ComboBox x:Name="comBookId" SelectedValue="{Binding NewBookId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource NonEditableComboBoxStyle}" Width="180" Foreground="{StaticResource DefaultForegroup.ColorBrush}" Background="#0F0F0F"
+                                                     Height="22" Margin="4,0,0,0" Padding="6,3,0,0" SelectedValuePath="Key" DisplayMemberPath="Value" >
+                        </ComboBox>
+            </StackPanel>
+        </Border>
+        <fUI:LoadingMask x:Name="emsloadMask" Visibility="Collapsed" Grid.Row="1" Grid.ColumnSpan="3"></fUI:LoadingMask>
+
+
+        <Border Grid.Row="2" BorderThickness="2, 0, 2, 2"   CornerRadius="0,0,4,4" BorderBrush="#A0A0A0" Background="#141414">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1"></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="68"></ColumnDefinition>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Rectangle Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Fill="#323232" RadiusY="1" RadiusX="1" StrokeThickness="1"/>
+                <Button  Grid.Row="1" Grid.Column="1" Margin="0,0,0,0"  Content="取消" Click="btnExit_Click"  FontSize="12" Foreground="{DynamicResource TextBlockForeground}" Style="{DynamicResource DefaultButtonStyle}"  Width="60" Height="24"/>
+                <Button  Grid.Row="1" Grid.Column="2" Margin="0,0,0,0" Content="确认" x:Name="Save" Click="Save_Click" ToolTip="保存" IsEnabled="{Binding IsCanSave,Converter={StaticResource  booleanConvertor}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Command="{Binding OkCommand}" FontSize="12" Style="{DynamicResource RedButtonStyle}" Foreground="{DynamicResource TextBlockForeground}" Width="100" Height="24"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

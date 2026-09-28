@@ -1,0 +1,340 @@
+﻿<UserControl x:Class="STC.DownloadCenter.Plugin.View.DownloadView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.DownloadCenter.Plugin.View"
+             xmlns:comp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="1000">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/STC.SkinStyle.xaml"/>
+                <!--<ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/STC.SkinStyle.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/TabControlStyleDictionary.xaml"/>-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <!--<ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/GridSplitterStyleDictionary.xaml"/>-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDictionary.xaml"/>
+                <!--<ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/ContextMenuStyleDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/CalendarStyleDictionary.xaml"/>-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/TextBoxStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+            <!-- 文件按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="OpenFileButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="0" Background="Transparent">
+                                    <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Label.Content>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/文件.png" Width="24" Height="24"/>
+                                        </Label.Content>
+                                    </Label>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <!--<Setter TargetName="border" Property="Background" Value="#136C5E" />-->
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/文件hover.png" Width="24" Height="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/文件hover.png" Width="24" Height="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/文件.png" Width="24" Height="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 删除按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="SelfDeleteButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="0" Background="Transparent">
+                                    <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Label.Content>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/删除.png" Width="24" Height="24"/>
+                                        </Label.Content>
+                                    </Label>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <!--<Setter TargetName="border" Property="Background" Value="#136C5E" />-->
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/删除hover.png" Width="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/删除hover.png" Width="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/删除.png" Width="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 下载按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="DownloadButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="border" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}"  CornerRadius="0" Background="Transparent">
+                                    <Label Name="label"  Margin="0"  Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Label.Content>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/下载.png" Width="24" Height="24"/>
+                                        </Label.Content>
+                                    </Label>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <!--<Setter TargetName="border" Property="Background" Value="#136C5E" />-->
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/下载hover.png" Width="24" Height="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/下载hover.png" Width="24" Height="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <!--<Trigger Property="IsEnabled" Value="false">
+                                    <Setter TargetName="label" Property="Content">
+                                        <Setter.Value>
+                                            <Image Source="/STC.DownloadCenter.Plugin;component/Images/下载.png" Width="24" Height="24"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>-->
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+
+
+
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <comp:HoverButton x:Name="AddBtn" Content="新增下载" Height="24" Width="80" HorizontalAlignment="Left" Margin="7,0,0,0"
+                          Padding="1" Style="{StaticResource HoverButton}" Click="AddBtn_Click"
+                                           Background="{StaticResource RedButton.Static.Background}"
+                                           BorderBrush="{StaticResource RedButton.Static.Border}"
+                                           Foreground="{StaticResource RedButton.Static.Foreground}"
+                                           PressBackground="{StaticResource RedButton.Pressed.Background}" 
+                                           PressBorderBrush="{StaticResource RedButton.Pressed.Border}"
+                                           HoverBackground="{StaticResource RedButton.MouseOver.Background}" 
+                                           HoverBorderBrush="{StaticResource RedButton.MouseOver.Border}"/>
+        <comp:HoverButton Content="下载全部" Height="24" Width="80" HorizontalAlignment="Left" Margin="91,0,0,0" Command="{Binding DownloadAllCommand}"
+                          Padding="1" Style="{StaticResource HoverButton}"
+                                           Background="{StaticResource MainBackgroup.ColorBrush}"
+                                           BorderBrush="{StaticResource LightGrayButton.Static.Border}"
+                                           Foreground="{StaticResource LightGrayButton.Static.Foreground}"
+                                            PressBackground="{StaticResource LightGrayButton.Pressed.Background}" 
+                                           PressBorderBrush="{StaticResource LightGrayButton.Pressed.Border}"
+                                           HoverBackground="{StaticResource LightGrayButton.MouseOver.Background}" 
+                                           HoverBorderBrush="{StaticResource LightGrayButton.MouseOver.Border}"/>
+        <comp:SearchTextBox x:Name="Search_TextBox" HorizontalAlignment="Left" Margin="175 0 0 0" HintText="搜索债券代码、简称、拼音"
+                                 SearchText="{Binding SearchText,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalAlignment="Center" Width="216" Height="24" IsFuzzy="True"/>
+        <TextBlock Text="路径:" Margin="399 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="#A0A0A0" Width="36"/>
+        <TextBox Width="216" Height="24" Margin="443 0 0 0" IsReadOnly="true" HorizontalAlignment="Left" Style="{StaticResource STCDefaultBoxStyle}" Text="{Binding FilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        <Button  HorizontalAlignment="Left" Margin="663 0 0 0" Width="24" Height="24" Style="{StaticResource OpenFileButton}" Command="{Binding OpenDirectoryCommand}"/>
+        <TextBlock Text="{Binding DataCount, StringFormat={}共{0}条订阅}" Margin="695 0 0 0" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="#A0A0A0"/>
+
+        <comp:HoverButton Content="导入" Height="24" Width="80" HorizontalAlignment="Right" Margin="0,0,91,0"
+                          Padding="1" Style="{StaticResource HoverButton}" Command="{Binding ImportCommand}" IsEnabled="{Binding ImportEnabled}"
+                                           Background="{StaticResource MainBackgroup.ColorBrush}"
+                                           BorderBrush="{StaticResource LightGrayButton.Static.Border}"
+                                           Foreground="{StaticResource LightGrayButton.Static.Foreground}"
+                                            PressBackground="{StaticResource LightGrayButton.Pressed.Background}" 
+                                           PressBorderBrush="{StaticResource LightGrayButton.Pressed.Border}"
+                                           HoverBackground="{StaticResource LightGrayButton.MouseOver.Background}" 
+                                           HoverBorderBrush="{StaticResource LightGrayButton.MouseOver.Border}"/>
+        <comp:HoverButton Content="导出" Height="24" Width="80" HorizontalAlignment="Right" Margin="0,0,7,0"
+                          Padding="1" Style="{StaticResource HoverButton}"  Command="{Binding ExportCommand}" IsEnabled="{Binding ExportEnabled}"
+                                           Background="{StaticResource MainBackgroup.ColorBrush}"
+                                           BorderBrush="{StaticResource LightGrayButton.Static.Border}"
+                                           Foreground="{StaticResource LightGrayButton.Static.Foreground}"
+                                            PressBackground="{StaticResource LightGrayButton.Pressed.Background}" 
+                                           PressBorderBrush="{StaticResource LightGrayButton.Pressed.Border}"
+                                           HoverBackground="{StaticResource LightGrayButton.MouseOver.Background}" 
+                                           HoverBorderBrush="{StaticResource LightGrayButton.MouseOver.Border}"/>
+
+        <comp:ExDataGrid x:Name="DownloadDataGrid" Grid.Row="1"
+                      ItemsSource="{Binding ViewSource.View}"
+                      SelectedItem="{Binding SelectedItem,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                      Style="{StaticResource DefaultDataGrid}"  SelectionMode="Single">
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="选择" CanUserResize="False">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <CheckBox x:Name="CheckBox_All_Ignore" Click="CheckBox_All_Click_Ignore" 
+                                                      IsChecked="{Binding DataContext.IsAllChecked_Ignore, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor},UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                      VerticalAlignment="Center" HorizontalAlignment="Center" 
+                                                      Style="{StaticResource DefaultCheckBoxStyle}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox x:Name="Selected_Chk_Ignore" Click="Selected_Chk_Click_Ignore" IsChecked="{Binding IsChecked,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+                                                VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                Style="{StaticResource DefaultCheckBoxStyle}"></CheckBox>
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="操作" Width="Auto" MinWidth="40" MaxWidth="80" IsReadOnly="True" HeaderStyle="{StaticResource DataGridColumnHeaderCenterStyle}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="DownloadBtn" Height="24" Width="24"
+                                        Command="{Binding DataContext.DownloadCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                        Style="{StaticResource DownloadButton}" PreviewMouseLeftButtonDown="Btn_PreviewMouseLeftButtonDown" IsEnabled="{Binding IsDownloading, Converter={StaticResource reversebooleanConvertor}}"/>
+                                <Button x:Name="DelBtn"  Height="24" Width="24" Margin="4,0,0,0"
+                                                    Command="{Binding DataContext.DelCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                                    Style="{StaticResource SelfDeleteButton}" PreviewMouseLeftButtonDown="Btn_PreviewMouseLeftButtonDown"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Binding="{Binding SecurityID}" Header="代码" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding SecurityID}"/>
+                <DataGridTextColumn Binding="{Binding Symbol}" Header="简称" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding Symbol}"/>
+
+                <DataGridTextColumn Binding="{Binding DataType, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='download_datatype'}" Header="数据类型" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding DataType}"/>
+                <DataGridTemplateColumn Header="清算速度" MinWidth="80" Width="80" MaxWidth="145" CanUserSort="True" SortMemberPath="SettleType">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="settlType_dispay" Text="{Binding SettleType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"  FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding Frequency}" Header="K线频率" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding Frequency}"/>
+                <DataGridTextColumn Binding="{Binding Type}" Header="行情类型" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding Type}"/>
+                <DataGridTextColumn Binding="{Binding StartDate}" Header="开始时间" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding StartDate}"/>
+                <DataGridTextColumn Binding="{Binding EndDate}" Header="结束时间" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding EndDate}"/>
+
+                <DataGridTextColumn Binding="{Binding DataSize, Converter={StaticResource fileSizeConvertor}}" Header="数据大小" Width="Auto" MinWidth="85" FontWeight="SemiBold" ClipboardContentBinding="{Binding DataSize, Converter={StaticResource fileSizeConvertor}}" SortMemberPath="DataSize_Sort"/>
+                <DataGridTemplateColumn Header="最新状态" Width="450" MinWidth="160" CanUserSort="True" SortMemberPath="LastStatus">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBlock x:Name="OriginalTextTB" Margin="0,0,0,0" Text="{Binding LastStatus}" VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" ToolTip="{Binding LastStatus}"/>
+                                <!--<Image Margin="1,0,0,0" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_search_typing.png" Width="20" Height="20" VerticalAlignment="Center"/>-->
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+               
+                <DataGridTextColumn Header="更新时间" Binding="{Binding UpdateTime}" Width="Auto" MinWidth="70" MaxWidth="200"/>
+
+                <DataGridTemplateColumn Header="路径" MinWidth="80" Width="80" MaxWidth="145" CanUserSort="True" SortMemberPath="FileName">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock x:Name="FileName_dispay" Text="{Binding FileName}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding FileName}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </comp:ExDataGrid>
+
+        <Grid x:Name="MyOrdersOperationGrid" Height="41" VerticalAlignment="Bottom" Visibility="{Binding IsHiddenMyOrdersOperationGrid}" Margin="0,0,0,10" Grid.Row="1">
+            <Border  Background="#CC193D37" IsHitTestVisible="False" BorderThickness="0 1 0 0" BorderBrush="#136C5E" Grid.ColumnSpan="3"/>
+
+            <TextBlock Foreground="#A0A0A0" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0 0 188 0">已选<Run Foreground="#FFFFFF" Text="{Binding CheckedCount}"/>条策略</TextBlock>
+            <comp:HoverButton Width="80" Height="24" HorizontalAlignment="Right" Command="{Binding DownloadSelectedOrdersCommand}" Margin="0 0 100 0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                        Padding="1" Style="{StaticResource HoverButton}"
+                                        IsEnabled="{Binding BatchOperateBtnEnable}"
+                                        Background="{StaticResource RedButton.Static.Background}"
+                                        BorderBrush="{StaticResource RedButton.Static.Border}"
+                                        Foreground="{StaticResource RedButton.Static.Foreground}"
+                                        PressBackground="{StaticResource RedButton.Pressed.Background}" 
+                                        PressBorderBrush="{StaticResource RedButton.Pressed.Border}"
+                                        HoverBackground="{StaticResource RedButton.MouseOver.Background}" 
+                                        HoverBorderBrush="{StaticResource RedButton.MouseOver.Border}">
+                <Grid>
+                    <Image Source="/STC.DownloadCenter.Plugin;component/Images/下载.png" HorizontalAlignment="Left" Margin="10 0 0 0"/>
+                    <TextBlock Text="下载" VerticalAlignment="Center" Margin="35 0 0 0"/>
+                </Grid>
+            </comp:HoverButton>
+
+            <comp:HoverButton Width="80" Height="24" HorizontalAlignment="right" Command="{Binding DelSelectedOrdersCommand}" Margin="0 0 16 0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                Padding="1" Style="{StaticResource HoverButton}"
+                                IsEnabled="{Binding BatchOperateBtnEnable}"
+                                Background="{StaticResource RedButton.Static.Background}"
+                                        BorderBrush="{StaticResource RedButton.Static.Border}"
+                                        Foreground="{StaticResource RedButton.Static.Foreground}"
+                                        PressBackground="{StaticResource RedButton.Pressed.Background}" 
+                                        PressBorderBrush="{StaticResource RedButton.Pressed.Border}"
+                                        HoverBackground="{StaticResource RedButton.MouseOver.Background}" 
+                                        HoverBorderBrush="{StaticResource RedButton.MouseOver.Border}">
+                <Grid>
+                    <Image Source="/STC.DownloadCenter.Plugin;component/Images/删除.png" HorizontalAlignment="Left" Margin="10 0 0 0"/>
+                    <TextBlock Text="删除" VerticalAlignment="Center" Margin="35 0 0 0"/>
+                </Grid>
+            </comp:HoverButton>
+        </Grid>
+    </Grid>
+</UserControl> 

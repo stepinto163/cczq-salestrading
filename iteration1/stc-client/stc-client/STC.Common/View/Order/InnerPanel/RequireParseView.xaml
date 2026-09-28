@@ -1,0 +1,392 @@
+﻿<UserControl x:Class="STC.Common.View.Order.InnerPanel.RequireParseView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Order.InnerPanel"
+             xmlns:comp="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="120" d:DesignWidth="370">
+
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/View/Order/SendPriceDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDictionary.xaml"/>-->
+
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <VisualBrush x:Key="HintText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Left" AlignmentY="Top">
+                <VisualBrush.Visual>
+                    <TextBlock Padding="5, 5, 0, 0" Height="30" FontSize="12" Foreground="{DynamicResource TextBlockDefaultForground}" Text="请粘贴报价信息，支持修改文本后点击 Enter 进行新增需求" ToolTip="请粘贴报价信息，支持修改文本后点击 Enter 进行新增需求，Ctrl+Enter换行" />
+                </VisualBrush.Visual>
+            </VisualBrush>
+
+            <!--价格和数量-->
+            <Style x:Key="SelfSendPriceTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource ColorBrush.Black8}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockDefaultForground}"/>
+                <Setter Property="FontFamily" Value="Roboto"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ColorBrush.Gray15}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="#3C3C3C" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#3C3C3C"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="1"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="0"/>
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="true"/>
+                                        <!--<Condition Property="Tag" Value="1"/>-->
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <!--Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ColorBrush.Gray15}"/-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                    <Setter Property="SelectionBrush" Value="#009AFF"/>
+                                </MultiTrigger>
+
+
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="false"/>
+                                        <Condition Property="Text" Value=""/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#3C3C3C"/>
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource HintText}"/>
+                                </MultiTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
+    <Grid Margin="0,0,0,0">
+
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="auto"></RowDefinition>
+            <RowDefinition Height="auto"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <!--<TextBox x:Name="tbContent" Grid.Row="0" Margin="0, 0, 0, 2" Style="{DynamicResource SelfSendPriceTextBox}" Padding="2, -5, 0, 0" TextChanged="TextBox_TextChanged"
+                 KeyDown="tbContent_KeyDown"></TextBox>-->
+
+
+        <comp:WatermarkTextBox x:Name="tbContent" VerticalContentAlignment="Top" IsEnabled="{Binding IsEnableParse, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             VerticalScrollBarVisibility="Auto" 
+                             BorderThickness="1" Style="{DynamicResource SelfSendPriceTextBox}" PreviewKeyDown="tbContent_PreviewKeyDown" Margin="4,2,4,3" Text="{Binding BondTxt, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap" KeyDown="tbContent_KeyDown" TextChanged="TextBox_TextChanged" BorderBrush="{Binding BorderBrush, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             WaterMark="请粘贴报价信息，支持修改文本后点击 Enter 进行新增需求" ToolTip="请粘贴报价信息，支持修改文本后点击 Enter 进行新增需求，Ctrl+Enter换行" MinHeight="50" ></comp:WatermarkTextBox>
+
+
+        <!--<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <comp:WatermarkTextBox x:Name="tbContent"  WaterMark="请粘贴报价信息，支持修改文本后点击enter进行需求识别" VerticalContentAlignment="Top"
+                             BorderThickness="0" Background="{StaticResource ColorBrush.Black8}" Foreground="{StaticResource TextBlockForeground}" 
+                             AcceptsReturn="True" TextWrapping="Wrap" KeyDown="tbContent_KeyDown" TextChanged="TextBox_TextChanged"></comp:WatermarkTextBox>
+        </ScrollViewer>-->
+
+
+        <!--<RichTextBox x:Name="tbContent" Grid.Row="0" Margin="0, 0, 0, 2" Padding="2, 0, 0, 0" Style="{StaticResource DefaultRichTextBox}" TextChanged="TextBox_TextChanged"
+                 KeyDown="tbContent_KeyDown"></RichTextBox>-->
+
+
+        <Grid x:Name="InstAndTradeGrid" Grid.Row="1" Height="28" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="185"></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <!--客户机构名-->
+            <Border Grid.Column="0" Margin="3,0,3,0" BorderThickness="1">
+                <Grid Background="Black">
+                    <!--<TextBlock Text="客户:" Style="{StaticResource TitleTBFont}" VerticalAlignment="Center" Margin="5 0 0 0" Foreground="#FFFFFF"/>-->
+                    <comp:AutoCompleteComboBox x:Name="InsNameCb_edit" Height="24"
+                                                       DisplayValuePath="shortnamecn"
+                                                       SelectedItem="{Binding SelectedInstintuion_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding InstitutionName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}"
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                 
+                                                       Watermark="来源方机构" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="SelectedInstitutionCB_PatternChanged">
+                        <comp:AutoCompleteComboBox.AutoCompColumns>
+                            <DataGridTemplateColumn  Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding shortnamecn }" Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </comp:AutoCompleteComboBox.AutoCompColumns>
+                    </comp:AutoCompleteComboBox>
+
+                </Grid>
+            </Border>
+
+            <!--客户名-->
+            <Border Grid.Column="1" BorderThickness="1" Background="Black" Margin="3 0 3 0">
+                <comp:AutoCompleteComboBox x:Name="TrdNameCb_edit" Height="24"
+                                                       DisplayValuePath="namecn"
+                                                       SelectedItem="{Binding SelectedTrader_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding TraderName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="来源方" FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="SelectedUserIDCB_PatternChanged">
+                    <comp:AutoCompleteComboBox.AutoCompColumns>
+                        <DataGridTemplateColumn MinWidth="100" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding namecn}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn MinWidth="100" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding instname}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </comp:AutoCompleteComboBox.AutoCompColumns>
+                </comp:AutoCompleteComboBox>
+            </Border>
+
+            <!--投资经理-->
+            <Border x:Name="InvestorBd" Grid.Row="0" Grid.Column="0" Margin="3,0,3,0" Background="Black" Height="28" VerticalAlignment="Top" Visibility="Collapsed">
+                <comp:AutoCompleteComboBox x:Name="cbInvestor" Height="24"
+                                                       DisplayValuePath="Name"
+                                                       SelectedItem="{Binding SelectInvestorItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding SelectInvestorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="投资经理"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center">
+                    <comp:AutoCompleteComboBox.AutoCompColumns>
+                        <DataGridTemplateColumn MinWidth="50" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding Name}" Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                    </comp:AutoCompleteComboBox.AutoCompColumns>
+                </comp:AutoCompleteComboBox>
+            </Border>
+
+            <!--交易员-->
+            <Border x:Name="TraderBd" Grid.Row="0" Grid.Column="1" Margin="3,0,3,0" Background="Black" Height="28" VerticalAlignment="Top" Visibility="Collapsed">
+                <comp:AutoCompleteComboBox x:Name="cbTrader" Height="24"
+                                                       DisplayValuePath="Name"
+                                                       SelectedItem="{Binding SelectTraderItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding SelectTraderText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="交易员"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center">
+                    <comp:AutoCompleteComboBox.AutoCompColumns>
+                        <DataGridTemplateColumn MinWidth="50" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding Name}" Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                    </comp:AutoCompleteComboBox.AutoCompColumns>
+                </comp:AutoCompleteComboBox>
+            </Border>
+
+        </Grid>
+
+        <Grid x:Name="tagGrid" Grid.Row="2" Height="28">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition  Width="185"></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            
+           
+            <!--客户类型-->
+            <Border x:Name="ClientTypeBd" Grid.Row="0" Grid.Column="0" Margin="3,0,3,0" Background="Black" Height="28" VerticalAlignment="Top">
+                <comp:AutoCompleteComboBox x:Name="cbClientType" Height="24"
+                                                       DisplayValuePath="shortnamecn"
+                                                       SelectedItem="{Binding SelectClientTypeItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding ClientTypeEnum, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}" 
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="客户类型"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center" PatternChanged="SelectedClientType_PatternChanged">
+                    <comp:AutoCompleteComboBox.AutoCompColumns>
+                        <DataGridTemplateColumn MinWidth="50" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent">
+                                        <TextBlock Grid.Column="0" Height="22" Text="{Binding shortnamecn}" Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{StaticResource DefaultForegroup.ColorBrush}"
+                                                TextTrimming="CharacterEllipsis" >
+                                            <TextBlock.ToolTip>
+                                                <ToolTip Content="{Binding Text}"/>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                    </comp:AutoCompleteComboBox.AutoCompColumns>
+                </comp:AutoCompleteComboBox>
+            </Border>
+
+            <!--交易员-->
+            <StackPanel x:Name="broker_part" HorizontalAlignment="Left"  VerticalAlignment="Center" Orientation="Horizontal" Grid.Row="0"   Grid.Column="1" Margin="4,0,0,0">
+                <Grid Width="140" x:Name="BrokerCb_grid" Margin="0, 0, 5, 0">
+                    <comp:AutoCompleteComboBox x:Name="BrokerCb_edit" Height="24"
+                                                       DisplayValuePath="Name" TextAlignment="Left" 
+                                                       SelectedItem="{Binding SelectedBroker_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Text="{Binding BrokerName_Edit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                       BackGroundCob="{DynamicResource TextBox.Static.Background}"
+                                                       MouseOverBorderBrushCob="{DynamicResource TextBox.MouseOver.Border}" 
+                                                       FocusBorderBrushCob="{DynamicResource TextBox.Focus.Border}"
+                                                       Watermark="Trader"
+                                                       PreviewMouseDown="BrokerCb_edit_PreviewMouseDown"
+                                          VerticalAlignment="Center" VerticalContentAlignment="Center"  PatternChanged="BrokerCb_edit_PatternChanged">
+                        <comp:AutoCompleteComboBox.AutoCompColumns>
+                            <DataGridTemplateColumn MinWidth="100" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding Username }"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                                    TextTrimming="CharacterEllipsis" >
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn MinWidth="100" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Transparent">
+                                            <TextBlock Grid.Column="0" Height="22" Text="{Binding Name}"  Margin="5, 0, 0, 5" Padding="0, 5, 0, 0" Foreground="{DynamicResource DefaultForegroup.ColorBrush}"
+                                                    TextTrimming="CharacterEllipsis"  HorizontalAlignment="Left" TextAlignment="Left">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </comp:AutoCompleteComboBox.AutoCompColumns>
+                    </comp:AutoCompleteComboBox>
+                </Grid>
+
+                <CheckBox Content="VIP" Foreground="{DynamicResource ColorBrush.Yellow-1}" FontStyle="Italic" 
+                    FontWeight="Bold" FontSize="11"
+                      HorizontalAlignment="Left" VerticalAlignment="Center" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" Background="Transparent" Padding="0,-2,0,0"
+                    IsChecked="{Binding CheckVIP}" Height="14"></CheckBox>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

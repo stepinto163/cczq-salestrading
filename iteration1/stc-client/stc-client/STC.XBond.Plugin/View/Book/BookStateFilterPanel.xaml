@@ -1,0 +1,47 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.Book.BookStateFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             mc:Ignorable="d" 
+             FontSize="12" Height="24"
+             d:DesignHeight="24" d:DesignWidth="550">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.XBond.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel Orientation="Horizontal" Height="16">
+        <TextBlock x:Name="BookStateLbl" Text="整包状态:" VerticalAlignment="Center" Foreground="#A0A0A0"/>
+
+        <RadioButton x:Name="ShowAll_ToggleButton" Width="80" Height="16" Margin="10,0,0,0"  
+                        VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+                        IsChecked="True" Content="ALL" Foreground="White" Style="{StaticResource ShowAllRadioStyle}" 
+                        Checked="ShowAll_ToggleButton_Checked"
+                        Unchecked="ShowAll_ToggleButton_Unchecked"
+                        Click="ShowAll_ToggleButton_Click"/>
+
+        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="5,0,5,0" Height="10" Width="1" BorderBrush="Gray" BorderThickness="1"/>
+
+        <ListBox x:Name="BookStateListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="BookStateListBox_SelectionChanged">
+            <ListBox.Template>
+                <ControlTemplate>
+                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                </ControlTemplate>
+            </ListBox.Template>
+            <ListBoxItem Content="未完成" Style="{StaticResource CommonFilterListBoxItemStyle}" IsSelected="True" />
+            <ListBoxItem Content="NEW" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+            <ListBoxItem Content="更新中" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+            <ListBoxItem Content="异常" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+            <ListBoxItem Content="完成" Style="{StaticResource CommonFilterListBoxItemStyle}" IsSelected="True" />
+            <ListBoxItem Content="已完成" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+            <ListBoxItem Content="异常完成" Style="{StaticResource CommonFilterListBoxItemStyle}"/>
+        </ListBox>
+    </StackPanel>
+
+</UserControl>

@@ -1,0 +1,1856 @@
+﻿<Window x:Class="STC.Mm.Plugin.View.OrderDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mm.Plugin"
+             xmlns:comp ="clr-namespace:STC.Mm.Plugin.View.Component"
+             xmlns:commonComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:viewmodel="clr-namespace:STC.Mm.Plugin.ViewModel" 
+        d:DataContext="{d:DesignInstance Type=viewmodel:OrderDetailViewModel}"
+             xmlns:conv ="clr-namespace:STC.Mm.Plugin.Convertor"
+             xmlns:val="clr-namespace:STC.Mm.Plugin.Validation" Topmost="True"
+             mc:Ignorable="d" FontSize="12" x:Name="orderDetailView" WindowStyle="None" SizeToContent="Height"
+             Background="#1E1E1E" BorderThickness="1" BorderBrush="#193D37" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" WindowState="Normal"
+             MouseLeftButtonDown="orderDetailView_MouseLeftButtonDown" Title="{Binding WinTitle}"
+             Height="800" Width="488" Initialized="orderDetailView_Initialized" DataContextChanged="orderDetailView_DataContextChanged" >
+    <!--Height="640"-->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ListBoxStyleDictinary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Mm.Plugin;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <conv:QuoteModelConverter x:Key="QuoteModelConverter"/>
+            <conv:CirculSizeToQtyConverter x:Key="CirculSizeToQtyConverter"/>
+            <conv:FormatZeroConverter x:Key="FormatZeroConverter"/>
+            <conv:FormatDigitConverter x:Key="FormatDigitConverter"/>
+
+            <Style x:Key="defaultQtyTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <!--<Setter Property="Foreground" Value="#FFFFFF "/>-->
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="0" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="#ED6D00"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="#ED6D00"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="QuoteModelStyle" TargetType="{x:Type RadioButton}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="Background" Value="{StaticResource GrayButton.Static.Background}"></Setter>
+                <Setter Property="BorderBrush" Value="{StaticResource GrayButton.Static.Border}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Foreground" Value="{StaticResource GrayButton.Static.Foreground}"></Setter>
+                <Setter Property="SnapsToDevicePixels" Value="true"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Width" Value="60"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RadioButton}">
+                            <Grid x:Name="grid">
+                                <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                    <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Border>
+                            </Grid>
+                            <!--触发器：设置选中状态符号-->
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Static.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Static.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource RedButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource RedButton.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource RedButton.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="MyDefaultTextBoxStyle" TargetType="{x:Type TextBox}" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+            </Style>
+
+            <Style x:Key="MyExeTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="16"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Polygon x:Name="Arrow"  Stroke="#EC808D" Fill="#EC808D" Points="0,4 0,20 16,20" HorizontalAlignment="Left"/>
+                                    <TextBlock Text="权" FontSize="8" VerticalAlignment="Bottom" Margin="0 0 0 2"/>
+                                    <ScrollViewer x:Name="PART_ContentHost" Grid.ColumnSpan="2" Margin="12 0 0 0" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="Background" Value="#515151"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextBox.MouseOver.Border}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#A0A0A0"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextBox.Focus.Border}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="defaultKWTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="22"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="KW" Grid.Column="1" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="Background" Value="#515151"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#A0A0A0"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--冰山量-->
+            <Style x:Key="defaultKWWatermarkTextBox" TargetType="{x:Type commonComp:WatermarkTextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="false"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type commonComp:WatermarkTextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="22"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock x:Name="Message" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#788187" Text="{TemplateBinding WaterMark}" Visibility="Hidden"/>
+                                    <TextBlock Text="KW" Grid.Column="1" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Text}" Value="">
+                                    <Setter TargetName="Message" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                    <Setter TargetName="border" Property="Background" Value="#515151"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#A0A0A0"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="Background" Value="#300F0F0F"/>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#136C5E"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Style x:Key="defaultBPTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="bp" Grid.Column="1" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#70136C5E"/>
+                                    <!--<Setter TargetName="border" Property="Background" Value="#70136C5E"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#238F7E"/>
+                                    <!--<Setter TargetName="border" Property="Background" Value="#70136C5E"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="defaultBPTextBox2" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="bp" Grid.Column="1" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="ComboBoxButtonStyle" TargetType="{x:Type Button}">
+                <Style.Resources>
+                    <Style x:Key="FocusVisual">
+                        <Setter Property="Control.Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Style.Resources>
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="BorderBrush" Value="#3C3C3C"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                <ContentPresenter x:Name="contentPresenter" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="#3C3C3C"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="#3C3C3C"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{StaticResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForegroup.ColorBrush}"></Setter>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <Setter Property="Height" Value="24"/>
+                <Style.Triggers>
+                    <!-- 不知悬浮颜色 todo  -->
+                    <!--选中颜色-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                            <Condition Property="IsSelected" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                    <!--鼠标移过-->
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsMouseOver" Value="True"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="Background" Value="#A0A0A0"/>
+                        <Setter Property="BorderBrush" Value="#A0A0A0"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="DataGridCellStyle" TargetType="{x:Type DataGridCell}">
+                <Setter Property="IsTabStop" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border x:Name="Bg" Background="Transparent" UseLayoutRounding="True"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0">
+                                <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Margin="5,0,5,0"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ComboBoxPopDataGridStyle" TargetType="DataGrid">
+                <!--<Setter Property="CanUserSortColumns" Value="False"/>-->
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+                <Setter Property="CanUserAddRows" Value="False"/>
+                <Setter Property="HeadersVisibility" Value="None"/>
+                <Setter Property="AutoGenerateColumns" Value="False"/>
+                <Setter Property="SelectionMode" Value="Extended"/>
+                <Setter Property="SelectionUnit" Value="FullRow"/>
+                <!-- 不需要虚拟模式 -->
+                <!--<Setter Property="EnableRowVirtualization" Value="False"/>-->
+                <!-- 不需要边框 -->
+                <Setter Property="BorderThickness" Value="0"/>
+                
+                <Setter Property="EnableColumnVirtualization" Value="True"/>
+                <Setter Property="EnableRowVirtualization" Value="True"/>
+                <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+                <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel"/>
+                <Setter Property="VirtualizingPanel.IsContainerVirtualizable" Value="True"/>
+                <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+                <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="True"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="FontSize" Value="{StaticResource SmallContentFontSize}"/>
+                <Setter Property="Background" Value="#3C3C3C"/>
+                <!--<Setter Property="ColumnHeaderStyle" Value="{StaticResource DataGridColumnHeaderStyle}"/>-->
+                <Setter Property="RowStyle" Value="{StaticResource DataGridRowStyle}"/>
+                <Setter Property="CellStyle" Value="{StaticResource DataGridCellStyle}"/>
+                <Setter Property="Validation.ErrorTemplate" Value="{x:Null}"/>
+            </Style>
+            
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border BorderBrush="#282828" BorderThickness="1">
+        <Grid Background="{StaticResource ColorBrush.Gray13}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="24"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="43"/>
+            </Grid.RowDefinitions>
+
+            <!--标题-->
+            <Grid x:Name="gTitle" Background="{StaticResource ColorBrush.Gray18}" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="tbTitle" Width="Auto" Text="{Binding WinTitle}" Margin="10,0,0,0" Grid.Column="0" VerticalAlignment="Center" Foreground="#FFFFFF"  FontFamily="{StaticResource IDCFontFamily.YaHei}" FontSize="{StaticResource SmallContentFontSize}"></TextBlock>
+                <Button x:Name="btnClose" Grid.Column="2" Width="16" Height="16" Margin="0,0,10,0" Style="{StaticResource ImageCloseButton}" Click="btnClose_Click" IsCancel="True" Command="{Binding CloseCommand}" HorizontalAlignment="Left"></Button>
+
+            </Grid>
+
+            <StackPanel Grid.Row="1" Orientation="Vertical">
+                <!--Height="573"-->
+                <comp:ExtendedScrollViewer x:Name="scroll" Height="700" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="scroll_PreviewMouseWheel" Style="{StaticResource DefaultScrollViewer}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <!--基础报价设置区域-->
+                        <Grid Grid.Row="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                <TextBlock Text="参数默认" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="30,0,0,0" Width="48" Height="Auto"/>
+                                <Button Content="默认" Style="{StaticResource  CancelButtonStyle}"  Margin="10,0,0,0" Width="60" Height="20" Foreground="#FFFFFF" 
+                                        Command="{Binding InterestDefaultCommand}"
+                                        Visibility="{Binding Data.IsInterest,Converter={StaticResource visibilityConvertor}}"/>
+                                <Button Content="活跃债" Style="{StaticResource  CancelButtonStyle}"  Margin="10,0,0,0" Width="60" Height="20" Foreground="#FFFFFF" 
+                                        Command="{Binding InterestActiveCommand}"
+                                        Visibility="{Binding Data.IsInterest,Converter={StaticResource visibilityConvertor}}"/>
+                                <Button Content="买入激进" Style="{StaticResource  CancelButtonStyle}"  Margin="10,0,0,0" Width="60" Height="20" Foreground="#FFFFFF" 
+                                        Command="{Binding InterestBidCommand}"
+                                        Visibility="{Binding Data.IsInterest,Converter={StaticResource visibilityConvertor}}"/>
+                                <Button Content="卖出激进" Style="{StaticResource  CancelButtonStyle}"  Margin="10,0,0,0" Width="60" Height="20" Foreground="#FFFFFF" 
+                                        Command="{Binding InterestOfrCommand}"
+                                        Visibility="{Binding Data.IsInterest,Converter={StaticResource visibilityConvertor}}"/>
+                                <Button Content="默认" Style="{StaticResource  CancelButtonStyle}" Margin="10,0,0,0" Width="60" Height="20" Foreground="#FFFFFF" 
+                                        Command="{Binding CreditDefaultCommand}"
+                                        Visibility="{Binding Data.IsInterest,Converter={StaticResource reverseVisibilityConvertor}}"/>
+                            </StackPanel>
+                            <Grid Grid.Row="1" Height="25">
+                                <TextBlock  Text="基础设置" FontSize="14" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0" Width="84" HorizontalAlignment="Left"/>
+                            </Grid>
+                            
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="59"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="29"/>
+                                    <RowDefinition Height="29"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="10"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="含权债跟随" Foreground="#A0A0A0"  FontSize="12" 
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0" Width="60" Height="Auto"
+                                           Visibility="{Binding Data.isWallEable,Converter={StaticResource visibilityConvertor}}" />
+                                <ComboBox x:Name="exeBondFollowcb" Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="60" Margin="56,0,0,0" VerticalAlignment="Center" SelectedIndex="0" 
+                                          ItemsSource="{Binding ExeBondPreList}" SelectedValuePath="Key" DisplayMemberPath="Value" 
+                                          SelectedValue="{Binding Data.exeBondFollow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                          VerticalContentAlignment="Center" HorizontalAlignment="Left"
+                                          Visibility="{Binding Data.isWallEable,Converter={StaticResource visibilityConvertor}}" 
+                                          SelectionChanged="exeBondFollowcb_SelectionChanged">
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="策略类型" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0" Width="48" Height="Auto"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Width="20" Height="Auto"/>
+                                <!--<RadioButton x:Name="bidQuoteModel_1" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Content="手动" Style="{StaticResource QuoteModelStyle}" Margin="51,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Width="60" Height="24"
+                                                IsChecked="{Binding Data.bidQuoteModel, Mode=OneWay,Converter={StaticResource QuoteModelConverter}, ConverterParameter=1}" GroupName="bid"
+                                                Click="bidQuoteModel_1_Click"/>
+                                <RadioButton x:Name="bidQuoteModel_2"  Content="自动" Style="{StaticResource QuoteModelStyle}" HorizontalAlignment="Left"   Width="60" Height="24" VerticalAlignment="Center" Margin="56 0 0 0" Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" GroupName="bid"
+                                                IsChecked="{Binding Data.bidQuoteModel, Mode=TwoWay,Converter={StaticResource QuoteModelConverter}, ConverterParameter=2}"
+                                                Click="bidQuoteModel_2_Click"/>-->
+                                <!--<ComboBox x:Name="bidStrategyMode_cbx" Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource NonEditableComboBoxStyle}" Width="60" Height="24" HorizontalAlignment="Left" Margin="56,0,0,0" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                          Padding="11.8,0,0,0" VerticalContentAlignment="Center" SelectionChanged="bidStrategyMode_cbx_SelectionChanged"
+                                          ItemsSource="{Binding Data.bidStrategyModeList}" SelectedValue="{Binding Data.bidQuoteModel,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>-->
+                                <Button x:Name="bidStrategyMode_btn" Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2"  Width="60" Height="20" Margin="54,0,0,0" Click="bidStrategyMode_btn_Click" Style="{StaticResource ComboBoxButtonStyle}">
+                                    <!--Click="bidStrategyMode_btn_Click"-->
+                                    <Button.Content>
+                                        <Grid Width="{Binding ElementName=bidStrategyMode_cbx,Path=Width}" Height="{Binding ElementName=bidStrategyMode_cbx,Path=Height}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40"/>
+                                                <ColumnDefinition Width="20"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="#FFFFFF" HorizontalAlignment="Left" Margin="7,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Data.bidQuoteModel}" Value="Manual">
+                                                                <Setter Property="Text" Value="手动"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Data.bidQuoteModel}" Value="Defend">
+                                                                <Setter Property="Text" Value="防守"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Data.bidQuoteModel}" Value="Algorithm">
+                                                                <Setter Property="Text" Value="算法"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Data.bidQuoteModel}" Value="API">
+                                                                <Setter Property="Text" Value="接口"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <!--<Image Grid.Column="1" Source="/STC.Mm.Plugin;component/Images/mm_minus_40.png" Height="7" Width="7" HorizontalAlignment="Center" VerticalAlignment="Center"/>-->
+                                            <Image Grid.Column="1" Source="/STC.Mm.Plugin;component/Images/ComboBoxDownButton.png" Width="15" Height="13" />
+                                        </Grid>
+                                    </Button.Content>
+                                </Button>
+
+
+                                <TextBlock Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <!--<RadioButton x:Name="ofrQuoteModel_1" Grid.Row="0" Grid.Column="5" Grid.ColumnSpan="2" Content="手动" Style="{StaticResource QuoteModelStyle}" Margin="20,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"   Width="60" Height="24"
+                                            IsChecked="{Binding Data.ofrQuoteModel, Mode=OneWay,Converter={StaticResource QuoteModelConverter}, ConverterParameter=1}" GroupName="ofr"
+                                             Click="ofrQuoteModel_1_Click"/>
+                                <RadioButton x:Name="ofrQuoteModel_2"  Content="自动" Style="{StaticResource QuoteModelStyle}" HorizontalAlignment="Left"   Width="60" Height="24" VerticalAlignment="Center" Margin="24 0 0 0" Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="2"
+                                            IsChecked="{Binding Data.ofrQuoteModel, Mode=TwoWay,Converter={StaticResource QuoteModelConverter}, ConverterParameter=2}" GroupName="ofr"
+                                            Click="ofrQuoteModel_2_Click"/>-->
+                                <!--<ComboBox x:Name="ofrStrategyMode_cbx" Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource NonEditableComboBoxStyle}" HorizontalAlignment="Left" SelectedValuePath="Key" DisplayMemberPath="Value" Width="60" Height="24" Margin="25,0,0,0"
+                                          VerticalContentAlignment="Center" Padding="11.8,0,0,0" SelectionChanged="ofrStrategyMode_cbx_SelectionChanged"
+                                          ItemsSource="{Binding Data.ofrStrategyModeList}" SelectedValue="{Binding Data.ofrQuoteModel,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>-->
+                                <Button x:Name="ofrStrategyMode_btn" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Width="60" Height="20" Margin="25,0,0,0" Click="ofrStrategyMode_btn_Click" Style="{StaticResource ComboBoxButtonStyle}"
+                                        HorizontalAlignment="Left">
+                                    <Button.Content>
+                                        <Grid Width="{Binding ElementName=bidStrategyMode_cbx,Path=Width}" Height="{Binding ElementName=bidStrategyMode_cbx,Path=Height}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40"/>
+                                                <ColumnDefinition Width="20"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="#FFFFFF" HorizontalAlignment="Left" Margin="7,0,0,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="{x:Type TextBlock}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Data.ofrQuoteModel}" Value="Manual">
+                                                                <Setter Property="Text" Value="手动"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Data.ofrQuoteModel}" Value="Defend">
+                                                                <Setter Property="Text" Value="防守"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Data.ofrQuoteModel}" Value="Algorithm">
+                                                                <Setter Property="Text" Value="算法"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Data.ofrQuoteModel}" Value="API">
+                                                                <Setter Property="Text" Value="接口"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Image Grid.Column="1" Source="/STC.Mm.Plugin;component/Images/ComboBoxDownButton.png" Width="15" Height="13"/>
+                                        </Grid>
+                                    </Button.Content>
+                                </Button>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="敏感度设置" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Text="重发阈值" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-6,0,0,0"/>
+                                <TextBox x:Name="bidBaseReSendValue_tb" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" ContextMenu="{x:Null}"
+                                            Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                            Tag="bidBaseReSendValue" Margin="54,0,0,0" VerticalAlignment="Center"
+                                            input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidBaseReSendValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Text="重发阈值" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                                <TextBox x:Name="ofrBaseReSendValue_tb" Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                        Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                        Tag="ofrBaseReSendValue" Margin="25,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                        input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.ofrBaseReSendValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Text="单笔报量" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0"/>
+                                <TextBox x:Name="bidBaseQty_tb" Grid.Row="3" Grid.Column ="2" Grid.ColumnSpan="2" Width="60" Height="24" Style="{StaticResource  defaultKWTextBox}" 
+                                                Foreground="#FFFFFF" Padding="0,0,0,0"  HorizontalContentAlignment="Center" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                                Tag="bidBaseQty" Margin="54.5,0,0,0" VerticalAlignment="Center" ContextMenu="{x:Null}"
+                                                input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidBaseQty" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock x:Name="WarnBidBaseQty" Grid.Row="3" Grid.Column="2" Grid.RowSpan="2" Grid.ColumnSpan="4" Text="" Foreground="Red" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-28,3,0,0" Visibility="Collapsed"/>
+                                <TextBlock Grid.Row="3" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBox x:Name="ofrBaseQty_tb" Grid.Row="3" Grid.Column="6" Grid.ColumnSpan="2" Width="60" Height="24" Style="{StaticResource defaultKWTextBox}" 
+                                        Foreground="#FFFFFF" Padding="0,0,0,0" HorizontalContentAlignment="Center" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                     Tag="ofrBaseQty" Margin="-8,0,0,0" VerticalAlignment="Center" BorderThickness="1" ContextMenu="{x:Null}"
+                                     input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.ofrBaseQty" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock x:Name="WarnOfrBaseQty" Grid.Row="3" Grid.Column="5" Grid.RowSpan="2" Grid.ColumnSpan="3" Text="" Foreground="Red" FontSize="10" VerticalAlignment="Center" Margin="0,3,0,0" Visibility="Collapsed"/>
+
+                                <!--<TextBlock x:Name="testbox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding Params.bidBasePrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Background="Yellow" 
+                                            DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>-->
+
+                                <!--<StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="10" VerticalAlignment="Center" Orientation="Horizontal" Margin="50,0,0,0">
+                                    <TextBlock  Text="报量范围：" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text="{Binding Data.riskMinQtySize,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource CirculSizeToQtyConverter},ConverterParameter=kw}" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text="kw &lt;=报量&lt;= " Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text="{Binding Data.circulRatioSize,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#A0A0A0" Width="Auto"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text=" kw（债券余额 " Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text="{Binding Data.circulSize,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource CirculSizeToQtyConverter},ConverterParameter=yi}" Foreground="#A0A0A0" Width="Auto" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text=" 亿*" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text="{Binding Data.riskMaxQtyRatio,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                    <TextBlock  Text="%)" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                </StackPanel>-->
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Text="清算速度" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0"/>
+                                <ComboBox Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="2" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="60" Margin="56,0,0,0" VerticalAlignment="Center" SelectedIndex="0" 
+                                    ItemsSource="{Binding BaseSettleTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.baseSettleType,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalContentAlignment="Center" HorizontalAlignment="Left">
+                                </ComboBox>
+                                <CheckBox x:Name="maxFloor_cb" Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="2" Style="{StaticResource DefaultCheckBoxStyle}" Content="冰山量" Foreground="#A0A0A0 " 
+                                          VerticalAlignment="Center" Margin="50,0,0,0" HorizontalAlignment="Center" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.maxFloorEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="maxFloor_cb_Click"/>
+                                
+                                <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="6" Grid.ColumnSpan="2" >
+                                    <Image Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="1,0,0,0">
+                                        <Image.ToolTip>
+                                            <Grid>
+                                                <TextBlock FontSize="14"  TextWrapping="Wrap" Text="冰山量代表市场实际可见报&#13;量。此时单笔报量为总量，冰&#13;山量需要小于单笔报量才会实&#13;际生效"/>
+                                            </Grid>
+                                        </Image.ToolTip>
+                                    </Image>
+                                    <commonComp:WatermarkTextBox x:Name="maxFloor_tb" Width="60" Height="24" 
+                                      PreviewTextInput="TextBox_PreviewTextInput"  Padding="0, 0, 0, 0" Style="{StaticResource defaultKWWatermarkTextBox}"
+                                      input:InputMethod.IsInputMethodEnabled="False"
+                                      PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" 
+                                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                      Foreground="#FFFFFF" Margin="7,0,0,0" BorderThickness="1" 
+                                      FontSize="12" Focusable="True" WaterMark="--"
+                                      Tag="maxFloor" TextChanged="TextBox_TextChanged" IsEnabled="{Binding Data.maxFloorIsEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged }">
+                                        <TextBox.Text>
+                                            <Binding Path="Data.maxFloor" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" 
+                                                     ValidatesOnDataErrors="True" NotifyOnValidationError="True" 
+                                                     NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                                <!--Converter="{StaticResource FormatZeroConverter}">-->
+                                                <Binding.ValidationRules>
+                                                    <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                                </Binding.ValidationRules>
+                                            </Binding>
+                                        </TextBox.Text>
+                                    </commonComp:WatermarkTextBox>
+                                </StackPanel>
+
+                                <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="9" Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}" VerticalAlignment="Bottom"/>
+                            </Grid>
+                        </Grid>
+
+                        <!--一般报价设置区域-->
+                        <Grid Grid.Row="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="28"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Text="一般报价设置" FontSize="14" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,10,0,0" />
+                            <!--手动报价-->
+                            <Grid Grid.Row="1" Grid.ColumnSpan="9">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="35"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="手动报价" Foreground="#FFFFFF"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0"/>
+                                <TextBox x:Name="manualBid_tb" Grid.Row="0" Grid.Column ="2" Grid.ColumnSpan="2"   PreviewTextInput="TextBox_PreviewTextInput"  Width="60" Height="24" input:InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center"
+                                            Foreground="#FFFFFF" Margin="56,0,0,0" BorderBrush="#3C3C3C" BorderThickness="1"
+                                            FontSize="12" Focusable="True" Style="{StaticResource MyDefaultTextBoxStyle}" Tag="manualBid" TextChanged="TextBox_TextChanged"
+                                         IsEnabled="{Binding Data.exeBondFollow ,Converter={StaticResource booleanConvertor}}">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.manualBid" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                                 ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                                 ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock x:Name="WarnmanualBid" Text="*需大于0" Foreground="Red" Background="Transparent" Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="1,0,0,0" Visibility="Collapsed" Width="50" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBox x:Name="manualOfr_tb" Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="2" Width="60" Height="24"  PreviewTextInput="TextBox_PreviewTextInput"  Padding="0, 0, 0, 0" input:InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Foreground="#FFFFFF" Margin="25,0,0,0" BorderBrush="#3C3C3C" BorderThickness="1" 
+                                            FontSize="12" Focusable="True" Style="{StaticResource MyDefaultTextBoxStyle}" Tag="manualOfr" TextChanged="TextBox_TextChanged"
+                                         IsEnabled="{Binding Data.exeBondFollow ,Converter={StaticResource booleanConvertor}}">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.manualOfr" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock x:Name="WarnmanualOfr" Text="*需大于0" Foreground="Red" Background="Transparent" Grid.Row="0" Grid.Column="5" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="30,0,0,0" Visibility="Collapsed" Width="50" HorizontalAlignment="Left"/>
+                            
+                                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="9" Height="40" >
+                                    <Border Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}" VerticalAlignment="Bottom"/>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" >
+                                    <TextBlock Text="调整步长" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="10,0,0,0" HorizontalAlignment="Left"/>
+                                    <Image Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="1,0,0,0">
+                                        <Image.ToolTip>
+                                            <Grid>
+                                                <TextBlock FontSize="14"  TextWrapping="Wrap" Text="在报价小窗中每次手动调整的价格&#13;步长，注意：双边拉宽/收窄，将&#13;使报价点差增加/减少“2”倍步长" />
+                                            </Grid>
+                                        </Image.ToolTip>
+                                    </Image>
+                                </StackPanel>
+                                <TextBox x:Name="stepLength_tb" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Width="60" Height="24" 
+                                          PreviewTextInput="TextBox_PreviewTextInput"  Padding="0, 0, 0, 0" Style="{StaticResource defaultBPTextBox}" 
+                                          input:InputMethod.IsInputMethodEnabled="False"
+                                          PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" 
+                                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                          Foreground="#FFFFFF" Margin="25,0,0,0" BorderThickness="1" 
+                                          FontSize="12" Focusable="True" 
+                                          Tag="stepLength" TextChanged="TextBox_TextChanged">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.stepLength" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <TextBox x:Name="manualBid_tb_exe" Grid.Row="1" Grid.Column ="2" Grid.ColumnSpan="2"   PreviewTextInput="TextBox_PreviewTextInput" 
+                                         Width="60" Height="24" input:InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" 
+                                         HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Foreground="#FFFFFF" Margin="56,0,0,0" BorderBrush="#3C3C3C" BorderThickness="1"
+                                            FontSize="12" Focusable="True" Style="{StaticResource MyExeTextBoxStyle}" Tag="manualBidExe" TextChanged="TextBox_TextChanged"
+                                        Visibility="{Binding Data.isWallEable,Converter={StaticResource visibilityConvertor}}" 
+                                         IsEnabled="{Binding Data.exeBondFollow ,Converter={StaticResource reversebooleanConvertor}}">
+                                    <!--IsV="{Binding Data.isWallEable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"-->
+                                    <TextBox.Text>
+                                        <Binding Path="Data.exeManualBid" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                                 ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                                 ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <TextBox x:Name="manualOfr_tb_exe" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Width="60" Height="24"  PreviewTextInput="TextBox_PreviewTextInput"  Padding="0, 0, 0, 0" input:InputMethod.IsInputMethodEnabled="False"
+                                            PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" 
+                                         HorizontalContentAlignment="Center" VerticalContentAlignment="Center" 
+                                            Foreground="#FFFFFF" Margin="25,0,0,0" BorderBrush="#3C3C3C" BorderThickness="1" 
+                                            FontSize="12" Focusable="True" Style="{StaticResource MyExeTextBoxStyle}" Tag="manualOfrExe" TextChanged="TextBox_TextChanged"
+                                         Visibility="{Binding Data.isWallEable,Converter={StaticResource visibilityConvertor}}"
+                                         IsEnabled="{Binding Data.exeBondFollow ,Converter={StaticResource reversebooleanConvertor}}">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.exeManualOfr" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                            </Grid>
+                            
+                            <!--<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="9">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="18"/>
+                                    <RowDefinition Height="18"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="优先级设置" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,6,0,0" Height="Auto" Width="60"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,6,0,0" Height="Auto" Width="20"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,6,0,0"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding BidBasePriority1Value,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatZeroConverter}}" Foreground="#FB943C"  FontSize="12" FontWeight="Bold"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Width="48" Height="Auto"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Text="{Binding BidBasePriority1Text,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#A0A0A0" FontSize="12"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="26,0,0,0" Width="48" Height="16"/>
+                                <Button x:Name="bidQuoteMethodShift_btn" Grid.Row="1" Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" Width="32" Height="32" HorizontalAlignment="Left" Margin="25,0,0,3.6" Style="{StaticResource   DefaultButtonStyle}" Background="#3C3C3C"
+                                    Command="{Binding BidBasePriorityShiftCommand}" VerticalAlignment="Bottom">
+                                    <WrapPanel Orientation="Horizontal">
+                                        <Image Source="/STC.Mm.Plugin;component/Images/mm_shift_32.png" Width="9" Height="9" HorizontalAlignment="Center"/>
+                                    </WrapPanel>
+                                </Button>
+
+                                <TextBlock Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Text="{Binding OfrBasePriority1Value,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatZeroConverter}}" Foreground="#58B3FF "  FontSize="12" FontWeight="Bold"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="54,0,0,0" Width="48" Height="Auto"/>
+                                <TextBlock Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2" Text="{Binding OfrBasePriority1Text,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#A0A0A0" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="53,0,0,0" Width="48" Height="16"/>
+                                <Button x:Name="ofrQuoteMethodShift_btn" Grid.Row="1" Grid.RowSpan="2" Grid.Column="6" Grid.ColumnSpan="2" Width="32" Height="32" HorizontalAlignment="Left" Margin="50,0,0,0" Style="{StaticResource   DefaultButtonStyle}" Background="#3C3C3C"
+                                    Command="{Binding OfrBasePriorityShiftCommand}">
+                                    <WrapPanel Orientation="Horizontal">
+                                        <Image Source="/STC.Mm.Plugin;component/Images/mm_shift_32.png" Width="9" Height="9" HorizontalAlignment="Center"/>
+                                    </WrapPanel>
+                                </Button>
+
+                                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding BidBasePriority2Value,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatZeroConverter}}" Foreground="#FB943C"  FontSize="12" FontWeight="Bold"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Width="48" Height="Auto"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Text="{Binding BidBasePriority2Text,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#A0A0A0" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="26,0,0,0" Width="48" Height="16"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="2" Text="{Binding OfrBasePriority2Value,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatZeroConverter}}" Foreground="#58B3FF "  FontSize="12" FontWeight="Bold"  HorizontalAlignment="Left" VerticalAlignment="Center" Margin="54,0,0,0" Width="48" Height="16"/>
+                                <TextBlock Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Text="{Binding OfrBasePriority2Text,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Foreground="#A0A0A0" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="53,0,0,0" Width="48" Height="16"/>
+                            </Grid>-->
+                            <!--防守报价-->
+                            <Grid Grid.Row="2" Grid.ColumnSpan="9">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="35"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="35"/>
+                                    <RowDefinition Height="35"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="10"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="防守报价" Foreground="#FFFFFF"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Height="Auto" Width="20"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock x:Name="bidDefenCalPrice_tb" Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="2" Text="{Binding Params.bidDefenCalPrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#FB943C " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock x:Name="ofrDefenCalPrice_tb" Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="2" Text="{Binding Params.ofrDefenCalPrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#58B3FF " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="市场参考价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,40,0" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Height="Auto" Width="20"/>
+
+                                <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" x:Name="defenReferMarketType_cb" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="65" Margin="50,0,0,0" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding DefenReferMarketTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="defenReferMarketType_cb_SelectionChanged"  IsEnabled="True">
+                                    <ComboBox.SelectedValue>
+                                        <Binding Path="Data.bidDefenReferMarketType" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedValue>
+                                </ComboBox>
+                                <ComboBox Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" x:Name="defenReferLevel_cb" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="65" Margin="2,0,0,0" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding DefenReferLevelList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="defenReferLevel_cb_SelectionChanged"  IsEnabled="True">
+                                    <ComboBox.SelectedValue>
+                                        <Binding Path="Data.bidDefenReferLevel" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedValue>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+
+                                <ComboBox Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2" x:Name="ofrDefenReferMarketType_cb" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="65" 
+                                          Margin="16,0,0,0" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding DefenReferMarketTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="ofrDefenReferMarketType_cb_SelectionChanged"  IsEnabled="True">
+                                    <ComboBox.SelectedValue>
+                                        <Binding Path="Data.ofrDefenReferMarketType" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedValue>
+                                </ComboBox>
+                                <ComboBox Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" x:Name="ofrDefenReferLevel_cb" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="65"
+                                          Margin="27,0,0,0" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding DefenReferLevelList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="ofrDefenReferLevel_cb_SelectionChanged"  IsEnabled="True">
+                                    <ComboBox.SelectedValue>
+                                        <Binding Path="Data.ofrDefenReferLevel" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedValue>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="防守点" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,40,0" HorizontalAlignment="Right"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="参考价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="1" Text="Bid+" Foreground="#FB943C " VerticalAlignment="Center" Margin="10,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="bidAlgoDefenValue_tb" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="bidAlgoDefenValue" Margin="40,2,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidAlgoDefenValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Text="参考价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="-4,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Text="Ofr-" Foreground="#58B3FF " VerticalAlignment="Center" Margin="36,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="ofrAlgoDefenValue_tb" Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="ofrAlgoDefenValue" Margin="4,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.ofrAlgoDefenValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <!--<CheckBox x:Name="algoEnable_chk" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="1" Style="{StaticResource  SwitchMMCheckBoxStyle}" Foreground="#3C3C3C" VerticalAlignment="Center" Margin="16,0,0,0" HorizontalAlignment="Left" IsChecked="{Binding Data.algoEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                        Click="algoEnable_chk_Click"  Width="32" Height="16"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Text="启用算法计算" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="55,0,0,0" HorizontalAlignment="Left"/>
+                                -->
+
+                                <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" >
+                                    <CheckBox x:Name="wallEnable_cb"  Style="{StaticResource DefaultCheckBoxStyle}" Content="墙设置" Foreground="#A0A0A0 " 
+                                          VerticalAlignment="Center" Margin="10,0,0,0" HorizontalAlignment="Center" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.wallEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="wallEnable_cb_Click"/>
+                                    <!--<TextBlock Text="墙设置" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="30,0,0,0" HorizontalAlignment="Left"/>-->
+                                    <Image Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="1,0,0,0">
+                                        <Image.ToolTip>
+                                            <Grid>
+                                                <TextBlock FontSize="14"  TextWrapping="Wrap" Text="防守报价动态处于最优双边外面。&#13;触墙时，根据墙的价格拉宽后作为防守报价。" />
+                                            </Grid>
+                                        </Image.ToolTip>
+                                    </Image>
+                                </StackPanel>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Height="Auto" Width="20"/>
+                                <TextBlock x:Name="globalWallBid_tb" Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="2" Text="{Binding Params.globalWallBid,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#FB943C " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Grid.Row="3" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock x:Name="globalWallOfr_tb" Grid.Row="3" Grid.Column="6" Grid.ColumnSpan="2" Text="{Binding Params.globalWallOfr,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#58B3FF " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <CheckBox x:Name="algoSafeEnable_cb" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"  Style="{StaticResource DefaultCheckBoxStyle}" 
+                                          Content="全市场反向最优" Foreground="#A0A0A0 " 
+                                          VerticalAlignment="Center" Margin="10,0,0,0" HorizontalAlignment="Center" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.algoSafeEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="algoSafeEnable_cb_Click"/>
+                                <!--<TextBlock Text="墙设置" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="30,0,0,0" HorizontalAlignment="Left"/>-->
+                                
+                                <!--<TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Text="全市场最优Ofr+" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="36,0,0,0" HorizontalAlignment="Left" FontSize="12"/>-->
+                                <TextBox x:Name="bidAlgoSafeValue_tb" Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3"  Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="bidAlgoSafeValue" Margin="92,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidAlgoSafeValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock Grid.Row="4" Grid.Column="5" Grid.ColumnSpan="2" Text="全市场最优Bid-" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" FontSize="12" Visibility="Collapsed"/>
+                                <TextBox x:Name="ofrAlgoSafeValue_tb" Grid.Row="4" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="ofrAlgoSafeValue" Margin="25,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown" Visibility="Collapsed">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.ofrAlgoSafeValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <CheckBox x:Name="secondSafeEnable_cb" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3"  Style="{StaticResource DefaultCheckBoxStyle}" 
+                                          Content="全市场同向次最优" Foreground="#A0A0A0 " 
+                                          VerticalAlignment="Center" Margin="22,0,0,0" HorizontalAlignment="Center" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.secondSafeEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="secondSafeEnable_cb_Click"/>
+
+                                <CheckBox x:Name="qdmespSafeEnable_cb" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"  Style="{StaticResource DefaultCheckBoxStyle}" 
+                                          Content="双边同向" Foreground="#A0A0A0 " 
+                                          VerticalAlignment="Center" Margin="32,0,0,0" HorizontalAlignment="Center" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.qdmespSafeEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="qdmespSafeEnable_cb_Click"/>
+                                <!--<TextBlock Text="墙设置" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="30,0,0,0" HorizontalAlignment="Left"/>-->
+                                
+                                <ComboBox Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2" x:Name="qdmespSafeLevel_cb" Height="20" 
+                                          Style="{StaticResource NonEditableComboBoxStyle}" Width="65" Margin="54,0,0,0" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding DefenReferLevelList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="qdmespSafeLevel_cb_SelectionChanged"  IsEnabled="True">
+                                    <ComboBox.SelectedValue>
+                                        <Binding Path="Data.qdmespSafeLevel" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedValue>
+                                </ComboBox>
+                                <!--<TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Text="全市场最优Ofr+" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="36,0,0,0" HorizontalAlignment="Left" FontSize="12"/>-->
+                                <TextBox x:Name="bidQdmespSafeValue_tb" Grid.Row="6" Grid.Column="3" Grid.ColumnSpan="3"  Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="bidQdmespSafeValue" Margin="64,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidQdmespSafeValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <!--<TextBlock Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3" Text="全市场次最优" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Row="5" Grid.Column="3" Grid.ColumnSpan="1" Text="Bid" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="9,0,0,0" HorizontalAlignment="Left" FontSize="12"/>-->
+                                <TextBlock Grid.Row="4" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="2" Text="次最优" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="48,0,0,0" HorizontalAlignment="Left" FontSize="12"/>
+                                <TextBlock Grid.Row="5" Grid.Column="5" Grid.ColumnSpan="3" Text="全市场次最优" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="-55,0,0,0" HorizontalAlignment="Center" FontSize="12" Visibility="Collapsed"/>
+                                <TextBlock Grid.Row="5" Grid.Column="6" Grid.ColumnSpan="2" Text="Ofr" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="40,0,0,0" HorizontalAlignment="Left" FontSize="12" Visibility="Collapsed"/>
+                                <TextBlock Grid.Row="4" Grid.RowSpan="2" Grid.Column="4" Grid.ColumnSpan="2" Text="MIN:" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="23,0,0,0" HorizontalAlignment="Left" FontSize="12" Visibility="Collapsed"/>
+                                <Border Grid.Row="4" Grid.RowSpan="3" Grid.Column="1" Width="6" Height="72" BorderBrush="#A0A0A0 " BorderThickness="2,2,0,2" HorizontalAlignment="Left" Margin="30,0,0,0"/>
+                                <Border Grid.Row="4" Grid.RowSpan="3" Grid.Column="5" Width="6" Height="72" BorderBrush="#A0A0A0 " BorderThickness="0,2,2,2" HorizontalAlignment="Left" Margin="12,0,0,0"/>
+                                <Border Grid.Row="4" Grid.RowSpan="3" Grid.Column="5" Width="6" Height="54" BorderBrush="#A0A0A0 " BorderThickness="2,2,0,2" HorizontalAlignment="Left" Margin="-6,0,0,0" Visibility="Collapsed"/>
+                                <Border Grid.Row="4" Grid.RowSpan="3" Grid.Column="7" Width="6" Height="54" BorderBrush="#A0A0A0 " BorderThickness="0,2,2,2" HorizontalAlignment="Left" Margin="27,0,0,0" Visibility="Collapsed"/>
+
+                                <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Text="触墙拉宽" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="33,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Text="拉宽" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="52,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="bidAlgoTrigValue_tb" Grid.Row="7" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="bidAlgoTrigValue" Margin="56,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidAlgoTrigValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock Grid.Row="7" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock Grid.Row="7" Grid.Column="5" Grid.ColumnSpan="2" Text="拉宽" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="20,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="ofrAlgoTrigValue_tb" Grid.Row="7" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="ofrAlgoTrigValue" Margin="25,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.ofrAlgoTrigValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <CheckBox x:Name="defenCDC_cb" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4" Style="{StaticResource DefaultCheckBoxStyle}"
+                                          Content="无可报价格时锚定中债估值" Foreground="#A0A0A0 " 
+                                          VerticalAlignment="Center" HorizontalAlignment="Center" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.defenCDCEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="defenCDC_cb_Click"/>
+                                <TextBlock x:Name="defenCDCDetail_tb" Grid.Row="8" Grid.Column="4" Grid.ColumnSpan="4"
+                                           Foreground="#A0A0A0 " VerticalAlignment="Center"
+                                           HorizontalAlignment="Left" Visibility="Visible"
+                                           Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                           Text="{Binding Params.defenCDCDetail,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" 
+                                           ToolTip="{Binding ElementName=defenCDCDetail_tb,Path=Text}"/>
+                                <TextBlock Grid.Row="9"  Grid.Column="1" Grid.ColumnSpan="2" 
+                                           Text="Bid" Foreground="#FB943C " VerticalAlignment="Center" Margin="5,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBlock Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Text="中债估值+" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Center" FontSize="12"/>
+                                <TextBox x:Name="bidDefenCDCValue_tb" Grid.Row="9" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" 
+                                         TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="bidDefenCDCValue" Margin="56,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" 
+                                         PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown"
+                                         IsEnabled="{Binding Data.defenCDCIsEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged }">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.bidDefenCDCValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <TextBlock Grid.Row="9" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock Grid.Row="9" Grid.Column="5" Grid.ColumnSpan="2" Text="中债估值-" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="20,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="ofrDefenCDCValue_tb" Grid.Row="9" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="ofrDefenCDCValue" Margin="25,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False"
+                                         PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown"
+                                         IsEnabled="{Binding Data.defenCDCIsEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged }">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.ofrDefenCDCValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <Border Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="9" Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}" VerticalAlignment="Bottom"/>
+                            </Grid>
+                            <!--算法报价-->
+                            <Grid Grid.Row="3" Grid.ColumnSpan="9">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="34"/>
+                                    <RowDefinition Height="34"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="18"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="算法报价" Foreground="#FFFFFF"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Height="Auto" Width="20"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock x:Name="bidAlgoCalPrice_tb" Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="2" Text="{Binding Params.bidAlgoCalPrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#FB943C " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock x:Name="ofrAlgoCalPrice_tb" Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="2" Text="{Binding Params.ofrAlgoCalPrice,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#58B3FF " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <!--<Image Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="70,0,0,0" HorizontalAlignment="Left">
+                                    <Image.ToolTip>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                            </Grid.RowDefinitions>
+                                            <StackPanel Orientation="Horizontal" Grid.Row="0">
+                                                <TextBlock FontSize="14"  TextWrapping="Wrap" Text="算法中间价 = 参考中间价 + 中间偏离价" />
+                                            </StackPanel>
+                                            <TextBlock FontSize="14"  TextWrapping="Wrap" Text="算法Bid = 算法中间价 + 买卖点差/2" Grid.Row="1"/>
+                                            <TextBlock FontSize="14"  TextWrapping="Wrap" Text="算法Ofr = 算法中间价 + 买卖点差/2" Grid.Row="2"/>
+                                        </Grid>
+                                    </Image.ToolTip>
+                                </Image>-->
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="参考中间价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,40,0" HorizontalAlignment="Right"/>
+                                <ComboBox x:Name="algoMidType_cb" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="4" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="146" Margin="29,0,0,0" Padding="7,0,0,0"
+                                  VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding AlgoMidTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value"
+                                  SelectionChanged="algoMidType_cb_SelectionChanged" IsEnabled="True">
+                                    <ComboBox.SelectedValue>
+                                        <Binding Path="Data.algoMidType" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </ComboBox.SelectedValue>
+                                </ComboBox>
+                                <CheckBox x:Name="algoBaseEnable_chk" Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="3" Style="{StaticResource DefaultCheckBoxStyle}" Content="使用基准券" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="-6,0,0,0" HorizontalAlignment="Left" 
+                                    IsChecked="{Binding Data.algoBaseEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                    Padding="2,0,0,0" Click="algoBaseEnable_chk_Click"/>
+                                <comp:NoBtnSearchTextBox x:Name="bond_txt" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Width="60" Height="24" HorizontalAlignment="Left" Margin="25,0,0,0" BorderThickness="1" BorderBrush="#3C3C3C" Foreground="Red"
+                                        IsEnabled="False" AfterSearch="bond_txt_AfterSearch" ValueChanged="bond_txt_ValueChanged" HintText="" LostFocus="bond_txt_LostFocus" ListMarketFilter="CIB">
+                                    <!--ToolTip="{Binding Data.algoBaseSecurityid}"-->
+                                    <comp:NoBtnSearchTextBox.SearchText>
+                                        <Binding Path="Data.algoBaseSecurityid" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </comp:NoBtnSearchTextBox.SearchText>
+                                </comp:NoBtnSearchTextBox>
+                                <TextBlock x:Name="WarnalgoBaseSecurityid" Grid.Row="0" Grid.RowSpan="2" Grid.Column="5" Grid.ColumnSpan="3" Text="*基准券不能与当前券相同" Foreground="Red" VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Visibility="Collapsed" FontSize="10"/>
+
+                                <!--<TextBlock x:Name="algoMidDetail_tb" Grid.Row="11" Grid.Column="1" Grid.ColumnSpan="2" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="30,0,0,0" HorizontalAlignment="Left">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Data.algoMidType,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" Value="1">
+                                                    <Setter Property="Text" Value="{Binding Data.algoMidDetail,Converter={StaticResource FormatZeroConverter}}"/>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Data.algoMidType,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Value="2">
+                                                    <Setter Property="Text" Value="{Binding Data.algoCDCDetail,Converter={StaticResource FormatZeroConverter}}"/>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Data.algoMidType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Value="3">
+                                                    <Setter Property="Text" Value=""/>
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>-->
+                                <TextBlock x:Name="algoMidDetail_tb" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="30,0,0,0" HorizontalAlignment="Left" Visibility="Collapsed"
+                                           Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Text="{Binding Params.algoMidDetail,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" ToolTip="{Binding ElementName=algoMidDetail_tb,Path=Text}"/>
+                                <TextBlock x:Name="algoCDCDetail_tb" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="30,0,0,0" HorizontalAlignment="Left" Visibility="Collapsed"
+                                           Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" Text="{Binding Params.algoCDCDetail,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" ToolTip="{Binding ElementName=algoCDCDetail_tb,Path=Text}"/>
+
+                                <TextBox x:Name="algoMidDetailDefined_tbox" Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource  MyDefaultTextBoxStyle}"
+                                            Foreground="#A0A0A0 "  Margin="56,0,0,0" HorizontalAlignment="Left" Width="60" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Height="24" TextChanged="TextBox_TextChanged" Focusable="True" BorderThickness="1" ContextMenu="{x:Null}"
+                                            Tag="algoMidDetailDefined" VerticalAlignment="Center" Visibility="Collapsed" BorderBrush="#3C3C3C"
+                                            input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown"                                         
+                                         IsEnabled="{Binding Data.exeBondFollow ,Converter={StaticResource booleanConvertor}}">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.algoMidDetailDefined" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock x:Name="WarnAlgoMidDetailDefined" Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="2" Text="*需大于0" Foreground="Red" Background="Transparent" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0" Visibility="Collapsed"/>
+                                <TextBox x:Name="algoMidDetailDefined_tbox_exe" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource  MyExeTextBoxStyle}"
+                                            Margin="30,0,0,0" HorizontalAlignment="Left" Width="60" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Height="24" TextChanged="TextBox_TextChanged" Focusable="True" BorderThickness="1" ContextMenu="{x:Null}"
+                                            Tag="extAlgoMidDetailDefined" VerticalAlignment="Center" BorderBrush="#3C3C3C"
+                                            input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown"
+                                         Visibility="Collapsed"
+                                         IsEnabled="{Binding Data.exeBondFollow ,Converter={StaticResource reversebooleanConvertor}}">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.extAlgoMidDetailDefined" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Text="算法偏离" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="0,0,40,0" HorizontalAlignment="Right"/>
+                                <TextBox x:Name="algoMidOffsetValue_tb" Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="algoMidOffsetValue" Margin="56,0,0,0" IsEnabled="False" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.algoMidOffsetValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock Grid.Row="3" Grid.Column="5" Grid.ColumnSpan="2" Text="算法点差" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="-6,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="algoValue_tb" Grid.Row="3" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                         Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                         Tag="algoValue" Margin="25,0,0,0" VerticalAlignment="Center" IsEnabled="False" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                         input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.algoValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                                <TextBlock x:Name="WarnAlgoValue" Grid.Row="3" Grid.Column="5" Grid.ColumnSpan="2" Text="*需大于0" Foreground="Red" Background="Transparent" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="42,0,0,0" Visibility="Collapsed" Height="12"/>
+
+                                <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="9" Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}" IsHitTestVisible="False"/>
+                            </Grid>
+                            <!--接口报价-->
+                            <Grid Grid.Row="4" x:Name="openAPISetGrid" Grid.ColumnSpan="9">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="10"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="接口报价" Foreground="#FFFFFF"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0" FontWeight="Bold"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Height="Auto" Width="20"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock x:Name="apiBid_tb" Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="2" Text="{Binding Params.apiBid,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#FB943C " VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock x:Name="apiOfr_tb" Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="2" Text="{Binding Params.apiOfr,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource FormatDigitConverter}}" Foreground="#58B3FF " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="接口报量" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Height="Auto" Width="20"/>
+                                <TextBlock Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Text="{Binding Params.apiBidQty,Converter={StaticResource FormatZeroConverter}}" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,0,0" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Text="kw" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="95,0,0,0"/>
+                                <TextBlock Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Text="{Binding Params.apiOfrQty,Converter={StaticResource FormatZeroConverter}}" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0" Width="Auto" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Text="kw" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="63,0,0,0"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="接口状态" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Text="{Binding Params.apiLastTime,Converter={StaticResource FormatZeroConverter}}" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0"
+                                           DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="8" Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}" VerticalAlignment="Bottom"/>
+                            </Grid>
+                            <!--<CheckBox x:Name="algoCDCEnable_chk"  Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="8" Style="{StaticResource DefaultCheckBoxStyle}" Content="策略无法计算出报价时，参考中债估值进行报价 当前估值" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="17,0,0,0" HorizontalAlignment="Left" IsChecked="{Binding Data.algoCDCEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}" Padding="5,0,0,0"
+                                    Click="algoCDCEnable_chk_Click"/>
+                            <TextBlock x:Name="algoCDCDetail_tb" Grid.Row="9" Grid.Column="6" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0,0,0,0" HorizontalAlignment="Left" Text="{Binding Data.algoCDCDetail}" Foreground="#F9C152"/>
+
+                            <TextBlock Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" Text="估值偏离" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="55,0,0,0" HorizontalAlignment="Left"/>
+                            <TextBox x:Name="bidAlgoCDCValue_tb" Grid.Row="10" Grid.Column="2" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                     Text="{Binding Data.bidAlgoCDCValue,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,ValidatesOnExceptions=True}" 
+                                     Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                     Tag="bidAlgoCDCValue" Margin="0,0,0,0" VerticalAlignment="Center" IsEnabled="False"
+                                     input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                            
+                            <TextBlock x:Name="WarnBidAlgoCDCValue" Grid.Row="11" Grid.RowSpan="2" Grid.Column="2" Grid.ColumnSpan="2" Text="*需大于0" Foreground="Red" Background="Transparent" FontSize="10" HorizontalAlignment="Left" Margin="30,0,0,0" Visibility="Collapsed" Panel.ZIndex="99"/>
+                            <TextBlock Grid.Row="10" Grid.Column="5" Grid.ColumnSpan="2" Text="报价点差" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="-6,0,0,0" HorizontalAlignment="Left"/>
+                            <TextBox x:Name="ofrAlgoCDCValue_tb" Grid.Row="10" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                     Text="{Binding Data.ofrAlgoCDCValue,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,ValidatesOnExceptions=True}" 
+                                     Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                     Tag="ofrAlgoCDCValue" Margin="25,0,0,0" VerticalAlignment="Center" IsEnabled="False" HorizontalAlignment="Left"
+                                     input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                            
+                            <TextBlock x:Name="WarnOfrAlgoCDCValue" Grid.Row="11" Grid.RowSpan="2" Grid.Column="6" Grid.ColumnSpan="2" Text="*需大于0" Foreground="Red" Background="Transparent" FontSize="10" HorizontalAlignment="Left" Margin="33,0,0,0" Visibility="Collapsed" Panel.ZIndex="99"/>-->
+                        </Grid>
+
+                        <!--成交报价设置区域-->
+                        <Grid Grid.Row="2" x:Name="dealQuoteSetGrid">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="35"/>
+                                <RowDefinition Height="35"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Text="成交报价设置" FontSize="14" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,10,0,0" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="报价被点" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,52.5,0"/>
+                            <Image Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="9,0,0,0" HorizontalAlignment="Left">
+                                <Image.ToolTip>
+                                    <Grid Margin="0,0,0,0">
+                                        <TextBlock FontSize="14"  TextWrapping="Wrap" Text="报价被点后，在拉宽周期内，该设置会影响报价的计算。"/>
+                                    </Grid>
+                                </Image.ToolTip>
+                            </Image>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="28,0,0,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Text="拉宽" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-6,0,0,0"/>
+                            <TextBox x:Name="bidBaseWidenValue_tb" Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2"  Style="{StaticResource defaultBPTextBox}" 
+                                        Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" Height="24" HorizontalContentAlignment="Center" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                        Tag="bidBaseWidenValue" Margin="56,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" ContextMenu="{x:Null}"
+                                        input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                <TextBox.Text>
+                                    <Binding Path="Data.bidBaseWidenValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                        <Binding.ValidationRules>
+                                            <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                        </Binding.ValidationRules>
+
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+                            <TextBlock Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF "  FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2" Text="拉宽" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                            <TextBox x:Name="ofrBaseWidenValue_tb" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                        Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                        Tag="ofrBaseWidenValue" Margin="25,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                        input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                <TextBox.Text>
+                                    <Binding Path="Data.ofrBaseWidenValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                        <Binding.ValidationRules>
+                                            <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                        </Binding.ValidationRules>
+
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="部分成交后" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,40,0"/>
+                            <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Height="20" Style="{StaticResource NonEditableComboBoxStyle}" Width="148" Margin="28,0,0,0" Padding="7,0,0,0"
+                                    ItemsSource="{Binding BaseERReSendTypeList}" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding Data.BaseERReSendType,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalAlignment="Center" SelectedIndex="0" FontSize="10" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" HorizontalAlignment="Left">
+                            </ComboBox>
+                            <TextBlock Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="2" Text="拉宽时长 随机" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="32,0,0,0"/>
+                            <TextBox x:Name="dealWidenLowerTime_tbx" Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Style="{StaticResource MyDefaultTextBoxStyle}" Width="24" Height="24" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="9,0,0,0" BorderThickness="1" BorderBrush="#3C3C3C"
+                                     input:InputMethod.IsInputMethodEnabled="False" TextChanged="TextBox_TextChanged" PreviewTextInput="TextBox_PreviewTextInput" 
+                                     PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}"  Tag="dealWidenLowerTime" 
+                                     Text="{Binding Data.dealWidenLowerTime,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,ValidatesOnExceptions=True}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Text="至" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                            <TextBox x:Name="dealWidenUpperTime_tbx" Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource MyDefaultTextBoxStyle}" Width="24" Height="24" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="36,0,0,0" HorizontalAlignment="Left" BorderThickness="1" BorderBrush="#3C3C3C"
+                                     input:InputMethod.IsInputMethodEnabled="False" TextChanged="TextBox_TextChanged" PreviewTextInput="TextBox_PreviewTextInput" 
+                                     PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}"  Tag="dealWidenUpperTime" 
+                                     Text="{Binding Data.dealWidenUpperTime,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,ValidatesOnDataErrors=True,ValidatesOnExceptions=True}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="7" Grid.ColumnSpan="2" Text="分钟" Foreground="#A0A0A0"  FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                            <TextBlock x:Name="WarndealWiden" Grid.Row="3" Grid.Column="6" Grid.ColumnSpan="3" Text="*下限应该大于上限" Foreground="Red" FontSize="10" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,0,0,0" Visibility="Collapsed"/>
+                            <!--<CheckBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="8" Style="{StaticResource DefaultCheckBoxStyle}" Content="若此时 X-Bond 或 经纪商市场存在更优行情，主动发起点价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="17,0,0,0" HorizontalAlignment="Left" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.posFakEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"/>-->
+                            
+                        </Grid>
+                        <Grid Grid.Row="3">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="32"/>
+                                <RowDefinition Height="10"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="posFak_cb" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource DefaultCheckBoxStyle}" Content="报反向内部单" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="17,0,0,0" HorizontalAlignment="Left" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.posFakEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="posFak_cb_Click"/>
+
+                            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3" >
+                                <TextBlock Text="报价点差" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="10,0,0,0" HorizontalAlignment="Left"/>
+                                <Image Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="1,0,0,0">
+                                    <Image.ToolTip>
+                                        <Grid>
+                                            <TextBlock FontSize="14"  TextWrapping="Wrap" Text="勾选后，如果双边报价 Bid 方向被点击成&#13;交，策略将会以成交量、成交价 - 报价点差&#13;发送内部订单，匹配市场；如果双边报价&#13;Ofr 方向被点击成交，则以成交量、成交价&#13;+ 报价点差发送内部单"/>
+                                        </Grid>
+                                    </Image.ToolTip>
+                                </Image>
+                                <TextBox x:Name="posFakSpread_tb" Width="60" Height="24" 
+                                      PreviewTextInput="TextBox_PreviewTextInput"  Padding="0, 0, 0, 0" Style="{StaticResource defaultBPTextBox2}" 
+                                      input:InputMethod.IsInputMethodEnabled="False"
+                                      PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}" HorizontalAlignment="Left" 
+                                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                      Foreground="#FFFFFF" Margin="10,0,0,0" BorderThickness="1" 
+                                      FontSize="12" Focusable="True" 
+                                      Tag="posFakSpread" TextChanged="TextBox_TextChanged" IsEnabled="{Binding Data.posFakSpreadEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged }">
+                                    <TextBox.Text>
+                                        <Binding Path="Data.posFakSpread" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged" ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" ValidatesOnNotifyDataErrors="True">
+                                            <Binding.ValidationRules>
+                                                <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox.Text>
+                                </TextBox>
+                            </StackPanel>
+                            <!--<CheckBox x:Name="openODM2_cb" Grid.Row="0" Grid.Column="5" Grid.ColumnSpan="2" Style="{StaticResource DefaultCheckBoxStyle}" 
+                                      Content="指示性报价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="17,0,0,0" HorizontalAlignment="Left" Padding="5,0,0,0"
+                                      IsChecked="{Binding Data.openQDM2Enable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}"
+                                      Click="openODM2_cb_Click"/>-->
+                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="9" Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}"/>
+
+                        </Grid>
+                        <!--积极报价设置区域-->
+                        <Grid Grid.Row="4" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="28"/>
+                                <RowDefinition Height="28"/>
+                                <RowDefinition Height="35"/>
+                                <RowDefinition Height="10"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Text="积极报价设置" FontSize="14" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0" />
+
+                            <CheckBox x:Name="posLmtEnable_chk" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="8" Style="{StaticResource DefaultCheckBoxStyle}" Content="如果本方 X-Bond 报价更优，当前做市报价可以变得更激进" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="17,0,0,0" HorizontalAlignment="Left" IsChecked="{Binding Data.posLmtEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}" Padding="5,0,0,0"
+                                Click="posLmtEnable_chk_Click"/>
+                            <Image Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="2" Source="/STC.Mm.Plugin;component/Images/MM_Warn.png" Width="16" Height="16" Margin="60,0,0,0" HorizontalAlignment="Left">
+                                <Image.ToolTip>
+                                    <Grid Margin="0,0,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Orientation="Horizontal" Grid.Row="0">
+                                            <TextBlock FontSize="14"  TextWrapping="Wrap" Text="若计算后价格优于当前做市报价，使用该计算后价格更新做市报价。" />
+                                        </StackPanel>
+                                        <TextBlock FontSize="14"  TextWrapping="Wrap" Text="如果本方其他渠道报价撤销或产生成交，双边报价恢复原有逻辑。" Grid.Row="1"/>
+                                    </Grid>
+                                </Image.ToolTip>
+                            </Image>
+
+                            <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="Bid" Foreground="#FB943C " VerticalAlignment="Center" Margin="28,0,0,0" HorizontalAlignment="Left" Width="20"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="X-Bond Bid+" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="46,0,0,0" HorizontalAlignment="Left" Width="Auto"/>
+                            <TextBox x:Name="bidPosValue_tb" Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                     Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                     Tag="bidPosValue" Margin="0,0,0,0" VerticalAlignment="Center" IsEnabled="False" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                     input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                <TextBox.Text>
+                                    <Binding Path="Data.bidPosValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                        <Binding.ValidationRules>
+                                            <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+
+                            <TextBlock Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Text="Ofr" Foreground="#58B3FF  " VerticalAlignment="Center" Margin="-7,0,0,0" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Row="2" Grid.Column="5" Grid.ColumnSpan="2" Text="X-Bond Ofr-" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="12,0,0,0" HorizontalAlignment="Left"/>
+                            <TextBox x:Name="ofrPosValue_tb" Grid.Row="2" Grid.Column="6" Grid.ColumnSpan="2" Style="{StaticResource defaultBPTextBox}" 
+                                     Foreground="#FFFFFF" Padding="0,0,0,0" BorderThickness="1" Width="60" HorizontalContentAlignment="Center" Height="24" TextChanged="TextBox_TextChanged" Focusable="True" 
+                                     Tag="ofrPosValue" Margin="25,0,0,0" VerticalAlignment="Center" IsEnabled="False" HorizontalAlignment="Left" ContextMenu="{x:Null}"
+                                     input:InputMethod.IsInputMethodEnabled="False" PreviewTextInput="TextBox_PreviewTextInput" PreviewKeyDown="TextBox_PreviewKeyDown">
+                                <TextBox.Text>
+                                    <Binding Path="Data.ofrPosValue" Mode="TwoWay" UpdateSourceTrigger="PropertyChanged"
+                                             ValidatesOnDataErrors="True" NotifyOnValidationError="True" NotifyOnTargetUpdated="True" 
+                                             ValidatesOnNotifyDataErrors="True">
+                                        <Binding.ValidationRules>
+                                            <val:OrderParamsValidationRules ValidationStep="UpdatedValue" ValidatesOnTargetUpdated="True"/>
+                                        </Binding.ValidationRules>
+                                    </Binding>
+                                </TextBox.Text>
+                            </TextBox>
+
+                            <!--<CheckBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="8" Style="{StaticResource DefaultCheckBoxStyle}" Content="本方双边报价被点，若此时全市场存在比本方成交价更优行情，主动发起点价" Foreground="#A0A0A0 " VerticalAlignment="Center" Margin="17,0,0,0" HorizontalAlignment="Left" IsChecked="{Binding Data.posFakEnable,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged,Converter={StaticResource booleanConvertor}}" Padding="5,0,0,0"/>-->
+
+                            <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="9" Height="1" BorderBrush="#282828" BorderThickness="1" Width="{Binding ElementName=orderDetailView, Path=ActualWidth}"/>
+
+                        </Grid>
+                    </Grid>
+
+
+                </comp:ExtendedScrollViewer>
+
+            </StackPanel>
+
+
+            <!--确认取消按钮区域-->
+            <Grid Grid.Row="4" Height="48">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Style="{StaticResource  CancelButtonStyle}" Width="60" Height="24" Content="取消" Foreground="#FFFFFF" Command="{Binding CancelBtnCommand}"/>
+                    <Button Style="{StaticResource  ConfirmButtonStyle}" Width="100" Height="24" Content="确认" Foreground="#FFFFFF" Margin="4,0,0,0" Command ="{Binding ConfirmBtnCommand}"/>
+                </StackPanel>
+            </Grid>
+
+            <commonComp:PopupEx x:Name="popBidStrategyList" PlacementTarget="{Binding ElementName=bidStrategyMode_btn}" StaysOpen="False" PopupAnimation="Slide" AllowsTransparency="False" Panel.ZIndex="111">
+                <DataGrid x:Name="bidStrategyList_dg" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" AutoGenerateColumns="False" BorderThickness="0"
+                                              ItemsSource="{Binding Params.bidStrategyModeList}" HeadersVisibility="None" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
+                                              MouseUp="bidStrategyList_dg_MouseUp" LostFocus="bidStrategyList_dg_LostFocus"  Style="{StaticResource ComboBoxPopDataGridStyle}" VerticalContentAlignment="Center">
+                    <DataGrid.Columns>
+                        <!--<DataGridTextColumn Binding="{Binding Value}" Width="180"/>-->
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Value}" Margin="5,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </commonComp:PopupEx>
+
+            <commonComp:PopupEx x:Name="popOfrStrategyList"  PlacementTarget="{Binding ElementName=ofrStrategyMode_btn}" StaysOpen="False" PopupAnimation="Slide" AllowsTransparency="False" Panel.ZIndex="111">
+                <DataGrid x:Name="ofrStrategyList_dg" DataContext="{Binding SelectedItemRow,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" AutoGenerateColumns="False" BorderThickness="0"
+                                              ItemsSource="{Binding Params.ofrStrategyModeList}" HeadersVisibility="None" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled"
+                                              MouseUp="ofrStrategyList_dg_MouseUp" LostFocus="ofrStrategyList_dg_LostFocus"  Style="{StaticResource ComboBoxPopDataGridStyle}" VerticalContentAlignment="Center">
+                    <DataGrid.Columns>
+                        <!--<DataGridTextColumn Binding="{Binding Value}" Width="180"/>-->
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Value}" Margin="5,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </commonComp:PopupEx>
+
+        </Grid>
+    </Border>
+
+</Window>

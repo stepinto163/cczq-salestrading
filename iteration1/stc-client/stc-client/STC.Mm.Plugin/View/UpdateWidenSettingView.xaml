@@ -1,0 +1,188 @@
+﻿<xbondComp:WindowBase x:Class="STC.Mm.Plugin.View.UpdateWidenSettingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Mm.Plugin.View"
+             xmlns:xbondComp="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             mc:Ignorable="d" ResizeMode="NoResize" MaxboxEnable="False" MinboxEnable="False"
+             Width="332" SizeToContent="Height" x:Name="UpdateWidenSettingWin"
+             d:DesignWidth="300" Background="#1E1E1E" Title="一键拉宽">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Frame;component/Resources/ButtonDict.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/MMThemes.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.MM.Plugin;component/Resources/ScrollViewerDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+
+
+            <ControlTemplate x:Key="ErrorTemplate">
+                <Border BorderBrush="Red"
+                        BorderThickness="1">
+                    <Grid>
+                        <Path Data="M 0,0 L 8,0 L 8,8 Z" 
+                              HorizontalAlignment="Right" 
+                              VerticalAlignment="Top"
+                              Fill="Red"
+                              ToolTip="{Binding ElementName=adorner,Path=AdornedElement.(Validation.Errors)[0].ErrorContent}"/>
+                        <AdornedElementPlaceholder Name="adorner"/>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+
+
+            <Style x:Key="defaultBPTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="#FFFFFF "/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#3B3C3E"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="False"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="1" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition  />
+                                        <ColumnDefinition Width="20"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                                    <TextBlock Text="bp" Grid.Column="1" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#A0A0A0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#70136C5E"/>
+                                    <!--<Setter TargetName="border" Property="Background" Value="#70136C5E"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter TargetName="border" Property="BorderBrush" Value="#238F7E"/>
+                                    <!--<Setter TargetName="border" Property="Background" Value="#70136C5E"/>-->
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Validation.ErrorTemplate" Value="{StaticResource ErrorTemplate}"/>-->
+                <Style.Triggers>
+                    <Trigger Property="Validation.HasError" Value="True">
+                        <Setter Property="ToolTip"
+                                Value="{Binding RelativeSource={RelativeSource Self}
+                            ,Path=(Validation.Errors)[0].ErrorContent}"/>
+                    </Trigger>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="48"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="100"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock  Text="利率债：" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0" />
+
+        <TextBlock Text="基于已报价格的中间价设置报价点差为"  Grid.Row="1" Foreground="#A0A0A0" VerticalAlignment="Center" Margin="20 0 0 0"/>
+        <TextBox x:Name="midWidenSpreadB_BNC_tb" Style="{StaticResource defaultBPTextBox}"
+                  Grid.Row="1" Grid.Column="1" ContextMenu="{x:Null}"
+                        Text="{Binding MidWidenSpreadB_BNC,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                        Width="75" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        input:InputMethod.IsInputMethodEnabled="False" 
+                        PreviewTextInput="TextBox_PreviewTextInput" 
+                        PreviewKeyDown="TextBox_PreviewKeyDown"
+                 CommandManager.PreviewExecuted ="textBox_PreviewExecuted"
+                 />
+
+        <TextBlock Text="动态防守点：距离&lt;CFETS双边最优&gt;" Grid.Row="2" Margin="20 0 0 0" Foreground="#A0A0A0" VerticalAlignment="Center"/>
+        <TextBox x:Name="defenBP_BNC_tb" Style="{StaticResource defaultBPTextBox}"
+                 Grid.Row="2" Grid.Column="1" ContextMenu="{x:Null}"
+                        Text="{Binding DefenBP_BNC,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                        Width="75" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        input:InputMethod.IsInputMethodEnabled="False" 
+                        PreviewTextInput="TextBox_PreviewTextInput" 
+                        PreviewKeyDown="TextBox_PreviewKeyDown"
+                  CommandManager.PreviewExecuted ="textBox_PreviewExecuted"/>
+
+        <TextBlock  Text="信用债：" Grid.Row="4" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0" />
+
+        <TextBlock Text="基于已报价格的中间价设置报价点差为"  Grid.Row="5" Foreground="#A0A0A0" VerticalAlignment="Center" Margin="20 0 0 0"/>
+        <TextBox x:Name="midWidenSpreadB_BCO_tb" Style="{StaticResource defaultBPTextBox}"
+                  Grid.Row="5" Grid.Column="1" ContextMenu="{x:Null}"
+                        Text="{Binding MidWidenSpreadB_BCO,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                        Width="75" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        input:InputMethod.IsInputMethodEnabled="False" 
+                        PreviewTextInput="TextBox_PreviewTextInput" 
+                        PreviewKeyDown="TextBox_PreviewKeyDown"
+                  CommandManager.PreviewExecuted ="textBox_PreviewExecuted"/>
+
+        <TextBlock Text="动态防守点：距离&lt;CFETS双边最优&gt;" Grid.Row="6" Margin="20 0 0 0" Foreground="#A0A0A0" VerticalAlignment="Center"/>
+        <TextBox x:Name="defenBP_BCO_tb" Style="{StaticResource defaultBPTextBox}"
+                 Grid.Row="6" Grid.Column="1" ContextMenu="{x:Null}"
+                        Text="{Binding DefenBP_BCO,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, ValidatesOnExceptions=True}" 
+                        Width="75" VerticalAlignment="Center" HorizontalAlignment="Left"
+                        input:InputMethod.IsInputMethodEnabled="False" 
+                        PreviewTextInput="TextBox_PreviewTextInput" 
+                        PreviewKeyDown="TextBox_PreviewKeyDown"
+                  CommandManager.PreviewExecuted ="textBox_PreviewExecuted"/>
+
+        <!--错误信息-->
+        <TextBlock Foreground="red" Text="{Binding ResultErrorInfo}" Grid.Row="7" VerticalAlignment="Center" Margin="20 0 0 0"/>
+
+
+        <!--确认取消按钮区域-->
+        <Border Grid.Row="8" Grid.ColumnSpan="2" BorderBrush="#282828" BorderThickness="0 1 0 0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Style="{StaticResource  CancelButtonStyle}" Width="60" Height="24" Content="取消" Foreground="#FFFFFF" Command="{Binding CancelBtnCommand}" CommandParameter="{Binding ElementName=UpdateWidenSettingWin}"/>
+                <Button Style="{StaticResource  ConfirmButtonStyle}" Width="100" Height="24" Content="确认" Foreground="#FFFFFF" Margin="10,0,0,0" Command ="{Binding ConfirmBtnCommand}"  CommandParameter="{Binding ElementName=UpdateWidenSettingWin}">
+                    <Button.IsEnabled>
+                        <MultiBinding Converter="{StaticResource multiAndConverter}">
+                            <MultiBinding.Bindings>
+                                <Binding ElementName="midWidenSpreadB_BNC_tb" Path="(Validation.HasError)"/>
+                                <Binding ElementName="defenBP_BNC_tb" Path="(Validation.HasError)"/>
+                                <Binding ElementName="midWidenSpreadB_BCO_tb" Path="(Validation.HasError)"/>
+                                <Binding ElementName="defenBP_BCO_tb" Path="(Validation.HasError)"/>
+                            </MultiBinding.Bindings>
+                        </MultiBinding>
+                    </Button.IsEnabled>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</xbondComp:WindowBase>

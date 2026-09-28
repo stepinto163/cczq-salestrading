@@ -1,0 +1,88 @@
+﻿<UserControl x:Class="STC.quant.plugin.SelectorTemplate.CheckBoxItem"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.quant.plugin.SelectorTemplate"
+        mc:Ignorable="d" d:DesignHeight="30" d:DesignWidth="150"
+      >
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.quant.plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.quant.Plugin;component/Resources/STC.SkinStyle.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+                
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="SelfDefaultRadioButtonStyle" TargetType="{x:Type RadioButton}">
+                <Setter Property="FocusVisualStyle" Value="{DynamicResource FocusVisual}"/>
+                <Setter Property="Background" Value="#136C5E"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource RadioButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type RadioButton}">
+                            <Grid x:Name="templateRoot" Background="Transparent" SnapsToDevicePixels="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="radioButtonBorder" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" CornerRadius="100" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="1,1,2,1" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <Grid x:Name="markGrid" Margin="2">
+                                        <Ellipse x:Name="optionMark" Fill="#0F0F0F" MinWidth="6" MinHeight="6" Opacity="0"/>
+                                    </Grid>
+                                </Border>
+                                <ContentPresenter x:Name="contentPresenter" Grid.Column="1" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="HasContent" Value="true">
+                                    <Setter Property="FocusVisualStyle" Value="{DynamicResource OptionMarkFocusVisual}"/>
+                                    <Setter Property="Padding" Value="4,-1,0,0"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="radioButtonBorder" Value="{DynamicResource OptionMark.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="{DynamicResource OptionMark.MouseOver.Border}"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource OptionMark.MouseOver.Glyph}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="radioButtonBorder" Value="{DynamicResource OptionMark.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="{DynamicResource OptionMark.Disabled.Border}"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource OptionMark.Disabled.Glyph}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="radioButtonBorder" Value="{DynamicResource OptionMark.Pressed.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="{DynamicResource OptionMark.Pressed.Border}"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="{DynamicResource OptionMark.Pressed.Glyph}"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="radioButtonBorder" Value="#136C5E"/>
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="1"/>
+                                    <Setter Property="Fill" TargetName="optionMark" Value="#FFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="{x:Null}">
+                                    <Setter Property="Opacity" TargetName="optionMark" Value="0.56"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources> <!--DefaultCheckBoxStyle-->
+    <DockPanel>
+        <!--<CheckBox x:Name="Ddd"  IsChecked="{Binding ParamISCheck,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"
+                               Style="{StaticResource CircleCheckBox}" FontFamily="{StaticResource DefaultFont}" 
+                      FontSize="{StaticResource SmallContentFontSize}" Background="Transparent" 
+                      Foreground="White" Checked="Ddd_Checked" Unchecked="Ddd_Unchecked"
+                              Content="{Binding ParamComment, Mode=TwoWay}" ></CheckBox>-->
+        <RadioButton x:Name="Ddd" Style="{DynamicResource SelfDefaultRadioButtonStyle}" IsChecked="{Binding ParamISCheck,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                          Padding="0 0 0 0" VerticalAlignment="Center"  Foreground="White" Content="{Binding ParamComment, Mode=TwoWay}"
+                     FontFamily="{StaticResource DefaultFont}" FontSize="{StaticResource SmallContentFontSize}" Background="Transparent" 
+            Checked="Ddd_Checked" Unchecked="Ddd_Unchecked"/>
+
+    </DockPanel>
+    </UserControl>

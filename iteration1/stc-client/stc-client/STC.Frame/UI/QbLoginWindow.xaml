@@ -1,0 +1,139 @@
+﻿<Window x:Class="STC.Frame.UI.QbLoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:STC.Frame.UI"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Normal"
+        WindowStyle="None" Background="#172422" AllowsTransparency ="True"
+        Title="BDB" Height="140" Width="360">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.Common;component/Resources/StyleDict.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <LinearGradientBrush x:Key="lgbTitleBackground"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Offset="0"
+                              Color="#FF003F35"></GradientStop>
+                <GradientStop Offset="1"
+                              Color="#003B3C3D"></GradientStop>
+            </LinearGradientBrush>
+        </ResourceDictionary>
+    </Window.Resources>
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+    <Border BorderThickness="2" BorderBrush="#325850" CornerRadius="2">
+        <Border.Effect>
+            <DropShadowEffect Color="#FBFFC8" Direction="0" ShadowDepth="24" Opacity="0.3"/>
+        </Border.Effect>
+
+
+        <Grid Background="#172422">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0"
+                CornerRadius="0"
+                Margin="0"
+                Height="40"
+                x:Name="titleBorder"
+                Background="{StaticResource lgbTitleBackground}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
+                    <!--<TextBlock Text="BDB"
+                           Grid.Column="0"
+                           Margin="10,0,0,0"
+                           Foreground="#FFEBC8"
+                           VerticalAlignment="Center" />-->
+
+                    <Image x:Name="imsgBidStar" Width="Auto" Source="/STC.Common;component/Images/bdb_logo_mainlogo.png">
+                    </Image>
+
+
+                    <Button Grid.Column="2" VerticalAlignment="Top"
+                        Margin="0,4,4,0"
+                        Style="{StaticResource ImageCloseButton}"
+                        Width="16"
+                        Height="16"
+                        Click="Button_Click"></Button>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="36, 0, 36, 0">
+                <TextBlock x:Name="tbProcess"
+                   Grid.Row="1"
+                   Text=""
+                   Foreground="#FFEBC8" FontFamily="{StaticResource FontFamily.Roboto}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Margin="0,0,0,4"/>
+
+
+
+
+                <ProgressBar x:Name="pbLoginProcess" Grid.Row="1" Grid.Column="0" BorderThickness="0" Height="6" Margin="2, 0, 2, 4" Grid.ColumnSpan="3" VerticalAlignment="Center" Value="5">
+
+                    <ProgressBar.Style>
+                        <Style TargetType="ProgressBar">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ProgressBar">
+                                        <Grid>
+                                            <Rectangle StrokeThickness="1" RadiusX="0" RadiusY="0">
+                                                <Rectangle.Fill>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                        <GradientStop Color="Transparent" Offset="0"/>
+                                                        <GradientStop Color="Transparent" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                            <Rectangle Name="PART_Track" RadiusX="0" RadiusY="0"/>
+                                            <Decorator x:Name="PART_Indicator" HorizontalAlignment="Left" ClipToBounds="True">
+                                                <Grid>
+                                                    <Rectangle x:Name="Indicator" RadiusX="0" RadiusY="0">
+                                                        <Rectangle.Fill>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                                <GradientStop Color="#F9C152" Offset="0"/>
+                                                                <GradientStop Color="#F9C152" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Rectangle.Fill>
+                                                    </Rectangle>
+                                                </Grid>
+                                            </Decorator>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ProgressBar.Style>
+
+
+                </ProgressBar>
+
+
+                <TextBlock x:Name="tbInfo"
+                   Grid.Row="1"
+                   Text="加载中..."
+                   Foreground="#FFEBC8" FontFamily="PingFang SC"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Margin="0,0,0,0"/>
+
+            </StackPanel>
+
+
+        </Grid>
+
+    </Border>
+</Window>

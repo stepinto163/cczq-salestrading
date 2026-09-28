@@ -1,0 +1,140 @@
+﻿<UserControl x:Class="STC.XBond.Plugin.View.MyOrdersFilterPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.XBond.Plugin.View"
+             xmlns:command="clr-namespace:STC.XBond.Plugin.Command"
+             xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+             xmlns:Component="clr-namespace:STC.Common.View.Component;assembly=STC.Common" 
+             mc:Ignorable="d"  
+             FontSize="12" Height="24"
+             d:DesignHeight="24">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <Grid x:Key="ToNonfirm">
+                <Polygon Fill="#FFFFFF" Points="6 -5.31777997e-15 0 7.42857143 4 7.42857143 2 13 8 5.57142857 3.99658203 5.57142857"/>
+                <Line X1="0.666666667" Y1="0.722222222" X2="7.33333333" Y2="12.2777778" Stroke="#FF3F44" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            </Grid>
+
+            <Grid x:Key="ToFirm">
+                <Polygon Fill="#FFB60E" Points="6 -5.31777997e-15 0 7.42857143 4 7.42857143 2 13 8 5.57142857 3.99658203 5.57142857"/>
+            </Grid>
+            <Style x:Key="CloseAllComboBoxStyle" TargetType="ComboBoxItem">
+                <Setter Property="MinHeight" Value="20"></Setter>
+                <Setter Property="MinWidth" Value="60"></Setter>
+                <Setter Property="Foreground" Value="#FFFFFF"></Setter>
+                <Setter Property="FontSize" Value="12"/>
+
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border Name="Back" Background="#3C3C3C"  BorderThickness="0" BorderBrush="#3C3C3C">
+                                <i:Interaction.Triggers>
+                                    <i:EventTrigger EventName="MouseLeftButtonDown">
+                                        <command:ExecuteCommandAction Command="{Binding DataContext.CancelAllOrdersCommand,RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ComboBoxItem}}}" >
+                                            <command:ExecuteCommandAction.CommandParameter>
+                                                <MultiBinding Converter="{StaticResource  MultiBindingConverter}">
+                                                    <MultiBinding.Bindings>
+                                                        <Binding ElementName="CancelAll_CBC"/>
+                                                        <Binding ElementName="cp" Path="Content"/>
+                                                    </MultiBinding.Bindings>
+                                                </MultiBinding>
+                                            </command:ExecuteCommandAction.CommandParameter>
+                                        </command:ExecuteCommandAction>
+                                    </i:EventTrigger>
+                                </i:Interaction.Triggers>
+                                <ContentPresenter x:Name="cp" ContentSource="{Binding Source}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="6,0,5,0"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="#A0A0A0"></Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <StackPanel Orientation="Horizontal" Height="24">
+            <Button  x:Name="CancelAllBtn" Content="一键撤单" Width="80" Height="20" Margin="7,0,0,0" HorizontalAlignment="Left" Click="CancelAllBtn_Click" Visibility="Collapsed" Style="{DynamicResource BlueGreenStyle}"  BorderThickness="0 1 0 0"></Button>
+            <Button  x:Name="ManualBtn" Content="线下成交" Width="80" Height="20" Margin="7,0,0,0" HorizontalAlignment="Left" Click="ManualBtn_Click" Visibility="Collapsed" Style="{DynamicResource BlueGreenStyle}"  BorderThickness="0 1 0 0"></Button>
+
+            <!--<ComboBox x:Name="CancelAll_CBC" Width="120" Height="18" Margin="10,0,5,0"  HorizontalAlignment="Right" Background="#3C3C3C"
+                      Style="{StaticResource NonEditableComboBoxStyle}" Visibility="Collapsed">
+                <ComboBoxItem Content="一键撤销" IsSelected="True" Style="{StaticResource CloseAllComboBoxStyle}">
+
+                </ComboBoxItem>
+                <ComboBoxItem Content="一键撤量化订单" Style="{StaticResource CloseAllComboBoxStyle}" >
+                   
+                </ComboBoxItem>
+            </ComboBox>-->
+            <Button  x:Name="ResendBtn" Content="恢复报价" Width="80" Height="20" Margin="7,0,0,0" HorizontalAlignment="Left" Command="{Binding ResendCommand}" Visibility="Collapsed" IsEnabled="{Binding IsEnabled_Resend}" Style="{DynamicResource BlueGreenStyle}" BorderThickness="0 1 0 0"></Button>
+
+            <TextBlock x:Name="ContractType" Text="合约:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="ContractTypeListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="ContractTypeListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="ALL" Style="{DynamicResource FilterListBoxItemDodgerBlueAllStyle}"  IsSelected="True" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="债券" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="40" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="期货" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="40" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="IRS" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="40" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+            </ListBox>
+
+            <!--<TextBlock x:Name="SourceLbl" Text="来源:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="VenuesListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="VenuesListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="ALL" Style="{DynamicResource FilterListBoxItemDodgerBlueAllStyle}" IsSelected="True" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="内部" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="56" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="做市" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="56" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="IDB" Visibility="Collapsed" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="56" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="量化" Visibility="Collapsed" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="56" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+            </ListBox>-->
+
+            <TextBlock x:Name="tbCodeType" Text="债券类型:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="lbCodeType" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="LbCodeType_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="ALL" Style="{DynamicResource FilterListBoxItemDodgerBlueAllStyle}" IsSelected="True" Height="20" FontFamily="{DynamicResource DefaultFont}"  FontWeight="Normal"  Margin="0,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="利率" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="40" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="信用" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="40" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+            </ListBox>
+
+            <TextBlock x:Name="FirmFlagLbl" Text="类型:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <ListBox x:Name="FirmFlagListBox" Background="Transparent" VerticalAlignment="Center" SelectionMode="Extended" SelectionChanged="FirmFlagListBox_SelectionChanged">
+                <ListBox.Template>
+                    <ControlTemplate>
+                        <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBoxItem Content="ALL" Tag="ALL" Style="{DynamicResource FilterListBoxItemDodgerBlueAllStyle}" IsSelected="True" Height="20" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="0,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="{DynamicResource ToFirm}" Tag="firm" ToolTip="firm" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="24" Height="20" HorizontalContentAlignment="Center" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+                <ListBoxItem Content="{DynamicResource ToNonfirm}" Tag="nonfirm" ToolTip="nonfirm" Style="{DynamicResource FilterListBoxItemDodgerBlueStyle}" Width="24" Height="20" HorizontalContentAlignment="Center" FontFamily="{DynamicResource DefaultFont}" FontWeight="Normal"  Margin="4,0,0,0" BorderThickness="0 1 0 0"/>
+            </ListBox>
+
+            <TextBlock x:Name="SourceLbl" Text="来源:" VerticalAlignment="Center" Margin="10,0,5,0" Foreground="{DynamicResource QuotationList.SubTitle.Foreground}"/>
+            <Component:MultiSelectComboBox x:Name="VenuesMscb" HorizontalAlignment="Left" 
+                                                Width="100" Height="22" Background="Black" 
+                                                DefaultText="全部" Tag="StrategyStauts" 
+                                                FilterDicChanged="VenuesMscb_FilterDicChanged"/>
+
+        </StackPanel>
+    </Grid>
+</UserControl>

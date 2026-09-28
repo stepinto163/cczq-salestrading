@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7D9DF5AD-75B3-441C-81A9-55A87F76D196}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>STC.dps.plugin</RootNamespace>
+    <AssemblyName>STC.dps.plugin</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>..\client\plugin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Ats.Foundation">
+      <HintPath>..\client\bin\Ats.Foundation.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="dps, Version=1.0.7807.23963, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\client\dps.exe</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="gateway-api">
+      <HintPath>..\client\bin\gateway-api.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\client\bin\System.Data.SQLite.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Common\Constants.cs" />
+    <Compile Include="Common\DpsLocalEnv.cs" />
+    <Compile Include="Handler\BaseHandler.cs" />
+    <Compile Include="Handler\IBaseHandler.cs" />
+    <Compile Include="Handler\IOrdersHandler.cs" />
+    <Compile Include="Handler\IPriceHandler.cs" />
+    <Compile Include="Handler\OrdersHandler.cs" />
+    <Compile Include="Handler\PriceHandler.cs" />
+    <Compile Include="Model\Fix\BaseMessage.cs" />
+    <Compile Include="Model\Fix\Component\StandardHeader.cs" />
+    <Compile Include="Model\Fix\Component\StandardTrailer.cs" />
+    <Compile Include="Model\Fix\DataTypeConverter.cs" />
+    <Compile Include="Model\Fix\FixMessage.cs" />
+    <Compile Include="Model\Fix\MessageDictionary.cs" />
+    <Compile Include="Model\Fix\Message\ExecutionAcknowledgement.cs" />
+    <Compile Include="Model\Fix\Message\ExecutionReport.cs" />
+    <Compile Include="Model\Fix\Message\LoginResult.cs" />
+    <Compile Include="Model\Fix\Message\MarketDataRequest.cs" />
+    <Compile Include="Model\Fix\Message\MarketDataRequestReject.cs" />
+    <Compile Include="Model\Fix\Message\MarketDataSnapshotFullRefresh.cs" />
+    <Compile Include="Model\Fix\Message\NewOrderSingle.cs" />
+    <Compile Include="Model\Fix\Message\OrderCancelReject.cs" />
+    <Compile Include="Model\Fix\Message\OrderCancelRequest.cs" />
+    <Compile Include="Model\Fix\Message\SessionStatus.cs" />
+    <Compile Include="Model\SimulateSwitchPo.cs" />
+    <Compile Include="PrePaidList\DataTimeSequence.cs" />
+    <Compile Include="PrePaidList\EventManager.cs" />
+    <Compile Include="PrePaidList\EventMessage.cs" />
+    <Compile Include="PrePaidList\EventUtils.cs" />
+    <Compile Include="PrePaidList\Event\BaseEventListener.cs" />
+    <Compile Include="PrePaidList\Event\CancEventListener.cs" />
+    <Compile Include="PrePaidList\Event\IEventListener.cs" />
+    <Compile Include="PrePaidList\Event\ReflextionUtils.cs" />
+    <Compile Include="PrePaidList\Event\TrigEventListener.cs" />
+    <Compile Include="QM\po\QMPo.cs" />
+    <Compile Include="QM\po\QMUserVserion.cs" />
+    <Compile Include="QM\QMHelper.cs" />
+    <Compile Include="QM\QMMessage.cs" />
+    <Compile Include="QM\QMRspCallBack.cs" />
+    <Compile Include="STCPlugin.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\CommonUtil.cs" />
+    <Compile Include="Utils\ProcessWatcher.cs" />
+    <Compile Include="Utils\SystemParamHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\STC.Common\STC.Common.csproj">
+      <Project>{756F6622-163E-419A-B853-6F148101979D}</Project>
+      <Name>STC.Common</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

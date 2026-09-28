@@ -26,7 +26,7 @@
 | [API 调试器](iteration1/docs/api-debugger.zh-CN.md) | DPS 请求与订阅调试 |
 | [SQL](iteration1/sql) | PostgreSQL 初始化、迁移及测试夹具 |
 
-原生桌面前端在本地独立 `iteration1/stc-client/stc-client` 仓库维护，不包含在本仓库的 GitHub 文件树中。独立 C# 学习示例和 WinForms 原型已移除。
+原生桌面前端源码已纳入本仓库，见 [STC 客户端](iteration1/stc-client/README.zh-CN.md)。使用在 `feature/ficc-native-salestrading` 基础上合并产品 UI 的 LSJ 版本。独立 C# 学习示例和 WinForms 原型已移除。
 
 ## 构建与运行
 

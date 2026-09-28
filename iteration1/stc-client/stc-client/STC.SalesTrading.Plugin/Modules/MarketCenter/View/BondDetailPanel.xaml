@@ -1,0 +1,639 @@
+﻿<UserControl x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.BondDetailPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cconv="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             xmlns:conv="clr-namespace:STC.SalesTrading.Plugin.Shared.Converters"
+             xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
+             xmlns:views="clr-namespace:STC.SalesTrading.Plugin.Modules.MarketCenter.View">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        <cconv:VenuesColorConvertor x:Key="VenuesColor" />
+            <Style x:Key="RecSideTab" TargetType="{x:Type ToggleButton}">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Padding" Value="12,4" />
+                <Setter Property="MinWidth" Value="64" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource HeaderBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="RecSideBidTab" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource RecSideTab}">
+                <Setter Property="Foreground" Value="{DynamicResource BidBrush}" />
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource TagBidBgBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource BidBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource TagBidBorderBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="RecSideOfrTab" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource RecSideTab}">
+                <Setter Property="Foreground" Value="{DynamicResource OfrBrush}" />
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource TagOfrBgBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource OfrBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource TagOfrBorderBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="RecScopeTab" TargetType="{x:Type ToggleButton}">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0,0,0,2" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Padding" Value="10,4" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="InstChannelTab" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource StcTagNeutral}">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Padding" Value="6,2" />
+                <Setter Property="Height" Value="20" />
+                <Setter Property="MinHeight" Value="20" />
+                <Setter Property="MinWidth" Value="0" />
+            </Style>
+            <Style x:Key="RecWindowTab" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource StcTagNeutral}">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Padding" Value="5,2" />
+                <Setter Property="Height" Value="22" />
+                <Setter Property="MinHeight" Value="22" />
+                <Setter Property="MinWidth" Value="0" />
+            </Style>
+            <Style x:Key="DetailTableHeader" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource StcColumnHeader}">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Padding" Value="4,0" />
+            </Style>
+            <Style x:Key="RecSendButton" TargetType="{x:Type Button}" BasedOn="{StaticResource StcButtonPrimary}">
+                <Setter Property="Height" Value="24" />
+                <Setter Property="MinHeight" Value="24" />
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Padding" Value="10,0" />
+                <Setter Property="Margin" Value="0,0,0,3" />
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!--
+        债券详情面板（原型 board-detail 384px，7 区块）。
+        按比例分配：头部/最新成交条/机构 pill/最优报价条为自然高度，
+        多档+成交行情（3*）与智能推荐（2*）按比例瓜分剩余高度；
+        整体最小高度 780，面板不足时外层滚动条出现。
+        折叠时（40px）内容整体隐藏，只留竖条展开按钮；收起/展开按钮在面板内部。
+    -->
+    <Grid Background="{DynamicResource PanelBgBrush}">
+        <!-- 展开态 -->
+        <Grid Visibility="{Binding DataContext.IsDetailPanelExpanded,
+                RelativeSource={RelativeSource AncestorType={x:Type views:MarketCenterView}},
+                Converter={x:Static conv:ConverterLocator.BoolToVis}}">
+            <!-- 空态占位：面板始终展示（不整体消失），未选中行时置顶提示 -->
+            <!--<TextBlock Text="未选择债券 — 在行情表中点击一行查看详情" Style="{DynamicResource StcTextMuted}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="{Binding HasDetail, Converter={x:Static conv:ConverterLocator.BoolToVis}, ConverterParameter=invert}" />-->
+
+            <ScrollViewer x:Name="outer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Style="{StaticResource StcPanelScrollViewer}">
+                 <Grid MinHeight="780">
+                    <Grid.Height>
+                        <Binding ElementName="outer" Path="ViewportHeight" />
+                    </Grid.Height>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />                    <!-- ① 头 -->
+                        <RowDefinition Height="Auto" />                    <!-- ② 最新成交条 -->
+                        <RowDefinition Height="Auto" />                    <!-- ③ 机构 pill -->
+                        <RowDefinition Height="Auto" />                    <!-- ④ 最优报价条 -->
+                         <RowDefinition Height="249" MinHeight="249" />     <!-- ⑤ 多档+成交（原型固定紧凑高度） -->
+                         <RowDefinition Height="*" MinHeight="260" />      <!-- ⑥ 智能推荐 -->
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="14,12,14,0">
+                        <StackPanel>
+                            <!-- ① detail-header：代码 + 简称 -->
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Code}" Style="{DynamicResource StcText}" FontSize="16" FontWeight="Bold"
+                                           Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock Text="{Binding Name}" Style="{DynamicResource StcText}" FontSize="14"
+                                           Margin="8,2,0,0" />
+                            </StackPanel>
+
+                    <!-- ② bond-header：最新成交 + 昨/高/开/低 + 久期/中债 -->
+                    <Border Style="{DynamicResource StcCard}" Padding="8,6" Margin="0,10,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="96" />
+                                <ColumnDefinition Width="1" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="1" />
+                                <ColumnDefinition Width="118" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="4,0,8,0">
+                                <DockPanel>
+                                    <TextBlock Text="最新成交" Style="{DynamicResource StcTextFaint}" />
+                                    <TextBlock Text="{Binding QuoteTimeDisplay}" Style="{DynamicResource StcTextFaint}"
+                                               HorizontalAlignment="Right" />
+                                </DockPanel>
+                                <TextBlock Text="{Binding LastPrice, StringFormat=0.0000%}" FontSize="20"
+                                           FontWeight="Bold" FontFamily="{DynamicResource MonoFont}"
+                                           Foreground="{Binding IsUp, Converter={x:Static conv:ConverterLocator.UpDownBrush}}" />
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="{DynamicResource BorderStdBrush}" Height="34" />
+                            <Grid Grid.Column="2" Margin="6,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                                    <TextBlock Text="昨" Style="{DynamicResource StcTextFaint}" Margin="0,0,4,0" />
+                                    <TextBlock Text="{Binding PrevClose, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}" FontSize="11" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Text="高" Style="{DynamicResource StcTextFaint}" Margin="0,0,4,0" />
+                                    <TextBlock Text="{Binding High, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}" FontSize="11" Foreground="{DynamicResource UpBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="开" Style="{DynamicResource StcTextFaint}" Margin="0,0,4,0" />
+                                    <TextBlock Text="{Binding Open, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}" FontSize="11" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="低" Style="{DynamicResource StcTextFaint}" Margin="0,0,4,0" />
+                                    <TextBlock Text="{Binding Low, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}" FontSize="11" Foreground="{DynamicResource DownBrush}" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Grid.Column="3" Background="{DynamicResource BorderStdBrush}" Height="34" />
+                            <StackPanel Grid.Column="4" Margin="6,0,2,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="久期" Style="{DynamicResource StcTextFaint}" />
+                                    <TextBlock Text="{Binding Duration, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}" FontSize="10" Margin="4,0,0,0" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                    <TextBlock Text="中债" Style="{DynamicResource StcTextFaint}" />
+                                    <TextBlock Text="{Binding NzDisplay}" Style="{DynamicResource StcTextMono}" FontSize="10" Width="94" TextTrimming="CharacterEllipsis" ToolTip="{Binding NzDisplay}" Margin="4,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- ③ inst-filter-bar：机构维度筛选 8 pill（点击过滤多档行情） -->
+                    <!-- 原型 .inst-filter-bar：flex nowrap + overflow-x:auto —— 单行放不下横向滚动 -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,10,0,0">
+                        <StackPanel x:Name="InstPills" Orientation="Horizontal">
+                        <ToggleButton Content="全部" Style="{StaticResource InstChannelTab}"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=全部}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="全部" Margin="0,0,6,0" />
+                        <ToggleButton Content="国利" Style="{StaticResource InstChannelTab}" Foreground="#2D5D96"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=TPSC}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="TPSC" Margin="0,0,6,0" />
+                        <ToggleButton Content="国际" Style="{StaticResource InstChannelTab}" Foreground="#B03131"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=CNEX}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="CNEX" Margin="0,0,6,0" />
+                        <ToggleButton Content="平安" Style="{StaticResource InstChannelTab}" Foreground="#FB943C"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=PTCN}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="PTCN" Margin="0,0,6,0" />
+                        <ToggleButton Content="中诚" Style="{StaticResource InstChannelTab}" Foreground="#5B9357"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=CCTB}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="CCTB" Margin="0,0,6,0" />
+                        <ToggleButton Content="上田" Style="{StaticResource InstChannelTab}" Foreground="#B59E00"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=UEDA}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="UEDA" Margin="0,0,6,0" />
+                        <ToggleButton Content="信唐" Style="{StaticResource InstChannelTab}" Foreground="#62358A"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=CTTJ}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="CTTJ" Margin="0,0,6,0" />
+                        <ToggleButton Content="X-Bond" Style="{StaticResource InstChannelTab}" Foreground="#229B88"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=ODM}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="ODM" Margin="0,0,6,0" />
+                        <ToggleButton Content="双边" Style="{StaticResource InstChannelTab}" Foreground="#229B88"
+                                      IsChecked="{Binding SelectedInst, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=QDMESP}"
+                                      Command="{Binding SelectInstitutionCommand}" CommandParameter="QDMESP" Margin="0,0,6,0" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- ④ best-quote-bar：最优 Bid / 价差 / 最优 Ofr -->
+                    <Grid Margin="0,6,0,0" Height="44">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="60" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="{DynamicResource TagBidBgBrush}"
+                                BorderBrush="{DynamicResource TagBidBorderBrush}" BorderThickness="1"
+                                CornerRadius="6,0,0,6" Padding="10,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="34" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="最优" Style="{DynamicResource StcTextFaint}" />
+                                    <TextBlock Text="Bid" Style="{DynamicResource StcTextSmall}"
+                                               Foreground="{DynamicResource BidBrush}" FontWeight="Bold" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding BidVolume, StringFormat={}{0}}" Style="{DynamicResource StcTextMono}"
+                                               FontSize="12" Foreground="{DynamicResource VolumeBrush}" HorizontalAlignment="Right" />
+                                    <TextBlock Text="{Binding BidPrice, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}"
+                                               FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BidBrush}"
+                                               HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Border Grid.Column="1" Background="{DynamicResource HeaderBrush}" Padding="0">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding SpreadDisplay}" Style="{DynamicResource StcTextMono}" FontSize="14"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
+                                <TextBlock Text="BP" Style="{DynamicResource StcTextFaint}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Background="{DynamicResource TagOfrBgBrush}"
+                                BorderBrush="{DynamicResource TagOfrBorderBrush}" BorderThickness="1"
+                                CornerRadius="0,6,6,0" Padding="10,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="34" /></Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding OfrPrice, StringFormat=0.0000}" Style="{DynamicResource StcTextMono}"
+                                               FontSize="16" FontWeight="Bold" Foreground="{DynamicResource OfrBrush}" />
+                                    <TextBlock Text="{Binding OfrVolume, StringFormat={}{0}}" Style="{DynamicResource StcTextMono}"
+                                               FontSize="12" Foreground="{DynamicResource VolumeBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Text="最优" Style="{DynamicResource StcTextFaint}" HorizontalAlignment="Right" />
+                                    <TextBlock Text="Ofr" Style="{DynamicResource StcTextSmall}"
+                                               Foreground="{DynamicResource OfrBrush}" FontWeight="Bold" HorizontalAlignment="Right" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ⑤ market-tape-stack：多档行情 + 成交行情（3* 行内再按 1:1 分配） -->
+                    <Grid Grid.Row="4" Margin="14,8,14,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="124" />
+                            <RowDefinition Height="120" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                            <DataGrid Grid.Row="0" ItemsSource="{Binding InstQuotes}" Style="{DynamicResource StcDataGrid}"
+                                      AutoGenerateColumns="False" HeadersVisibility="Column" RowHeight="22"
+                                      ColumnHeaderHeight="18" ColumnHeaderStyle="{StaticResource DetailTableHeader}"
+                                      BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1"
+                                      IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
+                                  CanUserAddRows="False" CanUserDeleteRows="False">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="来源" Width="78">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                        <Border x:Name="bd" Background="{Binding VenueBid, Converter={StaticResource VenuesColor}}" CornerRadius="3" Padding="5,0" Height="16" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="{Binding InstBid}">
+                                            <TextBlock Text="{Binding InstBid}" Foreground="White" FontSize="10" FontWeight="SemiBold" LineHeight="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding InstBid}" Value="">
+                                                <Setter TargetName="bd" Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Vol.bid" Binding="{Binding VolBid}" Width="52">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCell}">
+                                            <Setter Property="FontSize" Value="11" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Bid" Binding="{Binding Bid, StringFormat=0.0000}" Width="58">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCell}">
+                                            <Setter Property="FontSize" Value="11" />
+                                            <Setter Property="Foreground" Value="{DynamicResource BidBrush}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Ofr" Binding="{Binding Ofr, StringFormat=0.0000}" Width="58">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCell}">
+                                            <Setter Property="FontSize" Value="11" />
+                                            <Setter Property="Foreground" Value="{DynamicResource OfrBrush}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Vol.ofr" Binding="{Binding VolOfr}" Width="52">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCell}">
+                                            <Setter Property="FontSize" Value="11" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTemplateColumn Header="来源" Width="78">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                        <Border x:Name="bd" Background="{Binding VenueOfr, Converter={StaticResource VenuesColor}}" CornerRadius="3" Padding="5,0" Height="16" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="{Binding InstOfr}">
+                                            <TextBlock Text="{Binding InstOfr}" Foreground="White" FontSize="10" FontWeight="SemiBold" LineHeight="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding InstOfr}" Value="">
+                                                <Setter TargetName="bd" Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                            <DataGrid Grid.Row="0" ItemsSource="{Binding MarketTrades}" Style="{DynamicResource StcDataGrid}"
+                                      AutoGenerateColumns="False" HeadersVisibility="Column" RowHeight="20"
+                                      ColumnHeaderHeight="18" ColumnHeaderStyle="{StaticResource DetailTableHeader}"
+                                      BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1"
+                                      IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
+                                  CanUserAddRows="False" CanUserDeleteRows="False">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="方向" Width="42">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Direction}" FontSize="11" FontWeight="SemiBold"
+                                                       HorizontalAlignment="Center"
+                                                       Foreground="{Binding Direction, Converter={x:Static conv:ConverterLocator.TradeDirectionBrush}}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="代码" Binding="{Binding Code}" Width="82">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcText}">
+                                            <Setter Property="FontSize" Value="11" />
+                                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="简称" Binding="{Binding Name}" Width="72">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcText}">
+                                            <Setter Property="FontSize" Value="11" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="成交价" Binding="{Binding Price, StringFormat=0.0000}" Width="58">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCell}">
+                                            <Setter Property="FontSize" Value="11" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="成交量" Binding="{Binding Volume}" Width="52">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCell}">
+                                            <Setter Property="FontSize" Value="11" />
+                                            <Setter Property="Foreground" Value="{DynamicResource VolumeBrush}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="时间" Binding="{Binding Time, StringFormat=HH:mm}" Width="*">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcText}">
+                                            <Setter Property="FontSize" Value="11" />
+                                            <Setter Property="Foreground" Value="{DynamicResource TextFaintBrush}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Grid>
+
+                <!-- ⑥ rec-panel：智能推荐（原型市场行情后直接进入推荐） -->
+                <Border Grid.Row="5" Style="{DynamicResource StcCard}" Padding="10" Margin="14,8,14,12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />   <!-- 标题：智能推荐 + 债券搜索 + 说明 -->
+                            <RowDefinition Height="Auto" />   <!-- Bid/Ofr 方向切换 -->
+                            <RowDefinition Height="Auto" />   <!-- 范围 tabs + 发送报价 -->
+                            <RowDefinition Height="Auto" />   <!-- 时间窗口 -->
+                            <RowDefinition Height="*" MinHeight="120" /> <!-- 推荐列表 -->
+                            <RowDefinition Height="Auto" />   <!-- 分页 -->
+                        </Grid.RowDefinitions>
+
+                        <!-- 标题栏 -->
+                        <DockPanel Grid.Row="0">
+                            <Button DockPanel.Dock="Right" Content="说明" Style="{DynamicResource StcButtonGhost}"
+                                    FontSize="11" Padding="6,2" Margin="8,0,0,0" Click="OnExplainClick" />
+                            <components:SearchBox DockPanel.Dock="Right" Width="150" VerticalAlignment="Center"
+                                              Text="{Binding RecBondSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              Placeholder="债券代码/简称" />
+                            <TextBlock Text="智能推荐" Style="{DynamicResource StcText}" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <!-- Bid/Ofr 方向（带计数） -->
+                        <Grid Grid.Row="1" Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ToggleButton Grid.Column="0" Style="{StaticResource RecSideBidTab}"
+                                          IsChecked="{Binding SelectedRecSide, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=Bid}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Bid" />
+                                    <TextBlock Text="{Binding RecBidCount, Mode=OneWay}" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </ToggleButton>
+                            <ToggleButton Grid.Column="1" Style="{StaticResource RecSideOfrTab}"
+                                          IsChecked="{Binding SelectedRecSide, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=Ofr}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Ofr" />
+                                    <TextBlock Text="{Binding RecOfrCount, Mode=OneWay}" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </ToggleButton>
+                        </Grid>
+
+                        <!-- 范围 tabs + 发送报价 -->
+                        <DockPanel Grid.Row="2" Margin="0,8,0,0">
+                            <Button DockPanel.Dock="Right" Content="发送报价" Style="{StaticResource RecSendButton}"
+                                    Click="OnSendClick" />
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton Content="全部" Style="{StaticResource RecScopeTab}"
+                                              IsChecked="{Binding SelectedRecScope, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=Combined}" />
+                                <ToggleButton Content="本券" Style="{StaticResource RecScopeTab}"
+                                              IsChecked="{Binding SelectedRecScope, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=ExactBond}" />
+                                <ToggleButton Content="相似券" Style="{StaticResource RecScopeTab}"
+                                              IsChecked="{Binding SelectedRecScope, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=SimilarBond}" />
+                                <ToggleButton Content="相似机构" Style="{StaticResource RecScopeTab}"
+                                              IsChecked="{Binding SelectedRecScope, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=SimilarInstitution}" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <!-- 时间窗口 + 自定义日期范围 -->
+                        <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0">
+                            <ToggleButton Content="近7日" Style="{StaticResource RecWindowTab}" Margin="0,0,5,0"
+                                          IsChecked="{Binding SelectedRecWindow, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=7d}" />
+                            <ToggleButton Content="近30日" Style="{StaticResource RecWindowTab}" Margin="0,0,5,0"
+                                          IsChecked="{Binding SelectedRecWindow, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=30d}" />
+                            <ToggleButton Content="近90日" Style="{StaticResource RecWindowTab}" Margin="0,0,5,0"
+                                          IsChecked="{Binding SelectedRecWindow, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=90d}" />
+                            <DatePicker Width="92" Height="22" Padding="2" SelectedDate="{Binding RecStartDate, Mode=TwoWay}"
+                                        Style="{DynamicResource DefaultDatePickerStyle}" ToolTip="开始日期" />
+                            <TextBlock Text="至" Style="{DynamicResource StcTextFaint}" FontSize="10"
+                                       VerticalAlignment="Center" Margin="4,0" />
+                            <DatePicker Width="92" Height="22" Padding="2" SelectedDate="{Binding RecEndDate, Mode=TwoWay}"
+                                        Style="{DynamicResource DefaultDatePickerStyle}" ToolTip="结束日期" />
+                        </WrapPanel>
+
+                        <!-- 推荐列表（7 列，面板较窄时横向滚动） -->
+                        <Grid Grid.Row="4" Margin="0,8,0,0">
+                            <DataGrid ItemsSource="{Binding RecPageItems}" Style="{DynamicResource StcDataGrid}"
+                                      AutoGenerateColumns="False" HeadersVisibility="Column" RowHeight="40"
+                                      FontSize="10" ColumnHeaderHeight="22" ColumnHeaderStyle="{StaticResource DetailTableHeader}"
+                                      BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1"
+                                      CanUserAddRows="False" CanUserDeleteRows="False"
+                                      SelectionMode="Single" SelectionUnit="FullRow"
+                                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="40">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox Style="{DynamicResource StcCheckBox}" Width="16" Height="16" MinWidth="0" MinHeight="0" Padding="0" Margin="0"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="推荐度" Width="66">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Score}" Style="{DynamicResource StcTextMono}"
+                                                               FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
+                                                               VerticalAlignment="Center" />
+                                                    <Border Background="{DynamicResource TagFirmBgBrush}" CornerRadius="3"
+                                                            Padding="3,1" Margin="4,0,0,0"
+                                                            Visibility="{Binding IsMock, Converter={x:Static conv:ConverterLocator.BoolToVis}}">
+                                                        <TextBlock Text="模拟" FontSize="9" Foreground="{DynamicResource BidDeepBrush}" />
+                                                    </Border>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="机构/交易员" Width="92">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding InstitutionName}" Style="{DynamicResource StcText}" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip="{Binding InstitutionName}" />
+                                                    <TextBlock Text="{Binding TraderName}" Style="{DynamicResource StcTextMuted}" FontSize="10" TextTrimming="CharacterEllipsis" ToolTip="{Binding TraderName}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="代码/简称" Width="96">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding RelatedCode}" Style="{DynamicResource StcTextMono}"
+                                                               FontSize="11" Foreground="{DynamicResource AccentBrush}" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelatedCode}" />
+                                                    <TextBlock Text="{Binding RelatedName}" Style="{DynamicResource StcText}" FontSize="10" TextTrimming="CharacterEllipsis" ToolTip="{Binding RelatedName}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="报价次数" Binding="{Binding QuoteCount}" Width="62" />
+                                    <DataGridTemplateColumn Header="最近报价/报量(万)" Width="104">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding LatestPrice, Converter={x:Static conv:ConverterLocator.Price4}, Mode=OneWay}"
+                                                               Style="{DynamicResource StcTextMono}" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip="{Binding LatestPrice}" />
+                                                    <TextBlock Style="{DynamicResource StcTextMuted}" FontSize="10">
+                                                        <Run Text="{Binding LatestVolume, Mode=OneWay}" /><Run Text=" 万" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="长城交易员" Binding="{Binding OwnerTrader}" Width="80" ElementStyle="{StaticResource StcTrimText}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <!-- 空态：无推荐时置顶提示 -->
+                            <TextBlock Text="登录后加载真实报价线索" Style="{DynamicResource StcTextFaint}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
+                                       Visibility="{Binding HasRecommendations, Converter={x:Static conv:ConverterLocator.BoolToVis}, ConverterParameter=invert}" />
+                        </Grid>
+
+                        <!-- 分页 -->
+                        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                            <TextBlock Text="{Binding RecPageSummary, Mode=OneWay}" Style="{DynamicResource StcTextFaint}"
+                                       VerticalAlignment="Center" />
+                            <Button Width="24" Height="22" Margin="8,0,2,0" Padding="0"
+                                    Style="{DynamicResource StcButtonGhost}" ToolTip="上一页"
+                                    IsEnabled="{Binding CanPreviousRecPage}" Command="{Binding PreviousRecPageCommand}">
+                                <Path Data="{StaticResource GeoChevronLeft}" Width="10" Height="10"
+                                      Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5" />
+                            </Button>
+                            <Button Width="24" Height="22" Padding="0"
+                                    Style="{DynamicResource StcButtonGhost}" ToolTip="下一页"
+                                    IsEnabled="{Binding CanNextRecPage}" Command="{Binding NextRecPageCommand}">
+                                <Path Data="{StaticResource GeoChevronRight}" Width="10" Height="10"
+                                      Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+            <!-- 收起竖条（与筛选栏收起按钮同款 12×48 直角细长、贴面板左缘内侧，仅方向相反=朝左收起） -->
+            <Button Width="12" Height="48" Padding="0"
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Margin="1,0,0,0"
+                    Style="{DynamicResource StcSidebarToggle}" Panel.ZIndex="10"
+                    ToolTip="收起详情面板"
+                    Command="{Binding DataContext.ToggleDetailPanelCommand,
+                            RelativeSource={RelativeSource AncestorType={x:Type views:MarketCenterView}}}">
+                <Path Data="{StaticResource GeoChevronLeft}" Stretch="Uniform"
+                      Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="14" Height="14"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+
+        <!-- 折叠态：40px 竖条（原型 collapsed：24px 宽左缘圆角，展开箭头朝右=展开方向） -->
+        <Grid Visibility="{Binding DataContext.IsDetailPanelExpanded,
+                RelativeSource={RelativeSource AncestorType={x:Type views:MarketCenterView}},
+                Converter={x:Static conv:ConverterLocator.BoolToVis}, ConverterParameter=invert}">
+            <Button Width="24" Height="48" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Style="{DynamicResource StcSidebarToggleLeft}"
+                    ToolTip="展开详情面板"
+                    Command="{Binding DataContext.ToggleDetailPanelCommand,
+                            RelativeSource={RelativeSource AncestorType={x:Type views:MarketCenterView}}}">
+                <Path Data="{StaticResource GeoChevronRight}" Stretch="Uniform"
+                      Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="14" Height="14"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

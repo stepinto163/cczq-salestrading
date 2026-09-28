@@ -1,0 +1,53 @@
+﻿<UserControl x:Class="STC.Common.View.Component.MultiSelectTreeViewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Common.View.Component"
+             mc:Ignorable="d" x:Name="treeViewControl"
+             d:DesignHeight="300" d:DesignWidth="120">
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="{x:Type local:MultiSelectTreeViewControl}">
+                <!--<Setter Property="Height" Value="100"/>-->
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="FontSize" Value="12"></Setter>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="LayoutTransform">
+                    <Setter.Value>
+                        <ScaleTransform />
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <DropShadowEffect BlurRadius="5" Direction="0" ShadowDepth="0" Opacity=".25"/>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Background="Transparent">
+        <Border x:Name="dropDownBorder" BorderThickness="0" Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+            <ScrollViewer x:Name="DropDownScrollViewer" VerticalScrollBarVisibility="Auto">
+                <Grid x:Name="grid" RenderOptions.ClearTypeHint="Enabled">
+                    <TreeView x:Name="InnerTreeView"  ScrollViewer.VerticalScrollBarVisibility="Disabled" Margin="2"  BorderBrush="Transparent"  
+                              VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                              BorderThickness="0" Foreground="White" Background="{DynamicResource MainTitleBackgroup.ColorBrush}" PreviewMouseUp="InnerTreeView_PreviewMouseUp"
+                              PreviewMouseWheel="DropDownScrollViewer_PreviewMouseWheel">
+                    </TreeView>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

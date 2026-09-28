@@ -1,0 +1,1889 @@
+﻿<UserControl x:Class="STC.WorkBench.Plugin.View.WorkTable.MyOrderDefaultView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.WorkBench.Plugin.View.WorkTable"
+             xmlns:comp ="clr-namespace:STC.WorkBench.Plugin.View.Component"
+             xmlns:commonComp ="clr-namespace:STC.Common.View.Component;assembly=STC.Common"
+             xmlns:command="clr-namespace:STC.WorkBench.Plugin.Command"
+             xmlns:utils="clr-namespace:STC.WorkBench.Plugin.Utils"
+             xmlns:conv="clr-namespace:STC.WorkBench.Plugin.Convertor"
+             xmlns:fcon="clr-namespace:STC.Common.Convertor;assembly=STC.Common"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="1200" Initialized="UserControl_Initialized"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DataGridStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/ButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ScrollViewerDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/CheckBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/ContextMenuStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/RadioButtonStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.WorkBench.Plugin;component/Resources/ComboBoxStyleDictionary.xaml"/>
+                <ResourceDictionary Source="/STC.Common;component/Resources/CheckBoxStyleDictionary.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <FrameworkElement x:Key="Proxy" DataContext="{Binding}"/>
+
+            <conv:TBookStatusEnumToBoolConvertor x:Key="tBookStatusEnumToBoolConvertor"/>
+            <fcon:EnumTypeConvertor x:Key="EnumTypeConvertor"/>
+            <fcon:NumberConvertor x:Key="numConvertor"/>
+            <fcon:NumberConvertor3 x:Key="numConvertor3"/>
+            <fcon:VisibilityConvertor x:Key="visibilityConvertor"/>
+            <fcon:StringIsNullOrEmptyConvertor x:Key="StringIsNullOrEmptyConvertor"/>
+            <fcon:BooleanConvertor x:Key="booleanConvertor"/>
+            <conv:SubStringConverter x:Key="subStringConverter"/>
+            <fcon:FormatDateTimeConvertor x:Key="FormatDateTimeConvertor"/>
+            <fcon:StringConvertor x:Key="StringConvertor"/>
+            <fcon:IntentionStatusConvertor x:Key="intentionStatusConvertor"/>
+            <fcon:DaysOffStrConverter x:Key="daysOffStrConverter"/>
+            <fcon:VenuesColorConvertor x:Key="venuesColorConvertor"/>
+            <fcon:VenuesSimpleConvertor x:Key="venuesSimpleConvertor"/>
+            <fcon:InnerBoardColorConvertor x:Key="colorCon"/>
+            <fcon:EmptyColorConvertor x:Key="emptyColorCon"/>
+            <fcon:RadioButtonConverter x:Key="radioBtnConverter"/>
+            <fcon:GreaterThanZeroConverter x:Key="greaterThanZeroConverter"/>
+            <fcon:StrContainsConvertor x:Key="strContainsConvertor"/>
+            <fcon:MultiAndConverter x:Key="multiAndConverter"/>
+            <fcon:ReverseBooleanConvertor x:Key="reverseBooleanConvertor"/>
+
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="#A0A0A0"/>
+            </Style>
+            
+            <Style x:Key="SideTextBlockStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Side}" Value="2">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Side}" Value="3">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Blue}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Side}" Value="4">
+                        <Setter Property="Foreground" Value="{DynamicResource ColorBrush.Orange}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <!-- 搜索文本框 -->
+            <Style x:Key="SearchTextBoxStyle" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource TextBox.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBox.Focus.Foreground}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontSize" Value="{DynamicResource SmallContentFontSize}"/>
+
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--内部看板-->
+            <Style x:Key="TagGroupListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.Static.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.Static.Foreground}"/>
+                <Setter Property="FontFamily" Value="Microsoft YaHei"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="MinWidth" Value="40"/>
+                <Setter Property="Height" Value="24"/>
+                <Setter Property="Margin" Value="4 0 0 4"/>
+                <Setter Property="Padding" Value="10,0,10,0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="1" VerticalAlignment="Center" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                                <Border.ContextMenu>
+                                    <ContextMenu Style="{DynamicResource DefaultContextMenu}">
+                                        <MenuItem x:Name="TagGroupMenu" Header="{Binding IfSubscribe, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='ifsubscribe_menu'}" Style="{StaticResource DefaultMenuItem}" Click="TagGroupMenu_Click"/>
+                                        <MenuItem x:Name="EditGroupMenu" Header="编辑" Style="{DynamicResource DefaultMenuItem}" Click="EditGroupMenu_Click"/>
+                                        <MenuItem x:Name="DelGroupMenu" Header="删除" Style="{DynamicResource DefaultMenuItem}" Click="DelGroupMenu_Click"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Path x:Name="svg_path" Style="{DynamicResource subscrib_path}" Visibility="{Binding IfSubscribe, Converter={StaticResource visibilityConvertor}}" Margin="0 0 4 0"/>
+                                    <!--<Image x:Name="subscribeImage" Source="/STC.Common;component/Images/订阅.png" Width="24" Height="24" Visibility="{Binding IfSubscribe, Converter={StaticResource visibilityConvertor}}"/>-->
+                                    <ContentPresenter Grid.Column="1" x:Name="Cp" TextElement.FontSize="{TemplateBinding FontSize}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.MouseOver.Foreground}"/>
+                                    <Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                    <!--<Setter TargetName="subscribeImage" Property="Source" Value="/STC.Common;component/Images/订阅选中.png"/>-->
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="{DynamicResource ListBoxItemTag.MouseOver.Background}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ListBoxItemTag.MouseOver.Foreground}"/>
+                                    <Setter TargetName="svg_path" Property="Fill" Value="{DynamicResource SvgButton.MouseOver.Foreground}"/>
+                                    <!--<Setter TargetName="subscribeImage" Property="Source" Value="/STC.Common;component/Images/订阅选中.png"/>-->
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+            <Style x:Key="FuzzyColumnColorStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource DataGridCellStyle}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding SecurityId}" Value="99999">
+                        <Setter Property="Foreground" Value="#FFDA9A" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+
+            <Storyboard x:Key="MoveStoryboard">
+                <DoubleAnimation Storyboard.TargetName="FilterPopup"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(TranslateTransform.Y)"
+                             From="0" To="200" Duration="0:0:2" />
+            </Storyboard>
+            <SolidColorBrush x:Key="Menu.Static.Background" Color="#FFF0F0F0"/>
+            <SolidColorBrush x:Key="Menu.Static.Border" Color="#FF999999"/>
+            <SolidColorBrush x:Key="Menu.Static.Separator" Color="#FFD7D7D7"/>
+            <Style x:Key="customeMenuItemStyle" TargetType="{x:Type MenuItem}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Background" Value="{DynamicResource BlueGreenButton.Static.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BlueGreenButton.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource BlueGreenButton.Static.Foreground}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="1"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="80"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type MenuItem}">
+                            <Grid>
+                                <Border x:Name="border" CornerRadius="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                    <!--<ContentPresenter x:Name="contentPresenter" Focusable="False" ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>-->
+                                    <ContentPresenter ContentSource="Header" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Border>
+                                <Popup x:Name="PART_Popup" AllowsTransparency="true" Focusable="false" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" Placement="Bottom" PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}" PlacementTarget="{Binding ElementName=border}">
+                                    <ScrollViewer x:Name="SubMenuScrollViewer" Style="{DynamicResource {ComponentResourceKey ResourceId=MenuScrollViewer, TypeInTargetAssembly={x:Type FrameworkElement}}}">
+                                        <Grid RenderOptions.ClearTypeHint="Enabled" Background="{DynamicResource BlueGreenButton.Static.Background}">
+                                            <!--<Canvas HorizontalAlignment="Left" Height="0" VerticalAlignment="Top" Width="0">
+                                                    <Rectangle x:Name="OpaqueRect" Fill="{Binding Background, ElementName=SubMenuBorder}" Height="{Binding ActualHeight, ElementName=SubMenuBorder}" Width="{Binding ActualWidth, ElementName=SubMenuBorder}"/>
+                                                </Canvas>
+                                                <Rectangle Fill="{StaticResource Menu.Static.Separator}" HorizontalAlignment="Left" Margin="29,2,0,2" Width="1"/>-->
+                                            <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Cycle" Grid.IsSharedSizeScope="true" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" KeyboardNavigation.TabNavigation="Cycle"/>
+                                        </Grid>
+                                    </ScrollViewer>
+                                </Popup>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource BlueGreenButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource BlueGreenButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource BlueGreenButton.Pressed.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource BlueGreenButton.Pressed.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsFocused" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource BlueGreenButton.MouseOver.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource BlueGreenButton.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource BlueGreenButton.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource BlueGreenButton.Disabled.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <!--<Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type MenuItem}">
+                            <Border x:Name="border" Margin="{TemplateBinding Margin}" Padding="{TemplateBinding Padding}"
+                                    Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Background="{StaticResource ColorBrush.Green3}">
+                                <ContentPresenter ContentSource="Header"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="BorderThickness" TargetName="border" Value="1"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource ColorBrush.Green8}"/>
+                                    <Setter Property="Background" TargetName="border" Value="{StaticResource ColorBrush.Green}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+
+
+                            
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>-->
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0 4 0 0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!--待处理/已处理/已忽略/已REF-->
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                <Button Content="+ 新增需求" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="Button_Click"/>
+
+                <Button Content="批量识别" Width="80" Height="24" Margin="4 0 0 0" HorizontalAlignment="Left" BorderThickness="0 1 0 0" Style="{DynamicResource SlateGrayStyle}" Click="ShowRecognizeWin_Click"/>
+
+                <Button x:Name="btnImport" ToolTip="导入" Width="24" Height="24" Margin="2,0,0,0"  HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource ImportButton2}" Command="{Binding ImportCommand}" IsEnabled="{Binding ImportEnabled}" Visibility="Collapsed"/>
+                <Button x:Name="btnExport" ToolTip="导出" Width="24" Height="24" Margin="2,0,0,0"  HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource ExportButton2}" Command="{Binding ExportCommand}" IsEnabled="{Binding ExportEnabled}" Visibility="Collapsed"/>
+                <!--<RadioButton x:Name="MyIntentionRB"
+                         Style="{DynamicResource BoxRadioButton}" Margin="5,0,5,0"
+                         IsChecked="{Binding OrderStatusEnum,Converter={StaticResource tBookStatusEnumToBoolConvertor},ConverterParameter=0}">我的需求</RadioButton>-->
+                <!--<RadioButton x:Name="IgnoreRB"
+                         Style="{DynamicResource BoxRadioButton}" Margin="5,0,5,0"
+                         IsChecked="{Binding OrderStatusEnum,Converter={StaticResource tBookStatusEnumToBoolConvertor},ConverterParameter=1}">已删除</RadioButton>-->
+
+                <Grid Margin="4 0 0 0" x:Name="single">
+                    <RadioButton x:Name="SingleRd_ALL" Content="全" Height="24" Width="24" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource AllRadioButtonStyle}" IsChecked="True" Click="Single_Click"  ToolTip="全部债券"/>
+                    <RadioButton x:Name="SingleRd_R" Content="利率"  Height="24" Width="36" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource RateRadioButtonStyle}" Margin="26 0 0 0" Click="Single_Click"  ToolTip="仅利率"/>
+                    <RadioButton x:Name="SingleRd_C" Content="信用" Height="24" Width="36" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource CreditRadioButtonStyle}" Margin="64 0 0 0" Click="Single_Click"  ToolTip="仅信用"/>
+                    <RadioButton x:Name="SingleRd_L" Content="地方债"  Height="24" Width="36" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource RateRadioButtonStyle}" Margin="102 0 0 0" Click="Single_Click"  ToolTip="仅地方债"/>
+                    <RadioButton x:Name="SingleRd_N" Content="NCD" Height="24" Width="36" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource CreditRadioButtonStyle}" Margin="140 0 0 0" Click="Single_Click"  ToolTip="仅NCD"/>
+                </Grid>
+
+                <!--<commonComp:FilterOptions x:Name="QuoteType" TagKey="QuoteType" Margin="10 1 0 4" VerticalAlignment="Bottom"/>-->
+            </StackPanel>
+
+
+            <StackPanel  Grid.Column="2" Orientation="Horizontal" Margin="0 0 10 0" HorizontalAlignment="Right">
+
+                <TextBlock x:Name="CommonIntentionStatus_Tb" Text="个需状态:" VerticalAlignment="Center"/>
+                <commonComp:MultiSelectComboBox x:Name="CommonIntentionStatusCB" Width="130" Height="22" VerticalAlignment="Center" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 2 0 4" DefaultText="不限">
+                </commonComp:MultiSelectComboBox>
+
+                <commonComp:SearchTextBox x:Name="Search_TextBox" HintText="搜索..." ToolTip="可模糊查询债券代码、债券简称、Trader、来源方机构、来源方、发行人、担保人" SearchText="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Right" VerticalAlignment="Center" Height="24" IsFuzzy="True" Grid.Column="1"
+                                  Margin="5 0 0 0" MouseOverBorderBrush="{DynamicResource TextBox.MouseOver.Border}" FocusBorderBrush="{DynamicResource TextBox.Focus.Border}"/>
+                <Button x:Name="RefreshBtn" Width="24" Height="24" Style="{DynamicResource RefreshButton_24}" Margin="0,0,4,0" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding RefreshCommand}" Grid.Column="1" IsEnabled="{Binding RefreshBtnEnable}"/>
+                <Rectangle Width="1" Height="16" Fill="#3C3C3C" Margin="0 0 4 0" HorizontalAlignment="Right"/>
+
+            </StackPanel>
+
+            <!--<Button x:Name="RecoverBtn" Content="恢复" Style="{DynamicResource DefaultButtonStyle}" HorizontalAlignment="Right" Width="60" Height="20" Grid.Column="3" Margin="0 0 115 0"
+                    Command="{Binding AllRecoverCommand}" Visibility="{Binding IgnoreDataGridVisibility}" IsEnabled="{Binding RecoverEnable}"/>-->
+            <!--<Button x:Name="QuoteIdentifyBtn"  HorizontalAlignment="Right" Width="80" Height="18" Grid.Column="3" Margin="0 0 30 0"
+                        Style="{DynamicResource BlueGreenStyle}" Command="{Binding QuoteIdentifyCommand}">
+                <WrapPanel>
+                    <Image Source="/STC.WorkBench.Plugin;component/Images/stc_icon_import_normal.png" Width="16" Height="16" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                    <TextBlock Text="报价识别" VerticalAlignment="Center" Foreground="#FFFFFF" HorizontalAlignment="Left" Width="Auto"/>
+                </WrapPanel>
+            </Button>-->
+            <Button x:Name="btnFullScreen" Grid.Column="3" Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Center" Style="{DynamicResource PopupButton}" 
+                    Command="{x:Static utils:CommonUtils.PopupWindowCommand}" CommandParameter="{x:Static command:PopupTypeEnum.IntentionWorkTable}" Margin="0 0 10 0"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Name="tables_part">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="58"/>
+                <RowDefinition x:Name="p_part" Height="2*"/>
+                <RowDefinition Height="8"/>
+                <!--<RowDefinition Height="auto"/>-->
+                <RowDefinition x:Name="r_part" Height="*"/>
+            </Grid.RowDefinitions>
+            <!--个需-->
+            <Grid Background="Black">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!--<Button x:Name="personToggleBtn" Width="24" Height="24" Style="{DynamicResource CollapsedButton_24}" Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Click="personToggleBtn_Click"/>-->
+                    <Border BorderBrush="#136C5E" BorderThickness="0 0 0 2" Width="96">
+                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="个需"  FontWeight="Bold" Foreground="White"/>
+                            <Border x:Name="RedPoint" BorderThickness="1" BorderBrush="Red" Background="Red" Width="4" Height="4" CornerRadius="2" Margin="5 0 0 0" Grid.Column="1" Visibility="{Binding RedPointV}"/>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Grid.Row="2" Margin="20,4,0,4" VerticalAlignment="Center" Text="{Binding TotalCount4Working, StringFormat={}共{0}条，}"/>
+                    <TextBlock Grid.Row="2" Margin="0,4,0,4" VerticalAlignment="Center" Text="{Binding TotalCount4BidWorking, StringFormat={}其中Bid{0}条}"/>
+                    <TextBlock Grid.Row="2" Margin="0,4,0,4" VerticalAlignment="Center" Text="{Binding BidC,StringFormat={}(待处理{0}条)}" Foreground="Red" Visibility="{Binding BidCV}"/>
+                    <TextBlock Grid.Row="2" Margin="0,4,0,4" VerticalAlignment="Center" Text="{Binding TotalCount4OfrWorking, StringFormat={}，Ofr{0}条}"/>
+                    <TextBlock Grid.Row="2" Margin="0,4,0,4" VerticalAlignment="Center" Text="{Binding OfrC,StringFormat={}(待处理{0}条)}" Foreground="Red" Visibility="{Binding OfrCV}"/>
+                </StackPanel>
+
+
+                
+
+                <StackPanel Orientation="Horizontal" Grid.ColumnSpan="7" VerticalAlignment="Center" Grid.Row="1" Margin="0,0,4,0">
+                    <CheckBox x:Name="isMeCheck" Content="我的" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Style="{DynamicResource DefaultCheckBoxStyle}" Margin="4" Padding="5 0 0 0"
+                      IsChecked="true"  Checked="isMeCheck_Checked" Unchecked="isMeCheck_Unchecked" Visibility="Collapsed"/>
+
+                    <TextBlock x:Name="TradersTB" Text="交易员:" VerticalAlignment="Center" Margin="10 0 0 0 " Visibility="Collapsed"/>
+                    <commonComp:MultiSelectComboBox x:Name="TradersCB" Width="130" Height="22" VerticalAlignment="Center" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 2 0 4" DefaultText="不限" Visibility="Collapsed">
+                    </commonComp:MultiSelectComboBox>
+
+                    <TextBlock x:Name="InvestorsTB" Text="投资经理:" VerticalAlignment="Center" Margin="10 0 0 0 " Visibility="Collapsed"/>
+                    <commonComp:MultiSelectComboBox x:Name="InvestorsCB" Width="130" Height="22" VerticalAlignment="Center" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 2 0 4" DefaultText="不限" Visibility="Collapsed">
+                    </commonComp:MultiSelectComboBox>
+
+                    <TextBlock x:Name="IntentionStatus_tb" Text="个需状态:" VerticalAlignment="Center" Visibility="Collapsed" Margin="10 0 0 0 "/>
+                    <commonComp:MultiSelectComboBox x:Name="IntentionStatusCB" Width="130" Height="24" VerticalAlignment="Center" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 0 0 0" DefaultText="不限" Visibility="Collapsed">
+                    </commonComp:MultiSelectComboBox>
+
+                    <TextBlock x:Name="MatchStatus_tb" Text="匹配状态:" VerticalAlignment="Center" Margin="4 0 4 0" Visibility="Collapsed"/>
+                    <commonComp:MultiSelectComboBox x:Name="MatchStatusCB" Width="130" Height="24" VerticalAlignment="Center" Background="{DynamicResource MainBackgroup.ColorBrush}" Margin="4 0 0 0" DefaultText="不限" Visibility="Collapsed">
+                    </commonComp:MultiSelectComboBox>
+
+                    <commonComp:FilterOptions x:Name="side" TagKey="SIDE" Margin="4 0 4 0" TagsListChanged="TagsListChanged" Visibility="Collapsed"/>
+
+                    <DatePicker x:Name="dateStartPicker" Grid.Column="3"  Width="90" Height="24" Margin="4, 0, 4, 0"  HorizontalAlignment="Left"
+                             Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                             Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}"
+                             Style="{DynamicResource GreenBlueDatePickerStyle}" SelectedDate="{Binding DealTimeBegin,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewKeyDown="dateStartPicker_PreviewKeyDown">
+                    </DatePicker>
+                    <DatePicker x:Name="dateEndPicker" Grid.Column="4"  Width="90" Height="24" Margin="0, 0, 4, 0"  HorizontalAlignment="Left"
+                             Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                             Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}"       
+                             Style="{DynamicResource GreenBlueDatePickerStyle}" SelectedDate="{Binding DealTimeEnd,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            PreviewKeyDown="dateEndPicker_PreviewKeyDown">
+                    </DatePicker>
+                    <Button x:Name="SearchIntentionBtn" Content="查" ToolTip="根据日期查个需" Grid.Column="5" Width="20" Height="20" Margin="0,0,4,0" HorizontalAlignment="Left"
+                        Style="{DynamicResource BlueGreenStyle}" IsEnabled="{Binding BatchOperateBtnEnable}" Click="SearchIntentionBtn_Click" Visibility="Collapsed"/>
+                </StackPanel>
+
+
+                <!--<DatePicker x:Name="dateStartPicker" Grid.Column="3" Width="90" Height="24" Margin="4, 0, 0, 0" SelectedDate="{Binding DealTimeBegin,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}">
+                    <DatePicker.Resources>
+                        <Style TargetType="DatePickerTextBox">
+                            <Setter Property="IsReadOnly" Value="True"/>
+                        </Style>
+                    </DatePicker.Resources>
+                </DatePicker>
+                <DatePicker x:Name="dateEndPicker" Grid.Column="4" Width="90" Height="24" Margin="4, 0, 0, 0" SelectedDate="{Binding DealTimeEnd,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}">
+                    <DatePicker.Resources>
+                        <Style TargetType="DatePickerTextBox">
+                            <Setter Property="IsReadOnly" Value="True"/>
+                        </Style>
+                    </DatePicker.Resources>
+                </DatePicker>-->
+
+                <!--<Button x:Name="btn_Fileter" Content="筛选" Grid.Column="4" Width="64" Height="24" Margin="4 0 10 0" Command="{Binding SearchIntentionDateCommand}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" BorderThickness="0 1 0 0" Style="{DynamicResource BlueGreenStyle}"/>-->
+            </Grid>
+
+
+            <Grid x:Name="person_part" Grid.Row="1" SizeChanged="person_part_SizeChanged">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+
+
+                <!--买卖机构切换-->
+
+                <!--<Button x:Name="btnVer" Grid.Column="1" Grid.RowSpan="2" Width="8" Height="40" Padding="0, 0, 0, 0" Margin="1, 0, 1, 0" Content=">" 
+                FontSize="8" Style="{DynamicResource SplitButtonStyle}"  Panel.ZIndex="1" Click="BtnVer_Click"
+                        Visibility="{Binding IsInquiry, Converter={StaticResource reverseVisibilityConverter}}"></Button>
+
+                <GridSplitter Grid.Column="1" Grid.RowSpan="2" Width="9" Background="{DynamicResource BackgroundBrush}" Style="{DynamicResource VGridSplitterStyleNoVer}" 
+                              Visibility="{Binding IsInquiry, Converter={StaticResource reverseVisibilityConverter}}"/>-->
+
+
+            </Grid>
+
+            <!--<Button x:Name="referenceToggleBtn" Grid.Row="2" Width="24" Height="24" Style="{DynamicResource CollapsedButton_24}" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Click="referenceToggleBtn_Click"/>-->
+            <!--<GridSplitter Grid.Row="2" Background="Transparent" HorizontalAlignment="Stretch" PreviewMouseLeftButtonDown="r_GridSplitter_PreviewMouseLeftButtonDown" IsHitTestVisible="False"/>-->
+
+            <Button x:Name="btnHor" Grid.Row="2" Grid.Column="0" Width="40" Height="6" Content="∨" Padding="0, -3, 0, 0" FontSize="9" Style="{DynamicResource SplitButtonStyle}"
+                Margin="0, 1, 0, 1" Panel.ZIndex="1" Click="BtnHor_Click"></Button>
+            <GridSplitter x:Name="gridSplitter" Grid.Row="2" Background="{DynamicResource BackgroundBrush}" Style="{DynamicResource VGridSplitterStyle2}"/>
+
+            <!--参考-->
+
+            <TabControl x:Name="tc" Grid.Row="3" Grid.RowSpan="2" Background="Black" Style="{DynamicResource TabControlStyle1}">
+                <TabItem x:Name="InquiryTab" Header="询价" Width="96" Visibility="{Binding IsInquiry, Converter={StaticResource reverseVisibilityConverter}}">
+                    <commonComp:ExDataGrid Grid.Row="1" x:Name="inquiryDg" Style="{DynamicResource DefaultDataGrid}" ItemsSource="{Binding InquiryViewSource.View}"
+                              RowStyle="{DynamicResource UnderlineDataGridRowStyle}" Sorting="inquiryDg_Sorting" BeginningEdit="inquiryDg_BeginningEdit">
+                        <DataGrid.Columns>
+                            <!--<DataGridTextColumn Header="type" Binding="{Binding Type}"/>
+                            <DataGridTextColumn Header="tempSort" Binding="{Binding TempSort}"/>
+                            <DataGridTextColumn Header="IntentionId" Binding="{Binding IntentionId}"/>-->
+                            <DataGridTemplateColumn x:Name="BuyTraderColumn" Header="交易员" Width="90" MinWidth="20"  MaxWidth="120" CanUserSort="True"  SortMemberPath="TraderName_Buyer" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <TextBlock x:Name="TraderNameBuyerTB"  Text="{Binding TraderName_Buyer}" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis"/>
+                                            <!--<Button Grid.Column="2" HorizontalAlignment="Right" Width="12" Height="12"  BorderThickness="0" Style="{StaticResource OpenSecurityButton}"  ToolTip="查看行情小窗"  Click="best_opensecurity_btn_Click"/>-->
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="D">
+                                                <Setter Property="Text" TargetName="TraderNameBuyerTB" Value=""/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn x:Name="RemaingingTimeColumn" Header="剩余期限" Width="Auto" MinWidth="20" SortMemberPath="RemaingingTime_convert" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <TextBlock x:Name="remianingtimeTB"  Text="{Binding RemainingTime}" HorizontalAlignment="Left"/>
+                                            <!--<Button Grid.Column="2" HorizontalAlignment="Right" Width="12" Height="12"  BorderThickness="0" Style="{StaticResource OpenSecurityButton}"  ToolTip="查看行情小窗"  Click="best_opensecurity_btn_Click"/>-->
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="D">
+                                                <Setter Property="Text" TargetName="remianingtimeTB" Value=""/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="代码" MinWidth="20" Width="80" MaxWidth="150" CanUserSort="True" SortMemberPath="SecurityId" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="SecurityIDTB" Text="{Binding SecurityId}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding SecurityId}"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="D">
+                                                <Setter Property="Text" TargetName="SecurityIDTB" Value=""/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <!--<DataGridTextColumn Header="orderid" Binding="{Binding OrderID}"/>
+                <DataGridTextColumn Header="intentionid" Binding="{Binding IntentionId}"/>-->
+                            <DataGridTemplateColumn x:Name="SymbolColumn" Header="简称" MinWidth="20" Width="80" MaxWidth="150" CanUserSort="True" SortMemberPath="Symbol" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="SymbolTB" Text="{Binding Symbol}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Symbol}"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="D">
+                                                <Setter Property="Text" TargetName="SymbolTB" Value=""/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="To" MinWidth="20" Width="250" CanUserSort="True" SortMemberPath="ReceiverNumber">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="to_display" Text="{Binding ReceiverNumber}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding ReceiverNumber}"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="to_display" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="to_display" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="to_display" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="to_display" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="方向" MinWidth="20" Width="40" MaxWidth="60" CanUserSort="True" SortMemberPath="Side">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="side_tb" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side_inquiry'}" Style="{DynamicResource SideTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="side_tb" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="side_tb" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="side_tb" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="side_tb" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="操作" Width="120" MinWidth="20" MaxWidth="300" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="OpsGrid">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition Width="auto"/>
+                                                <ColumnDefinition />
+                                            </Grid.ColumnDefinitions>
+                                            <Button  Grid.Column="0" x:Name="RenewBtn" Content="恢复" Margin="0,0,2,0" HorizontalAlignment="Left" Width="32" Height="16" Style="{DynamicResource DefaultButtonStyle}" 
+                                                    Command="{Binding DataContext.ToRenewInquiryCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid},Mode=FindAncestor}}"
+                                                    CommandParameter="{Binding ElementName=RenewBtn}" Visibility="Collapsed" IsEnabled="{Binding DataContext.SelectedItem_Working.Enabled_Inquiry, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+                                            <Button  Grid.Column="1" x:Name="RefBtn" Content="REF" Margin="0,0,2,0" HorizontalAlignment="Left" Width="32" Height="16" Style="{DynamicResource DefaultButtonStyle}" 
+                                                    Command="{Binding DataContext.ToRefInquiryCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid},Mode=FindAncestor}}"
+                                                    CommandParameter="{Binding ElementName=RefBtn}" Visibility="Collapsed" IsEnabled="{Binding DataContext.SelectedItem_Working.Enabled_Inquiry, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+                                            <Button  Grid.Column="2" x:Name="EditBtn" Margin="0,0,2,0" HorizontalAlignment="Left" Width="24" Height="16" Style="{DynamicResource EditButton}" 
+                                                    Command="{Binding DataContext.ToEditInquiryCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid},Mode=FindAncestor}}"
+                                                    CommandParameter="{Binding ElementName=EditBtn}" Visibility="Collapsed" IsEnabled="{Binding DataContext.SelectedItem_Working.Enabled_Inquiry, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+
+                                            <Button Grid.Column="3" x:Name="SaveBtn" Width="20" Height="20" Margin="0,0,2,0" Style="{DynamicResource SaveButton}"
+                                                    Command="{Binding DataContext.ToSaveInquiryCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid},Mode=FindAncestor}}"
+                                                    CommandParameter="{Binding ElementName=SaveBtn}" Visibility="Collapsed" IsEnabled="{Binding DataContext.SelectedItem_Working.Enabled_Inquiry, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+                                            <Button Grid.Column="4" x:Name="CancelEditBtn" Width="20" Height="20" Margin="0,0,2,0" Style="{DynamicResource EditCloseButton}"
+                                                    Command="{Binding DataContext.ToCancelEditInquiryCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid},Mode=FindAncestor}}"
+                                                    CommandParameter="{Binding ElementName=EditBtn}" Visibility="Collapsed" IsEnabled="{Binding DataContext.SelectedItem_Working.Enabled_Inquiry, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Type}" Value="G">
+                                                <Setter Property="Visibility" TargetName="OpsGrid" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <!--OptionType == "sendIntentBrokers",  sendIntentQQGroups-->
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Status}" Value="1"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='3'}" Value="false"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='4'}" Value="false"/>
+                                                    <Condition Binding="{Binding OptionType, Converter={StaticResource strContainsConvertor}, ConverterParameter='sendIntentQQGroups'}" Value="false"/>
+                                                    <Condition Binding="{Binding IsEdit}" Value ="false"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.Setters>
+                                                    <Setter Property="Visibility" TargetName="RefBtn" Value="Visible"/>
+                                                </MultiDataTrigger.Setters>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <!--OptionType == "sendIntentBrokers",  sendIntentQQGroups-->
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Status}" Value="1"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='3'}" Value="false"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='4'}" Value="false"/>
+                                                    <Condition Binding="{Binding IsEdit}" Value ="false"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.Setters>
+                                                    <Setter Property="Visibility" TargetName="EditBtn" Value="Visible"/>
+                                                </MultiDataTrigger.Setters>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <!--OptionType == "sendIntentBrokers",  sendIntentQQGroups-->
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Status, Converter={StaticResource strContainsConvertor}, ConverterParameter='1'}" Value="false"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='3'}" Value="false"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='4'}" Value="false"/>
+                                                    <Condition Binding="{Binding OptionType, Converter={StaticResource strContainsConvertor}, ConverterParameter='sendIntentQQGroups'}" Value="false"/>
+                                                    <Condition Binding="{Binding IsEdit}" Value ="false"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.Setters>
+                                                    <Setter Property="Visibility" TargetName="RenewBtn" Value="Visible"/>
+                                                </MultiDataTrigger.Setters>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Status}" Value="1"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='3'}" Value="false"/>
+                                                    <Condition Binding="{Binding Side, Converter={StaticResource strContainsConvertor}, ConverterParameter='4'}" Value="false"/>
+                                                    <Condition Binding="{Binding IsEdit}" Value ="true"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.Setters>
+                                                    <Setter Property="Visibility" TargetName="SaveBtn" Value="Visible"/>
+                                                    <Setter Property="Visibility" TargetName="CancelEditBtn" Value="Visible"/>
+                                                </MultiDataTrigger.Setters>
+                                            </MultiDataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="价格" MinWidth="20" Width="160" MaxWidth="300" CanUserSort="True" SortMemberPath="Price">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="auto"/>
+                                                    <ColumnDefinition/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border x:Name="priceType_bd" Width="16" Height="16" BorderThickness="1" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 0 2 0">
+                                                    <TextBlock x:Name="priceType_txt" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Normal" FontSize="12"/>
+                                                </Border>
+                                                <TextBlock x:Name="Price_Display" Text="{Binding Price, StringFormat={}{0:0.00##}}" VerticalAlignment="Center" Grid.Column="1"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <commonComp:NumericUpDown x:Name="PriceNU_Edit" NumericValue="{Binding Price_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                                    Background="#0F0F0F" OriginalFormat="0.00##"
+                                                    MinValue="0.0001" MaxValue="999.9999" DecimalLength="4" RangeValue="0.005" VerticalAlignment="Center" AllowEmpty="True"
+                                                                      Visibility="Collapsed"/>
+                                                <ComboBox x:Name="cbPriceType_edit" Height="18" Width="55" VerticalContentAlignment="Center" Margin="4 0 0 0"
+                                                  ItemsSource="{Binding PriceTypeDic}" 
+                                                  DisplayMemberPath="Value"  SelectedValuePath="Key" Grid.Column="1"
+                                                  SelectedValue="{Binding PriceType_Edit,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                  Style="{DynamicResource NonEditableComboBoxStyle}"
+                                                  FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}" Visibility="Collapsed"/>
+                                            </Grid>
+
+                                        </Grid>
+                                       
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="Price_Display" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="Price_Display" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="Price_Display" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="Price_Display" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEdit}" Value="true">
+                                                <Setter Property="Visibility" TargetName="Price_Display" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="PriceNU_Edit" Value="Visible" />
+                                                <Setter Property="Visibility" TargetName="cbPriceType_edit" Value="Visible" />
+                                            </DataTrigger>
+                                            <!--行权收益率-->
+                                            <DataTrigger Binding="{Binding PriceType}" Value="7">
+                                                <Setter TargetName="priceType_bd" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="priceType_bd" Property="BorderBrush" Value="#964E00"/>
+                                                <Setter TargetName="priceType_txt" Property="Text" Value="权"/>
+                                                <Setter TargetName="priceType_txt" Property="Foreground" Value="#964E00"/>
+                                            </DataTrigger>
+                                            <!--净价-->
+                                            <DataTrigger Binding="{Binding PriceType}" Value="1">
+                                                <Setter TargetName="priceType_bd" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="priceType_bd" Property="BorderBrush" Value="Green"/>
+                                                <Setter TargetName="priceType_txt" Property="Text" Value="N"/>
+                                                <Setter TargetName="priceType_txt" Property="Foreground" Value="Green"/>
+                                            </DataTrigger>
+                                            <!--全价-->
+                                            <DataTrigger Binding="{Binding PriceType}" Value="2">
+                                                <Setter TargetName="priceType_bd" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="priceType_bd" Property="BorderBrush" Value="#FB943C"/>
+                                                <Setter TargetName="priceType_txt" Property="Text" Value="F"/>
+                                                <Setter TargetName="priceType_txt" Property="Foreground" Value="#FB943C"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="数量(万)" MinWidth="20" Width="65" MaxWidth="150" CanUserSort="True" SortMemberPath="Qty">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <TextBlock x:Name="Quantity_display" Text="{Binding Qty, StringFormat={}{0:0}}" VerticalAlignment="Center"/>
+                                            <commonComp:NumericUpDown x:Name="QuantityNU_edit" NumericValue="{Binding Qty_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                    Background="#0F0F0F"
+                                                    MinValue="1" MaxValue="100000000" DecimalLength="0" RangeValue="1000" VerticalAlignment="Center"
+                                                FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}" AllowEmpty="True"
+                                                ToolTip="输入范围:[1,100000000]" Visibility="Collapsed"/>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="Quantity_display" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="Quantity_display" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="Quantity_display" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="Quantity_display" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEdit}" Value="true">
+                                                <Setter Property="Visibility" TargetName="Quantity_display" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="QuantityNU_edit" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <!--清算速度-->
+                            <DataGridTemplateColumn Header="清算速度" MinWidth="80" Width="350" MaxWidth="500" CanUserSort="True" SortMemberPath="SettlType" >
+                                <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                        <Grid>
+                                            <TextBlock x:Name="SettlType_Display" Text="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}" VerticalAlignment="Center"/>
+                                            <Grid x:Name="SettlType_eidt" Visibility="Collapsed">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="3"></ColumnDefinition>
+                                                    <ColumnDefinition></ColumnDefinition>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                                    <!--普通包教清算速度-->
+                                                    <ComboBox x:Name="SettlTypeCombox" Grid.Column="2" Width="60" Tag="{Binding AddOneOpenedTag}"  Text="{Binding AddOneShowText}"  Margin="0, 0, 0, 0"  Height="24" ToolTip="REQ" ToolTipService.IsEnabled="False"
+                                            ItemsSource="{Binding DataContext.SettlTypeList, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"
+                                                  Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" SelectedIndex="{Binding SettleBoxIndex2,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Right" Padding="0 0 0 0" IsDropDownOpen="{Binding SettleIsDropDownOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsTabStop="False"
+                                                              PreviewMouseLeftButtonDown="SettlTypeCombox_PreviewMouseLeftButtonDown">
+                                                        <!--<ComboBoxItem Content="+1"></ComboBoxItem>
+                                            <ComboBoxItem Content="今+1"></ComboBoxItem>
+                                            <ComboBoxItem Content="明+0"></ComboBoxItem>-->
+                                                    </ComboBox>
+                                                    <ListBox x:Name="SettlTypeListBox" Grid.Column="0" SelectionMode="Single" Margin="0, 0, 0, 0" 
+                                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                             Height="26" 
+                                             Background="Transparent" MinWidth="126"
+                                             BorderThickness="0"
+                                             FontSize="12" SelectedIndex="{Binding SettleBoxIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                             VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                             BorderBrush="Transparent" IsTabStop="False">
+                                                        <ListBox.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <StackPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ListBox.ItemsPanel>
+                                                        <!--<ListBoxItem x:Name="lbOne" Width="60" Visibility="{Binding LbOneVisibility, Mode=TwoWay}" Height="24" Content="+1"  Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>-->
+                                                        <ListBoxItem x:Name="lbTomOne" Width="60" Height="24"  Content="+0"  Style="{DynamicResource DailanGreenOrangeListBoxItemStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" IsTabStop="False"/>
+                                                        <ListBoxItem x:Name="lbOther" Width="60"  Height="24" Content="远"  Style="{DynamicResource DailanGreenOrangeListBoxItemStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" IsTabStop="False"/>
+                                                    </ListBox>
+
+                                                    <DatePicker x:Name="datePicker" Grid.Column="1" Width="90" Height="24" Margin="2, 0, 0, 0"
+                                                    SelectedDate="{Binding FwdSelectDate,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding DateVisible}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}" IsTabStop="False">
+                                                        <DatePicker.Resources>
+                                                            <Style TargetType="DatePickerTextBox">
+                                                                <Setter Property="IsReadOnly" Value="True"/>
+                                                            </Style>
+                                                        </DatePicker.Resources>
+                                                    </DatePicker>
+
+                                                    <ComboBox x:Name="cbSettle" Grid.Column="2" Width="50"  Margin="4,0,0,0"  Height="24" SelectedIndex="{Binding FwdComboBoxSelectIndex,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.IsEnabled="False"
+                                                  Visibility="{Binding SettleTypeVisible}" Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" ToolTip="REQ" HorizontalContentAlignment="Right" Padding="0 0,0,0"  Tag="0"  IsTabStop="False">
+                                                        <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                                        <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                            
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="SettlType_Display" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="SettlType_Display" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="SettlType_Display" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="SettlType_Display" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEdit}" Value="true">
+                                                <Setter Property="Visibility" TargetName="SettlType_Display" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="SettlType_eidt" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <!--标签-->
+                            <DataGridTemplateColumn Header="标签" MinWidth="20" Width="140" MaxWidth="300" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <!--显示部分-->
+                                            <Grid x:Name="display_tags">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border x:Name="PointFlagBd" Grid.Column="0" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                    <TextBlock Text="*" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Border x:Name="PointStartFlagBd" Grid.Column="1" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                    <TextBlock Text="P*" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Border x:Name="OcoFlagBd" Grid.Column="2" Background="{DynamicResource TextBox.Focus.Border}" Width="36" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                    <TextBlock Text="OCO" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </Border>
+                                                <Border x:Name="PackBd" Grid.Column="3" Background="{DynamicResource TextBox.Focus.Border}" Width="36" Height="18" CornerRadius="1" Visibility="Collapsed">
+                                                    <TextBlock Text="打包" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </Border>
+                                            </Grid>
+                                            <!--编辑部分-->
+                                            <Grid x:Name="edit_tags" Height="24" Visibility="Collapsed">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Content="*" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="4 0 4 0" Height="18" Width="18"
+                                    IsChecked="{Binding PFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="0"/>
+                                                <CheckBox Content="P*" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="18"
+                                    IsChecked="{Binding PFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" Grid.Column="1"/>
+
+                                                <CheckBox Content="OCO" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                    IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="2"/>
+                                                <CheckBox Content="打包" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                    IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" Grid.Column="3"/>
+                                            </Grid>
+                                        </Grid>
+                                        
+
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding PFlag}" Value="1">
+                                                <Setter TargetName="PointFlagBd" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding PFlag}" Value="2">
+                                                <Setter TargetName="PointStartFlagBd" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding OCOFlag}" Value="1">
+                                                <Setter TargetName="OcoFlagBd" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding OCOFlag}" Value="2">
+                                                <Setter TargetName="PackBd" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEdit}" Value="true">
+                                                <Setter Property="Visibility" TargetName="display_tags" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="edit_tags" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="备注" Width="140" MinWidth="40">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <TextBlock x:Name="remark_tb" Text="{Binding Remark}"/>
+                                            <TextBox x:Name="remark_eidt" Height="24" Style="{DynamicResource TextBoxStyle1}" Text="{Binding Remark_Edit,UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" Visibility="Collapsed"/>
+                                        </Grid>
+                                        
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="remark_tb" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="remark_tb" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="remark_tb" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="remark_tb" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEdit}" Value="true">
+                                                <Setter Property="Visibility" TargetName="remark_tb" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="remark_eidt" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn> 
+                            <DataGridTemplateColumn Header="操作时间" MinWidth="20" Width="130" MaxWidth="150" CanUserSort="True" SortMemberPath="UpdateTime">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock x:Name="createTime_display" Text="{Binding UpdateTime}" VerticalAlignment="Center"/>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="4">
+                                                <Setter Property="FontFamily" TargetName="createTime_display" Value="Roboto" />
+                                                <Setter Property="FontWeight" TargetName="createTime_display" Value="Normal" />
+                                                <Setter Property="FontStyle" TargetName="createTime_display" Value="Italic" />
+                                                <Setter Property="Foreground" TargetName="createTime_display" Value="{DynamicResource Text.Foreground.NoPermission}"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </commonComp:ExDataGrid>
+                </TabItem>
+
+                <TabItem x:Name="DemandTab" Header="私域池" Width="96">
+                    <Grid x:Name="demand_part" Grid.Row="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <ListBox x:Name="ProfileListBox"  Background="Black" VerticalAlignment="Center" SelectionMode="Single"
+                                     ItemsSource="{Binding  ViewSource_Tag.View}" 
+                                     SelectedItem="{Binding SelectedItem_Tag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PreviewMouseDown="ProfileListBox_PreviewMouseDown" SelectionChanged="ProfileListBox_SelectionChanged">
+                            <ListBox.Template>
+                                <ControlTemplate>
+                                    <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                                </ControlTemplate>
+                            </ListBox.Template>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource TagGroupListBoxItemStyle}">
+                                    <Setter Property="Content" Value="{Binding GroupName}"/>
+                                    <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListBoxItem_PreviewMouseLeftButtonDown"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
+
+                        <comp:CustomDefaultDataGrid x:Name="ReferenceDataGrid" FrozenColumnCount="11" Grid.Row="1"
+                      ItemsSource="{Binding ViewSource_display.View}"
+                      SelectedItem="{Binding SelectedItem_Reference,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                      Style="{DynamicResource DefaultDataGrid}"
+                      LoadingRow="DataGrid_LoadingRow" IsReadOnly="true"
+                      UnloadingRow="DataGrid_UnloadingRow" SelectionMode="Extended"
+                      DefaultHideColumns="公告,原文,操作人,序号,募集类型" EnableRowVirtualization="True"
+                        EnableColumnVirtualization="True"
+                        VirtualizingPanel.IsVirtualizing="True"
+                        VirtualizingPanel.VirtualizationMode="Recycling"
+                        ScrollViewer.IsDeferredScrollingEnabled="True" >
+
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow" BasedOn="{StaticResource UnderlineDataGridRowStyle}">
+                                    <EventSetter Event="MouseEnter" Handler="DataGridRow_MouseEnter"/>
+                                    <EventSetter Event="MouseLeave" Handler="DataGridRow_MouseLeave"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu x:Name="dgMenu_Reference" Style="{DynamicResource DefaultContextMenu}" Opened="dgMenu_Reference_Opened">
+                                    <MenuItem x:Name="ToQbMenu_Reference" Header="债券详情" Style="{DynamicResource DefaultMenuItem}" Click="ToQbMenu_Reference_Click" Visibility="Collapsed"/>
+                                    <MenuItem x:Name="CopyMenu_Reference" Header="复制价格" Style="{DynamicResource DefaultMenuItem}" Click="CopyMenu_Reference_Click"/>
+                                    <MenuItem x:Name="CopyMenu_SecurityID_Reference" Header="复制代码" Style="{DynamicResource DefaultMenuItem}" Click="CopyMenu_SecurityID_Reference_Click"/>
+                                    <MenuItem x:Name="CopyMenu_Symbol_Reference" Header="复制简称" Style="{DynamicResource DefaultMenuItem}" Click="CopyMenu_Symbol_Reference_Click"/>
+                                    <MenuItem x:Name="publishBtn_Reference" Header="发内部" Style="{StaticResource DefaultMenuItem}" Click="publishBtn_Reference_Click"/>
+                                    <MenuItem x:Name="hiddenBtn_Reference" Header="取消发内部" Style="{StaticResource DefaultMenuItem}" Click="hiddenBtn_Reference_Click"/>
+                                    <MenuItem x:Name="refBtn_Reference" Header="撤销" Style="{StaticResource DefaultMenuItem}" Click="refBtn_Reference_Click"/>
+                                    <MenuItem x:Name="recoverBtn_Reference" Header="恢复" Style="{StaticResource DefaultMenuItem}" Click="recoverBtn_Reference_Click"/>
+                                    <MenuItem x:Name="AddIntention_Reference" Header="发个需" Style="{StaticResource DefaultMenuItem}" Click="AddIntention_Reference_Click"/>
+                                    <MenuItem x:Name="StartQQ_Reference" Header="弹出QQ" Style="{StaticResource DefaultMenuItem}" Click="StartQQ_Reference_Click"/>
+                                    <MenuItem x:Name="StartQQ2_Reference" Header="议价" Style="{StaticResource DefaultMenuItem}" Click="StartQQ2_Reference_Click"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="序号" Width="Auto" MinWidth="20" MaxWidth="80" IsReadOnly="True" HeaderStyle="{DynamicResource DataGridColumnHeaderCenterStyle}">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="No_TB" Text="{Binding No}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="来源方机构" MinWidth="20" Width="80" MaxWidth="100" CanUserSort="True" SortMemberPath="InstitutionName">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <!--显示部分-->
+                                            <Border x:Name="InsNameBorder">
+                                                <TextBlock x:Name="InsName_display" Foreground="#FFFFFF" Text="{Binding InstitutionName}" Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding InstitutionName}"></TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="来源方" MinWidth="20" Width="100" MaxWidth="120" CanUserSort="True" SortMemberPath="TraderName">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <!--显示部分-->
+                                            <Border x:Name="TrdNameBorder">
+                                                <TextBlock x:Name="TrdNameLb_display" Foreground="#FFFFFF" Text="{Binding TraderName}" Padding="0" TextTrimming="CharacterEllipsis" ToolTip="{Binding TraderName}"></TextBlock>
+                                            </Border>
+
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="来源渠道" Width="35" MinWidth="20" MaxWidth="100" ClipboardContentBinding="{Binding Channel}" SortMemberPath="Channel">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <!-- 图标 -->
+                                                <Image x:Name="thumbImageQq" Source="/STC.Common;component/Images/qq.png" Width="15" Height="15" Visibility="Collapsed" Grid.Column="0" ToolTip="{Binding IM}"/>
+                                                <Image x:Name="thumbImageGroup" Source="/STC.Common;component/Images/qq_group.png" Width="15" Height="15" Visibility="Collapsed" Grid.Column="0" ToolTip="{Binding IM}"/>
+                                                <Image x:Name="thumbImageIGroup" Source="/STC.Common;component/Images/qq_igroup.png" Width="15" Height="15" Visibility="Collapsed" Grid.Column="0" ToolTip="{Binding IM}"/>
+                                                <Image x:Name="thumbImageWechat" Source="/STC.Common;component/Images/wechat.png" Width="15" Height="15" Visibility="Collapsed" Grid.Column="0"/>
+                                                <TextBlock x:Name="thumbImage" Text="手动" Foreground="#FFFFFF" VerticalAlignment="Center" Visibility="Collapsed" HorizontalAlignment="Center" FontWeight="Normal" FontSize="10"/>
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Channel}" Value="FINQ">
+                                                    <Setter TargetName="thumbImageQq" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Channel}" Value="FINQ_GROUP">
+                                                    <Setter TargetName="thumbImageGroup" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Channel}" Value="FINQ_GROUP_INT">
+                                                    <Setter TargetName="thumbImageIGroup" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Channel}" Value="WECHAT">
+                                                    <Setter TargetName="thumbImageWechat" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Channel}" Value="CLIENT">
+                                                    <Setter TargetName="thumbImage" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="剩余期限" Width="Auto" MinWidth="20"  ClipboardContentBinding="{Binding RemainingTime}" SortMemberPath="RemaingingTime_convert" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBlock Text="{Binding RemainingTime}" HorizontalAlignment="Left"/>
+                                                <!--<Button Grid.Column="2" HorizontalAlignment="Right" Width="12" Height="12"  BorderThickness="0" Style="{StaticResource OpenSecurityButton}"  ToolTip="查看行情小窗"  Click="best_opensecurity_btn_Click"/>-->
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="代码" MinWidth="20" Width="80" MaxWidth="150" CanUserSort="True" SortMemberPath="SecurityId" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="SecurityIDTB" Text="{Binding SecurityId}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding SecurityId}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!--<DataGridTextColumn Header="orderid" Binding="{Binding OrderID}"/>
+                    <DataGridTextColumn Header="intentionid" Binding="{Binding IntentionId}"/>-->
+                                <DataGridTemplateColumn Header="简称" MinWidth="20" Width="80" MaxWidth="150" CanUserSort="True" SortMemberPath="Symbol" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock x:Name="SymbolTB" Text="{Binding Symbol}"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Symbol}"/>
+
+                                                <Border x:Name="TaxFreeBorder" CornerRadius="2" BorderThickness="1" BorderBrush="#C29B4E" Background="#000000" Width="16" Height="16" Visibility="Collapsed" Margin="5,0,0,0" Grid.Column="1">
+                                                    <TextBlock Text="免" Foreground="#C29B4E" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </Border>
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Tax_Free}" Value="01">
+                                                    <Setter TargetName="TaxFreeBorder" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="方向" MinWidth="20" Width="40" MaxWidth="60" CanUserSort="True" SortMemberPath="Side">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <!--显示部分-->
+                                            <Border x:Name="SideBorder">
+                                                <TextBlock x:Name="SideTB_display" Text="{Binding Side,Converter={StaticResource EnumTypeConvertor},ConverterParameter='side'}" Style="{DynamicResource SideTextBlockStyle}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <!--没有方向-->
+                                                <DataTrigger Binding="{Binding Side,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                    <!--<Setter TargetName="SideBorder" Property="BorderThickness" Value="1"/>
+                                        <Setter TargetName="SideBorder" Property="BorderBrush" Value="red"/>-->
+                                                    <Setter TargetName="SideTB_display" Property="Text" Value="--"/>
+                                                    <Setter TargetName="SideTB_display" Property="Foreground" Value="#3C3C3C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn x:Name="status_demand_column" Header="状态" Width="Auto" MinWidth="20" MaxWidth="100" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="txStatus" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{StaticResource intentionStatusConvertor}">
+                                                        <MultiBinding.Bindings>
+                                                            <Binding Path="Type"/>
+                                                            <Binding Path="Status"/>
+                                                        </MultiBinding.Bindings>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                    <!--<TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Property="Text" Value="已NF发布"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <MultiDataTrigger.Setters>
+                                                        <Setter Property="Foreground" Value="{StaticResource RFQ.ColorBrush}"/>
+                                                    </MultiDataTrigger.Setters>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>-->
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn x:Name="ops_demand_column" Header="操作" Width="60" MinWidth="20" MaxWidth="300" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Grid.Column="4" x:Name="ToReferenceBtn" Margin="0,0,2,0" Content="发个需" HorizontalAlignment="Left" Width="44" Height="16" Style="{DynamicResource DefaultButtonStyle}"
+                                            Command="{Binding DataContext.ToReferenceCommand,RelativeSource={RelativeSource AncestorType={x:Type DataGrid},Mode=FindAncestor}}"
+                                                CommandParameter="{Binding ElementName=ToReferenceBtn}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="来源方报价" MinWidth="20" Width="60" MaxWidth="100" CanUserSort="True" SortMemberPath="Bp">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="PriceBorder">
+                                                <!--显示部分-->
+                                                <TextBlock x:Name="LastPrice_Display" Text="{Binding CustomerPrice, StringFormat={}{0:0.00##}}" VerticalAlignment="Center"
+                                                   Style="{DynamicResource SideTextBlockStyle}"/>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding CustomerPrice,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                    <!--<Setter TargetName="PriceBorder" Property="BorderThickness" Value="1"/>
+                                        <Setter TargetName="PriceBorder" Property="BorderBrush" Value="red"/>-->
+                                                    <Setter TargetName="LastPrice_Display" Property="Text" Value="--"/>
+                                                    <Setter TargetName="LastPrice_Display" Property="Foreground" Value="#3C3C3C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="点差" MinWidth="20" Width="55" MaxWidth="100" CanUserSort="True" SortMemberPath="Bp">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="PriceBorder">
+                                                <!--显示部分-->
+                                                <TextBlock x:Name="BP_Display" Text="{Binding BP, StringFormat={}{0:0.00##}}" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding BP,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                    <!--<Setter TargetName="PriceBorder" Property="BorderThickness" Value="1"/>
+                                        <Setter TargetName="PriceBorder" Property="BorderBrush" Value="red"/>-->
+                                                    <Setter TargetName="BP_Display" Property="Text" Value="--"/>
+                                                    <Setter TargetName="BP_Display" Property="Foreground" Value="#3C3C3C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="定价" MinWidth="20" Width="65" MaxWidth="100" CanUserSort="True" SortMemberPath="Price">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="auto"/>
+                                                    <ColumnDefinition/>
+                                                </Grid.ColumnDefinitions>
+                                                <!--显示部分-->
+                                                <Border x:Name="priceType_bd" Width="16" Height="16" BorderThickness="1" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                    <TextBlock x:Name="priceType_txt" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Normal" FontSize="12"/>
+                                                </Border>
+                                                <TextBlock x:Name="Price_Display" Text="{Binding Price_Display, StringFormat={}{0:0.00##}}" VerticalAlignment="Center" Grid.Column="1"
+                                                    Style="{DynamicResource SideTextBlockStyle}"  TextTrimming="CharacterEllipsis"/>
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Price_Display,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                    <Setter TargetName="Price_Display" Property="Text" Value="--"/>
+                                                    <Setter TargetName="Price_Display" Property="Foreground" Value="#3C3C3C"/>
+                                                </DataTrigger>
+                                                <!--行权收益率-->
+                                                <DataTrigger Binding="{Binding PriceType}" Value="7">
+                                                    <Setter TargetName="priceType_bd" Property="Visibility" Value="Visible"/>
+                                                    <Setter TargetName="priceType_bd" Property="BorderBrush" Value="#964E00"/>
+                                                    <Setter TargetName="priceType_txt" Property="Text" Value="权"/>
+                                                    <Setter TargetName="priceType_txt" Property="Foreground" Value="#964E00"/>
+                                                </DataTrigger>
+                                                <!--净价-->
+                                                <DataTrigger Binding="{Binding PriceType}" Value="1">
+                                                    <Setter TargetName="priceType_bd" Property="Visibility" Value="Visible"/>
+                                                    <Setter TargetName="priceType_bd" Property="BorderBrush" Value="Green"/>
+                                                    <Setter TargetName="priceType_txt" Property="Text" Value="N"/>
+                                                    <Setter TargetName="priceType_txt" Property="Foreground" Value="Green"/>
+                                                </DataTrigger>
+                                                <!--全价-->
+                                                <DataTrigger Binding="{Binding PriceType}" Value="2">
+                                                    <Setter TargetName="priceType_bd" Property="Visibility" Value="Visible"/>
+                                                    <Setter TargetName="priceType_bd" Property="BorderBrush" Value="#FB943C"/>
+                                                    <Setter TargetName="priceType_txt" Property="Text" Value="F"/>
+                                                    <Setter TargetName="priceType_txt" Property="Foreground" Value="#FB943C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="报量(万)" MinWidth="20" Width="100" MaxWidth="150" CanUserSort="True" SortMemberPath="Qty">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+
+                                            <!--显示部分-->
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border x:Name="QtyBorder">
+                                                    <TextBlock x:Name="Quantity_display" Text="{Binding Qty, StringFormat={}{0:0}}" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <Border x:Name="wholeTag" Grid.Column="1" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="2 0 0 0">
+                                                    <TextBlock Text="整" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Qty,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                    <!--<Setter TargetName="QtyBorder" Property="BorderThickness" Value="1"/>
+                                        <Setter TargetName="QtyBorder" Property="BorderBrush" Value="red"/>-->
+                                                    <Setter TargetName="Quantity_display" Property="Text" Value="--"/>
+                                                    <Setter TargetName="Quantity_display" Property="Foreground" Value="#3C3C3C"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding WholeFlag}" Value="1">
+                                                    <Setter TargetName="wholeTag" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="清算速度" MinWidth="20" Width="80" MaxWidth="145" CanUserSort="True" SortMemberPath="SettlType">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="settlTypeBorder">
+                                                <!--显示部分-->
+                                                <TextBlock x:Name="settlType_dispay" Text="{Binding SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"  FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding SettlType,Converter={StaticResource StringIsNullOrEmptyConvertor}}" Value="true">
+                                                    <!--<Setter TargetName="settlTypeBorder" Property="BorderThickness" Value="1"/>
+                                        <Setter TargetName="settlTypeBorder" Property="BorderBrush" Value="red"/>-->
+                                                    <Setter TargetName="settlType_dispay" Property="Text" Value="--"/>
+                                                    <Setter TargetName="settlType_dispay" Property="Foreground" Value="#3C3C3C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="标签" MinWidth="20" Width="50" MaxWidth="300" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <!--编辑部分-->
+                                                <!--
+                                    <Grid x:Name="edit_tags" Visibility="Collapsed">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Content="急" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0" Height="18" Width="18"
+                                        IsChecked="{Binding HurryFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="0" Click="Tags_Click"/>
+                                        <CheckBox Content="荐" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="18"
+                                        IsChecked="{Binding SuggestFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="1" Click="Tags_Click"/>
+                                        <CheckBox Content="火" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 10 0"  Height="18" Width="18"
+                                        IsChecked="{Binding FireFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="2" Click="Tags_Click"/>
+
+                                        <CheckBox Content="底" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Height="18" Width="18" Margin="0 0 4 0" 
+                                        IsChecked="{Binding FloorPrice_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="3" Click="Tags_Click"/>
+                                        <CheckBox Content="OCO" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                        IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='1'}" Grid.Column="4" Click="Tags_Click"/>
+                                        <CheckBox Content="打包" Style="{DynamicResource TagCheckBoxStyle}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0 0 4 0"  Height="18" Width="36"
+                                        IsChecked="{Binding OCOFlag_Edit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay, Converter={StaticResource radioBtnConverter}, ConverterParameter='2'}" Grid.Column="5" Click="Tags_Click"/>
+                                    </Grid>-->
+                                                <!--显示部分-->
+                                                <Grid x:Name="display_tags">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border x:Name="HurryFlagBd" Grid.Column="0" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                        <TextBlock Text="急" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                    <Border x:Name="SuggestFlagBd" Grid.Column="1" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                        <TextBlock Text="荐" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                    <Border x:Name="FireFlagBd" Grid.Column="2" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                        <TextBlock Text="火" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                    <Border x:Name="FloorPriceBd" Grid.Column="3" Background="{DynamicResource TextBox.Focus.Border}" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                        <TextBlock Text="底" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                    <Border x:Name="OcoFlagBd" Grid.Column="4" Background="{DynamicResource TextBox.Focus.Border}" Width="36" Height="18" CornerRadius="1" Visibility="Collapsed" Margin="0 0 2 0">
+                                                        <TextBlock Text="OCO" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                    <Border x:Name="PackBd" Grid.Column="5" Background="{DynamicResource TextBox.Focus.Border}" Width="36" Height="18" CornerRadius="1" Visibility="Collapsed">
+                                                        <TextBlock Text="打包" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                </Grid>
+                                            </Grid>
+
+                                            <DataTemplate.Triggers>
+                                                <!--<DataTrigger Binding="{Binding Status}" Value="0">
+                                        <Setter TargetName="edit_tags" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="display_tags" Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>-->
+                                                <DataTrigger Binding="{Binding HurryFlag}" Value="1">
+                                                    <Setter TargetName="HurryFlagBd" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding SuggestFlag}" Value="1">
+                                                    <Setter TargetName="SuggestFlagBd" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding FireFlag}" Value="1">
+                                                    <Setter TargetName="FireFlagBd" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding FloorPrice}" Value="1">
+                                                    <Setter TargetName="FloorPriceBd" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding OCOFlag}" Value="1">
+                                                    <Setter TargetName="OcoFlagBd" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding OCOFlag}" Value="2">
+                                                    <Setter TargetName="PackBd" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="IM号" MinWidth="20" Width="Auto" MaxWidth="150" CanUserSort="True" SortMemberPath="IM" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock x:Name="im" Text="{Binding IM}" Grid.Column="0"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding IM}"/>
+                                                <Button x:Name="AddBtn" Grid.Column="1" Visibility="Collapsed"  Width="12" Height="12" Style="{DynamicResource MainPageImageAddButton}"
+                                            Command="{Binding DataContext.AddBrokerCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}"></Button>
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding AddVisible}" Value="1">
+                                                    <Setter TargetName="AddBtn" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="群信息" MinWidth="20" Width="Auto" MaxWidth="150" CanUserSort="True" SortMemberPath="ToGroupName" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding ToGroupName}" Grid.Column="0"  FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding ToGroupName}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="市场(Bid)" Width="Auto" MinWidth="85" ClipboardContentBinding="{Binding Best_Bid}" HeaderStyle="{DynamicResource DataGridColumnHeaderRightStyle}" SortMemberPath="Best_Bid">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="best_bid" Text="{Binding Best_Bid, Converter={StaticResource numConvertor}, StringFormat={}{0:0.00##}, NotifyOnTargetUpdated=True,UpdateSourceTrigger=PropertyChanged}"  Foreground="{DynamicResource ColorBrush.Orange}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Best_Bid, Converter={StaticResource numConvertor}}" Value="--">
+                                                    <Setter TargetName="best_bid" Property="Foreground" Value="#4A4D4C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="市场(Ofr)" Width="Auto" MinWidth="85" ClipboardContentBinding="{Binding Best_Ofr}" HeaderStyle="{DynamicResource DataGridColumnHeaderLeftStyle}" SortMemberPath="Best_Ofr">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="best_ofr" Text="{Binding Best_Ofr, Converter={StaticResource numConvertor}, StringFormat={}{0:0.00##}, NotifyOnTargetUpdated=True,UpdateSourceTrigger=PropertyChanged}"  Foreground="{DynamicResource ColorBrush.Blue}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Best_Ofr, Converter={StaticResource numConvertor}}" Value="--">
+                                                    <Setter TargetName="best_ofr" Property="Foreground" Value="#4A4D4C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="中债估值" Width="auto" MinWidth="20" MaxWidth="200" SortMemberPath="CCDCValuation" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding ChinaBondValuationFull}"/>
+                                                <Image x:Name="DataInfo" Source="/STC.Common;component/Images/icon 更多信息.png" Margin="10 0 0 0" Width="12" Height="12" Visibility="Collapsed" ToolTip="{Binding CCDCValuation_Date}"/>
+                                            </StackPanel>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding ShowLastWorkDay}" Value="!">
+                                                    <Setter Property="Visibility" TargetName="DataInfo" Value="Visible"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中债行权" Width="auto" MinWidth="80" SortMemberPath="ChinaBondExercise">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ChinaBondExercise, Converter={StaticResource numConvertor}, ConverterParameter=0}" Foreground="{Binding ChinaBondExercise, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中债到期" Width="auto" MinWidth="80" SortMemberPath="ChinaBondDue">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ChinaBondDue, Converter={StaticResource numConvertor}, ConverterParameter=0}" Foreground="{Binding ChinaBondDue, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中债估值久期" Width="auto" MinWidth="80" SortMemberPath="ModifiedDuration">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ModifiedDuration, Converter={StaticResource numConvertor}, ConverterParameter=0}" Foreground="{Binding ModifiedDuration, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中证估值" Width="auto" MinWidth="80" SortMemberPath="CsiBondValuation">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CsiBondValuationFull, Converter={StaticResource StringConvertor}, ConverterParameter='--'}" Foreground="{Binding CsiBondValuationFull, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="bid-中债" Width="auto" MinWidth="80" SortMemberPath="CCDCValuation_BP_InnerBid">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CCDCValuation_BP_InnerBid, Converter={StaticResource numConvertor},ConverterParameter='bp'}" Foreground="{Binding CCDCValuation_BP_InnerBid, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中债-ofr" Width="auto" MinWidth="80" SortMemberPath="CCDCValuation_BP_InnerOfr">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CCDCValuation_BP_InnerOfr, Converter={StaticResource numConvertor},ConverterParameter='bp'}" Foreground="{Binding CCDCValuation_BP_InnerOfr, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中证行权" Width="auto" MinWidth="80" SortMemberPath="ChinaBondExercise">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CsiBondValuationExercise, Converter={StaticResource numConvertor}, ConverterParameter=0}" Foreground="{Binding CsiBondValuationExercise, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中证到期" Width="auto" MinWidth="80" SortMemberPath="ChinaBondDue">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CsiBondValuationDue, Converter={StaticResource numConvertor}, ConverterParameter=0}" Foreground="{Binding CsiBondValuationDue, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="bid-中证" Width="auto" MinWidth="80" SortMemberPath="CsiValuation_BP_InnerBid">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CsiValuation_BP_InnerBid, Converter={StaticResource numConvertor},ConverterParameter='bp'}" Foreground="{Binding CsiValuation_BP_InnerBid, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="中证-ofr" Width="auto" MinWidth="80" SortMemberPath="CsiValuation_BP_InnerOfr">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CsiValuation_BP_InnerOfr, Converter={StaticResource numConvertor},ConverterParameter='bp'}" Foreground="{Binding CsiValuation_BP_InnerOfr, Converter={StaticResource emptyColorCon}}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="最新成交(%)" Width="Auto" MinWidth="80" SortMemberPath="LastMarketPx">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding LastMarketPx,Converter={StaticResource numConvertor}}"  Foreground="{DynamicResource ColorBrush.Green}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn  Header="发行人" Width="100" MinWidth="60" SortMemberPath="IssuerName">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="IssuerNameTB" Text="{Binding IssuerName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding IssuerName}"/>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IssuerName}" Value="--">
+                                                    <Setter TargetName="IssuerNameTB" Property="Foreground" Value="#4A4D4C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn  Header="担保人" Width="100" MinWidth="60" SortMemberPath="WarranterName">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="WarranterTB" Text="{Binding WarranterName}" TextTrimming="CharacterEllipsis" ToolTip="{Binding WarranterName}"/>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding WarranterName}" Value="--">
+                                                    <Setter TargetName="WarranterTB" Property="Foreground" Value="#4A4D4C"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Binding="{Binding Outstanding_Amount, StringFormat={}{0:N2}}" Header="未偿还金额(亿)" Width="auto" MinWidth="120"/>
+                                <DataGridTextColumn Binding="{Binding IssueAmount, StringFormat={}{0:N2}}" Header="发行量(亿)" Width="auto" MinWidth="120"/>
+
+
+                                <DataGridTemplateColumn Header="公告" MinWidth="20" Width="50" MaxWidth="150" CanUserSort="True" SortMemberPath="Qty">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <!--显示部分-->
+                                            <TextBlock Text="{Binding PublicRemarks}" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="个人笔记" MinWidth="20" Width="60" MaxWidth="150" CanUserSort="True" SortMemberPath="Qty">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+
+                                            <!--显示部分-->
+                                            <TextBlock Text="{Binding PersonalRemarks}" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+
+                                <DataGridTemplateColumn Header="成交量" MinWidth="20" Width="50" MaxWidth="90" CanUserSort="True" SortMemberPath="Price" IsReadOnly="True" Visibility="Collapsed">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="Price_Display" Text="{Binding ExecutionQty, StringFormat={}{0:0##}}" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!--<DataGridTemplateColumn Header="整量" MinWidth="70" Width="70" MaxWidth="90" CanUserSort="True" SortMemberPath="Qty">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                -->
+                                <!--显示部分-->
+                                <!--
+                                <Border x:Name="wholeTag" Background="#136C5E" Width="18" Height="18" CornerRadius="1" Visibility="Collapsed">
+                                    <TextBlock Text="整" Foreground="#FFFFFF" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding WholeFlag}" Value="1">
+                                        <Setter TargetName="wholeTag" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>-->
+
+                                <DataGridTextColumn Binding="{Binding CouponRateCurrent, Converter={StaticResource numConvertor}, ConverterParameter=0}" Header="票面" Width="Auto" MinWidth="40"/>
+                                <DataGridTextColumn Binding="{Binding Rating}" Header="评级信息" Width="Auto" MinWidth="40" ClipboardContentBinding="{Binding Rating}" CellStyle="{StaticResource FuzzyColumnColorStyle}"/>
+                                <DataGridTextColumn Binding="{Binding Cdc_Implited_Rating}" Header="中债隐含" Width="Auto" MinWidth="40" ClipboardContentBinding="{Binding Cdc_Implited_Rating}" CellStyle="{StaticResource FuzzyColumnColorStyle}"/>
+                                <DataGridTemplateColumn Header="类型" Width="Auto" MinWidth="40" SortMemberPath="BondCategory" CellStyle="{StaticResource FuzzyColumnColorStyle}">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding BondCategory}" TextTrimming="CharacterEllipsis" ToolTip="{Binding BondCategory}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="还本条款" Width="Auto" MinWidth="60" Binding="{Binding If_Repay, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='ifrepay'}"/>
+
+                                <DataGridTemplateColumn Header="原文" Width="80" MinWidth="20" MaxWidth="300" CanUserSort="True" SortMemberPath="Text" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBlock x:Name="OriginalTextTB" Margin="0,0,0,0" Text="{Binding Text}" VerticalAlignment="Center" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip>
+                                                            <TextBlock Text="{Binding Text, Converter={StaticResource subStringConverter}, ConverterParameter=250}" TextWrapping="Wrap" MaxWidth="200"/>
+                                                        </ToolTip>
+                                                    </TextBlock.ToolTip>
+                                        </TextBlock>
+                                                <!--<Image Margin="1,0,0,0" Source="/STC.XBond.Plugin;component/Images/stc_icon_input_search_typing.png" Width="20" Height="20" VerticalAlignment="Center"/>-->
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn x:Name="Trader1" Header="Trader" Width="70" MinWidth="20" MaxWidth="145">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="QuantityTB" Margin="5,0,0,0" Text="{Binding BrokerName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="操作人" Width="70" MinWidth="20" MaxWidth="145" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock x:Name="CloseByTB" Margin="5,0,0,0" Text="{Binding CloseByName}" HorizontalAlignment="Left" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip Content="{Binding Text}"/>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="募集类型" Binding="{Binding IssueType}" Width="140" MinWidth="20" MaxWidth="300" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="更新时间" Binding="{Binding UpdateTime}" Width="140" MinWidth="20" MaxWidth="300" IsReadOnly="True" Visibility="Collapsed"/>
+                                <DataGridTextColumn Header="创建时间" Binding="{Binding CreateTime}" Width="140" MinWidth="20" MaxWidth="300" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </comp:CustomDefaultDataGrid>
+
+                        <!--<commonComp:PopupEx x:Name="FilterPopup" Placement="Top" PlacementTarget="{Binding ElementName=demand_title_grid}" StaysOpen="true"
+                                   PopupAnimation="Slide" AllowsTransparency ="True" Opened="FilterPopup_Opened" Closed="FilterPopup_Closed" MouseEnter="FilterPopup_MouseEnter">-->
+                        <!--SearchText="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"-->
+                        <Grid x:Name="FilterPopup" Grid.RowSpan="4" VerticalAlignment="Top" Visibility="Collapsed">
+                            <Grid.RenderTransform>
+                                <TransformGroup>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Grid.RenderTransform>
+                            <Border Width="{Binding ElementName=person_part, Path=ActualWidth}" Height="255" BorderBrush="#3C3C3C" Background="Black" BorderThickness="1">
+                                <!--SearchText="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"-->
+                                <commonComp:SecurityFilterPanel x:Name="customFilterPanel" Visibility4IsMe="Collapsed" IsMe="{Binding IsMe, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  Padding="0 6 0 2"
+                                            StartTermDY="{Binding StartTermDY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" EndTermDY="{Binding EndTermDY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            IsAppTerm="{Binding IsAppTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            FocusTags="{Binding FocusTags, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SaveAction="Save_Click" EditAction="EditGroup_Click"
+                                        
+                                            StartCoupon="{Binding StartCoupon, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" EndCoupon="{Binding EndCoupon, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            IsCoupon="{Binding IsCoupon, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            StartPrice="{Binding StartPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            EndPrice="{Binding EndPrice,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            StartChinaBondValue="{Binding StartChinaBondValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            EndChinaBondValue="{Binding EndChinaBondValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            StartBidBp="{Binding StartBidBp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" EndBidBp="{Binding EndBidBp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            StartOfrBp="{Binding StartOfrBp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" EndOfrBp="{Binding EndOfrBp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            IsFuzzy="False"
+                                            Visibility4NoReply="Collapsed" IsShowSaveEdit="Visible"
+                                            VirtualizingPanel.IsVirtualizing="True"
+                                            VirtualizingPanel.VirtualizationMode="Recycling"
+                                            ScrollViewer.IsDeferredScrollingEnabled="True" 
+                                                        ShowAllAction="customFilterPanel_ShowAllAction"/>
+                            </Border>
+                        </Grid>
+                        <!--</commonComp:PopupEx>-->
+
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+
+            <Grid x:Name="demand_title_grid" Grid.Row="3" Margin="220,4,0,4" Background="Transparent" VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                            Visibility="{Binding ElementName=DemandTab,Path=IsSelected, Converter={StaticResource booleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center">共<Run Text="{Binding TotalCount4Demand}"/>条，其中Bid<Run Text="{Binding TotalCount4BidDemand}"/>条，Ofr<Run Text="{Binding TotalCount4OfrDemand}"/>条</TextBlock>
+
+
+                <StackPanel Orientation="Horizontal" Background="Transparent" HorizontalAlignment="Right" Grid.Column="1">
+                    <ListBox x:Name="TimeLimitListBox" MinWidth="220" Grid.Column="1" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Right" SelectionMode="Single" SelectedIndex="{Binding TimeLimitSelectedIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                        <ListBox.Template>
+                            <ControlTemplate>
+                                <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                            </ControlTemplate>
+                        </ListBox.Template>
+                        <ListBoxItem Content="今天" Tag="Today" Style="{DynamicResource  InnerBoardFilterListBoxItemDodgerBlueStyle}" />
+                        <ListBoxItem Content="昨天" Tag="YesterDay" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="60" Margin="4,0,0,0"/>
+                        <ListBoxItem Content="最近7天" Tag="Last7Days" Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}"  IsSelected="True" Width="60" Margin="4,0,0,0"/>
+                        <ListBoxItem Content="最近30天" Tag="Last30Days"  Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="60" Margin="4,0,0,0"/>
+                        <!--<ListBoxItem Content="不限" Tag="UnLimited"  Style="{DynamicResource InnerBoardFilterListBoxItemDodgerBlueStyle}" Width="60" Margin="4,0,0,0"/>-->
+                    </ListBox>
+                    <DatePicker x:Name="DemendStartPicker" Grid.Column="2" Width="90" Height="24" Margin="4, 0, 0, 0" SelectedDate="{Binding DealTimeBegin_Demand,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}">
+                        <DatePicker.Resources>
+                            <Style TargetType="DatePickerTextBox">
+                                <Setter Property="IsReadOnly" Value="True"/>
+                            </Style>
+                        </DatePicker.Resources>
+                    </DatePicker>
+                    <DatePicker x:Name="DemendEndPicker" Grid.Column="3" Width="90" Height="24" Margin="4, 0, 0, 0" SelectedDate="{Binding DealTimeEnd_Demand,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}">
+                        <DatePicker.Resources>
+                            <Style TargetType="DatePickerTextBox">
+                                <Setter Property="IsReadOnly" Value="True"/>
+                            </Style>
+                        </DatePicker.Resources>
+                    </DatePicker>
+
+                    <Button x:Name="btn_Fileter" Grid.Column="4"  Content="更多筛选" Cursor="Hand" Width="64" Height="24" Margin="4 0 0 0" Click="SearchBtn_Click" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" BorderThickness="0 1 0 0" Style="{DynamicResource BlueGreenStyle}"/>
+                    <!--<Button x:Name="btn_Demend_Fileter" Content="筛选" Grid.Column="4" Width="64" Height="24" Margin="4 0 10 0" Click="btn_Demend_Fileter_Click" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" BorderThickness="0 1 0 0" Style="{DynamicResource BlueGreenStyle}"/>-->
+                    <!--<Button x:Name="singleToggleBtn" Width="24" Height="24" Style="{DynamicResource CollapsedButton_24}" Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center" Click="singleToggleBtn_Click" Grid.Column="1" />-->
+
+                    <commonComp:DescriptionCtrl x:Name="desCtrl" Grid.Column="5" Margin="4 0 0 0" ItemsSource="{Binding DesSource}"/>
+
+                    <Button x:Name="btn_ShowAll" Grid.Column="6" Content="Show All" Width="64" Height="24" Margin="4 0 10 0" Click="deleteBtn_Click" VerticalContentAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" BorderThickness="0 1 0 0" Style="{DynamicResource BlueGreenStyle}"/>
+                </StackPanel>
+
+            </Grid>
+
+            <!--询价操作部分-->
+            <Grid Grid.Row="3" VerticalAlignment="Top" Visibility="{Binding ElementName=InquiryTab, Path=IsSelected, Converter={StaticResource booleanToVisibilityConverter}}">
+                <Grid Grid.Row="3"  Margin="220,1,0,4"  Visibility="{Binding IsInquiry, Converter={StaticResource reverseVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="220"/>
+                    </Grid.ColumnDefinitions>
+                    <!--<RadioButton x:Name="Rd_Valid" Content="有效" Height="24" Width="24" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource AllRadioButtonStyle}" IsChecked="True" Click="Single_Click"  ToolTip="全部债券"/>
+                            <RadioButton x:Name="Rd_Invalid" Content="已撤销"  Height="24" Width="36" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Style="{DynamicResource AllRadioButtonStyle}" Margin="26 0 0 0" Click="Single_Click"  ToolTip="仅利率"/>-->
+
+                    <StackPanel x:Name="InquiryTitle_SP" Orientation="Horizontal" HorizontalAlignment="Left">
+                        <!--<TextBlock Text="询价" FontSize="15" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>-->
+                        <!--<TextBlock Text="3.12Y" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>
+                        <TextBlock Text="180210.IB" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>
+                        <TextBlock Text="18国开10" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>
+                        <TextBlock Text="Bid" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>
+                        <TextBlock Text="2.11%" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>
+                        <TextBlock Text="2000万" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>
+                        <TextBlock Text="T+1" Foreground="White" Margin="5 0 0 0"  VerticalAlignment="Center"/>-->
+                        <TextBlock Text="{Binding SelectedItem_Working.RemainingTime}" Margin="8 0 0 0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SelectedItem_Working.SecurityId}" Margin="8 0 0 0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SelectedItem_Working.Symbol}"  Margin="8 0 0 0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SelectedItem_Working.Side, Converter={StaticResource EnumTypeConvertor}, ConverterParameter='side'}"  Margin="8 0 0 0" VerticalAlignment="Center"/>
+                        <!--<TextBlock Text="{Binding SelectedItem_Working.Price, Converter={StaticResource numConvertor}}"  Margin="8 0 0 0" VerticalAlignment="Center"/>
+                        <TextBlock Text="%" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SelectedItem_Working.Qty, Converter={StaticResource numConvertor}}"  Margin="8 0 0 0" VerticalAlignment="Center"/>
+                        <TextBlock Text="万" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SelectedItem_Working.SettlType, Converter={StaticResource EnumTypeConvertor},ConverterParameter='settletype'}"  Margin="8 0 0 0" VerticalAlignment="Center"/>-->
+                    </StackPanel>
+
+
+                    <ListBox x:Name="FilterListBox"  Background="Transparent" VerticalAlignment="Bottom" SelectionMode="Extended" Grid.Column="1"
+                            SelectionChanged="FilterListBox_SelectionChanged">
+                        <ListBox.Template>
+                            <ControlTemplate>
+                                <WrapPanel Background="{TemplateBinding Background}" Orientation="Horizontal" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                            </ControlTemplate>
+                        </ListBox.Template>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource InnerBoardFilterListBoxItemDodgerBlueStyle}">
+                                <Setter Property="MinWidth" Value="32"/>
+                                <Setter Property="Height" Value ="20"/>
+                                <Setter Property="Margin" Value ="2 0 0 0"/>
+                                <Setter Property="Padding" Value="8 0 8 0"/>
+                                <Setter Property="Content" Value="{Binding Title}"/>
+                                <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBoxItem Content="有效" Tag="1" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="40" Height="20" Margin="2,1,0,4" IsSelected="True"/>
+                        <ListBoxItem Content="已REF" Tag="4" Style="{StaticResource InnerBoardFilterListBoxItemStyle}" Width="40" Height="20" Margin="2,1,0,4" IsSelected="True"/>
+                    </ListBox>
+
+                    <Grid HorizontalAlignment="Right">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="30"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="批量改价:" Foreground="#A0A0A0" VerticalAlignment="Center" Margin="5 0 5 0"/>
+                        <commonComp:NumericUpDown x:Name="PriceNU_Edit" Grid.Column="1" NumericValue="{Binding Price_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                                                    Background="#0F0F0F" OriginalFormat="0.00##" Margin="5 0 5 0" Width="100"
+                                                    MinValue="0.0001" MaxValue="999.9999" DecimalLength="4" RangeValue="0.005" VerticalAlignment="Center" AllowEmpty="True"
+                                                  LostFocus="PriceNU_Edit_LostFocus" GotFocus="PriceNU_Edit_GotFocus" IsEnabled="{Binding InquiryBatch_IsEnabled}"/>
+                        <ComboBox x:Name="cbPriceType_edit" Height="18" VerticalContentAlignment="Center"
+                                          ItemsSource="{Binding PriceTypeEmptyDic}" 
+                                          DisplayMemberPath="Value"  SelectedValuePath="Key" Grid.Column="2"
+                                          SelectedValue="{Binding PriceType_Edit,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                          Style="{DynamicResource NonEditableComboBoxStyle}"
+                                          FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}" LostFocus="cbPriceType_edit_LostFocus">
+                            <ComboBox.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="IsEditPrice" Converter="{StaticResource reverseBooleanConvertor}"/>
+                                        <Binding Path="InquiryBatch_IsEnabled" Converter="{StaticResource reverseBooleanConvertor}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </ComboBox.IsEnabled>
+                        </ComboBox>
+                        <Button Name="price_save_btn" Grid.Column="3" Style="{DynamicResource SaveButton}" Click="price_save_btn_Click" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16"
+                                 IsEnabled="{Binding InquiryBatch_IsEnabled}" Visibility="{Binding IsEditPrice, Converter={StaticResource visibilityConvertor}}"/>
+
+
+                        <TextBlock Grid.Column="4" Text="批量改量(万):" Foreground="#A0A0A0" VerticalAlignment="Center" Margin="5 0 5 0"/>
+                        <commonComp:NumericUpDown x:Name="QuantityNU_edit" Grid.Column="5" NumericValue="{Binding Qty_Edit,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" 
+                                                    Background="#0F0F0F"  Margin="5 0 5 0" Width="100"
+                                                  MinValue="1" MaxValue="100000000" DecimalLength="0" RangeValue="1000" VerticalAlignment="Center"
+                                                FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}" AllowEmpty="True"
+                                                ToolTip="输入范围:[1,100000000]"
+                                                  LostFocus="QuantityNU_edit_LostFocus_1" GotFocus="QuantityNU_edit_GotFocus" IsEnabled="{Binding InquiryBatch_IsEnabled}"/>
+                        <Button Name="qty_save_btn" Grid.Column="6" Style="{DynamicResource SaveButton}" Click="qty_save_btn_Click" HorizontalAlignment="Left" VerticalAlignment="Center" Width="16" Height="16" Visibility="Hidden"
+                                 IsEnabled="{Binding InquiryBatch_IsEnabled}"/>
+                    </Grid>
+
+
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Column="1">
+                        <Button x:Name="addBtn" Content="新增" Width="48" Style="{StaticResource BlueButtonStyle}" Click="addBtn_Click"/>
+                        <Button x:Name="refAll" Content="REF ALL" Width="60" Style="{StaticResource BlueButtonStyle}" Margin="4 0 4 0" Click="refAll_Click">
+                            <!--<Button.IsEnabled>
+                                <MultiBinding Converter="{StaticResource multiAndConverter}">
+                                    <MultiBinding.Bindings>
+                                        <Binding Path="SelectedItem_Working.Enabled_Inquiry" Converter="{StaticResource reverseBooleanConvertor}"/>
+                                        <Binding Path="InquiryBatch_IsEnabled"  Converter="{StaticResource reverseBooleanConvertor}"/>
+                                    </MultiBinding.Bindings>
+                                </MultiBinding>
+                            </Button.IsEnabled>-->
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+            </Grid>
+            
+
+           
+        </Grid>
+    </Grid>
+</UserControl>

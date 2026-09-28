@@ -1,0 +1,816 @@
+﻿<Window x:Class="STC.Common.View.Order.InnerPanel.SendRequireView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:input="clr-namespace:System.Windows.Input;assembly=PresentationCore"
+             xmlns:local="clr-namespace:STC.Common.View.Order.InnerPanel"
+             xmlns:card="clr-namespace:STC.Common.View.Card"
+             xmlns:Component="clr-namespace:STC.Common.View.Component"
+             xmlns:Inner="clr-namespace:STC.Common.View.Order.InnerView"
+             xmlns:Themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero" ContentRendered="Window_ContentRendered"
+             mc:Ignorable="d"
+             d:DesignHeight="570" d:DesignWidth="394" 
+        SizeToContent="Height" Height="688" Width="394" Title="发布需求" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" AllowsTransparency ="True"
+        WindowState="Normal" WindowStyle="None" MouseLeftButtonDown="Window_MouseLeftButtonDown"  Topmost="True" BorderThickness="0" Background="Transparent" Activated="Window_Activated" Deactivated="Window_Deactivated">
+
+    <Window.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/STC.Common;component/View/Order/SendPriceDictionary.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/ComboBoxStyleDictionary.xaml"/>-->
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+ 
+            <!--数量和增加减少-->
+            <Style TargetType="{x:Type Button}" x:Key="AddAmountButtonStyle">
+                <Setter Property="Background" Value="#0A0F0E"/>
+                <Setter Property="BorderBrush" Value="#0A0F0E"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockDefaultForground}"/>
+                <Setter Property="FontSize" Value="8"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="out_border" CornerRadius="2,2,0,0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Background="Transparent" SnapsToDevicePixels="true">
+                                    <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                        <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                </Border>
+                                <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="border" Value="{Binding SendPriceItem.BorderBH}"/>
+
+                                    <!--<Setter Property="Background" TargetName="border" Value="{StaticResource TextBox.Disable.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Disable.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="out_border" Value="{StaticResource TextBox.Disable.Background}"/>-->
+                                    <!--Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource SelectItemForeground}"/-->
+                                    <!--Setter Property="Opacity" TargetName="ShineBorder" Value="0.5"/-->
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.2"/>
+                                    <Setter Property="Background" TargetName="border" Value="{Binding SendPriceItem.BorderBH}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource Button.Disabled.Border}"/>
+                                    <Setter Property="BorderBrush" TargetName="out_border" Value="{DynamicResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type Button}" x:Key="DecreaseAmountButtonStyle">
+                <Setter Property="Background" Value="#0A0F0E"/>
+                <Setter Property="BorderBrush" Value="#0A0F0E"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockDefaultForground}"/>
+                <Setter Property="FontSize" Value="8"/>
+                <Setter Property="Opacity" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid x:Name="Grid">
+                                <Border x:Name="out_border" CornerRadius="0,0,2,2" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Background="Transparent" SnapsToDevicePixels="true">
+                                    <Border x:Name="border" CornerRadius="0" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                                        <ContentPresenter x:Name="contentPresenter"  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                </Border>
+                                <Border x:Name="ShineBorder" CornerRadius="1" Opacity="0" Background="#59FFFFFF" BorderThickness="0"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsDefaulted" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <!--<Setter Property="Background" TargetName="border" Value="{StaticResource TextBox.Disable.Background}"/>-->
+                                    <Setter Property="Background" TargetName="border" Value="{Binding SendPriceItem.BorderBH}"/>
+                                    <!--<Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Disable.Background}"/>-->
+                                    <!--<Setter Property="BorderBrush" TargetName="out_border" Value="{StaticResource TextBox.Disable.Background}"/>-->
+                                    <!--Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource SelectItemForeground}"/-->
+                                    <!--Setter Property="Opacity" TargetName="ShineBorder" Value="0.5"/-->
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Opacity" TargetName="ShineBorder" Value="0.2"/>
+                                    <Setter Property="Background" TargetName="border" Value="{Binding SendPriceItem.BorderBH}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" Value="0.3"/>
+                                    <Setter Property="Background" TargetName="border" Value="{DynamicResource Button.Disabled.Background}"/>
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{DynamicResource Button.Disabled.Border}"/>
+                                    <Setter Property="BorderBrush" TargetName="out_border" Value="{DynamicResource Button.Disabled.Border}"/>
+                                    <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="{DynamicResource Button.Disabled.Foreground}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--价格和数量-->
+            <Style x:Key="SelfSendPriceTextBox" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="#0B0C0C"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBlockDefaultForground}"/>
+                <Setter Property="FontFamily" Value="Roboto"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="BorderBrush" Value="#0B0C0C"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" CornerRadius="2" BorderBrush="#0B0C0C" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsEnabled" Value="false"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="1"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="true"/>
+                                        <Condition Property="Tag" Value="0"/>
+                                    </MultiTrigger.Conditions>
+
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsKeyboardFocused" Value="true"/>
+                                        <!--<Condition Property="Tag" Value="1"/>-->
+                                    </MultiTrigger.Conditions>
+
+                                    <!--<Setter TargetName="border" Property="BorderBrush" Value="{Binding Path=BorderBrush,RelativeSource={RelativeSource AncestorType={x:Type TextBox}}}"/>-->
+                                    <Setter TargetName="border" Property="BorderBrush" Value="{Binding SendPriceItem.BorderBH}"/>
+                                    <Setter TargetName="border" Property="BorderThickness" Value="1"/>
+                                    <Setter Property="Foreground"  Value="#FFFFFF "/>
+                                    <Setter Property="SelectionBrush" Value="#009AFF"/>
+                                </MultiTrigger>
+
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--   -->
+            <SolidColorBrush x:Key="LostFocusBorderBrush" Color="#282828"/>
+            <SolidColorBrush x:Key="GetFocusBorderBrush" Color="#8F9598"/>
+            
+            <Grid x:Key="ToNonfirm">
+                <Polygon Fill="#FFFFFF" Points="6 -5.31777997e-15 0 7.42857143 4 7.42857143 2 13 8 5.57142857 3.99658203 5.57142857"/>
+                <Line X1="0.666666667" Y1="0.722222222" X2="7.33333333" Y2="12.2777778" Stroke="#FF3F44" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+            </Grid>
+
+            <Grid x:Key="ToFirm">
+                <Polygon Fill="#FFB60E" Points="6 -5.31777997e-15 0 7.42857143 4 7.42857143 2 13 8 5.57142857 3.99658203 5.57142857"/>
+            </Grid>
+
+            <Style TargetType="Image" x:Key="ImageStyle">
+                <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/root_1_normal.png"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding BookType}" Value="R">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/root_1_normal.png" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding BookType}" Value="P">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/group_1_normal.png" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding BookType}" Value="A">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/leaf_normal.png" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding BookType}" Value="">
+                        <Setter Property="Source" Value="pack://application:,,,/STC.Frame;component/Images/leaf_normal.png" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="5"/>
+    </WindowChrome.WindowChrome>
+
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="395"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <!--下单窗口-->
+        <Grid  Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="26"/>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="40"/>
+            </Grid.RowDefinitions>
+
+            <Border BorderThickness="2,2,2,0" x:Name="Border_Left1" Grid.Row="0"  CornerRadius="4,4,0,0" BorderBrush="{Binding BorderBrush}"  Background="{DynamicResource BackgroundBrush}">
+                <Grid  Background="{DynamicResource MainListTitleBackgroup}" Margin="4,0,2,0" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="32"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="24"/>
+                    </Grid.ColumnDefinitions>
+                    <Image x:Name="TitleIcon" Width="32" Stretch="Uniform" HorizontalAlignment="Center"></Image>
+                    <TextBlock Text="发布需求" Width="60" Height="24" Margin="0, 0, 0, 0" Grid.Column="1" HorizontalAlignment="Left"  Foreground = "#FFFFFF" 
+                               FontFamily="MicroSoft YaHei" FontSize="{DynamicResource NormalContentFontSize}"/>
+                    <Button Width="24" Height="24" Grid.Column="3" Margin="0,0,0,0" HorizontalAlignment="Right" Command="{Binding CloseCommand}"
+                            IsCancel="True" Style="{DynamicResource DrpImageCloseButton}" Background="Transparent" />
+
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Background="{DynamicResource MainTitleBackgroup.ColorBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="120"/>
+                        <RowDefinition Height="74"/>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="24"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" BorderThickness="2, 0, 2, 0" BorderBrush="{Binding BorderBrush}" >
+                        <local:RequireParseView x:Name="parseView"  Margin="4" ></local:RequireParseView>
+                    </Border>
+                    
+                    <Border Grid.Row="1" MinHeight="360" Grid.RowSpan="3" BorderThickness="2, 0, 2, 0" x:Name="Border_Left3" BorderBrush="{Binding BorderBrush}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition Height="Auto"></RowDefinition>
+                                <RowDefinition></RowDefinition>
+                            </Grid.RowDefinitions>
+
+                            <Grid x:Name="customerPricePart" Height="42">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="12"/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Text="报价" Foreground="#D7D7D7" FontSize="10" Margin="10 0 0 0"/>
+                                <Component:BpNumericUpDown Grid.Row="1" Height="24" Width="135"  NumericValue="{Binding CustomerPrice, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" 
+                                                          TextContentAlignment="Left" TextForeground="White" Foreground="White" Margin="10 0 0 0"
+                                                                VerticalAlignment ="Center" HorizontalAlignment="Left" DecimalLength="4" RangeValue="0.0025" MaxValue="10000" MinValue="0" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True"/>
+                                <TextBlock Grid.Row="1" Text="%" Foreground="#3C3C3C" FontSize="11" VerticalAlignment="Center" Margin="116 0 0 0" IsHitTestVisible="False"/>
+
+                                <TextBlock Text="点差" Grid.Column="1" Foreground="#D7D7D7" FontSize="10"/>
+                                <Component:BpNumericUpDown x:Name="bp1" Height="24" Width="80" NumericValue="{Binding BP, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="1"
+                                                                TextContentAlignment="Left" TextForeground="White" Foreground="White"
+                                                                VerticalAlignment ="Center" HorizontalAlignment="Left" DecimalLength="2" RangeValue="0.25" MaxValue="100" MinValue="-100" UpDownBorderThickness="1" NumBorderBrush="#3C3C3C" UpDownBackground="#282828" UpDownBorderBrush="#282828" UpMargin="0,1,1,0"  DownMargin="0,1,1,1"
+                                                                FontFamily="MicroSoft YaiHei" FontSize="14" FontWeight="Bold" Padding="0,0,0,0" AllowEmpty="True" IsDecreaseToZero="True"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Width="16" IsHitTestVisible="False" Text="bp" Foreground="#3C3C3C" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="48 0 0 0"/>
+                            </Grid>
+                            
+                            <!--Bid Ofr 按钮 模拟TabPage-->
+                            <Grid Grid.Row="1" Height="24" Background="{DynamicResource MainBackgroup.ColorBrush}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+
+                                <Button x:Name="btnBid" Command="{Binding BidCommand}" Style="{DynamicResource BlueGreenBidPanelStyle}" Tag="{Binding IsBidSelect,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Foreground="{DynamicResource Bid.textblock.foreground}" FontWeight="Bold" Width="200" Height="24" Grid.Column="0" Content="Bid" Grid.ColumnSpan="1" HorizontalAlignment="Right" IsTabStop="False"/>
+
+                                <Button x:Name="btnOfr"  Command="{Binding OfrCommand}" Style="{DynamicResource BlueGreenOfrPanelStyle}" Tag="{Binding IsBidSelect,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Foreground="{DynamicResource Ofr.textblock.foreground}" FontWeight="Bold" Width="200" Height="24" Grid.Column="1" Content="Ofr" HorizontalAlignment="Left" IsTabStop="False"/>
+                            </Grid>
+
+                            <Border Grid.Row="2">
+                                <!--<Border.Background>
+                        -->
+                                <!--<ImageBrush ImageSource="/STC.Common;component/Images/stc_bg_bid.png"/>-->
+                                <!--
+                        <ImageBrush ImageSource="{Binding SendPriceItem.BgImageSource}"/>
+                    </Border.Background>-->
+
+                                <Grid Background="{Binding SendPriceItem.BorderBG}">
+                                    <!--<Grid Background="{StaticResource BidLinearGradientBrush}">-->
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="0"></RowDefinition>
+                                        <RowDefinition Height="0"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="50"/>
+                                        <RowDefinition Height="44"/>
+                                        <RowDefinition Height="20"/>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="36"/>
+                                        <RowDefinition Height="auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!--<Border Grid.Row="0" BorderThickness="0, 1, 0, 1" BorderBrush="{Binding BorderBrush}">
+                            <local:RequireParseView x:Name="parseView"  Margin="12"></local:RequireParseView>
+                        </Border>-->
+
+                                    <!--搜索债券-->
+                                    <Grid Grid.Row="3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="1*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Component:CustomTradeSearchTextBox x:Name="Search_TextBox" HorizontalAlignment="Left" Grid.Column="0" MarketIndicatorFilter="4"
+                                    AfterSearch="Search_TextBox_AfterSearch" ShowText="{Binding ShowText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    VerticalAlignment="Top"  BorderBrush="{DynamicResource MainFormBackground}" Width="375" Height="30" Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <!--价格，最优价，报价，净价，量-->
+                                    <Grid Grid.Row="5" Grid.RowSpan="2">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="20"></RowDefinition>
+                                            <RowDefinition Height="8"></RowDefinition>
+                                            <RowDefinition Height="20"></RowDefinition>
+                                            <RowDefinition></RowDefinition>
+                                        </Grid.RowDefinitions>
+
+                                        <!--最优价-->
+                                        <StackPanel Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal">
+                                            <TextBlock Text="市场最优:" x:Name="textBlcok_BestPrice" Margin="10,0,0,0" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Foreground="{DynamicResource TextBlockDefaultDisableForeground}" FontSize="12" />
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="2, 0, 0, 0">
+                                                <TextBlock x:Name="tbBestBidInt" Text="{Binding SendPriceItem.BestBidShortOuter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{DynamicResource ColorBrush.Orange7}" Margin="0, 0, 0, 0" FontSize="12" FontWeight="Bold" 
+                                                   TextAlignment="Right" HorizontalAlignment="Right" VerticalAlignment="Center" MouseDown="tbBestBid_MouseDown" MouseEnter="tbBestBidInt_MouseEnter" MouseLeave="tbBestBidInt_MouseLeave"/>
+                                            </StackPanel>
+                                            <!--<Rectangle Grid.Column="2" Width="1" Height="18" Stroke="{StaticResource ColorBrush.While}" Margin="6, 0, 0, 0"/>-->
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"  Margin="4, 0, 0, 0">
+                                                <TextBlock Text="|" Foreground="#788187"  FontSize="12" TextAlignment="Center" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="2, 0, 0, 0">
+                                                <!--<TextBlock Text="{Binding AllBestOfr}" Foreground="{Binding AllBestOfrForground}"  FontSize="12" TextAlignment="Left" HorizontalAlignment="Left" VerticalAlignment="Center"/>-->
+                                                <TextBlock x:Name="tbBestOfrInt" Text="{Binding SendPriceItem.BestOfrShortOuter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Foreground="{DynamicResource ColorBrush.Blue8}" Margin="0, 0, 0, 0" FontSize="12"
+                                                   FontWeight="Bold" TextAlignment="Left" HorizontalAlignment="Left" VerticalAlignment="Center" MouseDown="tbBestOfrInt_MouseDown" MouseEnter="tbBestOfr_MouseEnter" MouseLeave="tbBestBidInt_MouseLeave"/>
+                                            </StackPanel>
+
+                                            <Button  IsEnabled="False" HorizontalAlignment="Center"  Visibility="{Binding SendPriceItem.CalWarnVisibility}"
+                                        Style="{DynamicResource InfoButton}" Width="15" Height="15">
+                                                <Button.ToolTip>
+                                                    <ToolTip Content="调用计算器服务失败"></ToolTip>
+                                                </Button.ToolTip>
+                                            </Button>
+                                        </StackPanel>
+
+                                        <TextBlock x:Name="priceTypeTB" Text="报价标准" VerticalAlignment="Center" Margin="10 0 5 0" Foreground="#FFFFFF" Grid.Row="1" Grid.RowSpan="2"/>
+                                        <ComboBox x:Name="cbPriceType_edit" Height="24" Width="100" VerticalContentAlignment="Center" Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Left"
+                                          ItemsSource="{Binding PriceTypeEmptyDic}" Margin="68 0 0 0"
+                                          DisplayMemberPath="Value"  SelectedValuePath="Key"
+                                          SelectedValue="{Binding PriceType,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                          Style="{DynamicResource  GreenNonEditableComboBoxStyle}"
+                                          FocusManager.FocusedElement="{Binding RelativeSource={RelativeSource Self}}">
+                                        </ComboBox>
+
+                                        <!--价格-->
+                                        <StackPanel Orientation="Horizontal"  HorizontalAlignment="Left" Grid.Row="3" Grid.ColumnSpan="2" Margin="12, 2, 0, 0">
+
+                                            <Border BorderBrush="{DynamicResource ColorBrush.Gray15}" BorderThickness="1" CornerRadius="2">
+
+                                                <Border.Resources>
+                                                    <Style TargetType="{x:Type Border}">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="true">
+                                                                <Setter Property="BorderBrush" Value="{Binding SendPriceItem.BorderBH}"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Resources>
+
+                                                <Grid  x:Name="bor_AddOrReduce" Width="128" Height="40">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="20"></RowDefinition>
+                                                        <RowDefinition Height="20"></RowDefinition>
+                                                    </Grid.RowDefinitions>
+
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition></ColumnDefinition>
+                                                        <ColumnDefinition Width="24"></ColumnDefinition>
+                                                    </Grid.ColumnDefinitions>
+
+
+                                                    <TextBox x:Name="PriceTxt" Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" PreviewTextInput="TextBox_PreviewTextInput"  Width="104" Height="40" input:InputMethod.IsInputMethodEnabled="False"
+                                                PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}"  Tag="{Binding OfrOrBid, Mode=TwoWay}" Padding="0, 5, 5, 0"
+                                                FontSize="24" BorderBrush="{Binding SendPriceItem.BorderBH, Mode=TwoWay}" Text="{Binding CustomPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                Margin="0, 0, 0, 0" Style="{DynamicResource SelfSendPriceTextBox}" Foreground="White" HorizontalContentAlignment="Center">
+                                                    </TextBox>
+
+                                                    <Button x:Name="btnAddPrice" Padding="0,0,0,0" Grid.Column="1" Margin="1,0,0,1" Grid.Row="0" TabIndex="-1" Width="24" Height="20" Content="+" Command="{Binding AddPriceCommand}" Style="{DynamicResource AddAmountButtonStyle}" FontSize="12"/>
+                                                    <Button x:Name="btnReducePrice" Padding="0,0,0,0" Grid.Column="1"  Margin="1,0,0,0"  Grid.Row="1" TabIndex="-1" Width="24" Height="20" Content="-" Command="{Binding ReducePriceCommand}" Style="{DynamicResource DecreaseAmountButtonStyle}"  FontSize="12"/>
+                                                </Grid>
+                                            </Border>
+
+                                            <Border Width="20">
+                                                <TextBlock Grid.Row="1" Foreground="{DynamicResource ColorBrush.While}"  Width="15" Height="14" TextAlignment="Center" HorizontalAlignment="Center"
+                                               Margin="0, 0, 0, 0">
+                                                    <TextBlock.Background>
+                                                        <ImageBrush ImageSource="../../../Images/stc_icon_linked_normal.png"/>
+                                                    </TextBlock.Background>
+                                                </TextBlock>
+                                            </Border>
+
+                                        </StackPanel>
+                                        <TextBlock x:Name="PriceTxtPercent" Grid.Row="3" Text="%"  Foreground="{DynamicResource ColorBrush.Gray14}"  Background="Transparent" FontSize="10" HorizontalAlignment="Left" Margin="104, 24, 0, 0" Width="14" Height="20"/>
+                                        <!--XBound 净价-->
+                                        <TextBox  Grid.Row="3" x:Name="netPrice" PreviewTextInput="TextBox_PreviewTextInput" Width="114" Height="40"  Margin="162, 2, 0, 0"  input:InputMethod.IsInputMethodEnabled="False"
+                                     PreviewKeyDown="TextBox_PreviewKeyDown" ContextMenu="{x:Null}"  FontSize="24" BorderThickness="2" BorderBrush="{Binding SendPriceItem.BorderBH, Mode=TwoWay}" 
+                                     Text="{Binding NetPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Tag="2" Style="{DynamicResource SelfSendPriceTextBox}" Foreground="White"  
+                                     SelectionBrush="{Binding SendPriceItem.BorderBH, Mode=TwoWay}" TextAlignment="Right" Padding="0, 0, 5, 0" HorizontalAlignment="Left"/>
+
+                                        <!--量-->
+                                        <Inner:QtyView x:Name="qtyView" KeyDown_AmountTxt="AmountTxt_KeyDown" Grid.Row="2" HorizontalAlignment="Right" Grid.RowSpan="2" Margin="0 2 10 1"></Inner:QtyView>
+                                        <!--<Component:AlertSign Grid.Row="1" Visibility="{Binding AlertSignVisible,Mode=TwoWay}" Height="24" Margin="20,0,0,0" HorizontalAlignment="Left" ToolTipText="{Binding AlertSignToolTipText,Mode=TwoWay}"/>-->
+                                    </Grid>
+
+
+                                    <!--警示区-->
+                                    <Grid Grid.Row="7">
+                                        <TextBlock Visibility="{Binding AlertSignVisible}" Margin="12, 4, 0, 0" Foreground="{DynamicResource ColorBrush.Red-1}"
+                                   FontSize="{StaticResource FontSize-12}">
+                            <Run Text="与最新成交"></Run><Run Text="{Binding LastPrice}"></Run><Run Text=" 不一致"></Run>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <!--清算速度标题区-->
+                                    <Grid Grid.Row="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130"/>
+                                            <ColumnDefinition Width="190"/>
+                                            <ColumnDefinition Width="35"/>
+                                            <ColumnDefinition/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Text="清算速度：" Margin="12, 0, 0, 0" Height="16" HorizontalAlignment="Left" Grid.Column="0" Foreground="{DynamicResource TextBlockDefaultDisableForeground}" FontSize="12" />
+
+                                    </Grid>
+
+                                    <!--清算速度 选择处理区-->
+                                    <Grid Grid.Row="9">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="12"></ColumnDefinition>
+                                            <ColumnDefinition></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                            <!--普通包教清算速度-->
+                                            <ComboBox x:Name="SettlTypeCombox" Grid.Column="2" Width="60" Tag="{Binding AddOneOpenedTag}"  Text="{Binding AddOneShowText}"  Margin="0, 0, 0, 0"  Height="24" ToolTip="REQ" ToolTipService.IsEnabled="False"
+                                Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" SelectedIndex="{Binding SettleBoxIndex2,Mode=TwoWay}" HorizontalContentAlignment="Right" Padding="0 0 0 0" IsDropDownOpen="{Binding SettleIsDropDownOpen, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsTabStop="False">
+                                                <ComboBoxItem Content="+1"></ComboBoxItem>
+                                                <ComboBoxItem Content="今+1"></ComboBoxItem>
+                                                <ComboBoxItem Content="明+0"></ComboBoxItem>
+                                            </ComboBox>
+                                            <ListBox x:Name="SettlTypeListBox" Grid.Column="0" SelectionMode="Single" Margin="0, 0, 0, 0" 
+                                 ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                             ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                             Height="26" 
+                             Background="Transparent" MinWidth="126"
+                             BorderThickness="0"
+                             FontSize="12" SelectedIndex="{Binding SettleBoxIndex, Mode=TwoWay}" 
+                             VerticalAlignment="Center" HorizontalAlignment="Left" 
+                             BorderBrush="Transparent" IsTabStop="False">
+                                                <ListBox.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal"/>
+                                                    </ItemsPanelTemplate>
+                                                </ListBox.ItemsPanel>
+                                                <!--<ListBoxItem x:Name="lbOne" Width="60" Visibility="{Binding LbOneVisibility, Mode=TwoWay}" Height="24" Content="+1"  Style="{DynamicResource SendPriceFilterListBoxItemStyle}"/>-->
+                                                <ListBoxItem x:Name="lbTomOne" Width="60" Height="24"  Content="+0"  Style="{DynamicResource DailanGreenOrangeListBoxItemStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" IsTabStop="False"/>
+                                                <ListBoxItem x:Name="lbOther" Width="60"  Height="24" Content="远"  Style="{DynamicResource DailanGreenOrangeListBoxItemStyle}" ToolTip="REQ" ToolTipService.IsEnabled="False" IsTabStop="False"/>
+                                            </ListBox>
+
+                                            <DatePicker x:Name="datePicker" Grid.Column="1" Width="90" Height="24" Margin="2, 0, 0, 0"
+                                    SelectedDate="{Binding FwdSelectDate,Mode=TwoWay}" Visibility="{Binding SendPriceItem.DateVisible}" Style="{DynamicResource GreenBlueDatePickerStyle}" Foreground="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Foreground}"
+                                                    Background="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Background}" BorderBrush="{DynamicResource DailanBlueGreenOrangeComboBoxItem.Normal.Border}" IsTabStop="False">
+                                                <DatePicker.Resources>
+                                                    <Style TargetType="DatePickerTextBox">
+                                                        <Setter Property="IsReadOnly" Value="True"/>
+                                                    </Style>
+                                                </DatePicker.Resources>
+                                            </DatePicker>
+
+                                            <ComboBox x:Name="cbSettle" Grid.Column="2" Width="50"  Margin="4,0,0,0"  Height="24" SelectedIndex="{Binding FwdComboBoxSelectIndex,Mode=TwoWay}" ToolTipService.IsEnabled="False"
+                                  Visibility="{Binding SendPriceItem.SettleTypeVisible}" Style="{DynamicResource DailanBlueGreenOrangeComboBoxStyle}" ToolTip="REQ" HorizontalContentAlignment="Right" Padding="0 0,0,0"  Tag="0"  IsTabStop="False">
+                                                <ComboBoxItem Content="T+0" Tag="1"></ComboBoxItem>
+                                                <ComboBoxItem Content="T+1" Tag="2"></ComboBoxItem>
+                                            </ComboBox>
+
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!--Firm NonFirm 整量-->
+                                    <Grid Grid.Row="10" Margin="10, 0, 0, 0" x:Name="firm_Part">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="52"></ColumnDefinition>
+                                            <ColumnDefinition></ColumnDefinition>
+                                            <ColumnDefinition Width="160"/>
+                                            <ColumnDefinition Width="30"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <ListBox x:Name="SettlTypeListBox2" Grid.Column="0" SelectionMode="Single"
+                                 ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                                 Height="24" 
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 FontSize="12" SelectedIndex="{Binding FirmSelectIndex, Mode=TwoWay}" 
+                                 VerticalAlignment="Center" 
+                                 BorderBrush="Transparent" Margin="0,6" IsTabStop="False">
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0"/>
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <ListBoxItem x:Name="lbNoFirm" Width="24" Content="{StaticResource ToFirm}" IsEnabled="{Binding FirmCheckedEnabled}" HorizontalContentAlignment="Center" Style="{DynamicResource GreenBlueListBoxItemStyle}"  IsTabStop="False"/>
+                                            <ListBoxItem x:Name="lbFirm" Width="24" Content="{StaticResource ToNonfirm}" Margin="1,0,0,0" IsEnabled="{Binding FirmCheckedEnabled}" HorizontalContentAlignment="Center" Style="{DynamicResource GreenBlueListBoxItemStyle}" IsTabStop="False"/>
+                                        </ListBox>
+
+                                        <TextBlock Text="{Binding FirmTxt, Mode=TwoWay}" Width="45" Height="24" Margin="3,0,0,0" HorizontalAlignment="Left" Padding="0,6,0,0" Grid.Column="1" TextAlignment="Left"  Foreground="{DynamicResource TextBlockDefaultForground}" FontSize="12"></TextBlock>
+                                        <CheckBox Width="52" Content="{Binding FirmTxt}" IsChecked="{Binding FirmChecked}" Visibility="Collapsed" Height="24" Grid.Column="1" Style="{DynamicResource ImageCheckBoxStyle}" TextBlock.TextAlignment="Left" Foreground="{DynamicResource  TextBlockDefaultForground}" FontSize="12" IsTabStop="False"></CheckBox>
+
+
+                                        <!-- 整量 -->
+                                        <StackPanel Orientation="Horizontal" Grid.Column="2">
+                                            <CheckBox VerticalAlignment="Center" Content="整量" 
+                               IsChecked="{Binding WholeFlagChecked, Mode=TwoWay}" Style="{DynamicResource GreenBlueCheckedNormalCheckBox}" BorderThickness="1" HorizontalContentAlignment="Center"
+                               Foreground="{DynamicResource ListBoxItem.SelectedActive.Foreground}" BorderBrush="{DynamicResource ColorBrush.Gray15}" Height="12" Margin="4,2,0,0" Padding="4,-2,0,0" IsTabStop="False"></CheckBox>
+
+
+                                            <CheckBox VerticalAlignment="Center" Margin="10, 3, 0, 0" BorderThickness="2" Content="暗盘" IsChecked="{Binding DarkDiskFlagChecked, Mode=TwoWay}"
+                              BorderBrush="{DynamicResource ColorBrush.Gray15}" Height="20"  Visibility="Collapsed"
+                              FontSize="{StaticResource SmallContentFontSize}" Style="{DynamicResource CommonCheckBoxStyle}" Background="{DynamicResource ColorBrush.Transparent}" 
+                              Foreground="{DynamicResource ColorBrush.While}" IsTabStop="False"></CheckBox>
+                                        </StackPanel>
+                                    </Grid>
+                                    <!--投组账号-->
+                                    <Border Grid.Row="11" Grid.RowSpan="2" Height="70" Visibility="{Binding AccountUserVisibility}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="投组账户" Foreground="{DynamicResource TextBlockDefaultDisableForeground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            <Component:MultiTreeComboBox  Grid.Column="1" Width="120" Height="24"  Margin="6 0 0 0"  
+                                       VerticalAlignment="Center" TreeItemStyle="{DynamicResource GreenBlueTreeViewItemStyle}" Foreground="White"
+                                        TreeItemsSource="{Binding MultiTreeComboxItemsSource}" IsEnableMultiSelect="False"  SelectedItem="{Binding SelectedItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        SelectedTexts="{Binding SelectedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                <Component:MultiTreeComboBox.TreeItemItemTemplate>
+                                                    <HierarchicalDataTemplate ItemsSource="{Binding Nodes}">
+                                                        <StackPanel Orientation="Horizontal" Height="24">
+                                                            <Button  Margin="0, 0, 4, 0" VerticalAlignment="Center" ToolTip="{Binding Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{DynamicResource TreeCheckBoxButton}" Background="Transparent" Tag="{Binding Id}" Visibility="{Binding IsLeaf, Converter={StaticResource visibilityConvertor}}"/>
+                                                            <Image Style="{StaticResource ImageStyle}" Width="13" Height="13" Margin="0,0,3,0"/>
+                                                            <TextBlock Margin="0, 0, 0, 0" Text="{Binding Name}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Checked}" Value="1">
+                                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsLeaf}" Value="False">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.PaleGrey}"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsLeaf}" Value="True">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Margin="6, 0, 0, 0" Text="{Binding Id}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" Foreground="#F0C49F"></TextBlock>
+                                                        </StackPanel>
+                                                    </HierarchicalDataTemplate>
+                                                </Component:MultiTreeComboBox.TreeItemItemTemplate>
+                                            </Component:MultiTreeComboBox>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!--平安组合账号-->
+                                    <Border x:Name="PA_GroupAccount_Part" Grid.Row="11" Grid.RowSpan="2" Height="36" Visibility="Collapsed">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="4*"/>
+                                                <RowDefinition Height="6*"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="投资组合名称" Foreground="{DynamicResource TextBlockDefaultDisableForeground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            <Component:MultiTreeComboBox Height="24"  Margin="10 0 0 0"  x:Name="cmbMultiTree" Grid.Row="1"
+                                                VerticalAlignment="Center" Foreground="{StaticResource ComboBoxItem.Static.Foreground}"
+                                                TreeItemsSource="{Binding MultiTreeComboxItemsSource_PA}"
+                                                IsEnableMultiSelect="False" DefaultText="" IsEnableSelectRootNode="False" IsEnableSearch="True" DisplayPath="PA"
+                                                SelectedId="{Binding SelectedTradeAccountCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                SelectedTexts="{Binding SelectedTradeAccountName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                SelectedParentId="{Binding SelectedGroupItem, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                SelectedParentTexts="{Binding SelectedGroupText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                SelectedParentItems="{Binding SelectedGroupDict, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                SelectedProductId="{Binding SelectedProductId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                                <Component:MultiTreeComboBox.TreeItemItemTemplate>
+                                                    <HierarchicalDataTemplate ItemsSource="{Binding Nodes}">
+                                                        <StackPanel Orientation="Horizontal" Height="24">
+                                                            <Button  Margin="0, 0, 4, 0" VerticalAlignment="Center" ToolTip="{Binding Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Tag="{Binding Id}">
+                                                                <Button.Style>
+                                                                    <Style TargetType="Button" BasedOn="{StaticResource TreeCheckBoxButton}">
+                                                                        <Style.Triggers>
+                                                                            <MultiDataTrigger>
+                                                                                <MultiDataTrigger.Conditions>
+                                                                                    <Condition Binding="{Binding  RelativeSource={RelativeSource AncestorType={x:Type Component:MultiTreeComboBox}}, Path=IsEnableSelectRootNode}" Value="False"/>
+                                                                                    <Condition Binding="{Binding IsGroup}" Value="True"/>
+                                                                                    <Condition Binding="{Binding IsLeaf}" Value="True"/>
+                                                                                </MultiDataTrigger.Conditions>
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </MultiDataTrigger>
+                                                                            <MultiDataTrigger>
+                                                                                <MultiDataTrigger.Conditions>
+                                                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Component:MultiTreeComboBox}}, Path=IsEnableSelectRootNode}" Value="False"/>
+                                                                                    <Condition Binding="{Binding IsGroup}" Value="False"/>
+                                                                                    <Condition Binding="{Binding IsLeaf}" Value="True"/>
+                                                                                </MultiDataTrigger.Conditions>
+                                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                            </MultiDataTrigger>
+                                                                            <MultiDataTrigger>
+                                                                                <MultiDataTrigger.Conditions>
+                                                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Component:MultiTreeComboBox}}, Path=IsEnableSelectRootNode}" Value="False"/>
+                                                                                    <Condition Binding="{Binding IsGroup}" Value="True"/>
+                                                                                    <Condition Binding="{Binding IsLeaf}" Value="False"/>
+                                                                                </MultiDataTrigger.Conditions>
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            </MultiDataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Button.Style>
+                                                            </Button>
+                                                            <!--<Image Style="{StaticResource ImageStyle}" Width="13" Height="13" Margin="0,0,3,0"/>-->
+                                                            <TextBlock Margin="0, 0, 0, 0" Text="{Binding Name}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding Checked}" Value="1">
+                                                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsLeaf}" Value="False">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.PaleGrey}"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsLeaf}" Value="True">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource ColorBrush.While}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Margin="6, 0, 0, 0" Text="{Binding Id}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" Foreground="#F0C49F"></TextBlock>
+                                                            <TextBlock Margin="2, 0, 0, 0" Text="{Binding ProductId, StringFormat=({0}), TargetNullValue=(空)}" FontFamily="MicroSoft YaHei" VerticalAlignment="Center" Foreground="#FFFFFF">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ProductId}" Value="">
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding IsLeaf}" Value="True">
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding ProductId}" Value="{x:Null}">
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </StackPanel>
+
+                                                    </HierarchicalDataTemplate>
+                                                </Component:MultiTreeComboBox.TreeItemItemTemplate>
+                                            </Component:MultiTreeComboBox>
+
+                                            <TextBlock Text="对谁可见" Foreground="{DynamicResource TextBlockDefaultDisableForeground}" VerticalAlignment="Center" Margin="0,0,0,0" Grid.Column="1"/>
+                                            <Component:MultiSelectComboBox x:Name="OtherInvestors" Height="23" VerticalContentAlignment="Center" Margin="0,0,10,0" Background="{DynamicResource MainBackgroup.ColorBrush}" DefaultText="" Grid.Row="1" Grid.Column="1"
+                                                                           FilterDicChanged="OtherInvestors_FilterDicChanged">
+                                            </Component:MultiSelectComboBox>
+                                        </Grid>
+                                       
+                                    </Border>
+                                </Grid>
+
+
+                            </Border>
+
+
+                        </Grid>
+                    </Border>
+
+                    <!-- 扩展行情小窗 -->
+                    <Border Grid.Row="3" BorderThickness="2, 0, 2, 0" Margin="0 -20 0 0" x:Name="Border_Left7" BorderBrush="{Binding BorderBrush}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+
+                            <!--<Line X1="0" Y1="0" X2="394" Y2="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" Stroke="{DynamicResource SendOrderSplitterStroke}" StrokeThickness="1" Margin="0 22 0 0"></Line>-->
+
+                            <Button Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Content=">>" x:Name="btn_Expand" Tag="Collapsed" Padding="6,-1,0,0" Style="{DynamicResource BlueGreenExpandButton}"
+                            Command="{Binding ExpandCommand}" Width="24" Height="24" IsTabStop="False"/>
+
+                        </Grid>
+                    </Border>
+
+                     <!--标签，订阅，条件-->
+                    <Border Grid.Row="4" BorderThickness="2, 0, 2, 0" Margin="0 0 0 0" x:Name="Border_Left4" BorderBrush="{Binding BorderBrush}" Background="{DynamicResource TabItem.Unselected.Border}">
+                        <Inner:TagConditionView x:Name="detailConditionView" InputMethod.IsInputMethodEnabled="False" Margin="0 -20 0 0" IsTabStop="False"></Inner:TagConditionView>
+                    </Border>
+
+                    
+                </Grid>
+            </Border>
+
+            
+            <Border Grid.Row="2" BorderThickness="2, 0, 2, 2" x:Name="Border_Left5" CornerRadius="0,0,4,4" BorderBrush="{Binding BorderBrush}"  Background="{DynamicResource MainListTitleBackgroup.ColorBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" Grid.ColumnSpan="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition></RowDefinition>
+                        </Grid.RowDefinitions>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"></ColumnDefinition>
+                            <ColumnDefinition Width="60"></ColumnDefinition>
+                            <ColumnDefinition Width="4"></ColumnDefinition>
+                            <ColumnDefinition Width="100"></ColumnDefinition>
+                            <ColumnDefinition Width="10"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        
+                        <TextBlock Grid.Column="0" Grid.Row="0" Margin="12,0,0,0"  HorizontalAlignment="Left"  FontSize="12" VerticalAlignment="Center">
+                            <Run Foreground="{DynamicResource TextBlockDefaultForground}" Text="{Binding RiskWarnText}"/>
+                            <Run Foreground="{DynamicResource ColorBrush.Yellow6}" Text="{Binding SendPriceItem.MarketQty}"/>
+                        </TextBlock>
+
+                        <TextBlock Visibility="Collapsed" Grid.Row="1" Text="{Binding SendPriceItem.CustomQty}" HorizontalAlignment="Right"
+                               Foreground="{DynamicResource TextBlockForeColor}" FontSize="12" VerticalAlignment="Center" Margin="2,0,0,0" />
+
+                        <TextBlock Visibility="Collapsed" Grid.Row="2" Text="{Binding SendPriceItem.MarketQty}"  HorizontalAlignment="Right"
+                               Foreground="{DynamicResource TextBlockForeColor}" FontSize="12" VerticalAlignment="Center" Margin="2,0,8,0"/>
+
+                        <Button Grid.Column="1" Grid.Row="0" Margin="0,0,0,0"  Content="取消" Command="{Binding CancelCommand}" FontSize="12" Foreground="{DynamicResource TextBlockDefaultForground}" 
+                            Style="{DynamicResource GraySlateButtonStyle}"  Width="60" Height="24" BorderThickness="0 1 0 0" IsTabStop="False"/>
+                        <Button x:Name="OkBtn" Grid.Column="3" Grid.Row="0" Margin="0,0,0,0" Content="发内部" IsEnabled="{Binding SendPriceEnable, Mode=TwoWay}" Command="{Binding OkCommand}" FontSize="12" Style="{DynamicResource BlueGreenStyle}" Foreground="{DynamicResource TextBlockDefaultForground}" Width="100" Height="24" BorderThickness="0 1 0 0"/>
+
+                        <Line X1="0" Y1="0" X2="394" Y2="0" Grid.Column="0" Grid.ColumnSpan="5" VerticalAlignment="Top" Stroke="{DynamicResource SendOrderSplitterStroke}" StrokeThickness="1" Margin="0 0 0 0"></Line>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+       
+        <!--行情窗口 Visibility="{Binding CardViewVisibility}"  BorderBrush="#0C4F44"-->
+        <Grid  Background="Transparent" Grid.Column="1" Visibility="{Binding CardViewVisibility}" HorizontalAlignment="Center"  VerticalAlignment="Top" Height="Auto">
+            <Border Grid.Row="0" BorderBrush="{Binding BorderBrush}" Margin="-2,0,1,0"  x:Name="Border_Right1" BorderThickness="2,2,2,2" CornerRadius="4,4,4,4"  Background="#0A0F0E">
+                <card:PriceAndOrderView x:Name="dgPrice"  Unloaded="dgPrice_Unloaded" RowHeight="181"></card:PriceAndOrderView>
+            </Border>
+        </Grid>
+        
+        <Line X1="395" X2="395" Y1="4" Y2="418" StrokeThickness="1" x:Name="LineSplit" Visibility="Collapsed" Stroke="{DynamicResource LostFocusBorderBrush}"></Line>
+
+    </Grid>
+</Window>

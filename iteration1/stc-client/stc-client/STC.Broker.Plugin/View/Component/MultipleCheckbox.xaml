@@ -1,0 +1,210 @@
+﻿<UserControl x:Class="STC.Broker.Plugin.View.Component.MultipleCheckbox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:STC.Broker.Plugin.View.Component"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300" >
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--<ResourceDictionary Source="/IDC.Broker.Plugin;component/BrokerDict.xaml"></ResourceDictionary>-->
+                <ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+            <Style  x:Key="cbStyle1" TargetType="CheckBox">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Border x:Name="splitBorder"  Width="24" Height="22" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right"  SnapsToDevicePixels="true" >
+                                <Path x:Name="arrow" Fill="Transparent"  Stroke="White" Data="F1 M 0,0 L 3.667,2.66665 L 7.3334,0 L 7.3334,-1.78168 L 3.6667,0.88501 L0,-1.78168 L0,0 Z"  HorizontalAlignment="Center"  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="true">
+                                    <Setter TargetName="splitBorder" Property="RenderTransform" >
+                                        <Setter.Value>
+                                            <RotateTransform   CenterX="12" CenterY="10" Angle="180">
+                                            </RotateTransform>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter TargetName="arrow" Property="Stroke" Value="yellow"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!--单选框-->
+            <ControlTemplate x:Key="ShowStarCheckBoxTemplate3" 
+                     TargetType="CheckBox">
+                <!--grid 的background需要显示设置颜色或者设置为Transparent，不然的话为透明，不响应任何事件。shape的fill属性也是如此-->
+                <Grid  Background="Transparent" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Label Padding="0" Margin="8,0,0,0"
+                   Visibility="Visible"
+                   Name="label1"
+                   Grid.Column="0"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center">
+                        <Label.Content>
+                            <Image Source="/STC.Frame;component/Images/Rectangle.png"
+                           Width="12"
+                           Height="12" />
+                        </Label.Content>
+                    </Label>
+                    <Label Padding="0"  Margin="8,0,0,0"
+                   Visibility="Collapsed"
+                   Name="label2"
+                   Grid.Column="0"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center">
+                        <Label.Content>
+                            <Image Source="/STC.Frame;component/Images/Check-Rectangle.png"
+                           Width="12"
+                           Height="12" />
+                        </Label.Content>
+                    </Label>
+
+                    <ContentPresenter Name="content"
+                              Grid.Column="1"
+                              ContentSource="Content"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Stretch"
+                              Margin="8,0,0,0"
+                                      TextBlock.Foreground="Wheat"/>
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsChecked"
+                     Value="True">
+                        <Setter TargetName="label2"
+                        Property="Visibility"
+                        Value="Visible"/>
+                        <Setter TargetName="label1"
+                        Property="Visibility"
+                        Value="Collapsed" 
+                         />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <!--ListBoxItem样式-->
+            <Style TargetType="{x:Type ListBoxItem}" x:Key="ListBoxItemStyle">
+                <Setter Property="Foreground" Value="{StaticResource DefaultForeground}"/>
+                <Setter Property="Height" Value="25"/>
+                <!--设置模板-->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem" >
+                            <Grid Name="border" Background="Transparent" >
+                                <CheckBox x:Name="cb1" 
+                                      Content="{TemplateBinding Content}" 
+                                      Template="{StaticResource ShowStarCheckBoxTemplate3}"  IsChecked="False" Click="cb1_Click"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver" Value="True" />
+                                    </MultiTrigger.Conditions>
+                                    <MultiTrigger.Setters>
+                                        <Setter Property="Foreground" Value="#FF46679A" />
+                                        <Setter TargetName="border" Property="Background" Value="{StaticResource ColorBrush.BlackishGreen}" />
+                                    </MultiTrigger.Setters>
+                                </MultiTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+
+                    </Setter.Value>
+                </Setter>
+
+            </Style>
+            <Style TargetType="ListBox" x:Key="ListBoxStyle">
+                <Setter Property="Foreground" Value="#D4C6A7"/>
+                <Setter Property="AlternationCount" Value="2"/>
+                <Setter Property="ItemContainerStyle" Value="{StaticResource ListBoxItemStyle}"/>
+                <!--设置模板-->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBox">
+                            <ScrollViewer Background="{TemplateBinding Background}"  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Background="Transparent"  Orientation="Vertical" IsItemsHost="True" ScrollViewer.CanContentScroll="True"/>
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+  
+
+            <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
+                <Grid Background="Transparent" >
+                    <Border x:Name="splitBorder" Grid.Column="1"  Width="24" Height="22" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right"  SnapsToDevicePixels="true" >
+                        <Path x:Name="Arrow" Fill="Transparent"  Stroke="White" Data="F1 M 0,0 L 3.667,2.66665 L 7.3334,0 L 7.3334,-1.78168 L 3.6667,0.88501 L0,-1.78168 L0,0 Z"  HorizontalAlignment="Center"  VerticalAlignment="Center"/>
+                    </Border>
+                    <!--<Border Grid.Column="1" Background="White" Opacity="0"   Cursor="Hand"/>
+                    <Path x:Name="Arrow" Grid.Column="1"   Data="M 0 0  6 6 12 0 Z"  VerticalAlignment="Center" HorizontalAlignment="Center" Stretch="None" Fill="#B1B1B1" />-->
+                </Grid>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsChecked" Value="true">
+                        <Setter TargetName="splitBorder" Property="RenderTransform">
+                            <Setter.Value>
+                                <RotateTransform   CenterX="12" CenterY="10" Angle="180"></RotateTransform>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="true">
+                        <Setter TargetName="Arrow" Property="Stroke" Value="yellow">
+                        </Setter>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <Style TargetType="{x:Type ComboBox}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ComboBox}">
+                            <Grid>
+                                <Grid Background="{StaticResource ColorBrush.Blue7}" x:Name="gdTitle">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <!--ContentPresenter 没有附加属性 TextTrimming-->
+                                    <!--<ContentPresenter  HorizontalAlignment="Left"  Margin="5,0,0,0"  VerticalAlignment="Center" 
+                                                       TextBlock.FontFamily="{StaticResource IDCFontFamily.YaHei}" 
+                                                       TextBlock.FontSize="12" 
+                                                       TextBlock.Foreground="{StaticResource ColorBrush.PaleGrey}" />-->
+                                    <TextBlock Name="tb"  Text="123was 字体" Margin="5,0,0,0" TextTrimming ="CharacterEllipsis" 
+                                               Foreground="#D4C6A7" FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}"
+                                               HorizontalAlignment="Left"    VerticalAlignment="Center"  />
+                                    <!--ToggleButton 已数据绑定到 ComboBox 本身以切换 IsDropDownOpen-->
+                                    <ToggleButton Grid.Column="1"   Template="{StaticResource ComboBoxToggleButton}" 
+                                                  x:Name="ToggleButton" Focusable="false" 
+                                                  IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                                  ClickMode="Press"/>
+                                </Grid>
+                                <!--Popup 可显示 ComboBox 中的项列表。IsOpen 已数据绑定到通过 ComboBoxToggleButton 来切换的 IsDropDownOpen-->
+                                <Popup x:Name="popBondCode"   VerticalOffset="2" IsOpen="{TemplateBinding IsDropDownOpen}" 
+                                         MaxHeight="300"  PopupAnimation="Slide" AllowsTransparency="False" 
+                                         PlacementTarget="{Binding ElementName=gdTitle}"  Placement="Bottom"
+                                         Width="{Binding  ActualWidth, ElementName=gdTitle}"  StaysOpen="True"  >
+                                    <ListBox  Background="{StaticResource ColorBrush.Blue7}" 
+                                              Loaded="lb_Loaded"  x:Name="lb" Style="{StaticResource ListBoxStyle}">
+                                    </ListBox>
+                                </Popup>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid >
+        <ComboBox Height="22" x:Name="combobox"  FontFamily="{StaticResource IDCFontFamily.YaHei.Semibold}" FontSize="14"  Foreground="#D4C6A7"/>
+    </Grid>
+</UserControl>

@@ -1,0 +1,172 @@
+﻿<UserControl x:Class="STC.Common.View.UI.LogoButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300" Width="189" Height="46">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!--提交前需要注释掉，修改时可打开-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/DefaultSkin.xaml"/>-->
+                <!--<ResourceDictionary Source="/STC.Common;component/Resources/BlueSkin.xaml"/>-->
+            </ResourceDictionary.MergedDictionaries>
+
+            <!--默认ScrollView-->
+            <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource DefaultScrollViewer}"/>
+
+            <Style x:Key="DataGridStyle" TargetType="{x:Type DataGrid}">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="None"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="AlternationCount" Value="1"/>
+            <Setter Property="Height" Value="Auto"/>
+            <Setter Property="RowStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Margin" Value="0,0,0,0"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Height" Value="60"/>
+                            <Setter Property="Background" Value="{DynamicResource MenuItem.Static.Background}"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="CellStyle">
+                <Setter.Value>
+                    <Style TargetType="DataGridCell" >
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <!--<Setter Property="ToolTipService.ToolTip" Value="{Binding ToolText}"/>-->
+                            <Style.Triggers >
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource DefaultBackgroup.ColorBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource MenuItem.MouseOver.Background}"/>
+                                </Trigger>
+                                
+                        </Style.Triggers>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+            <!-- 主界面菜单按钮样式-->
+            <Style TargetType="{x:Type Button}" x:Key="DyncMainPageImageMenuButton">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Grid>
+                                <Border x:Name="background" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}" Opacity="{TemplateBinding Opacity}"
+                           BorderBrush="{TemplateBinding BorderBrush}"      
+                            CornerRadius="2">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="182"></ColumnDefinition>
+                                            <ColumnDefinition Width="14"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <!--<Image Source="/STC.Common;component/Images/stclite-logo-2x2.png" Width="200" Grid.Column="0" Stretch="Uniform"  HorizontalAlignment="Left" Margin="0,0,0,0"></Image>-->
+                                        <Image x:Name="menupic" Source="{Binding LogoImage}" Width="{Binding Width}" Grid.Column="0" Opacity="{Binding Opacity}" Stretch="{Binding Stretch}" Margin="{Binding Margin}" StretchDirection="Both" HorizontalAlignment="Left" ></Image>
+                                        <!--<Image x:Name="menuicon2" Source="/STC.Common;component/Images/stc_image_menu_normal.png"  Grid.Column="1" Stretch="UniformToFill" StretchDirection="Both" Height="9" Width="10"  Margin="-18,3,2,0" ></Image>-->
+                                        <Border Grid.Column="1" Visibility="Visible" SnapsToDevicePixels="True" HorizontalAlignment="Left"  BorderThickness="0" Height="16" Width="12" Margin="-8,-3,2,0">
+                                            <Canvas>
+                                                <Path  x:Name="menuicon" Data="M0,5.4 H10 M0,9.8 H10 M0,13.9 H10" Stroke="#505050" StrokeThickness="1"/>
+                                            </Canvas>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                <Grid>
+                                    <ContentPresenter  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="{DynamicResource MenuItem.MouseOver.Background}">
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="true">
+                                    <Setter Property="Background" TargetName="background" Value="#60193D37">
+                                    </Setter>
+                                    <Setter Property="Stroke" TargetName="menuicon" Value="{DynamicResource MenuItem.MouseOver.Foreground}">
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="Stroke" TargetName="menuicon" Value="{DynamicResource MenuItem.MouseOver.Foreground}">
+                                    </Setter>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
+    
+    <Grid>
+        <Button x:Name="btnMenu" Style="{DynamicResource DyncMainPageImageMenuButton}" Click="btnMenu_Click" PreviewMouseDown="popMenu_PreviewMouseDown"/>
+
+        <StackPanel  Panel.ZIndex="1" Margin="74, 34, 37, 0"  Orientation="Horizontal">
+            <TextBlock x:Name="tbVersion" Foreground="#FFEBC8" Text="V1.0.0"
+                   FontSize="8" Width="35" FontFamily="{DynamicResource IDCFontFamily.NotoSansCJKsc-Regular}" Height="10"></TextBlock>
+            <TextBlock x:Name="tbEnv" Foreground="#FFEBC8" Text="DEV" Margin="5 0 0 0"
+                   FontSize="8" Width="35" FontFamily="{DynamicResource IDCFontFamily.NotoSansCJKsc-Regular}"  Height="10"></TextBlock>
+
+            
+        </StackPanel>
+
+        <Popup x:Name="popMenu" PlacementTarget="{Binding ElementName=btnMenu}"
+                   StaysOpen="False" Width="220" MaxHeight="480" Placement="Bottom" HorizontalOffset="30" 
+                   PopupAnimation="Slide" AllowsTransparency="False">
+            <Grid Background="{DynamicResource DefaultBackgroup.ColorBrush}">
+                <DataGrid x:Name="dgMenu" Margin="20 , 0, 20, 0"
+                                  Background="Transparent"
+                                  ItemsSource="{Binding}" 
+                                  HeadersVisibility="None"
+                                  BorderThickness="0"  
+                                  MouseUp="dgMenu_MouseUp"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  Style="{DynamicResource DataGridStyle}"
+                          >
+                    <DataGrid.Resources>
+                        <Style x:Key="tbStyle" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGrid.Resources>
+                    <DataGrid.Columns>
+
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60"></ColumnDefinition>
+                                            <ColumnDefinition Width="120"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Margin="0" Width="60" Height="60">
+                                            <TextBlock.Background>
+                                                <ImageBrush ImageSource="{Binding Path=ShowImageSource}"></ImageBrush>
+                                            </TextBlock.Background>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="1" Text="{Binding Path=Txt}" VerticalAlignment="Center" HorizontalAlignment="Left" FontFamily="{DynamicResource IDCFontFamily.NotoSansCJKsc-Bold}" Foreground="{DynamicResource ColorBrush.While}" FontSize="{DynamicResource NormalContentFontSize}"></TextBlock>
+                                    </Grid>
+
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Popup>
+    </Grid>
+</UserControl>
