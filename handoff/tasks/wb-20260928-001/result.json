@@ -2,60 +2,89 @@
   "protocolVersion": 2,
   "taskId": "wb-20260928-001",
   "from": "workbuddy",
-  "state": "blocked",
+  "state": "running",
   "publicationCommit": "3bbd06822de493e198405743c1e5ba0eea15e6d6",
-  "testedCommit": null,
-  "summary": "由 CodeBuddy CLI 承担 WorkBuddy 执行角色；两次调用均超时，没有最终审计答复。Codex 代为记录失败，不标记完成。",
+  "testedCommit": "3bbd06822de493e198405743c1e5ba0eea15e6d6",
+  "summary": "CodeBuddy 交互式完成只读审计：三个入口共 94 处直接本地链接全部有效，0 失效、0 外部跳过、0 锚点；未发现确定失效链接或明显过时表述。3 项机器环境差异、2 项待 Codex 决策，细节见 evidence.md。",
   "changedFiles": [
     "handoff/tasks/wb-20260928-001/result.json",
     "handoff/tasks/wb-20260928-001/evidence.md"
   ],
   "environment": {
-    "os": "Windows",
-    "worker": "CodeBuddy CLI 2.159.0",
-    "model": "hy4-preview (account default)",
-    "worktree": "independent work/wb-20260928-001",
-    "recorder": "Codex; no worker-produced final answer"
+    "os": "Windows (win32) PowerShell",
+    "worker": "CodeBuddy 交互式",
+    "worktree": "D:/workspace/greatewall/ficc/ai-worktrees/wb-20260928-001，分支 work/wb-20260928-001",
+    "worktreeHead": "c9fc38f6ff9083faee41313a936846e1ba2cd9e6；与 publicationCommit 仅相差本任务报告文件",
+    "auditScope": "仅三个入口文档及以各文档父目录解析的直接本地链接，未递归扫描文档树，未访问外部 URL，未执行文档内命令",
+    "previousRounds": "此前 CodeBuddy CLI 2.159.0 两次调用超时（由 Codex 记录为 blocked），本轮为用户要求在交互界面续做"
   },
   "checks": [
     {
-      "name": "基线祖先关系（Codex 执行）",
+      "name": "基线祖先关系（本轮复核）",
       "command": "git merge-base --is-ancestor 34789ea33e29690498dc6befe2a02f8d42808019 3bbd06822de493e198405743c1e5ba0eea15e6d6",
       "status": "pass",
-      "evidence": "退出码 0。"
+      "evidence": "退出码 0，baseCommit 是 publicationCommit 的祖先。"
     },
     {
-      "name": "CodeBuddy 第一次审计请求",
+      "name": "CodeBuddy 第一次审计请求（历史，CLI 超时）",
       "command": "CodeBuddy print JSON; Read/Glob/Grep only; max-turns=12; timeout=240s",
       "status": "fail",
-      "evidence": "240 秒无最终输出，已终止进程；工作树未改变。"
+      "evidence": "240 秒无最终输出，已终止进程；工作树未改变。本轮在交互界面续做，不把超时视为业务缺陷。"
     },
     {
-      "name": "CodeBuddy 第二次请求",
+      "name": "CodeBuddy 第二次请求（历史，CLI 超时）",
       "command": "CodeBuddy print stream-json; supplied documents; tools disabled; max-turns=1; timeout=90s",
       "status": "fail",
       "evidence": "收到 system init/status 事件，未收到最终 result；90 秒超时，进程已终止。"
     },
     {
-      "name": "直接本地 Markdown 链接检查（Codex 独立执行）",
+      "name": "直接本地 Markdown 链接检查（Codex 独立执行，历史）",
       "command": "Python pathlib + Markdown inline-link extraction on the three task.readFiles",
       "status": "pass",
-      "evidence": "README 28/28、docs/README 60/60、client README 6/6 路径存在；无锚点链接。这不是 CodeBuddy 的审计结论。"
+      "evidence": "README 28/28、docs/README 60/60、client README 6/6 路径存在；无锚点链接。已由本轮独立复算，结论一致。"
     },
     {
-      "name": "过时表述审计",
-      "command": "CodeBuddy documentation review",
+      "name": "本轮直接本地链接校验（CodeBuddy 交互式，只读脚本）",
+      "command": "python C:/Users/Public/wb-linkcheck-20260928.py（仓库外只读脚本，按各文档父目录解析链接并判定存在性）",
+      "status": "pass",
+      "evidence": "README.md 28 出现/28 本地/28 有效/0 失效/0 跳过/0 锚点；docs/README.md 60/60/60/0/0/0；iteration1/stc-client/README.zh-CN.md 6/6/6/0/0/0。合计 94 处，全部有效，无外部 URL 或 mailto 需要跳过。"
+    },
+    {
+      "name": "明显过时说明交叉核验",
+      "command": "Select-String / Test-Path 只读比对文档表述与当前源码、脚本参数及历史提交",
+      "status": "pass",
+      "evidence": "未发现失效表述：全库 0 个 pom_compat.xml（README.md:47）；DpsSalesTradingServices 在 stc-client .cs 中 18 处命中（client README:23）；manage-stc-client.ps1 具备 $StcConfig/$Force（第 4、5 行，client README:45）；start-ui-tests.ps1 具备 [switch]$Build（第 1 行）；两份历史任务 task.json state 均为 cancelled（docs/README.md:83-84）；2026-09-28 清理与提交 d13922b、ParserSvr 接入与 cccee54 一致。"
+    },
+    {
+      "name": "客户端来源提交引用核验",
+      "command": "git cat-file -t 54d1a9186aef57f0410633b37a97f8135d682eda / 336ba1b2c；git log --all 全量比对",
       "status": "not_run",
-      "evidence": "没有取得最终答复，无法完成审核。"
+      "evidence": "本仓库对象库（80 个提交）不包含这两个对象，无法核验来源与父子关系；属内网来源提交未随仓库分发，列为待 Codex 决策，不判定为失效。"
+    },
+    {
+      "name": "报告格式检查",
+      "command": "python handoff/check.py wb-20260928-001 --result",
+      "status": "pass",
+      "evidence": "输出 PASS wb-20260928-001: format only; task state=ready; no approval implied，退出码 0。"
+    },
+    {
+      "name": "提交范围确认",
+      "command": "git diff --name-only 3bbd06822de493e198405743c1e5ba0eea15e6d6（提交前工作区比对）",
+      "status": "pass",
+      "evidence": "仅 handoff/tasks/wb-20260928-001/evidence.md 与 result.json 两个允许文件；无产品代码改动。"
+    },
+    {
+      "name": "推送工作分支",
+      "command": "git push origin work/wb-20260928-001",
+      "status": "not_run",
+      "evidence": "在报告提交后执行，结果记录于本轮后续提交与通知。"
     }
   ],
-  "blockers": [
-    "登录连通性测试曾成功，但本任务两个 headless 请求均未产生最终答复；尚不能确定原因。"
-  ],
+  "blockers": [],
   "notTested": [
-    "CodeBuddy 的文档内容审计与有效任务交付",
-    "模型切换效果和费用比较",
-    "任何产品功能、服务或数据库行为"
+    "被链接文档的内容正确性：只校验链接存在，未递归审计二级文档",
+    "外部 URL 与锚点：三份文档均不含此类链接，无需核验",
+    "任何构建、部署、服务启动、数据库与性能测试：本任务未授权，未执行"
   ],
-  "nextAction": "先调查 CLI 请求超时原因或确认合适模型，再明确恢复此任务；不要自动重复运行。"
+  "nextAction": "请 Codex 评审。待确认两项：客户端来源提交引用是否保留并注明出处；README.md 构建代码块语言标注是否改为 cmd。不自动领取下一项任务。"
 }
