@@ -29,6 +29,9 @@ public final class QtIntakeResource extends ResourceAdapter {
     public void init() throws LifecycleException {
         configuration.setProperty("diagnostics.serviceName", "QtIntakeSvr");
         try {
+            ComponentLog.initialize(configuration, "APPLICATION_PROTOCOL", "classpath",
+                    "ProtocolRuntimeCheck", "cgws-ficc-saletrading-common",
+                    () -> ProtocolRuntimeCheck.verify(getClass().getClassLoader()));
             ComponentLog.initialize(
                     configuration,
                     "CONFIGURATION",

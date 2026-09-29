@@ -15,7 +15,7 @@ QTrade FIX → QtIntakeSvr → 本地持久化待发送目录
 ## 本版范围
 
 - 使用现有 PRL 接收程序的 QuickFIX/J 连接方式，不向 QTrade 发出报价、订单或撤单。
-- 接收 `35=S`、`TransType(18045)=N/H`，沿用旧销售交易下行的新增意向／对话回价范围，每条创建一条待确认报价。
+- 接收 `35=S`、`TransType(18045)=N/H` 且 `Operator(18035)=2` 的对手方报价，每条创建一条待确认报价。本方发送的 `Operator=1` 不进入待确认列表。
 - STC 的 resource、stream、handler、control 模式；通过 `SERVER.QuoteSvr` 发现服务，不填写 QuoteSvr IP，不模拟用户登录。
 - 复用 `ficc.quote.create` 的校验、写库、历史与事件推送逻辑。接入服务提交带鉴权的 `intake` 来源信息；普通客户端创建接口不变。
 - 不自动确认报价，不处理 QTrade 成交、撤销以及其他 FIX 业务报文；这些报文会明确记录为 `IGNORED`。本版不实现旧服务的群组转发、用户意向维护或交易回报同步。
@@ -53,12 +53,17 @@ QT-0002=stc_userid_2
 
 `InterloNickname(18006)` 是对手联系人名称，`OppInstiFullName(18036)`／`OppInstiShortName(18037)` 是对手机构名称，不能作为报价归属人。接入时不猜测 CRM ID；确认阶段由前端选择正确机构和联系人。
 
+这些对手字段在本方发送的报文中也存在，不能据此判断消息发送人。必须先判断 `Operator(18035)`：1 为本方、2 为对方；买卖方向 `Side` 和新增/回价类型 `TransType` 都不能代替发送方向。对方的 Bid/Ofr、N/H 均可进入待确认，本方两种方向都忽略；缺少或未知 Operator 则拒绝并记录原因，不猜测。忽略事件在 INFO 输出 `FIX state=IGNORED reason=SELF_SENT_QUOTE operator=1`，附 quoteId、negotiationId，原始报文仍保留在 DEBUG 消息日志。
+
+2026-09-29 聊天回放回归：对方 Bid 3.126/400万和本方回复 Ofr 3.106/100万共用相同会话及对手信息，只产生前一条待确认报价。旧版本已经入库的错误报价不会自动删除；旧持久化队列没有保存 Operator，不能从对手名称可靠恢复方向，升级前应按原始 FIX 日志核对遗留项。
+
 ## 字段转换
 
 | QTrade 字段 | QuoteSvr 字段／规则 |
 |---|---|
 | SecurityID(48)、ExDestination(100) | `securityId`；XCFE→.IB、XSHG→.SH、XSHE→.SZ、BJSE→.BJ、CNBM→.BC；未知市场拒绝，不猜测 |
 | Side(54) | `side`：1 买入、2 卖出；不使用旧中间模型的 0/1 编码 |
+| Operator(18035) | 2 对手发送才创建；1 本方发送忽略；缺失或未知值拒绝 |
 | BidPx(132)／OfferPx(133) | 按方向取值，写入十进制字符串 `price` |
 | BidPxType(18042)／OfferPxType(18043) | 1→收益率/到期；2→收益率/行权；3→净价；4→全价；净价、全价的 yieldType 为空 |
 | BidSize(134)／OfferSize(135) | 除以 10000 转为 `quantity`，单位 WAN；保留小数，不截断 |
@@ -79,6 +84,9 @@ QT-0002=stc_userid_2
 - 磁盘异常或容量超限停止 FIX 连接并报错；恢复后需要上游重放。文件内容刷新及原子重命名不等于跨机器持久化，不能删除接入目录后假定未发送数据仍在。成功归档没有自动清理策略，需按保留期限运维归档。
 - 日志位于 `$ATS_ROOT/log`：`QtIntakeSvr_日期.log`、`QtIntakeSvr-startup_日期.log`、`QtIntakeSvr-dps_日期.log`。FIX 全文、DPS 请求／响应在消息日志 DEBUG 输出，凭据脱敏。组件初始化与错误在 INFO/ERROR 可见。
 - `ficc.qtintake.status.query` 返回 FIX 连接状态、存储故障状态和 QuoteSvr 在线状态；初始化成功不代表远端连接成功。
+- FIX 连接前执行 `APPLICATION_PROTOCOL` 组件检查；缺失协议模型类会记录 FAILED 并终止初始化，避免到首条业务消息才暴露旧 common JAR。部署必须同时更新服务 JAR 与匹配的 `javalib`，使用仓库 `deploy qtintakesvr` 包装脚本，不单独复制服务 JAR。
+
+2026-09-29 群聊恢复验证：旧 common JAR 缺少 `ficc.api.QuoteCreateItem`，导致接收方向报价处理异常。修正完整运行包后，按原始 FIX 长度和校验和核对两条报文，保留幂等 ID 写回待发送队列；QuoteSvr 两条均返回成功，运行中的 STC 客户端日志确认收到两次推送。启动依赖检查及 FIX/转发回归共 27 项通过。原始业务报文仅保留在本机运行日志，不提交仓库。
 
 ## 构建与 QA 部署
 

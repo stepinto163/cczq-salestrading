@@ -24,6 +24,7 @@ class QtIntakeTest {
         message.getHeader().setString(35, "S");
         message.setString(117, "QT-QUOTE-123");
         message.setString(18045, "N");
+        message.setString(18035, "2");
         message.setString(18004, "QT-ACCOUNT-1");
         message.setString(60, "20260922-01:02:03.123");
         message.setString(48, "250001");
@@ -122,7 +123,10 @@ class QtIntakeTest {
 
     @Test
     void mapsCapturedPrlBusinessDateAndBidSettlement() throws Exception {
-        JSONObject request = new QTradeQuoteMapper().map(capturedPrlQuote());
+        // The original capture is self-sent. Exercise its settlement shape as incoming.
+        Message incoming = capturedPrlQuote();
+        incoming.setString(18035, "2");
+        JSONObject request = new QTradeQuoteMapper().map(incoming);
         JSONObject row = request.getJSONArray("quotes").getJSONObject(0);
         assertEquals("240210.IB", row.getString("securityId"));
         assertEquals("2026-09-22", row.getString("tradeDate"));
@@ -130,6 +134,98 @@ class QtIntakeTest {
         assertEquals("3", row.getString("price"));
         assertEquals("1000", row.getString("quantity"));
         assertEquals("20260922-18:06:13", request.getJSONObject("intake").getString("sourceTime"));
+    }
+
+    @Test
+    void senderDirectionIsIndependentOfBidOfferAndNewResponseActions() throws Exception {
+        QTradeQuoteMapper mapper = new QTradeQuoteMapper();
+        for (String side : new String[] {"1", "2"}) {
+            for (String action : new String[] {"N", "H"}) {
+                Message message = quote(side, "1");
+                message.setString(18045, action);
+                assertNotNull(mapper.map(message), "Both incoming sides/actions must be accepted");
+                message.setString(18035, "1");
+                assertNull(mapper.map(message), "Never attribute a self-sent quote to its recipient");
+                assertEquals("SELF_SENT_QUOTE", mapper.ignoredReason(message));
+            }
+        }
+        assertNull(mapper.map(capturedPrlQuote()), "Original PRL sample is also self-sent");
+    }
+
+    @Test
+    void refusesMissingOrUnknownSenderDirectionInsteadOfGuessingFromCounterparty() {
+        QTradeQuoteMapper mapper = new QTradeQuoteMapper();
+        Message message = quote("1", "1");
+        message.removeField(18035);
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> mapper.map(message))
+                .getMessage().contains("18035"));
+        message.setString(18035, "9");
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> mapper.map(message))
+                .getMessage().contains("18035"));
+    }
+
+    @Test
+    void chatReplayQueuesOnlyIncomingBidAndLogsOutgoingOfferAtInfo() throws Exception {
+        // Actual 2026-09-29 chat shape: same negotiation and counterparty in both directions.
+        Message bid = quote("1", "1");
+        bid.setString(117, "-10000");
+        bid.setString(18033, "CHAT-NEGOTIATION-1");
+        bid.setString(48, "210210");
+        bid.setString(132, "3.126");
+        bid.setString(134, "4000000");
+        bid.setString(60, "20260929-17:56:02");
+        bid.setString(18026, "bid 210210 3.126 400W\\nremark");
+        Message offer = quote("2", "1");
+        offer.setString(117, "-10000");
+        offer.setString(18033, "CHAT-NEGOTIATION-1");
+        offer.setString(48, "210210");
+        offer.setString(133, "3.106");
+        offer.setString(135, "1000000");
+        offer.setString(60, "20260929-19:09:16");
+        offer.setString(18045, "H");
+        offer.setString(18035, "1");
+        offer.setString(18026, "Ofr 210210.IB 3.106 100 +1");
+
+        java.io.StringWriter logOutput = new java.io.StringWriter();
+        org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(QTradeFixReceiver.class);
+        org.apache.log4j.Level previousLevel = logger.getLevel();
+        org.apache.log4j.WriterAppender appender = new org.apache.log4j.WriterAppender(
+                new org.apache.log4j.PatternLayout("%p %m%n"), logOutput);
+        logger.addAppender(appender);
+        logger.setLevel(org.apache.log4j.Level.INFO);
+        try (DurableInbox inbox = new DurableInbox(directory, 4)) {
+            java.util.Properties configuration = new java.util.Properties();
+            configuration.setProperty("fix.username", "fixture");
+            configuration.setProperty("fix.password", "fixture");
+            QTradeFixReceiver receiver = new QTradeFixReceiver(configuration, inbox);
+            quickfix.SessionID session = new quickfix.SessionID("FIX.4.4", "TEST", "QTRADE");
+            receiver.fromApp(bid, session);
+            receiver.fromApp(offer, session);
+            receiver.fromApp(bid, session); // FIX replay must not duplicate the incoming quote.
+            JSONObject request = inbox.request(inbox.next());
+            JSONObject row = request.getJSONArray("quotes").getJSONObject(0);
+            assertEquals("1", row.getString("side"));
+            assertEquals("3.126", row.getString("price"));
+            assertEquals("400", row.getString("quantity"));
+            assertEquals("Counterparty contact", row.getString("contactName"));
+            try (java.util.stream.Stream<Path> files = Files.list(directory.resolve("pending"))) {
+                assertEquals(1, files.count());
+            }
+            FakeTransport transport = new FakeTransport();
+            transport.reply = JsonUtils.object("Code", "0000", "Data", JsonUtils.object(
+                    "results", JsonUtils.array(JsonUtils.object("Code", "0000"))));
+            new QuoteForwarder(inbox, transport, "test-token", account -> "STC-1").tick();
+            assertEquals("3.126", transport.last.getJSONArray("quotes")
+                    .getJSONObject(0).getString("price"));
+            assertNull(inbox.next(), "There must be no outgoing offer left to forward");
+            assertTrue(logOutput.toString().contains("INFO FIX state=IGNORED"));
+            assertTrue(logOutput.toString().contains("reason=SELF_SENT_QUOTE operator=1"));
+            assertTrue(logOutput.toString().contains("negotiationId=CHAT-NEGOTIATION-1"));
+        } finally {
+            logger.removeAppender(appender);
+            logger.setLevel(previousLevel);
+            appender.close();
+        }
     }
 
     @Test

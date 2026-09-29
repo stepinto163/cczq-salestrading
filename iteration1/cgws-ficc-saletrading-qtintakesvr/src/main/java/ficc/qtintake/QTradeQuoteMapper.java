@@ -26,14 +26,10 @@ public final class QTradeQuoteMapper {
     }
 
     public QuoteCreateRequest mapRequest(Message message) throws FieldNotFound {
-        if (!"S".equals(message.getHeader().getString(35))) {
+        if (ignoredReason(message) != null) {
             return null;
         }
         String action = required(message, 18045);
-        // Legacy sales-trading intake accepts new intentions and dialogue responses only.
-        if (!"N".equals(action) && !"H".equals(action)) {
-            return null;
-        }
         String side = required(message, 54);
         if (!"1".equals(side) && !"2".equals(side)) {
             throw new IllegalArgumentException("Unsupported QTrade Side (54): " + side);
@@ -138,6 +134,28 @@ public final class QTradeQuoteMapper {
         request.intake = source;
         request.quotes = Collections.singletonList(quote);
         return request;
+    }
+
+    /** Operator identifies the sender; Side only identifies Bid/Ofr. */
+    String ignoredReason(Message message) throws FieldNotFound {
+        if (!"S".equals(message.getHeader().getString(35))) {
+            return "OUTSIDE_QUOTE_CREATE_SCOPE";
+        }
+        String action = required(message, 18045);
+        if (!"N".equals(action) && !"H".equals(action)) {
+            return "OUTSIDE_QUOTE_CREATE_SCOPE";
+        }
+        String operator = required(message, 18035);
+        if ("1".equals(operator)) {
+            // These fields describe the chat counterparty even when we sent the quote:
+            // InterloNickname(18006), OppInstiFullName/ShortName(18036/18037).
+            // Do not create an incoming counterparty quote from our own response.
+            return "SELF_SENT_QUOTE";
+        }
+        if (!"2".equals(operator)) {
+            throw new IllegalArgumentException("Unsupported QTrade Operator (18035): " + operator);
+        }
+        return null;
     }
 
     private static String originalMessageId(

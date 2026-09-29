@@ -126,8 +126,10 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
         }
         try {
             com.alibaba.fastjson2.JSONObject request;
+            String ignoredReason;
             try {
                 request = mapper.map(message);
+                ignoredReason = request == null ? mapper.ignoredReason(message) : null;
             } catch (FieldNotFound | IllegalArgumentException | java.time.DateTimeException error) {
                 inbox.rejectRaw(safeFix(message), error.getMessage());
                 LOGGER.error("FIX state=REJECTED session=" + sessionId, error);
@@ -137,7 +139,10 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
                 LOGGER.info(
                         "FIX state=IGNORED session="
                                 + sessionId
-                                + " reason=OUTSIDE_QUOTE_CREATE_SCOPE");
+                                + " reason=" + ignoredReason
+                                + " operator=" + loggedField(message, 18035)
+                                + " quoteId=" + loggedField(message, 117)
+                                + " negotiationId=" + loggedField(message, 18033));
                 return;
             }
             inbox.enqueue(request);
@@ -161,6 +166,16 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
                 .replace('\u0001', '|')
                 .replace("\r", "\\r")
                 .replace("\n", "\\n");
+    }
+
+    private static String loggedField(Message message, int tag) {
+        try {
+            return message.isSetField(tag)
+                    ? message.getString(tag).replace('\r', ' ').replace('\n', ' ')
+                    : "absent";
+        } catch (FieldNotFound error) {
+            throw new IllegalStateException("Cannot read FIX log field " + tag, error);
+        }
     }
 
     private void log(String direction, Message message, SessionID sessionId) {
