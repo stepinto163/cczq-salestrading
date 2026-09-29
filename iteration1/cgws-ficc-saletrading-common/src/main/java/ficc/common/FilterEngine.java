@@ -2,6 +2,8 @@ package ficc.common;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import ficc.api.Filter;
+import ficc.api.FilterCondition;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -108,6 +110,42 @@ public final class FilterEngine {
         for (JSONObject condition : conditions(filter))
             matches.merge(condition.getString("field"), test(row, condition), Boolean::logicalOr);
         return matches.values().stream().allMatch(Boolean::booleanValue);
+    }
+
+    public static boolean match(FilterValues row, Filter filter) {
+        if (filter == null) {
+            return true;
+        }
+        if (filter.market != null && !Objects.equals(filter.market, row.value("market"))) {
+            return false;
+        }
+        Map<String, Boolean> matches = new HashMap<>();
+        if (filter.conditions != null) {
+            for (FilterCondition condition : filter.conditions) {
+                matches.merge(condition.field, test(row, condition), Boolean::logicalOr);
+            }
+        }
+        return matches.values().stream().allMatch(Boolean::booleanValue);
+    }
+
+    private static boolean test(FilterValues row, FilterCondition condition) {
+        Object actual = row.value(condition.field);
+        boolean present = actual != null && !actual.toString().trim().isEmpty();
+        if ("EXISTS".equals(condition.operator)) {
+            return present == Boolean.TRUE.equals(condition.value);
+        }
+        if (!present) {
+            return false;
+        }
+        if (actual instanceof Collection<?>) {
+            for (Object value : (Collection<?>) actual) {
+                if (value != null && scalarMatch(condition.field, condition.operator, value, condition.value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return scalarMatch(condition.field, condition.operator, actual, condition.value);
     }
 
     public static boolean test(JSONObject row, JSONObject condition) {

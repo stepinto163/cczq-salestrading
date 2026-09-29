@@ -1,3 +1,4 @@
+﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -157,14 +158,14 @@ internal static class NativeSalesTradingCheck
             await Until(() => !view.Prices.Rows.Any(book => book["quoteRefs"]?.ToString().Contains(firstId) == true), "refer removes price entry");
             await Click(view, "恢复 Unrefer");
             Check((string)view.EditingQuote["status"] == "ACTIVE" && (string)view.EditingQuote["quoteId"] == firstId, "unrefer keeps quote ID");
-            JObject history = await view.Api.RequestAsync("ficc.quote.history.query", new JObject { ["quoteId"] = firstId, ["limit"] = 100 });
+            JObject history = await view.Api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = firstId, ["limit"] = 100 }));
             Check(((JArray)history["records"]).Count >= 5, "continuous lifecycle audit history");
-            JObject search = await view.Api.RequestAsync("ficc.quote.history.search", new JObject
+            JObject search = await view.Api.RequestProjectionAsync(SalesTradingApi.QuoteHistorySearch, ProtocolCodec.Decode<QuoteHistorySearchRequest>(new JObject
             {
                 ["fromDate"] = DateTime.Today.ToString("yyyy-MM-dd"), ["toDate"] = DateTime.Today.ToString("yyyy-MM-dd"),
                 ["limit"] = 30, ["filter"] = new JObject { ["conditions"] = new JArray(new JObject
                 { ["field"] = "securityId", ["operator"] = "EQ", ["value"] = "250001.IB" }) }
-            });
+            }));
             Check(search["rows"] is JArray, "historical search returns rows collection");
             await Click(view, "撤销 Refer");
             await Click(view, "删除报价");

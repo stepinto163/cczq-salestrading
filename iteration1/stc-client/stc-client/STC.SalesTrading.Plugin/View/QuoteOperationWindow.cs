@@ -1,4 +1,5 @@
-﻿using System;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -46,7 +47,7 @@ namespace STC.SalesTrading.Plugin.View
                 {
                     throw new InvalidOperationException("请先保存或读取报价。");
                 }
-                JObject history = await api.RequestAsync("ficc.quote.history.query", new JObject { ["quoteId"] = CurrentQuote["quoteId"], ["limit"] = 100 });
+                JObject history = await api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = CurrentQuote["quoteId"], ["limit"] = 100 }));
                 new Window
                 {
                     Owner = this, Title = "报价变更历史", Width = 800, Height = 600,
@@ -62,7 +63,7 @@ namespace STC.SalesTrading.Plugin.View
             commands.IsEnabled = false;
             Loaded += async (sender, args) => await RunAsync(async () =>
             {
-                Editor.SetDictionary(await api.RequestAsync("ficc.quote.dictionary.query", new JObject()));
+                Editor.SetDictionary(await api.RequestProjectionAsync(SalesTradingApi.QuoteDictionaryQuery, ProtocolCodec.Decode<DictionaryRequest>(new JObject())));
                 if (quoteId != null)
                 {
                     CurrentQuote = await api.GetQuoteAsync(quoteId);

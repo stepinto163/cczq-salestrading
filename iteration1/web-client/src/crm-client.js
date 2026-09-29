@@ -1,3 +1,5 @@
+import { SalesTradingApi, requestProtocol } from './app-protocol.js';
+
 // CRM searches share the QuoteSvr DPS connection. IDs always remain strings.
 export class CrmClient {
     constructor(gateway) {
@@ -41,7 +43,7 @@ export class CrmClient {
             if (!institution) throw new Error('请先从 CRM 下拉列表选择机构，再查询联系人');
             request.institutionId = institution.institutionId;
         }
-        const data = await this.gateway.request('QuoteSvr', 'ficc.base.query', request);
+        const data = await requestProtocol(this.gateway, SalesTradingApi.BaseQuery, request);
         const isInstitution = kind === 'INSTITUTION';
         const idKey = isInstitution ? 'institutionId' : 'contactId';
         const nameKey = isInstitution ? 'institutionName' : 'contactName';

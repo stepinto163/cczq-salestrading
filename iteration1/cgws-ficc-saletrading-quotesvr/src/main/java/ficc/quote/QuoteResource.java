@@ -6,6 +6,8 @@ import ats.bbox.framework.resource.ResourceAdapter;
 
 import com.alibaba.fastjson2.*;
 
+import ficc.api.ProtocolBoundary;
+
 import ficc.common.*;
 import ficc.common.client.*;
 
@@ -66,7 +68,7 @@ public final class QuoteResource extends ResourceAdapter {
                             () ->
                                     new QuoteService(
                                             store, references, new AccessPolicy(configuration)));
-            service.publish = publisher;
+            service.publish = this.publisher;
             identity.onInvalidated(
                     sessionId -> {
                         synchronized (service) {
@@ -87,9 +89,9 @@ public final class QuoteResource extends ResourceAdapter {
     }
 
     public void publishThrough(BiConsumer<String, JSONObject> publisher) {
-        this.publisher = publisher;
+        this.publisher = (topic, value) -> publisher.accept(topic, ProtocolBoundary.push(topic, value));
         if (service != null) {
-            service.publish = publisher;
+            service.publish = this.publisher;
         }
     }
 
@@ -127,7 +129,8 @@ public final class QuoteResource extends ResourceAdapter {
                     throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
                 }
                 synchronized (service) {
-                    return intakeCreate.create(service, request);
+                    return ProtocolBoundary.reply(topic, intakeCreate.create(service,
+                            ProtocolBoundary.request(topic, request)));
                 }
             }
             if (QuoteSvrClient.INTERNAL_STATE_QUERY.equals(topic)
@@ -143,27 +146,14 @@ public final class QuoteResource extends ResourceAdapter {
                 throw ApiException.forField("1009", "NOT_READY", "QuoteSvr is starting", null);
             }
             String user = identity.resolveUser(sid);
-            if (trace != null) {
-                trace.lockRequested = System.nanoTime();
-            }
-            synchronized (service) {
-                if (trace != null) {
-                    trace.lockAcquired = System.nanoTime();
-                }
-                try {
-                    JSONObject result = service.handle(user, sid, topic, request);
-                    if (topic.endsWith(".stream.open") && "0000".equals(result.getString("Code"))) {
-                        // GW owns the physical subscription; QuoteSvr owns the logical view.
-                        service.views.authorize(
-                                sid, user, result.getJSONObject("Data").getString("pushTopic"));
-                    }
-                    return result;
-                } finally {
-                    if (trace != null) {
-                        trace.businessFinished = System.nanoTime();
-                    }
+            JSONObject result = service.handle(user, sid, topic, request);
+            if (topic.endsWith(".stream.open") && "0000".equals(result.getString("Code"))) {
+                synchronized (service) {
+                    // GW owns the physical subscription; QuoteSvr owns the logical view.
+                    service.views.authorize(sid, user, result.getJSONObject("Data").getString("pushTopic"));
                 }
             }
+            return result;
         } catch (ApiException error) {
             return ApiResponse.failure(requestId, error);
         } catch (Exception error) {

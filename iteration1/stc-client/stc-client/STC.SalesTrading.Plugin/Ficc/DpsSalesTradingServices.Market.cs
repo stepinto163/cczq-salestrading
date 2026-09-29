@@ -1,4 +1,5 @@
-﻿using System;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -155,16 +156,16 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         public Task<JObject> MarkNotificationReadAsync(string notificationId)
         {
-            return Api.RequestAsync("ficc.notification.read", new JObject
+            return Api.RequestProjectionAsync(SalesTradingApi.NotificationRead, ProtocolCodec.Decode<NotificationReadRequest>(new JObject
             {
                 ["notificationIds"] = new JArray(notificationId), ["read"] = true
-            });
+            }));
         }
 
         public async Task<BondLookupEntry> LookupBondAsync(string code, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            JObject result = await Api.RequestAsync("ficc.base.query", new JObject { ["kind"] = "SECURITY", ["text"] = code, ["limit"] = 30 });
+            JObject result = await Api.RequestProjectionAsync(SalesTradingApi.BaseQuery, ProtocolCodec.Decode<BaseQueryRequest>(new JObject { ["kind"] = "SECURITY", ["text"] = code, ["limit"] = 30 }));
             ct.ThrowIfCancellationRequested();
             JObject security = ((JArray)result["records"]).OfType<JObject>().FirstOrDefault(row =>
                 string.Equals((string)row["securityId"], code, StringComparison.OrdinalIgnoreCase));

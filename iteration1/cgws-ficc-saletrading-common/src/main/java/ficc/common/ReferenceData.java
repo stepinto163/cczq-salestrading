@@ -1,6 +1,8 @@
 package ficc.common;
 
 import com.alibaba.fastjson2.JSONObject;
+import ficc.api.ProtocolCodec;
+import ficc.api.ReferenceRecord;
 
 import ficc.common.client.BaseDataClient;
 import ficc.common.client.CrmClient;
@@ -98,6 +100,10 @@ public final class ReferenceData implements AutoCloseable {
                     "securityId");
         }
         return security;
+    }
+
+    public ReferenceRecord requireRecord(String securityId) {
+        return ProtocolCodec.decode(require(securityId), ReferenceRecord.class);
     }
 
     public JSONObject enrich(JSONObject quote) {

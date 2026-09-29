@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Abstractions.Queries;
 
@@ -75,15 +76,15 @@ namespace STC.SalesTrading.Plugin.Ficc
         public async Task ConfirmRowsAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            JArray quotes = new JArray();
+            var quotes = new List<QuoteChangeItem>();
             foreach (QuoteConfirmRow row in rows)
             {
-                JObject input = DpsModelMapper.Input(row);
-                input["quoteId"] = row.RecognitionId;
-                input["expectedRevision"] = row.Revision;
+                QuoteChangeItem input = ProtocolCodec.Decode<QuoteChangeItem>(DpsModelMapper.Input(row));
+                input.QuoteId = row.RecognitionId;
+                input.ExpectedRevision = row.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 quotes.Add(input);
             }
-            FiccApiClient.RequireQuoteResults(await Api.RequestAsync("ficc.quote.confirm", new JObject { ["quotes"] = quotes }));
+            FiccApiClient.RequireQuoteResults(await Api.ChangeQuotesAsync(SalesTradingApi.QuoteConfirm, quotes));
         }
 
         public async Task DeletePendingAsync(IEnumerable<QuoteConfirmRow> rows, CancellationToken ct)
@@ -152,27 +153,28 @@ namespace STC.SalesTrading.Plugin.Ficc
         public async Task<PagedResult<MgmtQuoteRow>> QueryHistoryRowsAsync(QuoteMgmtQuery query, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            JObject result = await Api.RequestAsync("ficc.quote.history.search", new JObject
+            QuoteHistorySearchData result = await Api.RequestAsync(SalesTradingApi.QuoteHistorySearch, new QuoteHistorySearchRequest
             {
-                ["fromDate"] = (query.StartDate ?? DateTime.Today.AddDays(-7)).ToString("yyyy-MM-dd"),
-                ["toDate"] = (query.EndDate ?? DateTime.Today).ToString("yyyy-MM-dd"),
-                ["limit"] = Math.Max(1, Math.Min(query.PageSize, 100)), ["filter"] = ManagementFilter(query)
+                FromDate = (query.StartDate ?? DateTime.Today.AddDays(-7)).ToString("yyyy-MM-dd"),
+                ToDate = (query.EndDate ?? DateTime.Today).ToString("yyyy-MM-dd"),
+                Limit = Math.Max(1, Math.Min(query.PageSize, 100)),
+                Filter = ProtocolCodec.Decode<Filter>(ManagementFilter(query))
             });
             ct.ThrowIfCancellationRequested();
             List<MgmtQuoteRow> rows = new List<MgmtQuoteRow>();
-            foreach (JObject item in ((JArray)result["rows"]).OfType<JObject>())
+            foreach (QuoteHistoryRow item in result.Rows)
             {
-                JObject quote = (JObject)item["quote"];
-                if (item["reference"] is JObject reference)
+                JObject quote = item.Quote.ToJson();
+                if (item.Reference != null)
                 {
-                    securities[(string)quote["securityId"]] = reference;
+                    securities[item.Quote.SecurityId] = item.Reference.ToJson();
                 }
                 rows.Add(DpsModelMapper.Display(WithReference(quote)).ToObject<MgmtQuoteRow>());
             }
             return new PagedResult<MgmtQuoteRow>
             {
-                Items = rows, TotalCount = (int?)result["totalCount"] ?? rows.Count,
-                IsPartial = (bool?)result["hasMore"] ?? result["nextCursor"]?.Type == JTokenType.String
+                Items = rows, TotalCount = result.TotalCount ?? rows.Count,
+                IsPartial = result.HasMore ?? result.NextCursor != null
             };
         }
 

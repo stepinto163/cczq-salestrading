@@ -146,7 +146,7 @@ public final class QtIntakeSmoke {
                     "0000".equals(result.getString("Code")),
                     "create succeeds with unresolved CRM names");
             firstId = result.getString("quoteId");
-            JSONObject quote = service.quotes.get(firstId);
+            JSONObject quote = service.quotes.get(firstId).toJson();
             check("PENDING_CONFIRM".equals(quote.getString("status")), "quote awaits confirmation");
             check("U-001".equals(quote.getString("ownerUserId")), "STC userid owns quote");
             check(
@@ -231,7 +231,7 @@ public final class QtIntakeSmoke {
                                     "contactName", null)))), "confirm", null);
             check("0000".equals(confirmed.getJSONArray("results").getJSONObject(0).getString("Code"))
                             && "PENDING_CONFIRM".equals(service.quotes.get(
-                                    secondGrouped.getString("quoteId")).getString("status")),
+                                    secondGrouped.getString("quoteId")).status),
                     "confirming one grouped quote leaves its sibling pending");
             JSONObject deleted = (JSONObject) service.write(new QuoteService.Call(
                     "U-001", "<test>", "ficc.quote.delete", JsonUtils.object(
@@ -241,9 +241,9 @@ public final class QtIntakeSmoke {
                                     "expectedRevision", "1")))), "delete", null);
             check("0000".equals(deleted.getJSONArray("results").getJSONObject(0).getString("Code"))
                             && "ACTIVE".equals(service.quotes.get(
-                                    firstGrouped.getString("quoteId")).getString("status"))
+                                    firstGrouped.getString("quoteId")).status)
                             && groupSource.equals(service.quotes.get(
-                                    firstGrouped.getString("quoteId")).getString("sourceMessageId")),
+                                    firstGrouped.getString("quoteId")).sourceMessageId),
                     "deleting a sibling preserves confirmed quote and source identity");
         }
         try (PgStore database = new PgStore(configuration)) {
@@ -284,6 +284,6 @@ public final class QtIntakeSmoke {
         JSONObject result = endpoint.create(service, input).getJSONObject("Data")
                 .getJSONArray("results").getJSONObject(0);
         check("0000".equals(result.getString("Code")), "grouped intake succeeds: " + eventId);
-        return service.quotes.get(result.getString("quoteId"));
+        return service.quotes.get(result.getString("quoteId")).toJson();
     }
 }

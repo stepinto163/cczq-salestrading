@@ -1,4 +1,4 @@
-param([string]$OutputRoot)
+﻿param([string]$OutputRoot, [string]$ClientConfig)
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
 if (!$OutputRoot) {
@@ -32,6 +32,17 @@ $config = @'
 <runtime><assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1"><probing privatePath="bin" /></assemblyBinding></runtime>
 </configuration>
 '@
+if ($ClientConfig) {
+    $testConfiguration = New-Object System.Xml.XmlDocument
+    $testConfiguration.LoadXml($config)
+    $hostConfiguration = New-Object System.Xml.XmlDocument
+    $hostConfiguration.Load((Resolve-Path -LiteralPath $ClientConfig).Path)
+    if ($hostConfiguration.configuration.runtime) {
+        $runtime = $testConfiguration.ImportNode($hostConfiguration.configuration.runtime, $true)
+        $null = $testConfiguration.configuration.ReplaceChild($runtime, $testConfiguration.configuration.runtime)
+    }
+    $config = $testConfiguration.OuterXml
+}
 [IO.File]::WriteAllText("$testExe.config", $config)
 $stdout = Join-Path $outputRoot "$testName.stdout.log"
 $stderr = Join-Path $outputRoot "$testName.stderr.log"

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Paging coordinates and matching fingerprints; never stores client row positions. */
 public final class ViewPage {
@@ -82,5 +83,77 @@ public final class ViewPage {
 
     public void initialize(List<JSONObject> rows, String idField) {
         changes("", rows, idField, new LinkedHashMap<>());
+    }
+
+    public int totalCount() {
+        return matchingHashes.size();
+    }
+
+    /** Quote revisions already identify changes; do not serialize entire rows to hash them. */
+    public void initializeVersions(Map<String, String> versions) {
+        matchingHashes = new LinkedHashMap<>(versions);
+    }
+
+    public JSONObject replaceVersions(String viewId, Map<String, String> versions) {
+        Set<String> removals = new java.util.LinkedHashSet<>(matchingHashes.keySet());
+        removals.removeAll(versions.keySet());
+        return applyVersions(viewId, versions, removals);
+    }
+
+    public JSONObject applyVersions(String viewId, Map<String, String> versions, Set<String> removals) {
+        for (Map.Entry<String, String> entry : versions.entrySet()) {
+            if (entry.getValue() == null || removals.contains(entry.getKey())) {
+                throw new IllegalArgumentException("Invalid or conflicting row version");
+            }
+        }
+        JSONArray upsertIds = new JSONArray();
+        JSONArray removeIds = new JSONArray();
+        for (String id : removals) {
+            if (matchingHashes.remove(id) != null) {
+                removeIds.add(id);
+            }
+        }
+        for (Map.Entry<String, String> entry : versions.entrySet()) {
+            String previous = matchingHashes.put(entry.getKey(), entry.getValue());
+            if (!entry.getValue().equals(previous)) {
+                upsertIds.add(entry.getKey());
+            }
+        }
+        return JsonUtils.object("viewId", viewId, "totalCount", totalCount(),
+                "upsertIds", upsertIds, "removeIds", removeIds);
+    }
+
+    /** Apply only affected IDs. Unmentioned rows retain their membership and fingerprint. */
+    public JSONObject applyChanges(
+            String viewId,
+            Map<String, JSONObject> upserts,
+            Set<String> removals,
+            Map<String, JSONObject> changedRows) {
+        Map<String, String> hashes = new LinkedHashMap<>();
+        for (Map.Entry<String, JSONObject> entry : upserts.entrySet()) {
+            if (removals.contains(entry.getKey())) {
+                throw new IllegalArgumentException("A row cannot be both upserted and removed");
+            }
+            hashes.put(entry.getKey(), JsonUtils.canonicalHash(entry.getValue()));
+        }
+        JSONArray upsertIds = new JSONArray();
+        JSONArray removeIds = new JSONArray();
+        for (String id : removals) {
+            if (matchingHashes.remove(id) != null) {
+                removeIds.add(id);
+            }
+        }
+        for (Map.Entry<String, String> entry : hashes.entrySet()) {
+            String previous = matchingHashes.put(entry.getKey(), entry.getValue());
+            if (!entry.getValue().equals(previous)) {
+                upsertIds.add(entry.getKey());
+                changedRows.put(entry.getKey(), upserts.get(entry.getKey()));
+            }
+        }
+        return JsonUtils.object(
+                "viewId", viewId,
+                "totalCount", totalCount(),
+                "upsertIds", upsertIds,
+                "removeIds", removeIds);
     }
 }

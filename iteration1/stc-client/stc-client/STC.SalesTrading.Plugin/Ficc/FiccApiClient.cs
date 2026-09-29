@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
@@ -21,7 +22,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 ? "NotificationSvr" : "QuoteSvr";
         }
 
-        public async Task<JObject> RequestAsync(string topic, JObject request)
+        private async Task<TData> SendAsync<TData>(string topic, JObject request) where TData : ProtocolModel
         {
             JObject body = (JObject)request.DeepClone();
             if (body["requestId"] == null)
@@ -37,7 +38,22 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new InvalidOperationException("请求与应答的 requestId 不一致。");
             }
-            return reply["Data"] as JObject ?? new JObject();
+            ApiReply<TData> result = ProtocolCodec.Decode<ApiReply<TData>>(reply);
+            return result.Data ?? ProtocolCodec.Decode<TData>(new JObject());
+        }
+
+        public async Task<TData> RequestAsync<TRequest, TData>(Endpoint<TRequest, TData> endpoint, TRequest request)
+            where TRequest : Request where TData : ProtocolModel
+        {
+            return await SendAsync<TData>(endpoint.Topic, request.ToJson());
+        }
+
+        // Projection for existing dynamic grids/filter editors; callers still choose
+        // a compile-time request/result contract, never an untyped topic string.
+        public async Task<JObject> RequestProjectionAsync<TRequest, TData>(Endpoint<TRequest, TData> endpoint, TRequest request)
+            where TRequest : Request where TData : ProtocolModel
+        {
+            return (await RequestAsync(endpoint, request)).ToJson();
         }
 
         public Task<JObject> CreateAsync(IEnumerable<JObject> quotes)
@@ -52,13 +68,43 @@ namespace STC.SalesTrading.Plugin.Ficc
                 }
                 requests.Add(item);
             }
-            return RequestAsync("ficc.quote.create", new JObject { ["quotes"] = requests });
+            return CreateAndProjectAsync(requests.OfType<JObject>()
+                .Select(ProtocolCodec.Decode<QuoteCreateItem>).ToList());
+        }
+
+        public Task<QuoteWriteData> CreateQuotesAsync(IEnumerable<QuoteCreateItem> quotes)
+        {
+            List<QuoteCreateItem> inputs = quotes.ToList();
+            foreach (QuoteCreateItem input in inputs)
+            {
+                if (string.IsNullOrWhiteSpace(input.ClientQuoteId))
+                {
+                    input.ClientQuoteId = Guid.NewGuid().ToString("N");
+                }
+            }
+            return RequestAsync(SalesTradingApi.QuoteCreate, new QuoteCreateRequest { Quotes = inputs });
+        }
+
+        private async Task<JObject> CreateAndProjectAsync(List<QuoteCreateItem> quotes)
+        {
+            return (await CreateQuotesAsync(quotes)).ToJson();
+        }
+
+        public async Task<QuoteRecord> GetQuoteModelAsync(string quoteId)
+        {
+            QuoteGetData data = await RequestAsync(SalesTradingApi.QuoteGet, new QuoteGetRequest { QuoteId = quoteId });
+            return data.Quote;
         }
 
         public async Task<JObject> GetQuoteAsync(string quoteId)
         {
-            JObject data = await RequestAsync("ficc.quote.get", new JObject { ["quoteId"] = quoteId });
-            return data["quote"] as JObject;
+            return (await GetQuoteModelAsync(quoteId))?.ToJson();
+        }
+
+        public Task<QuoteWriteData> ChangeQuotesAsync(Endpoint<QuoteChangeRequest, QuoteWriteData> endpoint,
+            IEnumerable<QuoteChangeItem> quotes)
+        {
+            return RequestAsync(endpoint, new QuoteChangeRequest { Quotes = quotes.ToList() });
         }
 
         public Task<JObject> OperateAsync(string operation, IEnumerable<JObject> displayedQuotes, JObject changes = null)
@@ -84,25 +130,45 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new InvalidOperationException("请先选择报价。");
             }
-            return RequestAsync("ficc.quote." + operation, new JObject { ["quotes"] = quotes });
+            Endpoint<QuoteChangeRequest, QuoteWriteData> endpoint;
+            switch (operation)
+            {
+                case "confirm": endpoint = SalesTradingApi.QuoteConfirm; break;
+                case "update": endpoint = SalesTradingApi.QuoteUpdate; break;
+                case "refer": endpoint = SalesTradingApi.QuoteRefer; break;
+                case "unrefer": endpoint = SalesTradingApi.QuoteUnrefer; break;
+                case "delete": endpoint = SalesTradingApi.QuoteDelete; break;
+                default: throw new ArgumentException("Unsupported quote operation: " + operation);
+            }
+            return ChangeAndProjectAsync(endpoint, quotes.OfType<JObject>()
+                .Select(ProtocolCodec.Decode<QuoteChangeItem>));
         }
 
-        public static JArray RequireQuoteResults(JObject response)
+        private async Task<JObject> ChangeAndProjectAsync(Endpoint<QuoteChangeRequest, QuoteWriteData> endpoint,
+            IEnumerable<QuoteChangeItem> quotes)
         {
-            JArray results = response["results"] as JArray;
-            if (results == null || results.Count == 0)
+            return (await ChangeQuotesAsync(endpoint, quotes)).ToJson();
+        }
+
+        public static IReadOnlyList<QuoteOperationResult> RequireQuoteResults(QuoteWriteData response)
+        {
+            if (response.Results == null || response.Results.Count == 0)
             {
                 throw new InvalidOperationException("服务未返回逐条报价操作结果。");
             }
-            string[] errors = results.OfType<JObject>()
-                .Where(item => (string)item["Code"] != "0000")
-                .Select(item => ((string)item["quoteId"] ?? (string)item["clientQuoteId"]) + ": " + (string)item["Msg"])
-                .ToArray();
+            string[] errors = response.Results.Where(item => item.Code != "0000")
+                .Select(item => (item.QuoteId ?? item.ClientQuoteId) + ": " + item.Msg).ToArray();
             if (errors.Length > 0)
             {
                 throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
             }
-            return results;
+            return response.Results;
+        }
+
+        public static JArray RequireQuoteResults(JObject response)
+        {
+            RequireQuoteResults(ProtocolCodec.Decode<QuoteWriteData>(response));
+            return (JArray)response["results"];
         }
     }
 }

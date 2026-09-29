@@ -7,6 +7,8 @@ import ats.bbox.framework.resource.ResourceAdapter;
 
 import com.alibaba.fastjson2.JSONObject;
 
+import ficc.api.*;
+
 import ficc.common.ApiException;
 import ficc.common.ApiResponse;
 import ficc.common.ComponentLog;
@@ -57,9 +59,9 @@ public final class NotificationResource extends ResourceAdapter {
 
     private static final class SourceEvent {
         final boolean quote;
-        final JSONObject message;
+        final ProtocolModel message;
 
-        SourceEvent(boolean quote, JSONObject message) {
+        SourceEvent(boolean quote, ProtocolModel message) {
             this.quote = quote;
             this.message = message;
         }
@@ -68,7 +70,7 @@ public final class NotificationResource extends ResourceAdapter {
             return quote;
         }
 
-        JSONObject message() {
+        ProtocolModel message() {
             return message;
         }
     }
@@ -96,9 +98,9 @@ public final class NotificationResource extends ResourceAdapter {
     }
 
     public void publishThrough(BiConsumer<String, JSONObject> publisher) {
-        this.publisher = publisher;
+        this.publisher = (topic, value) -> publisher.accept(topic, ProtocolBoundary.push(topic, value));
         if (service != null) {
-            service.publish = publisher;
+            service.publish = this.publisher;
         }
     }
 
@@ -120,7 +122,7 @@ public final class NotificationResource extends ResourceAdapter {
                             () ->
                                     new NotificationService(
                                             store, references, new AccessPolicy(configuration)));
-            service.publish = publisher;
+            service.publish = this.publisher;
             identity = AdapterFactory.identity(configuration, network, false);
             identity.onInvalidated(
                     sessionId -> {
@@ -188,7 +190,7 @@ public final class NotificationResource extends ResourceAdapter {
         sourceGeneration.incrementAndGet();
     }
 
-    private void enqueue(boolean quote, JSONObject message) {
+    private void enqueue(boolean quote, ProtocolModel message) {
         if (!incoming.offer(new SourceEvent(quote, message))) {
             invalidateSource();
         }
@@ -199,23 +201,26 @@ public final class NotificationResource extends ResourceAdapter {
         incoming.clear();
         List<JSONObject> quotes = new ArrayList<>();
         List<JSONObject> settings = new ArrayList<>();
-        JSONObject state = source.queryState(JsonUtils.object("limit", 1000));
-        JSONObject firstPage = state;
+        StateQueryRequest request = new StateQueryRequest();
+        request.limit = 1000;
+        QuoteStateData state = source.queryState(request);
+        QuoteStateData firstPage = state;
         while (true) {
-            JSONObject records = state.getJSONObject("records");
-            quotes.addAll(records.getJSONArray("quotes").toJavaList(JSONObject.class));
-            settings.addAll(records.getJSONArray("watchlists").toJavaList(JSONObject.class));
-            settings.addAll(records.getJSONArray("filterGroups").toJavaList(JSONObject.class));
-            String cursor = state.getString("nextCursor");
+            state.records.quotes.forEach(quote -> quotes.add(quote.toJson()));
+            state.records.watchlists.forEach(group -> settings.add(group.toJson()));
+            state.records.filterGroups.forEach(group -> settings.add(group.toJson()));
+            String cursor = state.nextCursor;
             if (cursor == null) {
                 break;
             }
-            state = source.queryState(JsonUtils.object("cursor", cursor));
+            request = new StateQueryRequest();
+            request.cursor = cursor;
+            state = source.queryState(request);
         }
-        JSONObject snapshot = source.queryPriceSnapshot();
+        PriceFeedBatch snapshot = source.queryPriceFeed();
         synchronized (service) {
-            service.replaceQuotes(firstPage, quotes, settings);
-            if (!service.priceMessage(snapshot)) {
+            service.replaceQuotes(firstPage.toJson(), quotes, settings);
+            if (!service.priceMessage(snapshot.toJson())) {
                 throw new IllegalStateException(
                         "Initial price snapshot requires resynchronization");
             }
@@ -223,7 +228,7 @@ public final class NotificationResource extends ResourceAdapter {
         restoredGeneration = generation;
         ready = generation == sourceGeneration.get() && source.isOnline();
         System.out.println(
-                "NotificationSvr source synchronized at " + firstPage.getString("sequence"));
+                "NotificationSvr source synchronized at " + firstPage.sequence);
     }
 
     private void tick() {
@@ -248,8 +253,8 @@ public final class NotificationResource extends ResourceAdapter {
                 }
                 boolean accepted =
                         event.quote()
-                                ? service.quoteMessage(event.message())
-                                : service.priceMessage(event.message());
+                                ? service.quoteMessage(event.message().toJson())
+                                : service.priceMessage(event.message().toJson());
                 if (!accepted) {
                     invalidateSource();
                     break;

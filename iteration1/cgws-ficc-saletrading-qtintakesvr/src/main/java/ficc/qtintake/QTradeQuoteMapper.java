@@ -3,6 +3,10 @@ package ficc.qtintake;
 import com.alibaba.fastjson2.JSONObject;
 
 import ficc.common.JsonUtils;
+import ficc.api.QuoteCreateRequest;
+import ficc.api.QuoteCreateItem;
+import ficc.api.IntakeIdentity;
+import java.util.Collections;
 
 import quickfix.FieldNotFound;
 import quickfix.Message;
@@ -17,6 +21,11 @@ import java.time.temporal.ChronoField;
 /** QTrade custom tags verified against the legacy quickfixj-messages-fix44.jar. */
 public final class QTradeQuoteMapper {
     public JSONObject map(Message message) throws FieldNotFound {
+        QuoteCreateRequest request = mapRequest(message);
+        return request == null ? null : request.toJson();
+    }
+
+    public QuoteCreateRequest mapRequest(Message message) throws FieldNotFound {
         if (!"S".equals(message.getHeader().getString(35))) {
             return null;
         }
@@ -74,53 +83,40 @@ public final class QTradeQuoteMapper {
         if ("1".equals(quoteType) && new BigDecimal(price).scale() > 4) {
             throw new IllegalArgumentException("QTrade yield exceeds four decimal places");
         }
-        JSONObject quote =
-                JsonUtils.object(
-                        "securityId",
-                        securityId(required(message, 48), optional(message, 100)),
-                        "side",
-                        side,
-                        "quoteType",
-                        quoteType,
-                        "yieldType",
-                        yieldType,
-                        "price",
-                        price,
-                        "quantityUnit",
-                        "WAN",
-                        "currency",
-                        "CNY",
-                        "tradeDate",
-                        tradeDate.toString());
+        QuoteCreateItem quote = new QuoteCreateItem();
+        quote.securityId = securityId(required(message, 48), optional(message, 100));
+        quote.side = side;
+        quote.quoteType = quoteType;
+        quote.yieldType = yieldType;
+        if (yieldType == null) {
+            quote.clearField("yieldType");
+        }
+        quote.price = price;
+        quote.quantityUnit = "WAN";
+        quote.currency = "CNY";
+        quote.tradeDate = tradeDate.toString();
         String quantity = optional(message, bid ? 134 : 135);
         if (quantity != null) {
             BigDecimal amount = new BigDecimal(quantity);
             if (amount.signum() <= 0) {
                 throw new IllegalArgumentException("QTrade quantity must be positive");
             }
-            quote.put("quantity", amount.movePointLeft(4).stripTrailingZeros().toPlainString());
+            quote.quantity = amount.movePointLeft(4).stripTrailingZeros().toPlainString();
         }
-        // QTrade BidSettlType/OfrSettlType: 1 = T+0, 2 = T+1.
-        putIfPresent(quote, "settlType", sideFieldOrCommon(message, bid ? 18167 : 18169, 63));
+        quote.settlType = sideFieldOrCommon(message, bid ? 18167 : 18169, 63);
         String institution = optional(message, 18036);
-        putIfPresent(
-                quote,
-                "institutionName",
-                institution == null ? optional(message, 18037) : institution);
-        putIfPresent(quote, "contactName", optional(message, 18006));
-        putIfPresent(quote, "remark", optional(message, 18026));
-        JSONObject source =
-                JsonUtils.object(
-                        "sourceUserId",
-                        account,
-                        "externalQuoteId",
-                        quoteId,
-                        "sourceTime",
-                        time,
-                        "transType",
-                        action,
-                        "text",
-                        optional(message, 18026));
+        quote.institutionName = institution == null ? optional(message, 18037) : institution;
+        quote.contactName = optional(message, 18006);
+        quote.remark = optional(message, 18026);
+        IntakeIdentity source = new IntakeIdentity();
+        source.sourceUserId = account;
+        source.externalQuoteId = quoteId;
+        source.sourceTime = time;
+        source.transType = action;
+        source.text = optional(message, 18026);
+        if (source.text == null) {
+            source.clearField("text");
+        }
         // The same QTrade quote/time/account is the same source event. Changed content
         // under this identity is rejected, not silently turned into another quote.
         String id =
@@ -134,11 +130,14 @@ public final class QTradeQuoteMapper {
                                 time,
                                 "action",
                                 action));
-        source.put("externalMessageId", id);
-        source.put("originalMessageId", originalMessageId(message, account, time, action, id));
-        quote.put("clientQuoteId", "QT-" + id);
-        return JsonUtils.object(
-                "requestId", "QT-" + id, "intake", source, "quotes", JsonUtils.array(quote));
+        source.externalMessageId = id;
+        source.originalMessageId = originalMessageId(message, account, time, action, id);
+        quote.clientQuoteId = "QT-" + id;
+        QuoteCreateRequest request = new QuoteCreateRequest();
+        request.requestId = "QT-" + id;
+        request.intake = source;
+        request.quotes = Collections.singletonList(quote);
+        return request;
     }
 
     private static String originalMessageId(

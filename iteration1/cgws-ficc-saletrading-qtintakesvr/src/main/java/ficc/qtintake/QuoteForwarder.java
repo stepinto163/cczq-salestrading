@@ -1,7 +1,11 @@
 package ficc.qtintake;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import ficc.api.ApiReply;
+import ficc.api.QuoteCreateRequest;
+import ficc.api.QuoteOperationResult;
+import ficc.api.QuoteWriteData;
+import ficc.api.SalesTradingApi;
 
 import ficc.common.JsonUtils;
 import ficc.common.client.StcTransport;
@@ -39,36 +43,34 @@ public final class QuoteForwarder {
         if (pending == null) {
             return;
         }
-        JSONObject request = JsonUtils.deepCopy(inbox.request(pending));
-        JSONObject source = request.getJSONObject("intake");
-        if (source.getString("ownerUserId") == null) {
-            source.put("ownerUserId", owners.resolve(source.getString("sourceUserId")));
-            inbox.saveRequest(pending, request);
+        QuoteCreateRequest request = SalesTradingApi.QuoteCreate.request(inbox.request(pending));
+        if (request.intake.ownerUserId == null) {
+            request.intake.ownerUserId = owners.resolve(request.intake.sourceUserId);
+            inbox.saveRequest(pending, request.toJson());
         }
-        request.getJSONObject("intake").put("token", token);
-        JSONObject reply = transport.request("ficc.quote.create", null, request);
-        String code = reply.getString("Code");
+        request.intake.token = token;
+        JSONObject reply = transport.request(SalesTradingApi.QuoteCreate.topic, null, request.toJson());
+        ApiReply<QuoteWriteData> response = SalesTradingApi.QuoteCreate.reply(reply);
+        String code = response.Code;
         if ("1009".equals(code) || "1099".equals(code)) {
             LOGGER.warn(
                     "FORWARD state=RETRY requestId="
-                            + request.getString("requestId")
+                            + request.requestId
                             + " code="
                             + code);
             return;
         }
         boolean success = "0000".equals(code);
         if (success) {
-            JSONObject data = reply.getJSONObject("Data");
-            JSONArray results = data == null ? null : data.getJSONArray("results");
-            if (results == null || results.size() != request.getJSONArray("quotes").size()) {
+            QuoteWriteData data = response.Data;
+            if (data == null || data.results == null || data.results.size() != request.quotes.size()) {
                 throw new IllegalStateException("QuoteSvr returned an incomplete create reply");
             }
-            for (Object value : results) {
-                JSONObject result = (JSONObject) value;
-                String resultCode = result.getString("Code");
+            for (QuoteOperationResult result : data.results) {
+                String resultCode = result.Code;
                 if ("1009".equals(resultCode) || "1099".equals(resultCode)) {
                     LOGGER.warn("FORWARD state=RETRY requestId="
-                            + request.getString("requestId") + " code=" + resultCode);
+                            + request.requestId + " code=" + resultCode);
                     return;
                 }
                 success &= "0000".equals(resultCode);
@@ -79,7 +81,7 @@ public final class QuoteForwarder {
                 "FORWARD state="
                         + (success ? "SENT" : "REJECTED")
                         + " requestId="
-                        + request.getString("requestId")
+                        + request.requestId
                         + " code="
                         + code;
         if (success) {

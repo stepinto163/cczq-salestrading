@@ -1,3 +1,4 @@
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -177,7 +178,7 @@ namespace STC.SalesTrading.Plugin.View
                 {
                     request["institutionId"] = institutionId;
                 }
-                JObject data = await api.RequestAsync("ficc.base.query", request);
+                JObject data = await api.RequestProjectionAsync(SalesTradingApi.BaseQuery, ProtocolCodec.Decode<BaseQueryRequest>(request));
                 DataGrid grid = kind == "INSTITUTION"
                     ? UiElements.Grid("机构|institutionName", "ID|institutionId")
                     : UiElements.Grid("联系人|contactName", "机构|institutionName", "ID|contactId");

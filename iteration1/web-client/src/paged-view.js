@@ -1,3 +1,5 @@
+import { endpointFor, requestProtocol } from './app-protocol.js';
+
 export class FilteredView {
     constructor(transport, domain, collection, idField, { onChange = () => {}, onStale = () => {} } = {}) {
         Object.assign(this, { transport, domain, collection, idField, onChange, onStale });
@@ -37,7 +39,7 @@ export class FilteredView {
     }
 
     call(suffix, body = {}) {
-        return this.transport.request(this.server, `ficc.${this.domain}.${suffix}`, body);
+        return requestProtocol(this.transport, endpointFor(`ficc.${this.domain}.${suffix}`), body);
     }
 
     async initialize(query = {}) {

@@ -3,6 +3,9 @@ package ficc.quote;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.QuoteRecord;
+import ficc.api.ProtocolCodec;
+import java.util.stream.Collectors;
 
 import java.sql.*;
 import java.util.*;
@@ -29,23 +32,24 @@ final class PgStore extends JdbcStore {
                         + " quotes(status,security_id,update_time DESC)");
     }
 
-    List<JSONObject> quotes() throws SQLException {
-        return rows("SELECT payload FROM quotes ORDER BY update_time DESC,id");
+    List<QuoteRecord> quotes() throws SQLException {
+        return rows("SELECT payload FROM quotes ORDER BY update_time DESC,id").stream()
+                .map(row -> ProtocolCodec.decode(row, QuoteRecord.class)).collect(Collectors.toList());
     }
 
-    void saveQuote(JSONObject q) throws SQLException {
+    void saveQuote(QuoteRecord q) throws SQLException {
         update(
                 "INSERT INTO quotes VALUES (?,?,?,?,?,?,?::timestamptz,?::jsonb) ON CONFLICT(id) DO"
                     + " UPDATE SET"
                     + " security_id=excluded.security_id,status=excluded.status,revision=excluded.revision,update_time=excluded.update_time,payload=excluded.payload",
-                q.getString("quoteId"),
-                q.getString("ownerUserId"),
-                q.getString("clientQuoteId"),
-                q.getString("securityId"),
-                q.getString("status"),
-                q.getLongValue("revision"),
-                q.getString("updateTime"),
-                JsonUtils.toJson(q));
+                q.quoteId,
+                q.ownerUserId,
+                q.clientQuoteId,
+                q.securityId,
+                q.status,
+                Long.parseLong(q.revision),
+                q.updateTime,
+                JsonUtils.toJson(q.toJson()));
     }
 
     void history(JSONObject history) throws SQLException {

@@ -3,6 +3,8 @@ package ficc.quote;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.QuoteRecord;
+import ficc.api.QuoteSource;
 
 import java.util.*;
 
@@ -93,15 +95,15 @@ final class Intake {
                                 "VALIDATION_FAILED",
                                 "Positive externalRevision required",
                                 "externalRevision");
-                    JSONObject existing =
+                    QuoteRecord existing =
                             svc.quotes.values().stream()
                                     .filter(
                                             q -> {
-                                                JSONObject src = q.getJSONObject("source");
+                                                QuoteSource src = q.source;
                                                 return src != null
-                                                        && type.equals(src.getString("type"))
+                                                        && type.equals(src.type)
                                                         && extQuote.equals(
-                                                                src.getString("externalQuoteId"));
+                                                                src.externalQuoteId);
                                             })
                                     .findFirst()
                                     .orElse(null);
@@ -114,18 +116,17 @@ final class Intake {
                         item.put("clientQuoteId", type + ":" + extQuote);
                     } else if (action.equals("UPDATE")
                             && existing != null
-                            && existing.getString("status").equals("PENDING_CONFIRM")) {
+                            && existing.status.equals("PENDING_CONFIRM")) {
                         if (rev
-                                <= existing.getJSONObject("source")
-                                        .getLongValue("externalRevision"))
+                                <= Long.parseLong(existing.source.externalRevision))
                             throw ApiException.forField(
                                     "1004",
                                     "REVISION_CONFLICT",
                                     "External revision is not newer",
                                     null);
                         op = "update";
-                        item.put("quoteId", existing.getString("quoteId"));
-                        item.put("expectedRevision", existing.getString("revision"));
+                        item.put("quoteId", existing.quoteId);
+                        item.put("expectedRevision", existing.revision);
                     } else if (action.equals("NEW") && existing != null)
                         throw ApiException.forField(
                                 "1006",

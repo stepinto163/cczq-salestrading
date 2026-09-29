@@ -3,6 +3,7 @@ package ficc.quote;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.*;
 import ficc.common.client.AccessPolicy;
 import ficc.common.client.QuoteSvrClient;
 
@@ -13,8 +14,8 @@ import java.util.function.*;
 import java.util.stream.Collectors;
 
 /**
- * All QuoteSvr request handlers share one ordered standalone dispatcher, not a shared Quote/Price
- * DTO.
+ * State changes and page capture are ordered under the service monitor. Captured quote-page
+ * encoding runs outside it. Committed QuoteRecord instances must never be edited in place.
  */
 final class QuoteService {
     static final List<String> EDIT =
@@ -44,8 +45,8 @@ final class QuoteService {
     final PgStore store;
     final ReferenceData refs;
     final AccessPolicy access;
-    final Map<String, JSONObject> quotes = new LinkedHashMap<>();
-    final Map<String, JSONObject> settings = new LinkedHashMap<>();
+    final Map<String, QuoteRecord> quotes = new LinkedHashMap<>();
+    final Map<String, SettingRecord> settings = new LinkedHashMap<>();
     final ViewService views;
     final SearchSvrClient search;
     final QuoteMatcher matcher;
@@ -161,10 +162,12 @@ final class QuoteService {
         this.access = access;
         this.store = store;
         this.refs = refs;
-        for (JSONObject q : store.quotes()) quotes.put(q.getString("quoteId"), q);
+        for (QuoteRecord quote : store.quotes()) {
+            quotes.put(quote.quoteId, quote);
+        }
         for (JSONObject group : store.rows("SELECT payload FROM settings")) {
             FilterDictionaries.migrateSavedFilters(group);
-            settings.put(settingId(group), group);
+            settings.put(settingId(group), ProtocolCodec.decode(group, SettingRecord.class));
         }
         matcher = new QuoteMatcher(refs, settings);
         search = new LocalSearchSvrClient(store, refs, quotes, matcher, access);
@@ -178,7 +181,7 @@ final class QuoteService {
                 c ->
                         JsonUtils.object(
                                 "quote",
-                                visible(get(c.request.getString("quoteId"), c.user), c.user)));
+                                visible(get(c.request.getString("quoteId"), c.user), c.user).toJson()));
         handlers.put(
                 "ficc.quote.query",
                 c ->
@@ -186,7 +189,7 @@ final class QuoteService {
                                 c,
                                 "quotes",
                                 selectQuotes(c.user, c.request).stream()
-                                        .map(q -> visible(q, c.user))
+                                        .map(q -> visible(q, c.user).toJson())
                                         .collect(Collectors.toList()),
                                 JsonUtils.object(
                                         "reference",
@@ -230,61 +233,82 @@ final class QuoteService {
         }
     }
 
-    synchronized JSONObject handle(String user, String sid, String topic, JSONObject r) {
-        String requestId = r.getString("requestId");
+    JSONObject handle(String user, String sid, String topic, JSONObject request) {
+        String requestId = request.getString("requestId");
         try {
-            RequestValidator.requireString(r, "requestId");
-            if (user == null)
-                throw ApiException.forField(
-                        "1003", "FORBIDDEN", "Unknown or expired STC session", null);
-            Function<Call, Object> h = handlers.get(topic);
-            if (h == null)
-                throw ApiException.forField(
-                        "1010", "UNSUPPORTED", "Unknown interface: " + topic, null);
-            Call c = new Call(user, sid, topic, r);
-            if (r.getString("cursor") != null && !topic.endsWith("state.query"))
-                return ApiResponse.success(requestId, continuePage(c));
-            return ApiResponse.success(requestId, h.apply(c));
-        } catch (ApiException e) {
-            return ApiResponse.failure(requestId, e);
-        } catch (Exception e) {
-            store.rollback();
-            System.err.println(
-                    "Request failed: " + topic + " (" + e.getClass().getSimpleName() + ")");
-            return ApiResponse.failure(
-                    requestId,
-                    ApiException.forField(
-                            "1099",
-                            "INTERNAL_ERROR",
-                            "Internal error; see local server log",
-                            null));
+            JSONObject validated = ProtocolBoundary.request(topic, request);
+            RequestValidator.requireString(validated, "requestId");
+            if (user == null) {
+                throw ApiException.forField("1003", "FORBIDDEN", "Unknown or expired STC session", null);
+            }
+            Object data;
+            QuotePerformanceTrace trace = QuotePerformanceTrace.current();
+            if (trace != null) {
+                trace.lockRequested = System.nanoTime();
+            }
+            synchronized (this) {
+                if (trace != null) {
+                    trace.lockAcquired = System.nanoTime();
+                }
+                try {
+                    Function<Call, Object> handler = handlers.get(topic);
+                    if (handler == null) {
+                        throw ApiException.forField("1010", "UNSUPPORTED", "Unknown interface: " + topic, null);
+                    }
+                    Call call = new Call(user, sid, topic, validated);
+                    data = validated.getString("cursor") != null && !topic.endsWith("state.query")
+                            ? continuePage(call) : handler.apply(call);
+                } catch (ApiException error) {
+                    throw error;
+                } catch (Exception error) {
+                    store.rollback();
+                    throw error;
+                } finally {
+                    if (trace != null) {
+                        trace.businessFinished = System.nanoTime();
+                    }
+                }
+            }
+            // Encode a captured response in the calling worker, outside the shared state lock.
+            if (data instanceof QuotePageSnapshot) {
+                data = ((QuotePageSnapshot) data).materialize();
+            }
+            return ProtocolBoundary.reply(topic, ApiResponse.success(requestId, data));
+        } catch (ApiException error) {
+            return ApiResponse.failure(requestId, error);
+        } catch (Exception error) {
+            org.apache.log4j.Logger.getLogger(QuoteService.class)
+                    .error("Request failed: topic=" + topic + ", requestId=" + requestId, error);
+            return ApiResponse.failure(requestId, ApiException.forField(
+                    "1099", "INTERNAL_ERROR", "Internal error; see local server log", null));
         }
     }
 
-    JSONObject get(String id, String user) {
-        JSONObject q = quotes.get(id);
-        if (q == null || (!"ACTIVE".equals(q.getString("status")) && !owns(user, q)))
+    QuoteRecord get(String id, String user) {
+        QuoteRecord q = quotes.get(id);
+        if (q == null || (!"ACTIVE".equals(q.status) && !owns(user, q)))
             throw ApiException.forField("1002", "NOT_FOUND", "Quote not found", "quoteId");
         return q;
     }
 
-    boolean owns(String user, JSONObject quote) {
-        return access.owns(user, quote.getString("ownerUserId"));
+    boolean owns(String user, QuoteRecord quote) {
+        return access.owns(user, quote.ownerUserId);
     }
 
-    JSONObject visible(JSONObject q, String user) {
-        JSONObject v = JsonUtils.deepCopy(q);
-        if (!owns(user, q)) {
-            for (String field :
-                    Arrays.asList("institutionId", "institutionName", "contactId", "contactName"))
-                v.put(field, null);
+    QuoteRecord visible(QuoteRecord quote, String user) {
+        QuoteRecord result = ProtocolCodec.decode(quote.toJson(), QuoteRecord.class);
+        if (!owns(user, quote)) {
+            result.clearField("institutionId");
+            result.clearField("institutionName");
+            result.clearField("contactId");
+            result.clearField("contactName");
         }
-        return v;
+        return result;
     }
 
-    void revision(JSONObject q, JSONObject in) {
+    void revision(QuoteRecord q, JSONObject in) {
         String expected = RequestValidator.requireString(in, "expectedRevision");
-        if (!expected.equals(q.getString("revision")))
+        if (!expected.equals(q.revision))
             throw new ApiException(
                     "1004",
                     "报价已被更新",
@@ -292,11 +316,11 @@ final class QuoteService {
                             "type",
                             "REVISION_CONFLICT",
                             "quoteId",
-                            q.getString("quoteId"),
+                            q.quoteId,
                             "expectedRevision",
                             expected,
                             "currentRevision",
-                            q.getString("revision")));
+                            q.revision));
     }
 
     Object write(Call c, String op) throws Exception {
@@ -331,20 +355,23 @@ final class QuoteService {
         JSONArray results =
                 store.receipt(c.user, c.topic, c.request.getString("requestId"), receiptHash);
         for (int i = results.size(); i < inputs.size(); i++) {
-            JSONObject in = inputs.getJSONObject(i), q = null, event = null, result;
+            JSONObject in = inputs.getJSONObject(i);
+            QuoteRecord q = null;
+            JSONObject event = null;
+            JSONObject result;
             String previousSecurity = null;
             try {
                 store.begin();
-                JSONObject before = null;
+                QuoteRecord before = null;
                 boolean create = op.equals("create") || op.equals("clone");
                 if (create) {
                     String clientId = RequestValidator.requireString(in, "clientQuoteId");
                     if (quotes.values().stream()
                             .anyMatch(
                                     x ->
-                                            c.user.equals(x.getString("ownerUserId"))
+                                            c.user.equals(x.ownerUserId)
                                                     && clientId.equals(
-                                                            x.getString("clientQuoteId"))))
+                                                            x.clientQuoteId)))
                         throw ApiException.forField(
                                 "1006",
                                 "IDEMPOTENCY_CONFLICT",
@@ -352,11 +379,11 @@ final class QuoteService {
                                 "clientQuoteId");
                     q = newQuote(c.user, clientId);
                     if (op.equals("clone")) {
-                        JSONObject src =
+                        QuoteRecord src =
                                 get(RequestValidator.requireString(in, "sourceQuoteId"), c.user);
                         revision(src, in);
-                        for (String k : EDIT) q.put(k, src.get(k));
-                        q.put("clonedFromQuoteId", src.getString("quoteId"));
+                        QuoteEdits.copy(src, q);
+                        q.clonedFromQuoteId = src.quoteId;
                     }
                 } else {
                     before = get(RequestValidator.requireString(in, "quoteId"), c.user);
@@ -364,9 +391,9 @@ final class QuoteService {
                         throw ApiException.forField(
                                 "1003", "FORBIDDEN", "Only quote owner/admin may change it", null);
                     revision(before, in);
-                    q = JsonUtils.deepCopy(before);
-                    previousSecurity = before.getString("securityId");
-                    String st = q.getString("status");
+                    q = ProtocolCodec.decode(before.toJson(), QuoteRecord.class);
+                    previousSecurity = before.securityId;
+                    String st = q.status;
                     boolean valid = allows(op, st);
                     if (!valid)
                         throw ApiException.forField(
@@ -374,7 +401,7 @@ final class QuoteService {
                                 "INVALID_STATE",
                                 "Action " + op + " is not allowed for " + st,
                                 "status");
-                    q.put("revision", Long.toString(q.getLongValue("revision") + 1));
+                    q.revision = Long.toString(Long.parseLong(q.revision) + 1);
                 }
                 Set<String> allowed =
                         new HashSet<>(
@@ -389,24 +416,24 @@ final class QuoteService {
                     if (!allowed.contains(k))
                         throw ApiException.forField(
                                 "1001", "VALIDATION_FAILED", "Field cannot be changed", k);
-                for (String k : EDIT) if (in.containsKey(k)) q.put(k, in.get(k));
-                if (op.equals("confirm") || op.equals("unrefer")) q.put("status", "ACTIVE");
-                else if (op.equals("refer")) q.put("status", "REFERRED");
-                else if (op.equals("delete")) q.put("status", "DELETED");
+                QuoteEdits.apply(q, in);
+                if (op.equals("confirm") || op.equals("unrefer")) q.status = "ACTIVE";
+                else if (op.equals("refer")) q.status = "REFERRED";
+                else if (op.equals("delete")) q.status = "DELETED";
                 if (source != null) {
-                    q.put("source", source.getJSONObject("source"));
-                    q.put("sourceMessageId", source.getString("sourceMessageId"));
+                    q.source = ProtocolCodec.decode(source.getJSONObject("source"), QuoteSource.class);
+                    q.sourceMessageId = source.getString("sourceMessageId");
                 }
-                validateQuote(q, q.getString("status").equals("ACTIVE"), c.user);
+                validateQuote(q, q.status.equals("ACTIVE"), c.user);
                 String now = BusinessClock.currentTime();
-                q.put("updatedBy", c.user);
-                q.put("updateTime", now);
+                q.updatedBy = c.user;
+                q.updateTime = now;
                 if (op.equals("confirm")) {
-                    q.put("confirmedBy", c.user);
-                    q.put("confirmTime", now);
+                    q.confirmedBy = c.user;
+                    q.confirmTime = now;
                 }
-                if (q.getString("status").equals("ACTIVE") && !op.equals("refer"))
-                    q.put("quoteTime", now);
+                if (q.status.equals("ACTIVE") && !op.equals("refer"))
+                    q.quoteTime = now;
                 store.saveQuote(q);
                 event =
                         store.event(
@@ -416,9 +443,9 @@ final class QuoteService {
                                         "action",
                                         op.toUpperCase(Locale.ROOT),
                                         "quoteId",
-                                        q.getString("quoteId"),
+                                        q.quoteId,
                                         "quote",
-                                        q,
+                                        q.toJson(),
                                         "operatorUserId",
                                         c.user,
                                         "operationTime",
@@ -430,9 +457,9 @@ final class QuoteService {
                                 "eventId",
                                 event.getString("eventId"),
                                 "quoteId",
-                                q.getString("quoteId"),
+                                q.quoteId,
                                 "revision",
-                                q.getString("revision"),
+                                q.revision,
                                 "action",
                                 op.toUpperCase(Locale.ROOT),
                                 "operatorUserId",
@@ -440,22 +467,22 @@ final class QuoteService {
                                 "operationTime",
                                 now,
                                 "before",
-                                before,
+                                before == null ? null : before.toJson(),
                                 "after",
-                                q,
+                                q.toJson(),
                                 "reason",
                                 in.get("reason")));
                 result =
                         JsonUtils.object(
                                 "quoteId",
-                                q.getString("quoteId"),
+                                q.quoteId,
                                 "revision",
-                                q.getString("revision"),
+                                q.revision,
                                 "Code",
                                 "0000",
                                 "Msg",
                                 "成功");
-                if (create) result.put("clientQuoteId", q.getString("clientQuoteId"));
+                if (create) result.put("clientQuoteId", q.clientQuoteId);
                 results.add(result);
                 store.receipt(c.user, c.topic, c.request.getString("requestId"), results);
                 store.commit();
@@ -486,7 +513,7 @@ final class QuoteService {
                 throw e;
             }
             if (q != null) {
-                quotes.put(q.getString("quoteId"), q);
+                quotes.put(q.quoteId, q);
                 committed(event);
                 views.changed(q, event, previousSecurity);
             }
@@ -494,7 +521,7 @@ final class QuoteService {
         return JsonUtils.object("results", results);
     }
 
-    JSONObject newQuote(String user, String clientId) {
+    QuoteRecord newQuote(String user, String clientId) {
         JSONObject q =
                 JsonUtils.object(
                         "quoteId",
@@ -531,11 +558,17 @@ final class QuoteService {
                         null);
         for (String k : EDIT) q.putIfAbsent(k, null);
         for (String f : FLAGS) q.put(f, false);
-        return q;
+        return ProtocolCodec.decode(q, QuoteRecord.class);
     }
 
-    void validateQuote(JSONObject quote, boolean active) {
-        validateQuote(quote, active, quote.getString("ownerUserId"));
+    void validateQuote(QuoteRecord quote, boolean active) {
+        validateQuote(quote, active, quote.ownerUserId);
+    }
+
+    void validateQuote(QuoteRecord quote, boolean active, String userId) {
+        JSONObject fields = quote.toJson();
+        validateQuote(fields, active, userId);
+        QuoteEdits.apply(quote, fields);
     }
 
     void validateQuote(JSONObject q, boolean active, String userId) {
@@ -686,25 +719,25 @@ final class QuoteService {
                         JsonUtils.array(event)));
     }
 
-    List<JSONObject> selectQuotes(String user, JSONObject request) {
+    List<QuoteRecord> selectQuotes(String user, JSONObject request) {
         long started = QuotePerformanceTrace.searchStart();
         try {
-            return search.queryQuotes(user, request);
+            return search.queryQuotes(user, ProtocolCodec.decode(request, QuoteQueryRequest.class));
         } finally {
             QuotePerformanceTrace.searchFinished(started);
         }
     }
 
-    boolean matches(String user, JSONObject q, JSONObject f) {
-        return matcher.matches(user, q, f);
+    Predicate<QuoteRecord> matchingQuotes(String user, JSONObject filter) {
+        return matcher.prepare(user, filter == null ? null : ProtocolCodec.decode(filter, Filter.class));
     }
 
-    JSONArray referenceFor(List<JSONObject> qs) {
+    JSONArray referenceFor(List<QuoteRecord> qs) {
         JSONArray a = new JSONArray();
         Set<String> seen = new HashSet<>();
-        for (JSONObject q : qs)
-            if (q.getString("securityId") != null && seen.add(q.getString("securityId")))
-                a.add(refs.require(q.getString("securityId")));
+        for (QuoteRecord q : qs)
+            if (q.securityId != null && seen.add(q.securityId))
+                a.add(refs.require(q.securityId));
         return a;
     }
 
@@ -779,7 +812,7 @@ final class QuoteService {
 
     Object history(Call c) throws Exception {
         String id = RequestValidator.requireString(c.request, "quoteId");
-        JSONObject q = get(id, c.user);
+        QuoteRecord q = get(id, c.user);
         if (!owns(c.user, q))
             throw ApiException.forField("1003", "FORBIDDEN", "History requires ownership", null);
         return page(
@@ -791,7 +824,8 @@ final class QuoteService {
     }
 
     Object historySearch(Call c) throws Exception {
-        return page(c, "rows", search.searchHistory(c.user, c.request), JsonUtils.object());
+        return page(c, "rows", search.searchHistory(c.user, ProtocolCodec.decode(c.request, QuoteHistorySearchRequest.class)).stream()
+                        .map(QuoteHistoryRow::toJson).collect(Collectors.toList()), JsonUtils.object());
     }
 
     Object sourceQuery(Call c) throws Exception {
@@ -821,7 +855,7 @@ final class QuoteService {
         String key = kind + "Id";
         return JsonUtils.object(
                 kind.equals("watchlist") ? "watchlists" : "filterGroups",
-                settings.values().stream()
+                settings.values().stream().map(SettingRecord::toJson)
                         .filter(g -> g.containsKey(key) && c.user.equals(g.getString("userId")))
                         .filter(
                                 g ->
@@ -850,7 +884,7 @@ final class QuoteService {
         if (!receipt.isEmpty()) return receipt.getJSONObject(0);
         String id = c.request.getString(key);
         if (delete) RequestValidator.requireString(c.request, key);
-        JSONObject prev = id == null ? null : settings.get(id);
+        JSONObject prev = id == null || settings.get(id) == null ? null : settings.get(id).toJson();
         if (id != null && (prev == null || !c.user.equals(prev.getString("userId"))))
             throw ApiException.forField("1002", "NOT_FOUND", "Group not found", key);
         if (prev != null
@@ -949,7 +983,7 @@ final class QuoteService {
             throw e;
         }
         if (delete) settings.remove(id);
-        else settings.put(id, g);
+        else settings.put(id, ProtocolCodec.decode(g, SettingRecord.class));
         committed(event);
         views.settingsChanged(c.user, kind, id, g.getString("revision"), delete);
         return out;
@@ -958,6 +992,7 @@ final class QuoteService {
     synchronized JSONObject handleInternalRead(String topic, JSONObject request) {
         String requestId = request.getString("requestId");
         try {
+            request = ProtocolBoundary.request(topic, request);
             RequestValidator.requireString(request, "requestId");
             Object data;
             if (QuoteSvrClient.INTERNAL_STATE_QUERY.equals(topic)) {
@@ -969,7 +1004,7 @@ final class QuoteService {
                 RequestValidator.allowOnlyFields(request, "requestId");
                 List<String> securities =
                         quotes.values().stream()
-                                .map(quote -> quote.getString("securityId"))
+                                .map(quote -> quote.securityId)
                                 .filter(Objects::nonNull)
                                 .distinct()
                                 .collect(Collectors.toList());
@@ -981,7 +1016,7 @@ final class QuoteService {
                         "Only internal synchronization reads are allowed",
                         null);
             }
-            return ApiResponse.success(requestId, data);
+            return ProtocolBoundary.reply(topic, ApiResponse.success(requestId, data));
         } catch (ApiException error) {
             return ApiResponse.failure(requestId, error);
         } catch (Exception error) {
@@ -1014,18 +1049,18 @@ final class QuoteService {
                 .forEach(
                         quote ->
                                 entries.add(
-                                        JsonUtils.object("collection", "quotes", "record", quote)));
+                                        JsonUtils.object("collection", "quotes", "record", quote.toJson())));
         settings.values()
                 .forEach(
                         setting ->
                                 entries.add(
                                         JsonUtils.object(
                                                 "collection",
-                                                setting.containsKey("watchlistId")
+                                                setting.watchlistId != null
                                                         ? "watchlists"
                                                         : "filterGroups",
                                                 "record",
-                                                setting)));
+                                                setting.toJson())));
         JSONObject position =
                 JsonUtils.object("epoch", store.epoch, "sequence", Long.toString(lastSequence));
         Cursor cursor =

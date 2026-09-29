@@ -11,6 +11,8 @@
 
 可复制提示词见 [WORKBUDDY.md](WORKBUDDY.md)，阶段安排见 [ROADMAP.md](ROADMAP.md)。这是项目文件协议，不依赖工具 API，也不会自动唤醒 WorkBuddy。
 
+另有 [CodeBuddy 筛选测试首轮](CODEBUDDY-FILTER-TESTS.md)：已交付，Codex 独立验证 18/18 通过，待修复加载器校验和报告可读性后合并。[第二批任务](CODEBUDDY-FILTER-TESTS-BATCH2.md) 包含评审修复及 18 个新增用例，当前仅准备指令、尚未执行。这些手工任务不属于 INDEX 的 ready 队列。
+
 ## 分工与范围
 
 - Codex：架构、协议、业务规则、任务拆分、跨模块改动、独立复核及合并。

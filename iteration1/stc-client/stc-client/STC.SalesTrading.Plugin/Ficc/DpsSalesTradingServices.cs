@@ -8,6 +8,8 @@ using com.gateway.log;
 using netapi.Api;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
+using QuoteEvent = STC.SalesTrading.Plugin.Abstractions.Models.QuoteEvent;
 using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 
@@ -164,11 +166,15 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 return;
             }
-            JObject result = await Api.RequestAsync("ficc.base.get", new JObject { ["kind"] = "SECURITY", ["ids"] = new JArray(missing) });
-            cancellation.ThrowIfCancellationRequested();
-            foreach (JObject security in ((JArray)result["records"]).OfType<JObject>())
+            BaseData result = await Api.RequestAsync(SalesTradingApi.BaseGet, new BaseGetRequest
             {
-                securities[(string)security["securityId"]] = security;
+                Kind = "SECURITY",
+                Ids = missing.ToList()
+            });
+            cancellation.ThrowIfCancellationRequested();
+            foreach (ReferenceRecord security in result.Records)
+            {
+                securities[security.SecurityId] = security.ToJson();
             }
         }
 

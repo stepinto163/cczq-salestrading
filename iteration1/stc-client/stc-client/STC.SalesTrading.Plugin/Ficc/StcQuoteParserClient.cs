@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 
 namespace STC.SalesTrading.Plugin.Ficc
@@ -34,11 +35,8 @@ namespace STC.SalesTrading.Plugin.Ficc
 
             Stopwatch timer = Stopwatch.StartNew();
             // ParserSvr uses Code/Msg/Datas, not the FICC Data/requestId envelope.
-            JObject reply = await transport.RequestAsync("ParserSvr", "stc.parser.bond", new JObject
-            {
-                ["userName"] = userName,
-                ["content"] = text
-            });
+            ParserRequest request = new ParserRequest { UserName = userName, Content = text };
+            JObject reply = await transport.RequestAsync("ParserSvr", "stc.parser.bond", request.ToJson());
             cancellation.ThrowIfCancellationRequested();
             if (reply == null)
             {
@@ -48,7 +46,8 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new InvalidOperationException("ParserSvr " + (string)reply["Code"] + ": " + (string)reply["Msg"]);
             }
-            JArray data = reply["Datas"] as JArray;
+            ParserReply parsedReply = ProtocolCodec.Decode<ParserReply>(reply);
+            List<ParserQuote> data = parsedReply.Datas;
             if (data == null)
             {
                 throw new InvalidOperationException("ParserSvr 应答缺少 Datas 数组。");
@@ -56,13 +55,13 @@ namespace STC.SalesTrading.Plugin.Ficc
 
             List<QuoteConfirmRow> rows = new List<QuoteConfirmRow>();
             List<string> warnings = new List<string>();
-            foreach (JToken item in data)
+            foreach (ParserQuote item in data)
             {
-                if (!(item is JObject quote))
+                if (item == null)
                 {
                     throw new InvalidOperationException("ParserSvr 返回了无效的报价行。");
                 }
-                QuoteConfirmRow row = Map(quote);
+                QuoteConfirmRow row = Map(item.ToJson());
                 rows.Add(row);
                 if (string.IsNullOrWhiteSpace(row.Code) || !row.Price.HasValue || !row.Volume.HasValue)
                 {

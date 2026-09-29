@@ -3,6 +3,7 @@ package ficc.notification;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.ProtocolBoundary;
 import ficc.common.client.AccessPolicy;
 
 import java.math.BigDecimal;
@@ -531,6 +532,7 @@ final class NotificationService {
     synchronized JSONObject handle(String user, String sid, String topic, JSONObject request) {
         String rid = request.getString("requestId");
         try {
+            request = ProtocolBoundary.request(topic, request);
             RequestValidator.requireString(request, "requestId");
             if (user == null)
                 throw ApiException.forField("1003", "FORBIDDEN", "Unknown login session", null);
@@ -541,7 +543,7 @@ final class NotificationService {
             if (request.getString("cursor") != null)
                 data = continuePage(user, sid, topic, request.getString("cursor"));
             else data = dispatch(op, user, sid, topic, request);
-            return ApiResponse.success(rid, data);
+            return ProtocolBoundary.reply(topic, ApiResponse.success(rid, data));
         } catch (ApiException e) {
             return ApiResponse.failure(rid, e);
         } catch (Exception e) {

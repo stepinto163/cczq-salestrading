@@ -3,6 +3,8 @@ package ficc.quote;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.*;
+import java.util.function.Predicate;
 import ficc.common.client.AccessPolicy;
 
 import java.time.*;
@@ -14,13 +16,13 @@ final class LocalSearchSvrClient implements SearchSvrClient {
     final AccessPolicy access;
     final PgStore store;
     final ReferenceData refs;
-    final Map<String, JSONObject> quotes;
+    final Map<String, QuoteRecord> quotes;
     final QuoteMatcher matcher;
 
     LocalSearchSvrClient(
             PgStore store,
             ReferenceData refs,
-            Map<String, JSONObject> quotes,
+            Map<String, QuoteRecord> quotes,
             QuoteMatcher matcher,
             AccessPolicy access) {
         this.access = access;
@@ -30,69 +32,48 @@ final class LocalSearchSvrClient implements SearchSvrClient {
         this.matcher = matcher;
     }
 
-    public List<JSONObject> queryQuotes(String user, JSONObject req) {
-        JSONObject f = req.getJSONObject("filter");
-        FilterEngine.validate(f);
-        String scope = JsonUtils.getStringOrDefault(req, "ownerScope", "VISIBLE");
-        if (!Arrays.asList("VISIBLE", "MINE").contains(scope))
-            throw ApiException.forField(
-                    "1001", "VALIDATION_FAILED", "Invalid ownerScope", "ownerScope");
-        JSONArray status = req.getJSONArray("status");
-        Set<String> sts =
-                status == null
-                        ? Collections.singleton("ACTIVE")
-                        : new HashSet<>(status.toJavaList(String.class));
-        if (!Arrays.asList("ACTIVE", "PENDING_CONFIRM", "REFERRED", "DELETED").containsAll(sts))
-            throw ApiException.forField(
-                    "1001", "VALIDATION_FAILED", "Unknown quote status", "status");
+    public List<QuoteRecord> queryQuotes(String user, QuoteQueryRequest req) {
+        Predicate<QuoteRecord> matches = matcher.prepareQuery(user, req, access);
         return quotes.values().stream()
-                .filter(q -> sts.contains(q.getString("status")))
-                .filter(
-                        q ->
-                                q.getString("status").equals("ACTIVE")
-                                        || access.owns(user, q.getString("ownerUserId")))
-                .filter(q -> !scope.equals("MINE") || user.equals(q.getString("ownerUserId")))
-                .filter(q -> matcher.matches(user, q, f))
+                .filter(matches)
                 .sorted(
-                        Comparator.<JSONObject, String>comparing(q -> q.getString("updateTime"))
+                        Comparator.<QuoteRecord, String>comparing(q -> q.updateTime)
                                 .reversed()
-                                .thenComparing(q -> q.getString("quoteId")))
+                                .thenComparing(q -> q.quoteId))
                 .collect(Collectors.toList());
     }
 
-    public List<JSONObject> searchHistory(String user, JSONObject query) throws Exception {
-        LocalDate from = LocalDate.parse(RequestValidator.requireString(query, "fromDate")),
-                to = LocalDate.parse(RequestValidator.requireString(query, "toDate"));
+    public List<QuoteHistoryRow> searchHistory(String user, QuoteHistorySearchRequest query) throws Exception {
+        LocalDate from = LocalDate.parse(query.fromDate),
+                to = LocalDate.parse(query.toDate);
         if (from.isAfter(to) || java.time.temporal.ChronoUnit.DAYS.between(from, to) > 366)
             throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid date range", null);
-        JSONObject f = query.getJSONObject("filter");
-        FilterEngine.validate(f);
+        Filter f = query.filter;
+        FilterEngine.validate(f == null ? null : f.toJson());
+        Predicate<QuoteRecord> matches = matcher.prepare(user, f);
         List<JSONObject> found =
                 store.rows(
                         "SELECT payload FROM history WHERE operation_time>=?::date AND"
                             + " operation_time<(?::date+interval '1 day') ORDER BY operation_time",
                         from.toString(),
                         to.toString());
-        Map<String, JSONObject> daily = new LinkedHashMap<>();
+        Map<String, QuoteHistoryRow> daily = new LinkedHashMap<>();
         for (JSONObject history : found) {
-            JSONObject quote = history.getJSONObject("after");
-            if (quote == null || !access.owns(user, quote.getString("ownerUserId"))) {
+            QuoteRecord quote = history.getJSONObject("after") == null ? null
+                    : ProtocolCodec.decode(history.getJSONObject("after"), QuoteRecord.class);
+            if (quote == null || !access.owns(user, quote.ownerUserId)) {
                 continue;
             }
             String date = history.getString("operationTime").substring(0, 10);
-            daily.put(
-                    date + quote.getString("quoteId"),
-                    JsonUtils.object(
-                            "tradeDate",
-                            date,
-                            "quote",
-                            quote,
-                            "reference",
-                            refs.security(quote.getString("securityId"))));
+            QuoteHistoryRow row = new QuoteHistoryRow();
+            row.tradeDate = date;
+            row.quote = quote;
+            row.reference = quote.securityId == null || refs.security(quote.securityId) == null
+                    ? null : ProtocolCodec.decode(refs.security(quote.securityId), ReferenceRecord.class);
+            daily.put(date + quote.quoteId, row);
         }
         return daily.values().stream()
-                .filter(r -> matcher.matches(user, r.getJSONObject("quote"), f))
-                .map(JsonUtils::deepCopy)
+                .filter(row -> matches.test(row.quote))
                 .collect(Collectors.toList());
     }
 }

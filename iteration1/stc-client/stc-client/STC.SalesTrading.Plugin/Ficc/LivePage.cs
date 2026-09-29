@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
@@ -12,6 +13,7 @@ namespace STC.SalesTrading.Plugin.Ficc
     public sealed class LivePage : IDisposable
     {
         private readonly FiccApiClient api;
+        private readonly ViewProtocolClient protocol;
         private readonly IFiccTransport transport;
         private readonly string domain;
         private readonly string collection;
@@ -47,6 +49,7 @@ namespace STC.SalesTrading.Plugin.Ficc
         public LivePage(FiccApiClient api, IFiccTransport transport, string domain)
         {
             this.api = api;
+            protocol = new ViewProtocolClient(api, domain);
             this.transport = transport;
             this.domain = domain;
             collection = domain == "quote" ? "quotes" : domain == "price" ? "books" : "notifications";
@@ -72,34 +75,16 @@ namespace STC.SalesTrading.Plugin.Ficc
             Generation++;
             IsBrowsing = false;
             changedIds.Clear();
-            JObject stream = await api.RequestAsync("ficc." + domain + ".stream.open", new JObject());
-            streamId = (string)stream["streamId"];
-            Topic = (string)stream["pushTopic"];
+            StreamOpenData stream = await protocol.OpenStreamAsync();
+            streamId = stream.StreamId;
+            Topic = stream.PushTopic;
             viewId = "NATIVE-" + Guid.NewGuid().ToString("N");
-            JObject request = new JObject
-            {
-                ["viewId"] = viewId,
-                ["pageSize"] = PageSize,
-                ["filter"] = filter.DeepClone()
-            };
-            if (domain == "quote")
-            {
-                request["ownerScope"] = OwnerScope;
-                request["status"] = pendingOnly ? new JArray("PENDING_CONFIRM") : QuoteStatuses.DeepClone();
-            }
-            if (domain == "price")
-            {
-                request["mode"] = PriceMode;
-            }
-            if (domain == "notification")
-            {
-                request["readState"] = "ALL";
-            }
             await LoadAsync(async () =>
             {
                 subscription = transport.Subscribe(FiccApiClient.ServiceFor("ficc." + domain + ".stream.open"),
                     Topic, Receive, domain == "price");
-                return await api.RequestAsync("ficc." + domain + ".view.open", request);
+                return await protocol.OpenAsync(viewId, PageSize, ProtocolCodec.Decode<Filter>(filter),
+                    OwnerScope, pendingOnly ? new List<string> { "PENDING_CONFIRM" } : QuoteStatuses.Values<string>().ToList(), PriceMode);
             });
         }
 
@@ -109,12 +94,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new InvalidOperationException("请先打开视图并等待当前请求结束。");
             }
-            return LoadAsync(() => api.RequestAsync("ficc." + domain + ".view.query", new JObject
-            {
-                ["viewId"] = viewId,
-                ["pageNumber"] = pageNumber,
-                ["pageSize"] = PageSize
-            }));
+            return LoadAsync(() => protocol.QueryAsync(viewId, pageNumber, PageSize));
         }
 
         public void BeginBrowsing()
@@ -148,15 +128,15 @@ namespace STC.SalesTrading.Plugin.Ficc
                 {
                     return;
                 }
-                JObject view = (JObject)reply["view"];
-                if (overflow || (string)reply["streamId"] != streamId || (string)view["viewId"] != viewId)
+                ViewPage view = ProtocolCodec.Decode<ViewPage>((JObject)reply["view"]);
+                if (overflow || (string)reply["streamId"] != streamId || view.ViewId != viewId)
                 {
                     throw new InvalidOperationException("视图边界失效，请重新查询。");
                 }
                 var records = ((JArray)reply[collection]).OfType<JObject>().ToDictionary(row => (string)row[idField]);
-                SetRows(((JArray)view["ids"]).Values<string>().Select(id => records[id]).ToArray());
-                PageNumber = (int)view["pageNumber"];
-                TotalCount = (int)view["totalCount"];
+                SetRows(view.Ids.Select(id => records[id]).ToArray());
+                PageNumber = view.PageNumber.Value;
+                TotalCount = view.TotalCount.Value;
                 sequence = (long)reply["sequence"];
                 stale = false;
             }
@@ -201,8 +181,9 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 return;
             }
-            long next = (long?)message["sequence"] ?? -1;
-            if ((string)message["kind"] == "RESET_REQUIRED")
+            StreamMessage batch = protocol.ReadPush(message, out List<ViewDelta> viewChanges, out List<JObject> changedRecords);
+            long next = batch.Sequence == null ? -1 : long.Parse(batch.Sequence, CultureInfo.InvariantCulture);
+            if (batch.Kind == "RESET_REQUIRED")
             {
                 Invalidate("服务要求重建视图，请重新查询。");
                 return;
@@ -217,24 +198,23 @@ namespace STC.SalesTrading.Plugin.Ficc
                 return;
             }
             sequence = next;
-            if ((string)message["kind"] == "HEARTBEAT")
+            if (batch.Kind == "HEARTBEAT")
             {
                 return;
             }
             try
             {
-                JObject delta = ((JArray)message["views"] ?? new JArray()).OfType<JObject>()
-                    .FirstOrDefault(view => (string)view["viewId"] == viewId);
+                ViewDelta delta = viewChanges.FirstOrDefault(view => view.ViewId == viewId);
                 if (delta == null)
                 {
                     return;
                 }
-                TotalCount = (int)delta["totalCount"];
-                var incoming = ((JArray)message[collection] ?? new JArray()).OfType<JObject>()
+                TotalCount = delta.TotalCount.Value;
+                var incoming = changedRecords
                     .Where(row => domain != "price" || (string)row["viewId"] == viewId)
                     .ToDictionary(row => (string)row[idField]);
                 List<JObject> rows = Rows.ToList();
-                var removals = new HashSet<string>(((JArray)delta["removeIds"] ?? new JArray()).Values<string>());
+                var removals = new HashSet<string>(delta.RemoveIds ?? new List<string>());
                 if (removals.Count > 0)
                 {
                     Removed?.Invoke(removals.ToArray());
@@ -242,10 +222,10 @@ namespace STC.SalesTrading.Plugin.Ficc
                 if (IsBrowsing)
                 {
                     changedIds.UnionWith(removals);
-                    changedIds.UnionWith(((JArray)delta["upsertIds"] ?? new JArray()).Values<string>());
+                    changedIds.UnionWith(delta.UpsertIds ?? new List<string>());
                 }
                 bool refill = rows.RemoveAll(row => removals.Contains((string)row[idField])) > 0;
-                foreach (string id in ((JArray)delta["upsertIds"] ?? new JArray()).Values<string>())
+                foreach (string id in delta.UpsertIds ?? new List<string>())
                 {
                     int index = rows.FindIndex(existing => (string)existing[idField] == id);
                     if ((PageNumber != 1 || IsBrowsing) && index < 0)
@@ -346,7 +326,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             stale = true;
             if (previousId != null)
             {
-                await api.RequestAsync("ficc." + domain + ".view.close", new JObject { ["viewId"] = previousId });
+                await protocol.CloseAsync(previousId);
             }
         }
 

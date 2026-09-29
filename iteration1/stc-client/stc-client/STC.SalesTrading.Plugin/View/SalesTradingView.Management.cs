@@ -1,3 +1,4 @@
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -303,7 +304,7 @@ namespace STC.SalesTrading.Plugin.View
             loadingReference = true;
             try
             {
-                JObject response = await Api.RequestAsync("ficc.base.get", new JObject { ["kind"] = "SECURITY", ["ids"] = new JArray(ids) });
+                JObject response = await Api.RequestProjectionAsync(SalesTradingApi.BaseGet, ProtocolCodec.Decode<BaseGetRequest>(new JObject { ["kind"] = "SECURITY", ["ids"] = new JArray(ids) }));
                 foreach (JObject security in (JArray)response["records"])
                 {
                     securityReference[(string)security["securityId"]] = security;

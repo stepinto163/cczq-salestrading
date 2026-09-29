@@ -9,13 +9,16 @@
 ## 架构、模型与前端协议
 
 - [FICC服务API规范（实现对照与评审稿）](ficc-api-spec.zh-CN.md)
+- [应用消息协议代码与维护](application-protocol.zh-CN.md)
 - [FICC销售交易系统架构（讨论稿）](ficc-sales-trading-architecture.zh-CN.md)
 - [核心数据模型ER图（讨论草稿）](models/core-data-model-er.zh-CN.md)
 - [行情模型与STC映射（讨论稿）](models/market-data-model.zh-CN.md)
 - [Quote报价模型与字典（讨论稿）](models/quote-model.zh-CN.md)
 - [产品筛选接口：前端接入与条件字典](product-filter-contract.zh-CN.md)
+- [产品筛选字段：数据来源与实现状态（79 项，含 SZ 来源与硬编码规则）](product-filter-source-status.zh-CN.md)
 - [实时报价列表的浏览体验（产品讨论稿）](quote-board-browsing-ux.zh-CN.md)
 - [报价列表滚动与分页：前后端协作讨论稿](quote-board-paging-collaboration.zh-CN.md)
+- [QuoteSvr 典型业务性能基准：运行方式与结果口径](quote-performance-benchmark.zh-CN.md)
 - [SearchSvr设计简稿](searchsvr-design.zh-CN.md)
 - [STC 服务开发原则与实现约定](stc-development-principles.zh-CN.md)
 

@@ -1,12 +1,15 @@
 package ficc.quote;
 
-import com.alibaba.fastjson2.JSONObject;
+import ficc.api.QuoteRecord;
+import ficc.api.QuoteQueryRequest;
+import ficc.api.QuoteHistorySearchRequest;
+import ficc.api.QuoteHistoryRow;
 
 import java.util.List;
 
 /** Internal query boundary. No frontend topics, subscriptions, or quote commands. */
 interface SearchSvrClient {
-    List<JSONObject> queryQuotes(String userId, JSONObject query);
+    List<QuoteRecord> queryQuotes(String userId, QuoteQueryRequest query);
 
-    List<JSONObject> searchHistory(String userId, JSONObject query) throws Exception;
+    List<QuoteHistoryRow> searchHistory(String userId, QuoteHistorySearchRequest query) throws Exception;
 }

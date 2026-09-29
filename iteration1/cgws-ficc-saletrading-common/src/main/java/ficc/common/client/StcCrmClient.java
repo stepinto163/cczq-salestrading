@@ -2,6 +2,12 @@ package ficc.common.client;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import ficc.api.BaseData;
+import ficc.api.CrmGetData;
+import ficc.api.CrmGetRequest;
+import ficc.api.CrmSearchRequest;
+import ficc.api.ProtocolCodec;
+import ficc.api.SalesTradingApi;
 
 import ficc.common.ApiException;
 import ficc.common.JsonUtils;
@@ -26,8 +32,8 @@ import java.util.Properties;
  * untouched.
  */
 public final class StcCrmClient implements CrmClient {
-    public static final String SEARCH_TOPIC = "stc.crm.search";
-    public static final String GET_TOPIC = "stc.crm.get";
+    public static final String SEARCH_TOPIC = SalesTradingApi.CrmSearch.topic;
+    public static final String GET_TOPIC = SalesTradingApi.CrmGet.topic;
 
     private static final Logger LOGGER = Logger.getLogger(StcCrmClient.class);
 
@@ -65,20 +71,17 @@ public final class StcCrmClient implements CrmClient {
     public JSONObject query(
             String userId, String kind, String text, String institutionId, int offset, int limit) {
         validateBounds(offset, limit);
-        JSONObject reply =
-                request(
-                        SEARCH_TOPIC,
-                        JsonUtils.object(
-                                "kind",
-                                kind,
-                                "text",
-                                text == null ? "" : text,
-                                "institutionId",
-                                institutionId,
-                                "offset",
-                                offset,
-                                "limit",
-                                limit));
+        CrmSearchRequest query = new CrmSearchRequest();
+        query.kind = kind;
+        query.text = text == null ? "" : text;
+        query.institutionId = institutionId;
+        query.offset = offset;
+        query.limit = limit;
+        if (institutionId == null) {
+            query.clearField("institutionId");
+        }
+        BaseData data = ProtocolCodec.decode(request(SEARCH_TOPIC, query.toJson()), BaseData.class);
+        JSONObject reply = data.toJson();
         JSONArray records = reply.getJSONArray("records");
         boolean hasMore = Boolean.TRUE.equals(reply.getBoolean("hasMore"));
         Integer nextOffset = reply.getInteger("nextOffset");
@@ -117,8 +120,11 @@ public final class StcCrmClient implements CrmClient {
         if (id == null || id.trim().isEmpty()) {
             return null;
         }
-        JSONObject reply = request(GET_TOPIC, JsonUtils.object("kind", kind, "id", id.trim()));
-        JSONObject record = reply.getJSONObject("record");
+        CrmGetRequest query = new CrmGetRequest();
+        query.kind = kind;
+        query.id = id.trim();
+        CrmGetData data = ProtocolCodec.decode(request(GET_TOPIC, query.toJson()), CrmGetData.class);
+        JSONObject record = data.record == null ? null : data.record.toJson();
         return record == null || record.isEmpty() ? null : record;
     }
 

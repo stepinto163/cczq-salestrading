@@ -1,12 +1,14 @@
 # FICC服务API规范（实现对照与评审稿）
 
+协议代码入口：Java `ficc.api` 与 STC 客户端 `Ficc/Protocol` 显式定义请求、应答及推送模型；topic 与类型的对应关系见 `SalesTradingApi`。位置、调用示例和兼容规则见[应用消息协议代码](application-protocol.zh-CN.md)。本次模型重构不变更既有 wire 字段、topic 或数据库结构。
+
 日期：2026-09-17。本文对照当前仓库的服务注册、请求处理及客户端调用修订；“已注册”表示已有处理入口，不代表全部产品需求或所有部署环境均已验收。
 
 本次更新：补齐CRM机构／联系人搜索、确认时关联ID、内部同步接口；说明viewId、streamId与pushTopic关系；修正Handler名称、会话鉴权及当前限额。Quote、Price、Notification继续使用独立模型与推送频道。
 
 2026-09-17已实现：Quote、Price、Notification三类view统一采用按页查询替代累计extend，推送改为upsertIds／removeIds，由客户端排列第一页。H16/H17、H26/H27、H51/H52、S01/S02/S08及第10节已同步服务、C#客户端、Web客户端和API调试目录。旧view.extend不再注册，旧limit请求及place消费者需同步升级。三类view共享交互规则，模型、topic、缓存和sequence保持独立。体验说明见[产品说明](quote-board-browsing-ux.zh-CN.md)。
 
-实现边界：本轮客户端只保留当前一页，提供滚动换批及上一批／下一批／返回最新入口，不累积全部记录。服务保留过滤匹配指纹以识别进入和退出，仍会重新计算匹配数据；本轮没有完成事件定向索引优化，也没有进行50,000条压力测试，不据此承诺查询延迟。
+实现边界：客户端只保留当前一页，不累积全部记录。QuoteSvr 的普通报价变更已按报价 ID 增量维护各 view 的匹配指纹；行情只重算受影响债券的价格簿，并使用债券到报价的内存索引。创建／分页查询仍计算完整匹配结果；引用的筛选组变化、已观察到的基础资料版本变化或错误恢复需要重算。NotificationSvr 不包含在此次增量改造中。全局服务锁仍保留，未进行50,000条或高并发压力测试，不据此承诺查询延迟。详见[分页协作说明](quote-board-paging-collaboration.zh-CN.md)。
 
 当前运行服务为QuoteSvr与NotificationSvr。H36—H40、H48—H49及S06—S07是待实现设计；当前搜索在业务服务内完成，不能向部署环境直接调用这些规划中的topic。接口目录明确标出状态，后文保留其设计供评审。
 

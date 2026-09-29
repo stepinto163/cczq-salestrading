@@ -5,6 +5,7 @@ import ats.app.ym.ceda.ICedaConnectionListener;
 import com.alibaba.fastjson2.JSONObject;
 
 import ficc.common.IdGenerator;
+import ficc.api.*;
 import ficc.common.JsonUtils;
 
 import sc.app.stc.net.NetClientWrapper;
@@ -36,18 +37,26 @@ public final class QuoteSvrClient {
         return network.isOnline(SERVER_KEY);
     }
 
-    public void subscribeQuoteEvents(Consumer<JSONObject> listener) {
+    public void subscribeQuoteEvents(Consumer<QuoteEventBatch> listener) {
         network.subscribe(
                 SERVER_KEY,
                 QUOTE_EVENTS,
-                (topic, content) -> listener.accept(JsonUtils.parseObject(content)));
+                (topic, content) -> listener.accept(ProtocolCodec.decode(JsonUtils.parseObject(content), QuoteEventBatch.class)));
     }
 
-    public void subscribePrices(Consumer<JSONObject> listener) {
+    public void subscribePrices(Consumer<PriceFeedBatch> listener) {
         network.subscribe(
                 SERVER_KEY,
                 PRICE_SNAPSHOTS,
-                (topic, content) -> listener.accept(JsonUtils.parseObject(content)));
+                (topic, content) -> listener.accept(ProtocolCodec.decode(JsonUtils.parseObject(content), PriceFeedBatch.class)));
+    }
+
+    public QuoteStateData queryState(StateQueryRequest request) throws Exception {
+        return ProtocolCodec.decode(queryState(request.toJson()), QuoteStateData.class);
+    }
+
+    public PriceFeedBatch queryPriceFeed() throws Exception {
+        return ProtocolCodec.decode(queryPriceSnapshot(), PriceFeedBatch.class);
     }
 
     public JSONObject queryState(JSONObject request) throws Exception {

@@ -1,59 +1,132 @@
 package ficc.quote;
 
-import com.alibaba.fastjson2.*;
+import ficc.api.Filter;
+import ficc.api.FilterSubgroup;
+import ficc.api.QuoteRecord;
+import ficc.api.QuoteQueryRequest;
+import ficc.api.ReferenceRecord;
+import ficc.api.SettingRecord;
+import ficc.api.WatchlistSecurity;
+import ficc.common.ApiException;
+import ficc.common.FilterEngine;
+import ficc.common.QuoteFilterValues;
+import ficc.common.ReferenceData;
+import ficc.common.client.AccessPolicy;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
-import ficc.common.*;
-
-import java.time.*;
-import java.util.*;
-
-/** Same enriched-row matching for local queries and QuoteSvr subscriptions. */
+/** Shared typed matching for searches and subscriptions. No per-row JSON conversion. */
 final class QuoteMatcher {
-    final ReferenceData refs;
-    final Map<String, JSONObject> settings;
+    private final ReferenceData references;
+    private final Map<String, SettingRecord> settings;
 
-    QuoteMatcher(ReferenceData refs, Map<String, JSONObject> settings) {
-        this.refs = refs;
+    QuoteMatcher(ReferenceData references, Map<String, SettingRecord> settings) {
+        this.references = references;
         this.settings = settings;
     }
 
-    boolean matches(String user, JSONObject q, JSONObject f) {
-        // An absent or empty filter matches every quote: FilterEngine.match returns true and
-        // every group clause below is skipped on a missing key. Building the enriched row for
-        // each of them resolved the whole reference universe on every snapshot request, which
-        // is where the repeated BaseSvr lookups came from. Skipping also means an unreadable
-        // securityId is no longer rejected here; the price paths still call require() for the
-        // securities they actually return.
-        if (f == null || f.isEmpty()) return true;
-        JSONObject row = refs.enrich(q);
-        if (!FilterEngine.match(row, f)) return false;
-        for (String list : Arrays.asList("watchlistIds", "filterGroupIds")) {
-            JSONArray ids = f.getJSONArray(list);
-            if (ids == null || ids.isEmpty()) continue;
-            boolean any = false;
-            for (String id : ids.toJavaList(String.class)) {
-                JSONObject g = settings.get(id);
-                if (g == null || !user.equals(g.getString("userId")))
-                    throw ApiException.forField("1002", "NOT_FOUND", "Group not found", list);
-                if (f.getString("market") != null
-                        && !Objects.equals(f.getString("market"), g.getString("market")))
-                    throw ApiException.forField(
-                            "1001", "VALIDATION_FAILED", "Group market mismatch", list);
-                if (list.equals("watchlistIds")) {
-                    JSONArray a = g.getJSONArray("securities");
-                    if (a != null)
-                        for (Object x : a)
-                            if (q.getString("securityId")
-                                    .equals(((JSONObject) x).getString("securityId"))) any = true;
-                } else {
-                    JSONArray cs = new JSONArray();
-                    for (JSONObject sg : g.getJSONArray("subgroups").toJavaList(JSONObject.class))
-                        cs.addAll(sg.getJSONArray("conditions"));
-                    any |= FilterEngine.match(row, JsonUtils.object("conditions", cs));
+    /** Identical visibility and filter semantics for queries and incremental view updates. */
+    Predicate<QuoteRecord> prepareQuery(String user, QuoteQueryRequest request, AccessPolicy access) {
+        Filter filter = request.filter;
+        FilterEngine.validate(filter == null ? null : filter.toJson());
+        Predicate<QuoteRecord> matches = prepare(user, filter);
+        String scope = request.ownerScope == null ? "VISIBLE" : request.ownerScope;
+        if (!Arrays.asList("VISIBLE", "MINE").contains(scope)) {
+            throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid ownerScope", "ownerScope");
+        }
+        Set<String> statuses = request.status == null
+                ? Collections.singleton("ACTIVE") : new HashSet<>(request.status);
+        if (!Arrays.asList("ACTIVE", "PENDING_CONFIRM", "REFERRED", "DELETED").containsAll(statuses)) {
+            throw ApiException.forField("1001", "VALIDATION_FAILED", "Unknown quote status", "status");
+        }
+        return quote -> statuses.contains(quote.status)
+                && ("ACTIVE".equals(quote.status) || access.owns(user, quote.ownerUserId))
+                && (!"MINE".equals(scope) || user.equals(quote.ownerUserId))
+                && matches.test(quote);
+    }
+
+    Predicate<QuoteRecord> prepare(String user, Filter filter) {
+        if (filter == null || (filter.market == null && empty(filter.conditions)
+                && empty(filter.watchlistIds) && empty(filter.filterGroupIds))) {
+            return quote -> true;
+        }
+        List<SettingRecord> watchlists = groups(user, filter, filter.watchlistIds, "watchlistIds");
+        List<SettingRecord> filterGroups = groups(user, filter, filter.filterGroupIds, "filterGroupIds");
+        List<Filter> groupFilters = new ArrayList<>();
+        for (SettingRecord group : filterGroups) {
+            Filter combined = new Filter();
+            combined.conditions = new ArrayList<>();
+            if (group.subgroups != null) {
+                for (FilterSubgroup subgroup : group.subgroups) {
+                    if (subgroup.conditions != null) {
+                        combined.conditions.addAll(subgroup.conditions);
+                    }
                 }
             }
-            if (!any) return false;
+            groupFilters.add(combined);
         }
-        return true;
+        // Scope to one query: fresh reference data on the next query, one lookup per bond here.
+        Map<String, ReferenceRecord> securities = new HashMap<>();
+        return quote -> {
+            ReferenceRecord security = quote.securityId == null ? null
+                    : securities.computeIfAbsent(quote.securityId, references::requireRecord);
+            QuoteFilterValues values = new QuoteFilterValues(quote, security);
+            if (!FilterEngine.match(values, filter)) {
+                return false;
+            }
+            if (!watchlists.isEmpty()) {
+                boolean matched = false;
+                for (SettingRecord watchlist : watchlists) {
+                    if (watchlist.securities != null) {
+                        for (WatchlistSecurity member : watchlist.securities) {
+                            matched |= Objects.equals(quote.securityId, member.securityId);
+                        }
+                    }
+                }
+                if (!matched) {
+                    return false;
+                }
+            }
+            if (!groupFilters.isEmpty()) {
+                boolean matched = false;
+                for (Filter groupFilter : groupFilters) {
+                    matched |= FilterEngine.match(values, groupFilter);
+                }
+                if (!matched) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    }
+
+    private List<SettingRecord> groups(String user, Filter filter, List<String> ids, String field) {
+        if (empty(ids)) {
+            return Collections.emptyList();
+        }
+        List<SettingRecord> result = new ArrayList<>();
+        for (String id : ids) {
+            SettingRecord group = settings.get(id);
+            if (group == null || !Objects.equals(user, group.userId)) {
+                throw ApiException.forField("1002", "NOT_FOUND", "Group not found", field);
+            }
+            if (filter.market != null && !Objects.equals(filter.market, group.market)) {
+                throw ApiException.forField("1001", "VALIDATION_FAILED", "Group market mismatch", field);
+            }
+            result.add(group);
+        }
+        return result;
+    }
+
+    private static boolean empty(List<?> values) {
+        return values == null || values.isEmpty();
     }
 }

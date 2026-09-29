@@ -1,3 +1,4 @@
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -106,10 +107,10 @@ namespace STC.SalesTrading.Plugin.View
             LogStartup("STARTING", timer.ElapsedMilliseconds);
             try
             {
-                JObject dictionary = await Api.RequestAsync("ficc.quote.dictionary.query", new JObject());
+                JObject dictionary = await Api.RequestProjectionAsync(SalesTradingApi.QuoteDictionaryQuery, ProtocolCodec.Decode<DictionaryRequest>(new JObject()));
                 Editor.SetDictionary(dictionary);
-                JObject watchlists = await Api.RequestAsync("ficc.watchlist.query", new JObject());
-                JObject filterGroups = await Api.RequestAsync("ficc.filterGroup.query", new JObject());
+                JObject watchlists = await Api.RequestProjectionAsync(SalesTradingApi.WatchlistQuery, ProtocolCodec.Decode<WatchlistQueryRequest>(new JObject()));
+                JObject filterGroups = await Api.RequestProjectionAsync(SalesTradingApi.FilterGroupQuery, ProtocolCodec.Decode<FilterGroupQueryRequest>(new JObject()));
                 foreach (ProductFilterPanel panel in filterPanels)
                 {
                     panel.SetDictionary(dictionary);
@@ -394,10 +395,10 @@ namespace STC.SalesTrading.Plugin.View
                 {
                     if (grid.SelectedItem is JObject notification)
                     {
-                        await Api.RequestAsync("ficc.notification.read", new JObject
+                        await Api.RequestProjectionAsync(SalesTradingApi.NotificationRead, ProtocolCodec.Decode<NotificationReadRequest>(new JObject
                         {
                             ["notificationIds"] = new JArray(notification["notificationId"].DeepClone()), ["read"] = true
-                        });
+                        }));
                     }
                 })));
             }
@@ -433,7 +434,7 @@ namespace STC.SalesTrading.Plugin.View
                 {
                     request["cursor"] = cursor;
                 }
-                JObject response = await Api.RequestAsync("ficc.quote.history.search", request);
+                JObject response = await Api.RequestProjectionAsync(SalesTradingApi.QuoteHistorySearch, ProtocolCodec.Decode<QuoteHistorySearchRequest>(request));
                 grid.ItemsSource = ((JArray)response["rows"]).OfType<JObject>().Select(row =>
                 {
                     JObject quote = (JObject)row["quote"];
@@ -492,10 +493,10 @@ namespace STC.SalesTrading.Plugin.View
 
         private async Task ShowQuoteHistoryAsync()
         {
-            JObject response = await Api.RequestAsync("ficc.quote.history.query", new JObject
+            JObject response = await Api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject
             {
                 ["quoteId"] = EditingQuote["quoteId"].DeepClone(), ["limit"] = 100
-            });
+            }));
             DataGrid grid = UiElements.Grid("动作|action", "操作时间|operationTime", "操作人|operatorUserId", "版本|revision");
             grid.ItemsSource = (JArray)(response["history"] ?? response["records"]);
             new Window { Title = "报价变更历史", Content = grid, Width = 760, Height = 430,

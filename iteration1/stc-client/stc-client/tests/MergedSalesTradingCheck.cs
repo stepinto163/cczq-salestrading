@@ -1,4 +1,5 @@
-﻿using System;
+﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -114,7 +115,7 @@ internal static class MergedSalesTradingCheck
             today.SelectedRow.Add(today.Rows.First(row => row.QuoteId == quoteId));
             await today.UnreferCommand.ExecuteAsync(null);
             Check((string)(await model.Backend.Api.GetQuoteAsync(quoteId))["status"] == "ACTIVE", "product Unrefer preserves quote ID");
-            JObject history = await model.Backend.Api.RequestAsync("ficc.quote.history.query", new JObject { ["quoteId"] = quoteId, ["limit"] = 20 });
+            JObject history = await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = quoteId, ["limit"] = 20 }));
             Check(((JArray)history["records"]).Count >= 4, "continuous PostgreSQL lifecycle history");
             editor.Close();
             editor = null;

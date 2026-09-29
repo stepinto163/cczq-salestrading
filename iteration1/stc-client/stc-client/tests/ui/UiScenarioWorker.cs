@@ -1,3 +1,4 @@
+﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -248,7 +249,7 @@ namespace SalesTrading.UiTests
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "行情表未显示本例报价");
                     break;
                 case "history.assert":
-                    JObject history = await model.Backend.Api.RequestAsync("ficc.quote.history.query", new JObject { ["quoteId"] = quoteId, ["limit"] = 100 });
+                    JObject history = await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = quoteId, ["limit"] = 100 }));
                     Require(((JArray)history["records"]).Count >= int.Parse(Parameter(step, "minimumCount")), "持久化变更历史条数不足");
                     File.WriteAllText(Path.Combine(reportDirectory, "history.json"), history.ToString());
                     break;

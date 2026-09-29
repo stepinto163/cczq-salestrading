@@ -3,6 +3,7 @@ import { GwClient } from './gw-client.js';
 import { QuoteClient, PriceClient, NotificationClient } from './business-clients.js';
 import { displayQuote, pendingQuote, priceRows, bestRow, quoteInput, historyRow } from './requirements-model.js';
 import { CrmClient } from './crm-client.js';
+import { SalesTradingApi, requestProtocol } from './app-protocol.js';
 
 // These bindings are the original app.js integration points, shared with its inline event handlers.
 let quoteView;
@@ -217,7 +218,7 @@ async function loadSecurities(ids) {
     const missing = [...new Set(ids.filter(Boolean))].filter(id => !cache.has(id));
     for (let offset = 0; offset < missing.length; offset += 20) {
         if (cache !== securities) return;
-        const data = await gateway.request('QuoteSvr', 'ficc.base.get', {
+        const data = await requestProtocol(gateway, SalesTradingApi.BaseGet, {
             kind: 'SECURITY', ids: missing.slice(offset, offset + 20)
         });
         if (cache !== securities) return;

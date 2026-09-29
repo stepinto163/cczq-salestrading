@@ -3,6 +3,10 @@ package ficc.quote;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.QuoteRecord;
+import ficc.api.ProtocolCodec;
+import ficc.api.QuoteQueryRequest;
+import java.util.function.Predicate;
 
 import java.math.*;
 import java.time.*;
@@ -14,6 +18,7 @@ final class ViewService {
     final QuoteService svc;
     final Map<String, Stream> streams = new LinkedHashMap<>();
     final Map<String, Long> bookRevisions = new HashMap<>();
+    private final Map<String, Map<String, QuoteRecord>> quotesBySecurity = new HashMap<>();
     final String marketStream = IdGenerator.newId("MDE-");
     long marketSequence = 0;
 
@@ -35,14 +40,42 @@ final class ViewService {
         final ViewPage page = new ViewPage();
         List<String> ids = new ArrayList<>();
         Map<String, JSONObject> loaded = new LinkedHashMap<>();
+        String referenceVersion;
+        boolean rebuildRequired;
     }
 
-    static final class QuoteView extends View {}
+    static final class QuoteView extends View {
+        List<QuoteRecord> selectedQuotes = Collections.emptyList();
+    }
 
     static final class PriceView extends View {}
 
     ViewService(QuoteService svc) {
         this.svc = svc;
+        for (QuoteRecord quote : svc.quotes.values()) {
+            indexQuote(quote, null);
+        }
+    }
+
+    private void indexQuote(QuoteRecord quote, String previousSecurity) {
+        if (previousSecurity != null && !Objects.equals(previousSecurity, quote.securityId)) {
+            Map<String, QuoteRecord> previous = quotesBySecurity.get(previousSecurity);
+            if (previous != null) {
+                previous.remove(quote.quoteId);
+                if (previous.isEmpty()) {
+                    quotesBySecurity.remove(previousSecurity);
+                }
+            }
+        }
+        if (quote.securityId != null) {
+            quotesBySecurity.computeIfAbsent(quote.securityId, ignored -> new LinkedHashMap<>())
+                    .put(quote.quoteId, quote);
+        }
+    }
+
+    private Collection<QuoteRecord> quotesForSecurity(String securityId) {
+        Map<String, QuoteRecord> quotes = quotesBySecurity.get(securityId);
+        return quotes == null ? Collections.emptyList() : quotes.values();
     }
 
     Stream find(String session, String domain) {
@@ -157,7 +190,7 @@ final class ViewService {
         refresh(stream, view);
         stream.used.add(id);
         stream.views.put(id, view);
-        return result(stream, view);
+        return replySnapshot(stream, view);
     }
 
     Object queryPage(QuoteService.Call call, String domain) {
@@ -170,7 +203,18 @@ final class ViewService {
         }
         view.page.configure(call.request(), false);
         refresh(stream, view);
-        return result(stream, view);
+        return replySnapshot(stream, view);
+    }
+
+    private Object replySnapshot(Stream stream, View view) {
+        if (!(view instanceof QuoteView)) {
+            return result(stream, view);
+        }
+        JSONObject metadata = JsonUtils.object("streamId", stream.id,
+                "sequence", Long.toString(stream.sequence), "view", viewRecord(stream, view));
+        // Stored records are replaced, never edited, after commit. Capture references and
+        // metadata under the service lock, then convert only this page outside that lock.
+        return new QuotePageSnapshot(metadata, ((QuoteView) view).selectedQuotes, stream.user, svc.access);
     }
 
     Object close(QuoteService.Call c, String domain) {
@@ -210,14 +254,13 @@ final class ViewService {
     }
 
     int total(Stream s, View v) {
-        if (v instanceof QuoteView) return svc.selectQuotes(s.user, v.request).size();
-        return priceIds(s.user, v.request).size();
+        return v.page.totalCount();
     }
 
     List<JSONObject> matchingRows(Stream stream, View view) {
         if (view instanceof QuoteView) {
             return svc.selectQuotes(stream.user, view.request).stream()
-                    .map(quote -> svc.visible(quote, stream.user))
+                    .map(quote -> svc.visible(quote, stream.user).toJson())
                     .collect(Collectors.toList());
         }
         return priceIds(stream.user, view.request).stream()
@@ -233,6 +276,22 @@ final class ViewService {
     }
 
     void refresh(Stream stream, View view) {
+        String referenceVersion = svc.refs.version();
+        if (view instanceof QuoteView) {
+            List<QuoteRecord> matches = svc.selectQuotes(stream.user, view.request);
+            view.page.initializeVersions(quoteVersions(matches));
+            long offset = ((long) view.page.pageNumber - 1) * view.page.pageSize;
+            int start = (int) Math.min(offset, matches.size());
+            int end = (int) Math.min(offset + view.page.pageSize, matches.size());
+            QuoteView quoteView = (QuoteView) view;
+            quoteView.selectedQuotes = new ArrayList<>(matches.subList(start, end));
+            view.ids = quoteView.selectedQuotes.stream().map(quote -> quote.quoteId)
+                    .collect(Collectors.toList());
+            view.loaded.clear();
+            view.referenceVersion = referenceVersion;
+            view.rebuildRequired = false;
+            return;
+        }
         List<JSONObject> rows = matchingRows(stream, view);
         String idField = view instanceof QuoteView ? "quoteId" : "securityId";
         view.page.initialize(rows, idField);
@@ -241,6 +300,16 @@ final class ViewService {
             view.loaded.put(row.getString(idField), row);
         }
         view.ids = new ArrayList<>(view.loaded.keySet());
+        view.referenceVersion = referenceVersion;
+        view.rebuildRequired = false;
+    }
+
+    private Map<String, String> quoteVersions(List<QuoteRecord> quotes) {
+        Map<String, String> versions = new LinkedHashMap<>();
+        for (QuoteRecord quote : quotes) {
+            versions.put(quote.quoteId, quote.revision);
+        }
+        return versions;
     }
 
     List<JSONObject> books(View v) {
@@ -295,11 +364,12 @@ final class ViewService {
         JSONObject f = r.getJSONObject("filter");
         FilterEngine.validate(f);
         Map<String, String> latest = new HashMap<>();
-        for (JSONObject q : svc.quotes.values())
-            if (q.getString("status").equals("ACTIVE") && svc.matches(user, q, f))
+        Predicate<QuoteRecord> matches = svc.matchingQuotes(user, f);
+        for (QuoteRecord q : svc.quotes.values())
+            if (q.status.equals("ACTIVE") && matches.test(q))
                 latest.merge(
-                        q.getString("securityId"),
-                        q.getString("updateTime"),
+                        q.securityId,
+                        q.updateTime,
                         (a, b) -> a.compareTo(b) >= 0 ? a : b);
         return latest.keySet().stream()
                 .sorted(
@@ -335,13 +405,23 @@ final class ViewService {
     }
 
     JSONObject book(String user, String security, JSONObject filter, String mode, int depth) {
-        List<JSONObject> qs =
-                svc.quotes.values().stream()
+        long started = QuotePerformanceTrace.searchStart();
+        try {
+            return buildBook(user, security, filter, mode, depth);
+        } finally {
+            QuotePerformanceTrace.bookFinished(started);
+        }
+    }
+
+    private JSONObject buildBook(String user, String security, JSONObject filter, String mode, int depth) {
+        Predicate<QuoteRecord> matches = svc.matchingQuotes(user, filter);
+        List<QuoteRecord> qs =
+                quotesForSecurity(security).stream()
                         .filter(
                                 q ->
-                                        security.equals(q.getString("securityId"))
-                                                && q.getString("status").equals("ACTIVE")
-                                                && svc.matches(user, q, filter))
+                                        security.equals(q.securityId)
+                                                && q.status.equals("ACTIVE")
+                                                && matches.test(q))
                         .collect(Collectors.toList());
         // The exercise flag is a property of the security, not of the quote: resolve it once
         // instead of once per active quote.
@@ -349,9 +429,9 @@ final class ViewService {
         if (!qs.isEmpty()) {
             exercise = svc.refs.require(security).getBooleanValue("hasExerciseOption");
         }
-        for (JSONObject q : qs) {
-            if (!"1".equals(q.getString("quoteType"))
-                    || !Objects.equals(q.getString("yieldType"), exercise ? "2" : "1"))
+        for (QuoteRecord q : qs) {
+            if (!"1".equals(q.quoteType)
+                    || !Objects.equals(q.yieldType, exercise ? "2" : "1"))
                 throw ApiException.forField(
                         "1009",
                         "NOT_READY",
@@ -361,33 +441,33 @@ final class ViewService {
         JSONArray entries = new JSONArray();
         JSONObject quoteRefs = JsonUtils.object();
         for (String side : Arrays.asList("1", "2")) {
-            Comparator<JSONObject> cmp =
-                    Comparator.comparing(q -> new BigDecimal(q.getString("price")));
+            Comparator<QuoteRecord> cmp =
+                    Comparator.comparing(q -> new BigDecimal(q.price));
             if (side.equals("2")) cmp = cmp.reversed();
             cmp =
                     cmp.thenComparing(
-                                    Comparator.<JSONObject, String>comparing(
-                                                    q -> q.getString("updateTime"))
+                                    Comparator.<QuoteRecord, String>comparing(
+                                                    q -> q.updateTime)
                                             .reversed())
-                            .thenComparing(q -> q.getString("quoteId"));
-            List<JSONObject> sorted =
+                            .thenComparing(q -> q.quoteId);
+            List<QuoteRecord> sorted =
                     qs.stream()
-                            .filter(q -> side.equals(q.getString("side")))
+                            .filter(q -> side.equals(q.side))
                             .sorted(cmp)
                             .collect(Collectors.toList());
             BigDecimal last = null;
             int level = 0,
                     ordinal = 0,
                     max = mode.equals("FULL") ? Integer.MAX_VALUE : mode.equals("BEST") ? 1 : depth;
-            for (JSONObject q : sorted) {
-                BigDecimal value = new BigDecimal(q.getString("price"));
+            for (QuoteRecord q : sorted) {
+                BigDecimal value = new BigDecimal(q.price);
                 if (last == null || last.compareTo(value) != 0) {
                     level++;
                     last = value;
                 }
                 if (level > max) break;
-                String entryId = "FICC:" + q.getString("quoteId");
-                OffsetDateTime time = OffsetDateTime.parse(q.getString("updateTime"));
+                String entryId = "FICC:" + q.quoteId;
+                OffsetDateTime time = OffsetDateTime.parse(q.updateTime);
                 JSONObject e =
                         JsonUtils.object(
                                 "MDEntryID",
@@ -395,17 +475,17 @@ final class ViewService {
                                 "MDEntryType",
                                 side.equals("1") ? "0" : "1",
                                 "MDEntryPx",
-                                q.getString("price"),
+                                q.price,
                                 "MDEntrySize",
-                                q.getString("quantity"),
+                                q.quantity,
                                 "PriceType",
                                 "3",
                                 "ExerciseFlag",
-                                q.getString("yieldType").equals("2") ? "0" : "1",
+                                q.yieldType.equals("2") ? "0" : "1",
                                 "SettlType",
-                                q.getString("settlType"),
+                                q.settlType,
                                 "UserID",
-                                q.getString("ownerUserId"),
+                                q.ownerUserId,
                                 "MDPriceLevel",
                                 Integer.toString(++ordinal),
                                 "MDEntryDate",
@@ -416,27 +496,27 @@ final class ViewService {
                                         java.time.format.DateTimeFormatter.ofPattern(
                                                 "HH:mm:ss.SSS")));
                 e.put(
-                        q.getString("yieldType").equals("2") ? "YieldToExecution" : "Yield",
-                        q.getString("price"));
+                        q.yieldType.equals("2") ? "YieldToExecution" : "Yield",
+                        q.price);
                 if (user == null || svc.owns(user, q)) {
-                    e.put("InstitutionID", q.get("institutionId"));
-                    e.put("TraderID", q.get("contactId"));
+                    e.put("InstitutionID", q.institutionId);
+                    e.put("TraderID", q.contactId);
                 }
                 entries.add(e);
                 quoteRefs.put(
                         entryId,
                         JsonUtils.object(
                                 "quoteId",
-                                q.getString("quoteId"),
+                                q.quoteId,
                                 "quoteRevision",
-                                q.getString("revision")));
+                                q.revision));
             }
         }
         return JsonUtils.object(
                 "securityId",
                 security,
                 "updateTime",
-                qs.stream().map(q -> q.getString("updateTime")).max(String::compareTo).orElse(null),
+                qs.stream().map(q -> q.updateTime).max(String::compareTo).orElse(null),
                 "bookRevision",
                 Long.toString(bookRevisions.getOrDefault(security, 0L)),
                 "marketData",
@@ -478,9 +558,10 @@ final class ViewService {
                         .collect(Collectors.toList()));
     }
 
-    void changed(JSONObject q, JSONObject event, String previousSecurity) {
+    void changed(QuoteRecord q, JSONObject event, String previousSecurity) {
+        indexQuote(q, previousSecurity);
         Set<String> securities = new LinkedHashSet<>();
-        if (q.getString("securityId") != null) securities.add(q.getString("securityId"));
+        if (q.securityId != null) securities.add(q.securityId);
         // Include the previous security when an active quote changes bond.
         if (previousSecurity != null) securities.add(previousSecurity);
         for (String id : securities) bookRevisions.merge(id, 1L, Long::sum);
@@ -488,8 +569,11 @@ final class ViewService {
         for (Stream s : streams.values())
             if (s.subscribed) {
                 try {
-                    publishChanges(s, q, event, null);
+                    publishChanges(s, q, event, null, previousSecurity);
                 } catch (ApiException ex) {
+                    for (View view : s.views.values()) {
+                        view.rebuildRequired = true;
+                    }
                     svc.publish.accept(
                             topic(s),
                             JsonUtils.object(
@@ -528,22 +612,24 @@ final class ViewService {
         }
     }
 
-    void publishChanges(Stream stream, JSONObject changed, JSONObject event, JSONObject setting) {
+    void publishChanges(Stream stream, QuoteRecord changed, JSONObject event, JSONObject setting,
+            String previousSecurity) {
         JSONArray deltas = new JSONArray();
         JSONArray bookUpdates = new JSONArray();
         JSONArray reports = new JSONArray();
         Map<String, JSONObject> quoteUpdates = new LinkedHashMap<>();
         for (View view : stream.views.values()) {
+            if (setting != null && !usesSetting(view, setting)) {
+                continue;
+            }
             Map<String, JSONObject> changedRows = new LinkedHashMap<>();
-            JSONObject delta =
-                    view.page.changes(
-                            view.id,
-                            matchingRows(stream, view),
-                            view instanceof QuoteView ? "quoteId" : "securityId",
-                            changedRows);
+            JSONObject delta = updateView(stream, view, changed, previousSecurity, setting, changedRows);
             // Matching fingerprints are retained; displayed positions are not.
             view.loaded.clear();
             view.ids.clear();
+            if (view instanceof QuoteView) {
+                ((QuoteView) view).selectedQuotes = Collections.emptyList();
+            }
             if (delta.getJSONArray("upsertIds").isEmpty()
                     && delta.getJSONArray("removeIds").isEmpty()
                     && setting == null) {
@@ -561,7 +647,7 @@ final class ViewService {
             }
         }
         if (stream.domain.equals("quote") && changed != null && svc.owns(stream.user, changed)) {
-            quoteUpdates.put(changed.getString("quoteId"), svc.visible(changed, stream.user));
+            quoteUpdates.put(changed.quoteId, svc.visible(changed, stream.user).toJson());
             reports.add(
                     JsonUtils.object(
                             "eventId",
@@ -569,11 +655,11 @@ final class ViewService {
                             "requestId",
                             event.getString("requestId"),
                             "clientQuoteId",
-                            changed.get("clientQuoteId"),
+                            changed.clientQuoteId,
                             "quoteId",
-                            changed.getString("quoteId"),
+                            changed.quoteId,
                             "revision",
-                            changed.getString("revision"),
+                            changed.revision,
                             "action",
                             event.getString("action"),
                             "operatorUserId",
@@ -606,6 +692,83 @@ final class ViewService {
         svc.publish.accept(topic(stream), message);
     }
 
+    private boolean usesSetting(View view, JSONObject setting) {
+        JSONObject filter = view.request.getJSONObject("filter");
+        if (filter == null) {
+            return false;
+        }
+        String field = "WATCHLIST".equals(setting.getString("type")) ? "watchlistIds" : "filterGroupIds";
+        JSONArray ids = filter.getJSONArray(field);
+        return ids != null && ids.contains(setting.getString("id"));
+    }
+
+    private JSONObject updateView(Stream stream, View view, QuoteRecord changed,
+            String previousSecurity, JSONObject setting, Map<String, JSONObject> changedRows) {
+        String referenceVersion = svc.refs.version();
+        boolean rebuild = setting != null || changed == null || view.rebuildRequired
+                || !Objects.equals(view.referenceVersion, referenceVersion);
+        // A failed calculation must never leave a partially advanced view treated as current.
+        view.rebuildRequired = true;
+        JSONObject delta;
+        if (view instanceof QuoteView) {
+            delta = updateQuoteVersions(stream, view, changed, rebuild, changedRows);
+        } else if (rebuild) {
+            delta = view.page.changes(view.id, matchingRows(stream, view),
+                    "securityId", changedRows);
+        } else {
+            Map<String, JSONObject> upserts = new LinkedHashMap<>();
+            Set<String> removals = new LinkedHashSet<>();
+            Set<String> affectedSecurities = new LinkedHashSet<>();
+            if (previousSecurity != null) {
+                affectedSecurities.add(previousSecurity);
+            }
+            if (changed.securityId != null) {
+                affectedSecurities.add(changed.securityId);
+            }
+            for (String securityId : affectedSecurities) {
+                JSONObject book = book(stream.user, securityId,
+                        view.request.getJSONObject("filter"), mode(view.request),
+                        view.request.getIntValue("depth"));
+                if (book.getJSONObject("marketData").getJSONArray("NoMDEntries").isEmpty()) {
+                    removals.add(securityId);
+                } else {
+                    upserts.put(securityId, book);
+                }
+            }
+            delta = view.page.applyChanges(view.id, upserts, removals, changedRows);
+        }
+        view.referenceVersion = referenceVersion;
+        view.rebuildRequired = false;
+        return delta;
+    }
+
+    private JSONObject updateQuoteVersions(Stream stream, View view, QuoteRecord changed,
+            boolean rebuild, Map<String, JSONObject> changedRows) {
+        JSONObject delta;
+        if (rebuild) {
+            delta = view.page.replaceVersions(view.id,
+                    quoteVersions(svc.selectQuotes(stream.user, view.request)));
+        } else {
+            QuoteQueryRequest query = ProtocolCodec.decode(view.request, QuoteQueryRequest.class);
+            long started = QuotePerformanceTrace.searchStart();
+            boolean matches;
+            try {
+                matches = svc.matcher.prepareQuery(stream.user, query, svc.access).test(changed);
+            } finally {
+                QuotePerformanceTrace.matchFinished(started);
+            }
+            delta = view.page.applyVersions(view.id,
+                    matches ? Collections.singletonMap(changed.quoteId, changed.revision)
+                            : Collections.emptyMap(),
+                    matches ? Collections.emptySet() : Collections.singleton(changed.quoteId));
+        }
+        for (Object id : delta.getJSONArray("upsertIds")) {
+            QuoteRecord quote = svc.quotes.get(id.toString());
+            changedRows.put(quote.quoteId, QuotePageSnapshot.visibleJson(quote, stream.user, svc.access));
+        }
+        return delta;
+    }
+
     void settingsChanged(String user, String kind, String id, String rev, boolean deleted) {
         for (Stream s : streams.values())
             if (s.user.equals(user) && s.subscribed) {
@@ -622,8 +785,15 @@ final class ViewService {
                                     "revision",
                                     rev,
                                     "action",
-                                    deleted ? "REMOVE" : "UPSERT"));
+                                    deleted ? "REMOVE" : "UPSERT"),
+                            null);
                 } catch (ApiException e) {
+                    for (View view : s.views.values()) {
+                        if (usesSetting(view, JsonUtils.object("type",
+                                kind.equals("watchlist") ? "WATCHLIST" : "FILTER_GROUP", "id", id))) {
+                            view.rebuildRequired = true;
+                        }
+                    }
                     svc.publish.accept(
                             topic(s),
                             JsonUtils.object(

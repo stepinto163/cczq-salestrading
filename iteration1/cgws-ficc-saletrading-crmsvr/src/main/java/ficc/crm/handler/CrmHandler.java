@@ -1,6 +1,7 @@
 package ficc.crm.handler;
 
 import ats.app.ym.ceda.server.ContentHandler;
+import ficc.api.ProtocolBoundary;
 import ats.bbox.framework.Server;
 
 import com.adaptiveMQ2.message.Message;
@@ -38,7 +39,7 @@ public abstract class CrmHandler extends ContentHandler {
         Map<String, Object> reply = resource().dispatch(topic, message.getSignalID(), content);
         LOGGER.debug(
                 "DPS REPLY topic=" + topic + " body=" + DpsMessageLog.body(JsonUtils.toJson(reply)));
-        return reply;
+        return ProtocolBoundary.reply(topic, reply);
     }
 
     @Override

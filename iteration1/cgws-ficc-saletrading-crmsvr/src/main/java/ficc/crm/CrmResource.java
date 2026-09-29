@@ -11,6 +11,8 @@ import com.adaptiveMQ2.utils.ConstsMessage;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 
+import ficc.api.ProtocolBoundary;
+
 import ficc.common.ApiException;
 import ficc.common.ApiResponse;
 import ficc.common.ComponentLog;
@@ -69,7 +71,7 @@ public final class CrmResource extends ResourceAdapter {
         try {
             JSONObject request;
             try {
-                request = JsonUtils.parseObject(content);
+                request = ProtocolBoundary.request(topic, JsonUtils.parseObject(content));
             } catch (Exception error) {
                 return ApiResponse.failure(
                         null, ApiException.forField("1001", "VALIDATION_FAILED", "Invalid JSON", null));

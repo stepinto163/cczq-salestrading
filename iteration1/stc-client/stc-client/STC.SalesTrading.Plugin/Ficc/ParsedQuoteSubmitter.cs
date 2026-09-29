@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 
 namespace STC.SalesTrading.Plugin.Ficc
@@ -23,26 +24,26 @@ namespace STC.SalesTrading.Plugin.Ficc
             QuoteConfirmRow[] drafts = rows.Where(row => row.Revision == 0).ToArray();
             if (drafts.Length > 0)
             {
-                JObject[] inputs = drafts.Select(row =>
+                QuoteCreateItem[] inputs = drafts.Select(row =>
                 {
-                    JObject input = DpsModelMapper.Input(row);
-                    input["clientQuoteId"] = row.ClientQuoteId;
+                    QuoteCreateItem input = ProtocolCodec.Decode<QuoteCreateItem>(DpsModelMapper.Input(row));
+                    input.ClientQuoteId = row.ClientQuoteId;
                     return input;
                 }).ToArray();
-                JObject response = await api.CreateAsync(inputs);
-                JArray results = response["results"] as JArray;
+                QuoteWriteData response = await api.CreateQuotesAsync(inputs);
+                List<QuoteOperationResult> results = response.Results;
                 if (results != null)
                 {
                     // Retain successful IDs even when another row in the batch failed.
-                    foreach (JObject result in results.OfType<JObject>())
+                    foreach (QuoteOperationResult result in results)
                     {
                         QuoteConfirmRow row = drafts.FirstOrDefault(candidate =>
-                            candidate.ClientQuoteId == (string)result["clientQuoteId"]);
-                        if (row != null && (string)result["Code"] == "0000"
-                            && !string.IsNullOrWhiteSpace((string)result["quoteId"]))
+                            candidate.ClientQuoteId == result.ClientQuoteId);
+                        if (row != null && result.Code == "0000"
+                            && !string.IsNullOrWhiteSpace(result.QuoteId))
                         {
-                            row.RecognitionId = (string)result["quoteId"];
-                            row.Revision = (long?)result["revision"] ?? 1;
+                            row.RecognitionId = result.QuoteId;
+                            row.Revision = result.Revision == null ? 1 : long.Parse(result.Revision, System.Globalization.CultureInfo.InvariantCulture);
                         }
                     }
                 }
@@ -56,13 +57,13 @@ namespace STC.SalesTrading.Plugin.Ficc
             foreach (QuoteConfirmRow row in rows)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                JObject quote = await api.GetQuoteAsync(row.RecognitionId);
+                QuoteRecord quote = await api.GetQuoteModelAsync(row.RecognitionId);
                 if (quote == null)
                 {
                     throw new InvalidOperationException("无法读取已创建报价：" + row.RecognitionId);
                 }
-                row.Revision = (long)quote["revision"];
-                string status = (string)quote["status"];
+                row.Revision = long.Parse(quote.Revision, System.Globalization.CultureInfo.InvariantCulture);
+                string status = quote.Status;
                 if (status == "ACTIVE")
                 {
                     // A previous submit may have confirmed this row before a later row failed.
@@ -72,7 +73,10 @@ namespace STC.SalesTrading.Plugin.Ficc
                 {
                     throw new InvalidOperationException("报价状态已改变，请在报价管理中处理：" + row.RecognitionId);
                 }
-                JObject response = await api.OperateAsync("confirm", new[] { quote }, DpsModelMapper.Input(row));
+                QuoteChangeItem changes = ProtocolCodec.Decode<QuoteChangeItem>(DpsModelMapper.Input(row));
+                changes.QuoteId = quote.QuoteId;
+                changes.ExpectedRevision = quote.Revision;
+                QuoteWriteData response = await api.ChangeQuotesAsync(SalesTradingApi.QuoteConfirm, new[] { changes });
                 FiccApiClient.RequireQuoteResults(response);
             }
         }

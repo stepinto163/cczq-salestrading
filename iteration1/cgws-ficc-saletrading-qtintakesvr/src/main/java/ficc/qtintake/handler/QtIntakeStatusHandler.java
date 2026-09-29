@@ -1,6 +1,7 @@
 package ficc.qtintake.handler;
 
 import ats.app.ym.ceda.server.ContentHandler;
+import ficc.api.ProtocolBoundary;
 import ats.bbox.framework.Server;
 
 import com.adaptiveMQ2.message.Message;
@@ -27,6 +28,6 @@ public final class QtIntakeStatusHandler extends ContentHandler {
         Map<String, Object> reply =
                 ((QtIntakeResource) Server.getServer().getResource("QtIntakeResource")).status();
         LOGGER.debug("DPS REPLY topic=" + topic + " body=" + DpsMessageLog.body(JsonUtils.toJson(reply)));
-        return reply;
+        return ProtocolBoundary.reply(topic, reply);
     }
 }

@@ -3,6 +3,7 @@ package ficc.quote;
 import com.alibaba.fastjson2.*;
 
 import ficc.common.*;
+import ficc.api.ProtocolBoundary;
 
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,7 @@ public final class BusinessSmoke {
     static QuoteService svc;
     static String sid = "functional-smoke", prefix = "SMOKE-" + UUID.randomUUID();
     static int checks;
+    static final JSONArray protocolFixtures = new JSONArray();
 
     static void check(boolean condition, String name) {
         if (!condition) throw new AssertionError(name);
@@ -23,7 +25,10 @@ public final class BusinessSmoke {
 
     static JSONObject response(String user, String topic, JSONObject req) {
         req.putIfAbsent("requestId", UUID.randomUUID().toString());
-        return svc.handle(user, sid, topic, req);
+        JSONObject reply = svc.handle(user, sid, topic, req);
+        protocolFixtures.add(JsonUtils.deepCopy(JsonUtils.object(
+                "topic", topic, "request", req, "reply", reply)));
+        return reply;
     }
 
     static JSONObject call(String topic, JSONObject req) {
@@ -112,6 +117,11 @@ public final class BusinessSmoke {
             svc = new QuoteService(db, new ReferenceData());
             svc.publish =
                     (t, v) -> {
+                        JSONObject wire = ProtocolBoundary.push(t, v);
+                        if (!JsonUtils.canonicalHash(v).equals(JsonUtils.canonicalHash(wire))) {
+                            throw new AssertionError("Protocol changed push: " + t);
+                        }
+                        protocolFixtures.add(JsonUtils.object("topic", t, "message", JsonUtils.deepCopy(wire)));
                         if (pushes.size() < 200)
                             pushes.add(
                                     JsonUtils.object("topic", t, "message", JsonUtils.deepCopy(v)));
@@ -415,6 +425,8 @@ public final class BusinessSmoke {
                                         "result",
                                         "PASS"))
                         .getBytes(StandardCharsets.UTF_8));
+        Files.write(Paths.get(args[1] + ".protocol.json"),
+                JsonUtils.toJson(protocolFixtures).getBytes(StandardCharsets.UTF_8));
         System.out.println(
                 "PASS " + checks + " checks; five quotes; DPS/GW not tested by this probe.");
     }
