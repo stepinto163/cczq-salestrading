@@ -461,6 +461,10 @@ final class QuoteService {
                 store.commit();
             } catch (ApiException e) {
                 store.rollback();
+                // Dependency failures must be retried, not saved as a permanent receipt.
+                if ("1009".equals(e.code) || "1099".equals(e.code)) {
+                    throw e;
+                }
                 result =
                         JsonUtils.object(
                                 "quoteId",

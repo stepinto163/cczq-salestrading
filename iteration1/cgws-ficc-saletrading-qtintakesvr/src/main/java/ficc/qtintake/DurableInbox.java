@@ -62,7 +62,12 @@ public final class DurableInbox implements AutoCloseable {
             if (Files.exists(existing)) {
                 JSONObject previous = read(existing).getJSONObject("request");
                 previous.getJSONObject("intake").remove("ownerUserId");
-                if (!JsonUtils.canonicalHash(previous).equals(JsonUtils.canonicalHash(request))) {
+                JSONObject incoming = JsonUtils.deepCopy(request);
+                if (!previous.getJSONObject("intake").containsKey("originalMessageId")) {
+                    // Already queued/sent events keep their original contract on upgrade.
+                    incoming.getJSONObject("intake").remove("originalMessageId");
+                }
+                if (!JsonUtils.canonicalHash(previous).equals(JsonUtils.canonicalHash(incoming))) {
                     throw new IOException(
                             "Conflicting QTrade replay for requestId="
                                     + request.getString("requestId"));

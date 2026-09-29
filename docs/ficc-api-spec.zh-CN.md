@@ -963,6 +963,10 @@ fromDate、toDate必填，filter/limit可选；无订阅。当前评级和最新
 
 服务：`QuoteSvr`；topic：`ficc.quote.sourceMessage.query`；handler：`QuoteSourceMessageQueryHandler.handle`。
 
+QTrade 报价确认按一条原始消息分组：同一原始消息拆出的多条报价共享 `sourceMessageId`，原文记录的 `quoteIds` 包含各条报价。前端按此 ID 显示组头、组内选择及原文，不能按聊天群号或机构名称合并。每条报价仍有独立 `quoteId`、版本、确认/删除和重放幂等性。逐笔到达时组内逐条增加；部分确认后保留未确认成员，最后一条离开待确认集合时移除该组。缺失 `sourceMessageId` 时按 `quoteId` 独立展示。
+
+`ficc.quote.create` 的服务接入 `intake.originalMessageId` 是可选的原始消息关联键，`intake.externalMessageId` 仍为单条报价事件的幂等标识，两者不可互换。QuoteSvr 按账号、归属人、原始消息关联键定位持久化来源。QtIntakeSvr 在当前 Quote(S) V1.4 没有原始消息唯一 ID 的条件下，以账号、对话人/聊天群、业务时间、操作和原文内容生成关联键；缺少原文时不合组。该推导不能区分同一时刻同一对话重复发送的完全相同文本；各条下行的业务时间不一致时也不会强行合组。旧数据不自动重新分组。映射依据、限制及验证见 [QTrade 接入说明](../iteration1/cgws-ficc-saletrading-qtintakesvr/README.md)。
+
 sourceMessageId或筛选条件sourceType/fromTime/toTime至少一种；用于报价确认页定位来源原文及解析候选，不是正式报价搜索。原文仅返回授权用户可见范围。
 
 请求：

@@ -22,8 +22,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 {
     /// <summary>
     /// 报价确认页 VM：分批分组折叠主从表 + 批量工具栏 + 状态栏统计。
-    /// 数据流（原型语义）：加载待确认行 → 按 批次|机构|来源 分组 → 行内编辑 → 确认/删除入库。
-    /// 开发期走 Mock；真实后端接入后仅替换 IQuoteService 实现。
+    /// 加载待确认行 → 按原始消息批次分组 → 行内编辑 → 确认/删除入库。
     /// </summary>
     public partial class QuoteConfirmViewModel : ObservableObject, IDisposable
     {
@@ -99,7 +98,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         #region 加载与分组
 
-        /// <summary>加载待确认行并按 批次Id|机构|来源 分组（原型 renderQuoteGrouped 语义）。</summary>
+        /// <summary>按服务端原始消息批次分组，缺少批次时保持独立报价。</summary>
         private async Task InitializeAsync()
         {
             var lease = _loadCoordinator.Begin();
@@ -124,17 +123,24 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
                 if (!lease.IsCurrent) return;
 
+                var selectedIds = new HashSet<string>(Batches.SelectMany(batch => batch.Rows)
+                    .Where(row => row.IsSelected).Select(row => row.Row.RecognitionId));
+                var expandedGroups = Batches.ToDictionary(batch => batch.BatchId, batch => batch.IsExpanded);
                 UnhookAllRows();
                 Batches.Clear();
 
                 var groups = new Dictionary<string, List<QuoteConfirmRow>>();
                 foreach (var row in rows)
                 {
-                    var key = !string.IsNullOrEmpty(row.BatchId)
+                    var key = !string.IsNullOrWhiteSpace(row.BatchId)
                         ? row.BatchId
-                        : (row.Institution ?? string.Empty) + "|" + (row.SourceType ?? string.Empty);
+                        : row.RecognitionId ?? row.ClientQuoteId;
                     List<QuoteConfirmRow> list;
-                    if (!groups.TryGetValue(key, out list)) { list = new List<QuoteConfirmRow>(); groups[key] = list; }
+                    if (!groups.TryGetValue(key, out list))
+                    {
+                        list = new List<QuoteConfirmRow>();
+                        groups[key] = list;
+                    }
                     list.Add(row);
                 }
 
@@ -151,9 +157,15 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                         Status = first.BatchStatus,
                         RowCount = kv.Value.Count,
                     });
+                    bool expanded;
+                    if (expandedGroups.TryGetValue(kv.Key, out expanded))
+                    {
+                        batch.IsExpanded = expanded;
+                    }
                     foreach (var row in kv.Value)
                     {
                         var rvm = new QuoteConfirmRowViewModel(row);
+                        rvm.IsSelected = selectedIds.Contains(row.RecognitionId);
                         HookRow(rvm);
                         batch.Rows.Add(rvm);
                     }
@@ -161,6 +173,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     var captured = batch;
                     batch.Rows.CollectionChanged += (s, e) => OnBatchRowsChanged(captured, e);
                     Batches.Add(batch);
+                    UpdateBatchChecked(batch);
                 }
 
                 RecomputeStats();

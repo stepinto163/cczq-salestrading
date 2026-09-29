@@ -50,6 +50,11 @@ public final class QTradeQuoteMapper {
         }
         String account = required(message, 18004);
         String quoteId = required(message, 117);
+        String eventQuoteId = quoteId;
+        if ("-10000".equals(quoteId)) {
+            // The downlink specification uses -10000 as an empty QuoteID.
+            eventQuoteId = "NEGOTIATION:" + required(message, 18033);
+        }
         String time = required(message, 60);
         // QTrade sends business-local time in tag 60, unlike the UTC header SendingTime.
         // Preserve the source timestamp for replay identity; do not add eight hours.
@@ -124,15 +129,44 @@ public final class QTradeQuoteMapper {
                                 "account",
                                 account,
                                 "quoteId",
-                                quoteId,
+                                eventQuoteId,
                                 "sourceTime",
                                 time,
                                 "action",
                                 action));
         source.put("externalMessageId", id);
+        source.put("originalMessageId", originalMessageId(message, account, time, action, id));
         quote.put("clientQuoteId", "QT-" + id);
         return JsonUtils.object(
                 "requestId", "QT-" + id, "intake", source, "quotes", JsonUtils.array(quote));
+    }
+
+    private static String originalMessageId(
+            Message message, String account, String time, String action, String eventId)
+            throws FieldNotFound {
+        String text = optional(message, 18026);
+        if (text == null) {
+            // Never merge unrelated quotes when their original text is unavailable.
+            return "QT-EVENT-" + eventId;
+        }
+        // Quote(S) V1.4 has no original-message ID. Keep business time and the
+        // conversation in this fallback; content alone would merge repeated messages.
+        JSONObject identity = JsonUtils.object(
+                "account", account,
+                "sourceTime", time,
+                "action", action,
+                "operator", optional(message, 18035),
+                "chatType", optional(message, 18039),
+                "chatGroupId", optional(message, 18474) == null
+                        ? optional(message, 18136) : optional(message, 18474),
+                "senderId", optional(message, 18058),
+                "text", text);
+        if (identity.getString("senderId") == null) {
+            identity.put("senderName", optional(message, 18006));
+            identity.put("institution", optional(message, 18036));
+            identity.put("institutionShortName", optional(message, 18037));
+        }
+        return "QT-MESSAGE-" + JsonUtils.canonicalHash(identity);
     }
 
     private static String sideFieldOrCommon(Message message, int sideTag, int commonTag)

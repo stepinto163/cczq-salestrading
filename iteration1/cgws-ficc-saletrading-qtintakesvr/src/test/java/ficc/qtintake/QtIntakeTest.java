@@ -57,6 +57,70 @@ class QtIntakeTest {
     }
 
     @Test
+    void groupsOneOriginalMessageWithoutCollapsingItsQuotes() throws Exception {
+        QTradeQuoteMapper mapper = new QTradeQuoteMapper();
+        Message first = quote("1", "1");
+        first.setString(18058, "sender-a");
+        first.setString(18026, "250001 bid 2.5\n240210 ofr 2.6");
+        JSONObject firstRequest = mapper.map(first);
+        Message second = quote("2", "1");
+        second.setString(18058, "sender-a");
+        second.setString(18026, first.getString(18026));
+        second.setString(117, "QT-QUOTE-456");
+        second.setString(48, "240210");
+        JSONObject secondRequest = mapper.map(second);
+        String group = firstRequest.getJSONObject("intake").getString("originalMessageId");
+        assertEquals(group, secondRequest.getJSONObject("intake").getString("originalMessageId"));
+        assertNotEquals(firstRequest.getString("requestId"), secondRequest.getString("requestId"));
+        second.getHeader().setString(34, "999");
+        second.getHeader().setString(52, "20260924-12:00:00");
+        assertEquals(secondRequest, mapper.map(second), "transport replay preserves both identities");
+
+        for (int tag : new int[] {18004, 18058, 18136, 18474, 60, 18026}) {
+            Message other = new Message();
+            other.fromString(second.toString(), null, false);
+            other.setString(tag, tag == 60 ? "20260922-01:02:04.123" : "different");
+            assertNotEquals(group, mapper.map(other).getJSONObject("intake").getString("originalMessageId"),
+                    "different account/sender/chat/time/text must not merge: " + tag);
+        }
+        first.removeField(18026);
+        second.removeField(18026);
+        assertNotEquals(mapper.map(first).getJSONObject("intake").getString("originalMessageId"),
+                mapper.map(second).getJSONObject("intake").getString("originalMessageId"));
+    }
+
+    @Test
+    void replayOfPreGroupingInboxRetainsItsOriginalRequest() throws Exception {
+        JSONObject current = new QTradeQuoteMapper().map(quote("1", "1"));
+        JSONObject old = JsonUtils.deepCopy(current);
+        old.getJSONObject("intake").remove("originalMessageId");
+        try (DurableInbox inbox = new DurableInbox(directory, 2)) {
+            inbox.enqueue(old);
+            inbox.enqueue(current);
+            assertEquals(old, inbox.request(inbox.next()));
+            JSONObject changed = JsonUtils.deepCopy(current);
+            changed.getJSONArray("quotes").getJSONObject(0).put("price", "9");
+            assertThrows(java.io.IOException.class, () -> inbox.enqueue(changed));
+        }
+    }
+
+    @Test
+    void emptyQuoteIdUsesNegotiationIdentityForEachQuoteInTheMessage() throws Exception {
+        Message message = quote("1", "1");
+        message.setString(117, "-10000");
+        message.setString(18033, "NEG-A");
+        QTradeQuoteMapper mapper = new QTradeQuoteMapper();
+        JSONObject first = mapper.map(message);
+        message.setString(18033, "NEG-B");
+        JSONObject second = mapper.map(message);
+        assertNotEquals(first.getString("requestId"), second.getString("requestId"));
+        assertEquals(first.getJSONObject("intake").getString("originalMessageId"),
+                second.getJSONObject("intake").getString("originalMessageId"));
+        message.removeField(18033);
+        assertThrows(IllegalArgumentException.class, () -> mapper.map(message));
+    }
+
+    @Test
     void mapsCapturedPrlBusinessDateAndBidSettlement() throws Exception {
         JSONObject request = new QTradeQuoteMapper().map(capturedPrlQuote());
         JSONObject row = request.getJSONArray("quotes").getJSONObject(0);
@@ -209,6 +273,14 @@ class QtIntakeTest {
             assertThrows(IllegalStateException.class, forwarder::tick);
             JSONObject first = JsonUtils.deepCopy(transport.last);
             transport.fail = false;
+            for (String retryCode : new String[] {"1009", "1099"}) {
+                transport.reply = JsonUtils.object("Code", "0000", "Data",
+                        JsonUtils.object("results", JsonUtils.array(
+                                JsonUtils.object("Code", retryCode))));
+                forwarder.tick();
+                assertNotNull(inbox.next());
+                assertEquals(first, transport.last);
+            }
             transport.reply =
                     JsonUtils.object(
                             "Code",

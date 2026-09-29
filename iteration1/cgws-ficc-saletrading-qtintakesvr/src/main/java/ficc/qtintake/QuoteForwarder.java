@@ -65,7 +65,13 @@ public final class QuoteForwarder {
             }
             for (Object value : results) {
                 JSONObject result = (JSONObject) value;
-                success &= "0000".equals(result.getString("Code"));
+                String resultCode = result.getString("Code");
+                if ("1009".equals(resultCode) || "1099".equals(resultCode)) {
+                    LOGGER.warn("FORWARD state=RETRY requestId="
+                            + request.getString("requestId") + " code=" + resultCode);
+                    return;
+                }
+                success &= "0000".equals(resultCode);
             }
         }
         inbox.finish(pending, reply, success);

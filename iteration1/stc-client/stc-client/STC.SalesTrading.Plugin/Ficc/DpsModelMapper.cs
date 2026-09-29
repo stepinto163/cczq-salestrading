@@ -62,10 +62,13 @@ namespace STC.SalesTrading.Plugin.Ficc
             }
             row["Flags"] = (int)flags;
             row["RecognitionId"] = source["quoteId"]?.DeepClone();
-            row["BatchId"] = source["sourceMessageId"]?.DeepClone() ?? source["quoteId"]?.DeepClone();
+            string sourceMessageId = (string)source["sourceMessageId"];
+            row["BatchId"] = string.IsNullOrWhiteSpace(sourceMessageId)
+                ? (string)source["quoteId"] : sourceMessageId;
             row["SourceType"] = sourceType ?? "MANUAL";
             row["ReceivedAt"] = source["createTime"]?.DeepClone();
-            row["TextContent"] = source["remark"]?.DeepClone();
+            row["TextContent"] = source["source"]?["text"]?.Type == JTokenType.String
+                ? source["source"]["text"].DeepClone() : source["remark"]?.DeepClone();
             return row;
         }
 

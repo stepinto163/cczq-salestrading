@@ -36,6 +36,18 @@ CRM 用例默认要求 `长城证券 / 田老哥 / 240210.IB` 存在，文本及
 
 **覆盖边界：**这是第一组真实端到端回归，不代表所有产品功能都已覆盖。四类通知、多用户并发、完整条件筛选、滚动浏览以及 QtIntake 后续分别添加用例。未实现的动作不会显示为已通过；性能/压力测试不包含在本套件中。
 
+### QTrade 原始消息分组回归
+
+独立的有限功能检查 `scripts/test-qtrade-grouping.ps1` 使用 QuoteSvr 的 `QtIntakeSmoke` 在临时 PostgreSQL schema 中生成的三条报价 JSON，经过正式 DPS 映射器和 WPF 报价确认页面，检查两条同源报价一个组、另一消息单独一组、组复选框、迟到成员、刷新后选中/折叠状态、部分确认及空组移除。测试服务替身记录确认/删除调用，不连接真实 QTrade，也不声称完成真实 FIX 到 UI 的端到端验证。独立进程有 30 秒 watchdog。
+
+先构建 QuoteSvr 和 STC 客户端。运行 `ficc.quote.QtIntakeSmoke <本机数据库配置路径> <输出JSON路径>`，第二个参数生成客户端测试夹具；此程序只使用独立随机 schema，完成后删除该测试 schema。再执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-qtrade-grouping.ps1 -OutputRoot <已构建客户端目录> -QuoteFixture <输出JSON路径> -ClientConfig <实际STC.exe.config>
+```
+
+`ClientConfig` 只提供实际客户端的程序集绑定配置，不将账号配置复制进测试程序。日志为输出目录下的 `QTradeGroupingChecks.stdout.log` / `.stderr.log`。该检查独立于管理窗口的三条业务用例，尚未登记到窗口中。
+
 ## 隔离、断言与清理
 
 每个用例启动独立的 STC 应用进程，使用独立的客户端状态目录，自动登录。业务写入通过正式界面的输入控件及按钮事件完成；测试不会直接调用 ViewModel 命令替代按钮，也不会直接改 `IsSelected` 来绕开 checkbox 绑定。

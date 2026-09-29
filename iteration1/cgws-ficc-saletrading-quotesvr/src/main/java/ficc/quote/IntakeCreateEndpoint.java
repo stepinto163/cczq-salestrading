@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -85,6 +86,7 @@ final class IntakeCreateEndpoint {
                 "ownerUserId",
                 "sourceUserId",
                 "externalMessageId",
+                "originalMessageId",
                 "externalQuoteId",
                 "sourceTime",
                 "transType",
@@ -95,6 +97,22 @@ final class IntakeCreateEndpoint {
         String externalId = RequestValidator.requireString(source, "externalMessageId");
         String externalQuote = RequestValidator.requireString(source, "externalQuoteId");
         String sourceTime = RequestValidator.requireString(source, "sourceTime");
+        // A replay after upgrade must reuse the legacy source and receipt. Do not
+        // retroactively move an existing quote into a newly inferred group.
+        List<JSONObject> legacySources = service.store.rows(
+                "SELECT payload FROM sources WHERE source_type=? AND external_id=?", "QT", externalId);
+        if (!legacySources.isEmpty() && !legacySources.get(0).containsKey("originalMessageId")) {
+            source.remove("originalMessageId");
+        }
+        String originalMessageId = source.getString("originalMessageId");
+        String sourceExternalId = externalId;
+        if (originalMessageId != null && !originalMessageId.trim().isEmpty()) {
+            // Scope a shared source message to its recipient and resolved STC owner.
+            sourceExternalId = "QT-GROUP-" + JsonUtils.canonicalHash(JsonUtils.object(
+                    "ownerUserId", owner,
+                    "sourceUserId", account,
+                    "originalMessageId", originalMessageId));
+        }
         String hash = JsonUtils.canonicalHash(request);
         JSONArray quotes = request.getJSONArray("quotes");
         if (quotes == null || quotes.size() != 1) {
@@ -108,7 +126,7 @@ final class IntakeCreateEndpoint {
                 service.store.scalar(
                         "SELECT id FROM sources WHERE source_type=? AND external_id=?",
                         "QT",
-                        externalId);
+                        sourceExternalId);
         if (sourceId == null) {
             sourceId = IdGenerator.newId("SM-");
             JSONObject raw =
@@ -118,7 +136,9 @@ final class IntakeCreateEndpoint {
                             "sourceType",
                             "QT",
                             "externalMessageId",
-                            externalId,
+                            sourceExternalId,
+                            "originalMessageId",
+                            originalMessageId,
                             "sourceUserId",
                             account,
                             "ownerUserId",
@@ -133,7 +153,7 @@ final class IntakeCreateEndpoint {
                     "INSERT INTO sources VALUES (?,?,?,?::jsonb)",
                     sourceId,
                     "QT",
-                    externalId,
+                    sourceExternalId,
                     JsonUtils.toJson(raw));
         }
         JSONObject provenance = JsonUtils.deepCopy(source);

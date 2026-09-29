@@ -20,8 +20,22 @@ QTrade FIX → QtIntakeSvr → 本地持久化待发送目录
 - 复用 `ficc.quote.create` 的校验、写库、历史与事件推送逻辑。接入服务提交带鉴权的 `intake` 来源信息；普通客户端创建接口不变。
 - 不自动确认报价，不处理 QTrade 成交、撤销以及其他 FIX 业务报文；这些报文会明确记录为 `IGNORED`。本版不实现旧服务的群组转发、用户意向维护或交易回报同步。
 
-## 用户与联系人
 
+## 原始消息分组（报价确认）
+
+一条原始消息对应一个组，不是一个 QT 聊天群对应一个组。多条 FIX Quote 各自创建报价，但共享 QuoteSvr 返回的 `sourceMessageId`。原文记录持有全部 `quoteIds`；STC 客户端按此字段聚合，支持整组选中、部分确认/删除、最后一条待确认报价移出后删除组头。
+
+- `intake.externalMessageId` / `requestId` 保持单条报价事件的幂等语义。
+- 新增可选 `intake.originalMessageId`，由本方账号、对话人、聊天类型/群标识、业务时间、操作类型/操作方和原始语料生成稳定关联键。缺少原文时退回单条事件，不按机构、聊天群或空文本合组。QuoteSvr 再按账号与 STC 归属人隔离来源记录。
+- 依据本地接口定义《现券机构逐笔报价解析数据下行 V1.4 (FIX)》：`18026=Content`、`60=TransactTime`、`18058=InterloNickID`、`18136=ChatGroupID`、`18474=ChatGroupNickID`。Quote(S) 未提供保证可用的原始消息唯一 ID；广播的 `18044=MsgID` 及 U49 的 `18336=ContextMsgID` 不能直接套用。
+- **推导边界：** 同一对话、同一业务时间的完全相同文本无法可靠区分；同一原文的逐笔下行业务时间不同则不会合组。需真实多券原文 FIX 样本核对。若后续提供原始消息唯一 ID，应替换关联键生成依据，不改变前端分组协议。
+- 接口允许 `117=QuoteID=-10000` 表示空，此时用 `18033=NegotiationID` 构造单条事件标识，避免同一消息内多券互相覆盖；缺少该 ID 明确报错。
+
+SZ 参考链路：旧 QtradeSvr 的 `MessageListener` 按用户列表、对手联系人和 remark 复用 `quoteGroupId`；SBPSvr 的 `SbpStream` 复制该字段并通过 `quote_group_id` 持久化；SZ 客户端 `QuotationConfirmViewModel` 按 `QuoteGroupId` 分组，增量加入已有组，移除空组。本实现沿用服务端提供组标识的方式，增加时间及收件人隔离，避免仅按内容长期合组。
+
+升级顺序：先部署 QuoteSvr，再部署 QtIntakeSvr，最后更新 STC 客户端。旧队列及旧来源记录保持原样，新增分组字段不会让已有普通事件重放失败，也不自动重分历史报价。旧版曾以 `-10000` 作为事件标识的数据不能可靠反推 NegotiationID，升级前需核对这类旧记录，不自动重投历史数据。
+
+## 用户与联系人
 归属人不再查库：QA 的 `stc_tbook_users` 里**没有 QTrade 账号列**（旧 `UserInfoDao.queryUserByQt`
 是 MySQL 写法，`qtAccount` 大小写不敏感，QA 的 MYSQL0 是 PostgreSQL）。归属关系改由运维维护的映射文件给出：
 
@@ -120,4 +134,8 @@ QA Jenkins 使用 `sslib@main`，项目应位于 checkout 根目录。部署目�
 
 本机 Java 8 单元测试覆盖四种价格类型、双方向、数量精度、市场后缀、FIX 重放去重、缓冲恢复、超时重试、嵌套业务错误和凭据脱敏；本机 FIX socket 功能测试使用一条合成报价。
 
-QuoteSvr 的 `QtIntakeSmoke` 使用本机 PostgreSQL 独立临时 schema，验证两名用户、来源关联、待确认、事件推送以及服务重启后的去重。未连接真实 QTrade、未部署 QA、未进行压力测试。QA 仍需核对真实 FIX 报文与实际 STC 依赖版本。
+QuoteSvr 的 `QtIntakeSmoke` 使用本机 PostgreSQL 独立临时 schema，验证两名用户、来源关联、待确认、事件推送、临时依赖故障重试以及服务重启后的去重。
+
+2026-09-29 已将实际收到的两笔 QTrade 报价送入本机 STC 环境：240210.IB 与 250210.IB 共用一个 sourceMessageId，均为待确认且未重复。Java 单元测试 22 项、PostgreSQL 检查 33 项、WPF 分组检查 9 项通过；WPF 检查使用数据库导出的测试数据，不等同于真实 FIX 到已登录桌面的全链路 UI 验证。未部署远端 QA，未进行压力测试。
+
+外层或条目级 1009/1099 均保留在 pending 重试；QuoteSvr 不将临时依赖失败写成最终幂等结果。

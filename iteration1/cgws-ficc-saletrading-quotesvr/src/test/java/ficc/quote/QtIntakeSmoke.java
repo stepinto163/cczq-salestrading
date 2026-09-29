@@ -5,10 +5,11 @@ import com.alibaba.fastjson2.JSONObject;
 import ficc.common.*;
 
 import java.io.BufferedReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-/** Small PostgreSQL functional check: two imported quotes, temporary isolated schema. */
+/** Bounded PostgreSQL intake and grouping checks in a temporary isolated schema. */
 public final class QtIntakeSmoke {
     private static final String TOKEN = "local-test-token-at-least-thirty-two-characters";
     private static int checks;
@@ -94,6 +95,34 @@ public final class QtIntakeSmoke {
                     };
             IntakeCreateEndpoint endpoint = new IntakeCreateEndpoint(TOKEN);
             JSONObject request = request("qt-a", "U-001");
+            ficc.common.client.BaseDataClient unavailableBase =
+                    new ficc.common.client.BaseDataClient() {
+                        public Map<String, JSONObject> securities() {
+                            return Collections.emptyMap();
+                        }
+
+                        public JSONObject security(String securityId) {
+                            throw ApiException.forField("1009", "NOT_READY", "BaseSvr offline", null);
+                        }
+
+                        public List<JSONObject> records(String kind) {
+                            return Collections.emptyList();
+                        }
+
+                        public String version() {
+                            return "offline";
+                        }
+                    };
+            QuoteService unavailableService = new QuoteService(database,
+                    new ReferenceData(unavailableBase, new ficc.common.client.SimulatorCrmClient()));
+            try {
+                endpoint.create(unavailableService, request);
+                throw new AssertionError("offline BaseSvr accepted");
+            } catch (ApiException expected) {
+                check("1009".equals(expected.code), "dependency outage remains retryable");
+            }
+            check("[]".equals(database.scalar("SELECT results::text FROM requests WHERE request_id=?",
+                    request.getString("requestId"))), "transient failure is not cached as final result");
             try {
                 new IntakeCreateEndpoint("").authorize(request);
                 throw new AssertionError("disabled intake accepted");
@@ -132,6 +161,18 @@ public final class QtIntakeSmoke {
             check(
                     service.quotes.size() == 1 && events.size() == 1,
                     "lost-reply replay creates no duplicate or push");
+            JSONObject upgradedReplay = JsonUtils.deepCopy(request);
+            upgradedReplay.getJSONObject("intake").put("originalMessageId", "new-group-metadata");
+            // Simulate a persisted source written by the previous version, which did
+            // not include originalMessageId at all.
+            JSONObject legacySource = database.rows("SELECT payload FROM sources WHERE id=?",
+                    quote.getString("sourceMessageId")).get(0);
+            legacySource.remove("originalMessageId");
+            database.update("UPDATE sources SET payload=?::jsonb WHERE id=?",
+                    JsonUtils.toJson(legacySource), quote.getString("sourceMessageId"));
+            endpoint.create(service, upgradedReplay);
+            check(service.quotes.size() == 1 && events.size() == 1,
+                    "pre-grouping receipt accepts replay without changing the existing source");
             endpoint.create(service, request("qt-b", "U-002"));
             check(service.quotes.size() == 2, "different QTrade accounts remain separate");
             JSONObject denied =
@@ -156,6 +197,54 @@ public final class QtIntakeSmoke {
                     !JsonUtils.toJson(source).contains(TOKEN)
                             && !JsonUtils.toJson(quote).contains(TOKEN),
                     "service token not persisted in source or quote");
+            JSONObject firstGrouped = importGrouped(endpoint, service, "group-row-1", "message-a", "U-001");
+            JSONObject secondGrouped = importGrouped(endpoint, service, "group-row-2", "message-a", "U-001");
+            JSONObject otherMessage = importGrouped(endpoint, service, "group-row-3", "message-b", "U-001");
+            JSONObject otherOwner = importGrouped(endpoint, service, "group-row-4", "message-a", "U-002");
+            String groupSource = firstGrouped.getString("sourceMessageId");
+            check(groupSource.equals(secondGrouped.getString("sourceMessageId")),
+                    "one original message shares one persisted source across two quotes");
+            check(!groupSource.equals(otherMessage.getString("sourceMessageId")),
+                    "a later identical text message forms a separate group");
+            check(!groupSource.equals(otherOwner.getString("sourceMessageId")),
+                    "groups never cross resolved STC owners");
+            JSONObject groupedSource = database.rows("SELECT payload FROM sources WHERE id=?", groupSource).get(0);
+            check(groupedSource.getJSONArray("quoteIds").size() == 2,
+                    "original source links to all its quotes");
+            int eventCount = events.size();
+            importGrouped(endpoint, service, "group-row-2", "message-a", "U-001");
+            check(service.quotes.size() == 6 && events.size() == eventCount,
+                    "grouped quote replay adds neither row nor event");
+            check(events.stream().anyMatch(event -> JsonUtils.toJson(event).contains(groupSource)),
+                    "group identity reaches normal published quote events");
+            if (args.length > 1) {
+                Files.write(Paths.get(args[1]), JsonUtils.toJson(JsonUtils.array(
+                        firstGrouped, secondGrouped, otherMessage)).getBytes(StandardCharsets.UTF_8));
+            }
+            JSONObject confirmed = (JSONObject) service.write(new QuoteService.Call(
+                    "U-001", "<test>", "ficc.quote.confirm", JsonUtils.object(
+                            "requestId", "confirm-group-member",
+                            "quotes", JsonUtils.array(JsonUtils.object(
+                                    "quoteId", firstGrouped.getString("quoteId"),
+                                    "expectedRevision", "1",
+                                    "institutionName", null,
+                                    "contactName", null)))), "confirm", null);
+            check("0000".equals(confirmed.getJSONArray("results").getJSONObject(0).getString("Code"))
+                            && "PENDING_CONFIRM".equals(service.quotes.get(
+                                    secondGrouped.getString("quoteId")).getString("status")),
+                    "confirming one grouped quote leaves its sibling pending");
+            JSONObject deleted = (JSONObject) service.write(new QuoteService.Call(
+                    "U-001", "<test>", "ficc.quote.delete", JsonUtils.object(
+                            "requestId", "delete-group-member",
+                            "quotes", JsonUtils.array(JsonUtils.object(
+                                    "quoteId", secondGrouped.getString("quoteId"),
+                                    "expectedRevision", "1")))), "delete", null);
+            check("0000".equals(deleted.getJSONArray("results").getJSONObject(0).getString("Code"))
+                            && "ACTIVE".equals(service.quotes.get(
+                                    firstGrouped.getString("quoteId")).getString("status"))
+                            && groupSource.equals(service.quotes.get(
+                                    firstGrouped.getString("quoteId")).getString("sourceMessageId")),
+                    "deleting a sibling preserves confirmed quote and source identity");
         }
         try (PgStore database = new PgStore(configuration)) {
             QuoteService restarted = new QuoteService(database, new ReferenceData());
@@ -168,7 +257,13 @@ public final class QtIntakeSmoke {
                                     .getJSONObject(0)
                                     .getString("quoteId")),
                     "idempotency survives QuoteSvr restart");
-            check(restarted.quotes.size() == 2, "restart keeps both persisted quotes");
+            check(restarted.quotes.size() == 6, "restart keeps all persisted quotes");
+            JSONObject group = importGrouped(new IntakeCreateEndpoint(TOKEN), restarted,
+                    "group-row-2", "message-a", "U-001");
+            JSONObject groupedSource = database.rows("SELECT payload FROM sources WHERE id=?",
+                    group.getString("sourceMessageId")).get(0);
+            check(groupedSource.getJSONArray("quoteIds").size() == 2 && restarted.quotes.size() == 6,
+                    "group membership and per-quote replay survive restart");
             // Only the generated test schema is removed; never a configured service schema.
             if (!schema.matches("ficc_qtintake_check_[0-9]+")) {
                 throw new AssertionError("unexpected test schema");
@@ -176,5 +271,19 @@ public final class QtIntakeSmoke {
             database.exec("DROP SCHEMA " + schema + " CASCADE");
         }
         System.out.println("QtIntake PostgreSQL checks passed: " + checks);
+    }
+
+    private static JSONObject importGrouped(IntakeCreateEndpoint endpoint, QuoteService service,
+            String eventId, String originalMessageId, String owner) throws Exception {
+        JSONObject input = request("qt-group", owner);
+        input.put("requestId", eventId);
+        input.getJSONObject("intake").put("externalMessageId", eventId);
+        input.getJSONObject("intake").put("externalQuoteId", eventId);
+        input.getJSONObject("intake").put("originalMessageId", originalMessageId);
+        input.getJSONArray("quotes").getJSONObject(0).put("clientQuoteId", eventId);
+        JSONObject result = endpoint.create(service, input).getJSONObject("Data")
+                .getJSONArray("results").getJSONObject(0);
+        check("0000".equals(result.getString("Code")), "grouped intake succeeds: " + eventId);
+        return service.quotes.get(result.getString("quoteId"));
     }
 }
