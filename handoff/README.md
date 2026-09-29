@@ -13,6 +13,8 @@
 
 另有 [CodeBuddy 筛选测试首轮](CODEBUDDY-FILTER-TESTS.md)：已交付，Codex 独立验证 18/18 通过，待修复加载器校验和报告可读性后合并。[第二批任务](CODEBUDDY-FILTER-TESTS-BATCH2.md) 包含评审修复及 18 个新增用例，当前仅准备指令、尚未执行。这些手工任务不属于 INDEX 的 ready 队列。
 
+[ParserSvr Java 重写](CODEBUDDY-PARSER-JAVA-REWRITE.md) 已由 Codex 接手。Java 已设为 Windows/Linux 默认，本机运行服务已切换；核心 221 项、服务 12 项、实际 STC 客户端端到端 33 项通过。原生引擎异步隔离比较，双方完整输入输出已实测记录。Linux 运行和全部旧规则等价性仍待验收。详见 [服务接入](../iteration1/cgws-ficc-parser/integration/README.zh-CN.md) 和 [验收记录](../iteration1/cgws-ficc-parser/integration/validation-20260929.zh-CN.md)。暂停 CodeBuddy 该任务，原交付目录保留。
+
 ## 分工与范围
 
 - Codex：架构、协议、业务规则、任务拆分、跨模块改动、独立复核及合并。

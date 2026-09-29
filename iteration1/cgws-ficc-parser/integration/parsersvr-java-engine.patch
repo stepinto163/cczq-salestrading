@@ -1,0 +1,1090 @@
+--- a/control/ParserSvr/streamCfg.ini
++++ b/control/ParserSvr/streamCfg.ini
+@@ -1,3 +1,5 @@
++# Parser engine: native (existing implementation) or java
++ParserEngine=java
+ ﻿
+ Schedule.Config=./control/ParserSvr/quartz.properties
+ ParserCacheCron=0 30 6\\,7\\,12 * * ?
+--- a/pom.xml
++++ b/pom.xml
+@@ -31,6 +31,11 @@
+     </repositories>
+ 
+     <dependencies>
++        <dependency>
++            <groupId>cgws.ficc</groupId>
++            <artifactId>cgws-ficc-parser</artifactId>
++            <version>1.0.0-SNAPSHOT</version>
++        </dependency>
+         <dependency>
+             <groupId>com.sumscope.IP</groupId>
+             <artifactId>Parsing</artifactId>
+--- a/salt-formula/sc-app-stc-parsersvr/files/control/ParserSvr/streamCfg.ini
++++ b/salt-formula/sc-app-stc-parsersvr/files/control/ParserSvr/streamCfg.ini
+@@ -1,3 +1,5 @@
++# Parser engine: native (existing implementation) or java
++ParserEngine=java
+ ﻿[ParserSvr]
+ Schedule.Config = ./control/ParserSvr/quartz.properties
+ ParserCacheCron = {{ParserCacheCron}}
+--- a/src/main/java/sc/app/stc/parser/handler/BondParserHandler.java
++++ b/src/main/java/sc/app/stc/parser/handler/BondParserHandler.java
+@@ -4,7 +4,8 @@
+ import ats.message2.CharsetConvertType;
+ import ats.message2.MsgHelper;
+ import com.adaptiveMQ2.message.Message;
+-import com.sumscope.BondQuoteParser;
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.model.BondQuote;
+ import org.apache.commons.lang3.StringUtils;
+ import org.springframework.util.CollectionUtils;
+ import sc.app.stc.parser.enums.ResultMessage;
+@@ -39,12 +40,12 @@
+             String replaceBlank = parseContent.replaceAll("(?m)^\\s*$(\\n|\\r\\n)", "");
+             req.setContent(replaceBlank);
+ 
+-            BondQuoteParser.AllQuote allQuote = BondQuoteHelper.getInstance().parsingAll(req.content);
++            AllQuote allQuote = BondQuoteHelper.getInstance().parsingAll(req.content);
+             logger.info("allQuote result:{}", MsgHelper.Serializer(allQuote, CharsetConvertType.None));
+             if(null == allQuote){
+                 return ResultUtils.getMapResult(ResultMessage.REG_QUOTE_EMPTY);
+             }
+-            List<BondQuoteParser.BondQuote> lstQuote = allQuote.lstQuote;
++            List<BondQuote> lstQuote = allQuote.lstQuote;
+             if (CollectionUtils.isEmpty(lstQuote)) {
+                 return ResultUtils.getMapResult(ResultMessage.REG_CONTENT_EMPTY);
+             }
+--- a/src/main/java/sc/app/stc/parser/handler/ImageParserHandler.java
++++ b/src/main/java/sc/app/stc/parser/handler/ImageParserHandler.java
+@@ -4,7 +4,8 @@
+ import ats.message2.CharsetConvertType;
+ import ats.message2.MsgHelper;
+ import com.adaptiveMQ2.message.Message;
+-import com.sumscope.BondQuoteParser;
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.model.BondQuote;
+ import org.apache.commons.lang3.StringUtils;
+ import org.springframework.util.CollectionUtils;
+ import sc.app.stc.parser.enums.ResultMessage;
+@@ -42,12 +43,12 @@
+             }
+             String parserResult = parser.parse(parseContent);
+             req.setContent(parserResult);
+-            BondQuoteParser.AllQuote allQuote = BondQuoteHelper.getInstance().parsingAll(req.content);
++            AllQuote allQuote = BondQuoteHelper.getInstance().parsingAll(req.content);
+             logger.info("allQuote result:{}", MsgHelper.Serializer(allQuote, CharsetConvertType.None));
+             if(null == allQuote){
+                 return ResultUtils.getMapResult(ResultMessage.REG_QUOTE_EMPTY);
+             }
+-            List<BondQuoteParser.BondQuote> lstQuote = allQuote.lstQuote;
++            List<BondQuote> lstQuote = allQuote.lstQuote;
+             if (CollectionUtils.isEmpty(lstQuote)) {
+                 return ResultUtils.getMapResult(ResultMessage.REG_CONTENT_EMPTY);
+             }
+--- a/src/main/java/sc/app/stc/parser/manager/ParserManager.java
++++ b/src/main/java/sc/app/stc/parser/manager/ParserManager.java
+@@ -6,7 +6,8 @@
+ import cn.hutool.core.util.ReflectUtil;
+ import cn.hutool.core.util.StrUtil;
+ import cn.hutool.core.util.XmlUtil;
+-import com.sumscope.BondQuoteParser;
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.model.BondQuote;
+ import org.apache.commons.lang3.StringUtils;
+ import org.slf4j.Logger;
+ import org.springframework.util.CollectionUtils;
+@@ -77,9 +78,9 @@
+     }
+ 
+ 
+-    public static List<TableIntentionQuote> convertIntentionQuote(BondQuoteParser.AllQuote allQuote, ParsePo req) {
++    public static List<TableIntentionQuote> convertIntentionQuote(AllQuote allQuote, ParsePo req) {
+         List<TableIntentionQuote> tableIntentionQuoteList = new ArrayList<>();
+-        for (BondQuoteParser.BondQuote bondQuote : allQuote.lstQuote) {
++        for (BondQuote bondQuote : allQuote.lstQuote) {
+             TableIntentionQuote intentionQuote = new TableIntentionQuote();
+             intentionQuote.setIsInternal(bondQuote.IsInternal);
+             intentionQuote.setClordid(IdUtil.getId());
+--- a/src/main/java/sc/app/stc/parser/stream/ParserStream.java
++++ b/src/main/java/sc/app/stc/parser/stream/ParserStream.java
+@@ -41,6 +41,8 @@
+     @Override
+     public void init() throws LifecycleException {
+         netClientResource = (NetClientResource) Server.getServer().getResource("NetClientResource");
++        Consts.ParserEngine = this.getConfig().getString("ParserEngine", "java");
++        logger.info("ParserEngine:{}", Consts.ParserEngine);
+         Consts.ParserCacheCron = this.getConfig().getString("ParserCacheCron");
+         logger.info("ParserCacheCron:{}", Consts.ParserCacheCron);
+         Consts.CRMConnSwitch = this.getConfig().getInt("CRMConnSwitch");
+@@ -126,7 +128,9 @@
+     }
+     @Override
+     public void start() throws LifecycleException {
+-        DbOperatorUtil.load();
++        if ("native".equalsIgnoreCase(Consts.ParserEngine)) {
++            DbOperatorUtil.load();
++        }
+         try {
+             if (Consts.CRMConnSwitch == 1) {
+                 // CRM comes from CRMSvr: one bounded lookup per parsed name, no local CRM mirror.
+@@ -135,7 +139,7 @@
+                         Consts.CRMServerKey,
+                         Consts.CRMRequestTimeoutMillis);
+             }
+-            // The BondQuoteParser constructor already performs the initial dictionary load.
++            // The selected engine loads one complete dictionary snapshot during construction.
+             BondQuoteHelper.getInstance();
+             ParserInitializationLog.run("BOND_CACHE", "BondCacheHelper", "MYSQL0",
+                     () -> BondCacheHelper.loadData());
+@@ -148,6 +152,7 @@
+ 
+     @Override
+     public void stop() throws LifecycleException {
++        BondQuoteHelper.closeEngine();
+         super.stop();
+         schedule.stop();
+         ICity.clear();
+--- a/src/main/java/sc/app/stc/parser/utils/BondQuoteHelper.java
++++ b/src/main/java/sc/app/stc/parser/utils/BondQuoteHelper.java
+@@ -3,9 +3,11 @@
+ import ats.app.ym.utils.logger.AsyncSlf4jLoggerFactory;
+ import ats.message2.CharsetConvertType;
+ import ats.message2.MsgHelper;
+-import com.app.common.db.PartyDBPwdManager;
++import cgws.ficc.parser.parse.BondQuoteEngine;
++import java.time.LocalDate;
+ import com.protobuf.Parsing;
+-import com.sumscope.BondQuoteParser;
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.model.BondQuote;
+ import org.apache.commons.lang3.StringUtils;
+ import org.slf4j.Logger;
+ import org.springframework.util.CollectionUtils;
+@@ -26,14 +28,17 @@
+ 
+     private volatile static BondQuoteHelper instance;
+ 
+-    private volatile static BondQuoteParser bondQuoteParser;
++    private final BondQuoteEngine bondQuoteParser;
+ 
+     private BondQuoteHelper() {
+-        ParserInitializationLog.run("NATIVE_DICTIONARY", "BondQuoteParser/ParseLib",
+-                "configured PostgreSQL bond dictionary", () -> {
+-                    String password = PartyDBPwdManager.getInstance().getPartyDBPwd();
+-                    bondQuoteParser = new BondQuoteParser(false, password);
+-                });
++        bondQuoteParser = ParserEngineFactory.create(Consts.ParserEngine);
++    }
++
++    BondQuoteHelper(BondQuoteEngine engine) {
++        if (engine == null) {
++            throw new IllegalArgumentException("Parser engine is required");
++        }
++        bondQuoteParser = engine;
+     }
+ 
+     public static BondQuoteHelper getInstance() {
+@@ -49,17 +54,24 @@
+ 
+     public synchronized void loadData() {
+         if (bondQuoteParser != null) {
+-            ParserInitializationLog.run("NATIVE_DICTIONARY_REFRESH", "BondQuoteParser/ParseLib",
+-                    "configured PostgreSQL bond dictionary", () -> bondQuoteParser.loadData());
+-        }
+-    }
+-
+-    public BondQuoteParser.AllQuote parsingAll(String text) {
++            ParserInitializationLog.run("PARSER_DICTIONARY_REFRESH", bondQuoteParser.getClass().getSimpleName(),
++                    "configured PostgreSQL bond dictionary", () -> bondQuoteParser.reload());
++        }
++    }
++
++    public static void closeEngine() {
++        BondQuoteHelper current = instance;
++        if (current != null && current.bondQuoteParser instanceof ComparativeBondQuoteEngine) {
++            ((ComparativeBondQuoteEngine) current.bondQuoteParser).close();
++        }
++    }
++
++    public AllQuote parsingAll(String text) {
+         try{
+             logger.info("===parsingAll:{}", text);
+             if (bondQuoteParser != null) {
+-                String date = DateUtil8.getNowDate_EN_yMd();
+-                BondQuoteParser.AllQuote allQuote = bondQuoteParser.parsingAll(text, date,true);
++                LocalDate date = LocalDate.now();
++                AllQuote allQuote = bondQuoteParser.parse(text, date);
+                 logger.info("allQuote:{}", MsgHelper.Serializer(allQuote, CharsetConvertType.None));
+                 logger.info("trader:{},company:{},traderSuffix:{}",allQuote.trader,allQuote.company,allQuote.traderSuffix);
+                 if(Consts.CRMConnSwitch==1 && (StringUtils.isNotEmpty(allQuote.trader) || StringUtils.isNotEmpty(allQuote.company))){
+@@ -118,10 +130,10 @@
+                     }
+                 }
+ 
+-                List<BondQuoteParser.BondQuote> quoteList = allQuote.lstQuote;
+-                List<BondQuoteParser.BondQuote> newList = new ArrayList<>();
++                List<BondQuote> quoteList = allQuote.lstQuote;
++                List<BondQuote> newList = new ArrayList<>();
+                 if (!CollectionUtils.isEmpty(quoteList)) {
+-                    for (BondQuoteParser.BondQuote quote : quoteList) {
++                    for (BondQuote quote : quoteList) {
+                         if (StringUtils.isEmpty(quote.Code)) {
+                             continue;
+                         }
+@@ -136,7 +148,8 @@
+                 return allQuote;
+             }
+         } catch (Exception e){
+-            logger.error("parsingAll error",e);
++            logger.error("parsingAll error", e);
++            throw new IllegalStateException("Quote parsing failed", e);
+         }
+         return null;
+     }
+@@ -169,8 +182,8 @@
+     /**
+      * 扩展识别
+      */
+-    private void parsingExtra(String bondCode, BondQuoteParser.BondQuote quote,
+-                              List<BondQuoteParser.BondQuote> newList) {
++    private void parsingExtra(String bondCode, BondQuote quote,
++                              List<BondQuote> newList) {
+         //扩展SH、SZ识别
+         /**
+          * 对于一个债券代码在银行间和交易所都存在的情况
+@@ -199,10 +212,10 @@
+     /**
+      * 识别到sh、sz的债券，加入识别结果
+      */
+-    private void add2NewList(BondInfo bondInfo, BondQuoteParser.BondQuote quote,
+-                             List<BondQuoteParser.BondQuote> newList) {
++    private void add2NewList(BondInfo bondInfo, BondQuote quote,
++                             List<BondQuote> newList) {
+         if (StringUtils.isNotEmpty(bondInfo.getBond_Id())) {
+-            BondQuoteParser.BondQuote newQuote = (BondQuoteParser.BondQuote) quote.clone();
++            BondQuote newQuote = (BondQuote) quote.clone();
+             newQuote.Code = bondInfo.getBond_Id();
+             newQuote.Name = bondInfo.getShort_Name();
+             newQuote.IsInternal = false;
+--- /dev/null
++++ b/src/main/java/sc/app/stc/parser/utils/ComparativeBondQuoteEngine.java
+@@ -0,0 +1,132 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.parse.BondQuoteEngine;
++import com.alibaba.fastjson.JSON;
++import com.alibaba.fastjson.JSONObject;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import java.time.LocalDate;
++import java.util.UUID;
++import java.util.concurrent.ArrayBlockingQueue;
++import java.util.concurrent.ThreadPoolExecutor;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.RejectedExecutionException;
++import java.util.function.Supplier;
++
++/** Java is authoritative; a serialized, isolated native worker only supplies comparison evidence. */
++public final class ComparativeBondQuoteEngine implements BondQuoteEngine, AutoCloseable {
++    private static final Logger LOG = LoggerFactory.getLogger("ficc.parser.compare");
++    private final BondQuoteEngine primary;
++    private final ThreadPoolExecutor comparisons;
++    private volatile BondQuoteEngine shadow;
++    private volatile Throwable shadowFailure;
++
++    ComparativeBondQuoteEngine(BondQuoteEngine primary, Supplier<BondQuoteEngine> shadowFactory) {
++        this.primary = primary;
++        comparisons = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
++                new ArrayBlockingQueue<Runnable>(1024), task -> {
++                    Thread thread = new Thread(task, "parser-native-comparison");
++                    thread.setDaemon(true);
++                    return thread;
++                });
++        comparisons.execute(() -> {
++            try {
++                shadow = shadowFactory.get();
++            } catch (Throwable error) {
++                shadowFailure = error;
++                LOG.error("Native comparison initialization failed; Java remains authoritative", error);
++            }
++        });
++    }
++
++    @Override
++    public AllQuote parse(String text, LocalDate date) {
++        String id = UUID.randomUUID().toString();
++        event(id, "java", "INPUT", text, null, null);
++        event(id, "native", "INPUT", text, null, null);
++        String javaOutput = null;
++        try {
++            AllQuote reply = primary.parse(text, date);
++            // Capture before CRM post-processing can mutate the returned object.
++            javaOutput = JSON.toJSONString(reply);
++            event(id, "java", "OUTPUT", null, JSON.parse(javaOutput), null);
++            return reply;
++        } catch (RuntimeException | Error error) {
++            event(id, "java", "FAILED", null, null, error);
++            throw error;
++        } finally {
++            final String expected = javaOutput;
++            submit(id, () -> compare(id, text, date, expected));
++        }
++    }
++
++    private void compare(String id, String text, LocalDate date, String expected) {
++        try {
++            if (shadowFailure != null || shadow == null) {
++                throw new IllegalStateException("Native comparison engine unavailable", shadowFailure);
++            }
++            String actual = JSON.toJSONString(shadow.parse(text, date));
++            event(id, "native", "OUTPUT", null, JSON.parse(actual), null);
++            boolean matches = expected != null && JSON.parse(expected).equals(JSON.parse(actual));
++            event(id, "comparison", matches ? "MATCH" : "DIFFERENT", null, null, null);
++        } catch (Throwable error) {
++            event(id, "native", "FAILED", null, null, error);
++        }
++    }
++
++    private void submit(String id, Runnable task) {
++        try {
++            comparisons.execute(task);
++        } catch (RejectedExecutionException error) {
++            // Input was already logged in full and can be replayed. Never hide an unprocessed comparison.
++            event(id, "native", "QUEUE_FULL_OR_CLOSED", null, null, error);
++        }
++    }
++
++    @Override
++    public void reload() {
++        primary.reload();
++        submit("refresh", () -> {
++            try {
++                if (shadow == null) {
++                    throw new IllegalStateException("Native comparison engine unavailable", shadowFailure);
++                }
++                shadow.reload();
++            } catch (Throwable error) {
++                event("refresh", "native", "FAILED", null, null, error);
++            }
++        });
++    }
++
++    private static void event(String id, String engine, String state, String input, Object output, Throwable error) {
++        JSONObject entry = new JSONObject(true);
++        entry.put("service", "ParserSvr");
++        entry.put("comparisonId", id);
++        entry.put("engine", engine);
++        entry.put("state", state);
++        if (input != null) {
++            entry.put("input", input);
++        }
++        if (output != null) {
++            entry.put("output", output);
++        }
++        if (error == null) {
++            LOG.info("PARSER_COMPARE {}", entry.toJSONString());
++        } else {
++            LOG.error("PARSER_COMPARE " + entry.toJSONString(), error);
++        }
++    }
++
++    @Override
++    public void close() {
++        comparisons.shutdownNow();
++        if (shadow instanceof AutoCloseable) {
++            try {
++                ((AutoCloseable) shadow).close();
++            } catch (Exception error) {
++                LOG.error("Native comparison close failed", error);
++            }
++        }
++    }
++}
+--- a/src/main/java/sc/app/stc/parser/utils/Consts.java
++++ b/src/main/java/sc/app/stc/parser/utils/Consts.java
+@@ -6,6 +6,7 @@
+ public class Consts extends sc.app.stc.utils.Consts  {
+     public static String VERSION = "v1.0.0 (build20190227)";
+     public static String dbpoolDefault = "MYSQL0";
++    public static String ParserEngine = "java";
+     public static String ParserCacheCron="";
+ 
+     public static int CRMConnSwitch;
+--- /dev/null
++++ b/src/main/java/sc/app/stc/parser/utils/JdbcParserReferenceLoader.java
+@@ -0,0 +1,110 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.model.BondReference;
++import cgws.ficc.parser.parse.JavaBondQuoteEngine;
++import cgws.ficc.parser.parse.MessageReferenceData;
++import java.sql.Connection;
++import java.sql.PreparedStatement;
++import java.sql.ResultSet;
++import java.sql.SQLException;
++import java.time.LocalDate;
++import java.time.format.DateTimeFormatter;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.Arrays;
++import java.util.HashSet;
++import java.util.Set;
++
++/** Uses the already configured STC DB pool; no extra credentials or native database client. */
++public final class JdbcParserReferenceLoader implements JavaBondQuoteEngine.ReferenceLoader {
++    public interface ConnectionProvider {
++        Connection open() throws SQLException;
++    }
++
++    static final String BONDS = "SELECT l.bond_id,l.short_name,l.bond_key,l.listed_market,"
++            + "l.delisted_date,b.maturity_date,b.bond_type,b.bond_subtype,b.option_type "
++            + "FROM bond_list_info l LEFT JOIN bond b ON b.bond_key=l.bond_key";
++    static final String VALUATIONS = "SELECT bond_id,listed_market,valuation_yield "
++            + "FROM china_bond_valuation ORDER BY valuation_date";
++    private final ConnectionProvider connections;
++    // The STC schema does not include the legacy parser's optional type dictionary tables.
++    // Preserve its documented default BNC classification, separately from short-code eligibility.
++    private static final Set<String> BNC_SUBTYPES = new HashSet<String>(Arrays.asList(
++            "BGB", "SGB", "LLB", "EGB", "TLB", "SCB", "PBB", "PSB"));
++
++    public JdbcParserReferenceLoader(ConnectionProvider connections) {
++        this.connections = connections;
++    }
++
++    @Override
++    public MessageReferenceData load() throws SQLException {
++        String today = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
++        List<BondReference> records = new ArrayList<BondReference>();
++        try (Connection connection = connections.open()) {
++            Map<String, String> yields = valuations(connection);
++            try (PreparedStatement query = connection.prepareStatement(BONDS)) {
++                query.setQueryTimeout(30);
++                try (ResultSet rows = query.executeQuery()) {
++                    while (rows.next()) {
++                        String code = code(rows.getString("bond_id"), rows.getString("listed_market"));
++                        String name = rows.getString("short_name");
++                        if (code.isEmpty() || name == null) {
++                            continue;
++                        }
++                        String subtype = value(rows.getString("bond_subtype"));
++                        boolean shortCode = subtype.equalsIgnoreCase("bgb") || subtype.equalsIgnoreCase("pbb")
++                                || subtype.equalsIgnoreCase("psb");
++                        boolean invalid = expired(rows.getString("delisted_date"), today)
++                                || expired(rows.getString("maturity_date"), today);
++                        String type = value(rows.getString("bond_type"));
++                        String option = value(rows.getString("option_type"));
++                        records.add(new BondReference(code, name, rows.getString("bond_key"),
++                                "NCD".equalsIgnoreCase(type) ? "NCD"
++                                        : BNC_SUBTYPES.contains(subtype.toUpperCase(Locale.ROOT)) ? "BNC" : "BCO",
++                                shortCode, invalid, !option.isEmpty() && !"NON".equalsIgnoreCase(option), yields.get(code)));
++                    }
++                }
++            }
++        }
++        return new MessageReferenceData(records, "STC-" + today);
++    }
++
++    private static Map<String, String> valuations(Connection connection) throws SQLException {
++        Map<String, String> values = new HashMap<String, String>();
++        try (PreparedStatement query = connection.prepareStatement(VALUATIONS)) {
++            query.setQueryTimeout(30);
++            try (ResultSet rows = query.executeQuery()) {
++                while (rows.next()) {
++                    String yield = rows.getString("valuation_yield");
++                    if (yield != null && !yield.trim().isEmpty()) {
++                        values.put(code(rows.getString("bond_id"), rows.getString("listed_market")), yield.trim());
++                    }
++                }
++            }
++        }
++        return values;
++    }
++
++    static String code(String raw, String market) {
++        String code = value(raw).toLowerCase(Locale.ROOT);
++        if (code.isEmpty() || code.contains(".")) {
++            return code;
++        }
++        String venue = value(market).toUpperCase(Locale.ROOT);
++        String suffix = "CIB".equals(venue) ? ".ib" : "SSE".equals(venue) ? ".sh"
++                : "SZE".equals(venue) || "SZSE".equals(venue) ? ".sz" : "BSE".equals(venue) ? ".bj" : "";
++        return code + suffix;
++    }
++
++    private static boolean expired(String date, String today) {
++        String value = value(date).replace("-", "");
++        return value.length() == 8 && value.compareTo(today) < 0;
++    }
++
++    private static String value(String text) {
++        return text == null ? "" : text.trim();
++    }
++}
+--- /dev/null
++++ b/src/main/java/sc/app/stc/parser/utils/NativeBondQuoteEngine.java
+@@ -0,0 +1,31 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.parse.BondQuoteEngine;
++import com.alibaba.fastjson.JSON;
++import com.app.common.db.PartyDBPwdManager;
++import com.sumscope.BondQuoteParser;
++import java.time.LocalDate;
++
++/** Legacy-only adapter. The Java engine never constructs this class or the closed parser. */
++final class NativeBondQuoteEngine implements BondQuoteEngine {
++    private final BondQuoteParser parser;
++
++    NativeBondQuoteEngine() {
++        parser = new BondQuoteParser(false, PartyDBPwdManager.getInstance().getPartyDBPwd());
++    }
++
++    @Override
++    public AllQuote parse(String text, LocalDate date) {
++        BondQuoteParser.AllQuote legacy = parser.parsingAll(text, date.toString(), true);
++        if (legacy == null) {
++            throw new IllegalStateException("Native parser returned null");
++        }
++        return JSON.parseObject(JSON.toJSONString(legacy), AllQuote.class);
++    }
++
++    @Override
++    public void reload() {
++        parser.loadData();
++    }
++}
+--- /dev/null
++++ b/src/main/java/sc/app/stc/parser/utils/NativeShadowProcess.java
+@@ -0,0 +1,124 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.model.AllQuote;
++import cgws.ficc.parser.parse.BondQuoteEngine;
++import com.alibaba.fastjson.JSON;
++import com.alibaba.fastjson.JSONObject;
++import java.io.*;
++import java.nio.charset.StandardCharsets;
++import java.time.LocalDate;
++import java.util.concurrent.ArrayBlockingQueue;
++import java.util.concurrent.TimeUnit;
++
++/** A native crash or hang is confined to this child JVM. Calls are serialized by the comparison worker. */
++final class NativeShadowProcess implements BondQuoteEngine, AutoCloseable {
++    static final String PREFIX = "FICC_NATIVE_REPLY ";
++    private final Process process;
++    private final BufferedWriter input;
++    private final ArrayBlockingQueue<String> replies = new ArrayBlockingQueue<String>(4);
++
++    NativeShadowProcess() {
++        this(NativeShadowWorker.class.getName(), 1200);
++    }
++
++    NativeShadowProcess(String workerClass, int startupSeconds) {
++        try {
++            File logRoot = new File(System.getenv("ATS_ROOT") == null ? "." : System.getenv("ATS_ROOT"), "log");
++            if (!logRoot.isDirectory() && !logRoot.mkdirs()) {
++                throw new IOException("Cannot create native comparison log directory");
++            }
++            String executable = new File(System.getProperty("java.home"), "bin/java").getPath();
++            process = new ProcessBuilder(executable, "-Xms32m", "-Xmx384m", "-XX:ActiveProcessorCount=1",
++                    "-Dfile.encoding=UTF-8", "-cp", System.getProperty("java.class.path"),
++                    workerClass)
++                    .redirectError(ProcessBuilder.Redirect.appendTo(new File(logRoot, "ParserSvr-native-shadow.log")))
++                    .start();
++            input = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
++            Thread reader = new Thread(() -> readReplies(), "parser-native-protocol");
++            reader.setDaemon(true);
++            reader.start();
++            Runtime.getRuntime().addShutdownHook(new Thread(() -> close(), "parser-native-cleanup"));
++            try {
++                await(startupSeconds);
++            } catch (Exception error) {
++                close();
++                throw error;
++            }
++        } catch (Exception error) {
++            throw new IllegalStateException("Native comparison process initialization failed", error);
++        }
++    }
++
++    private void readReplies() {
++        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
++            String line;
++            while ((line = reader.readLine()) != null) {
++                if (line.startsWith(PREFIX)) {
++                    replies.put(line.substring(PREFIX.length()));
++                }
++            }
++        } catch (Exception error) {
++            // await() observes process termination/timeouts; no successful result is fabricated.
++            process.destroyForcibly();
++        }
++    }
++
++    private JSONObject await(int seconds) throws Exception {
++        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds);
++        while (System.nanoTime() < deadline) {
++            String reply = replies.poll(200, TimeUnit.MILLISECONDS);
++            if (reply != null) {
++                JSONObject value = JSON.parseObject(reply);
++                if (value.containsKey("error")) {
++                    throw new NativeParseException(value.getString("error"));
++                }
++                return value;
++            }
++            if (!process.isAlive()) {
++                throw new IllegalStateException("Native comparison exited: " + process.exitValue());
++            }
++        }
++        close();
++        throw new IllegalStateException("Native comparison exceeded " + seconds + " seconds");
++    }
++
++    private JSONObject invoke(JSONObject request, int seconds) {
++        try {
++            input.write(request.toJSONString());
++            input.newLine();
++            input.flush();
++            return await(seconds);
++        } catch (NativeParseException error) {
++            throw error;
++        } catch (Exception error) {
++            close();
++            throw new IllegalStateException("Native comparison failed", error);
++        }
++    }
++
++    @Override
++    public AllQuote parse(String text, LocalDate date) {
++        JSONObject request = new JSONObject();
++        request.put("text", text);
++        request.put("date", date.toString());
++        return invoke(request, 15).getObject("output", AllQuote.class);
++    }
++
++    @Override
++    public void reload() {
++        JSONObject request = new JSONObject();
++        request.put("reload", true);
++        invoke(request, 1200);
++    }
++
++    @Override
++    public void close() {
++        process.destroyForcibly();
++    }
++
++    private static final class NativeParseException extends IllegalStateException {
++        NativeParseException(String message) {
++            super(message);
++        }
++    }
++}
+--- /dev/null
++++ b/src/main/java/sc/app/stc/parser/utils/NativeShadowWorker.java
+@@ -0,0 +1,63 @@
++package sc.app.stc.parser.utils;
++
++import com.alibaba.fastjson.JSON;
++import com.alibaba.fastjson.JSONObject;
++import java.io.*;
++import java.nio.charset.StandardCharsets;
++import java.time.LocalDate;
++
++/** Private subprocess protocol. EOF terminates the child even if legacy scheduler threads exist. */
++public final class NativeShadowWorker {
++    public static void main(String[] args) throws Exception {
++        PrintStream protocol = System.out;
++        System.setOut(System.err);
++        // A parent crash closes stdin. The reader thread must exit even during native initialization.
++        java.util.concurrent.BlockingQueue<String> inputs = new java.util.concurrent.ArrayBlockingQueue<String>(4);
++        Thread reader = new Thread(() -> {
++            try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
++                String line;
++                while ((line = input.readLine()) != null) {
++                    inputs.put(line);
++                }
++            } catch (Exception error) {
++                error.printStackTrace(System.err);
++            } finally {
++                System.exit(0);
++            }
++        }, "native-parent-liveness");
++        reader.setDaemon(true);
++        reader.start();
++        try {
++            DbOperatorUtil.load();
++            NativeBondQuoteEngine engine = new NativeBondQuoteEngine();
++            send(protocol, JSON.parseObject("{\"ready\":true}"));
++            while (true) {
++                JSONObject request = JSON.parseObject(inputs.take());
++                JSONObject reply = new JSONObject();
++                try {
++                    if (request.getBooleanValue("reload")) {
++                        engine.reload();
++                        reply.put("ready", true);
++                    } else {
++                        reply.put("output", engine.parse(request.getString("text"), LocalDate.parse(request.getString("date"))));
++                    }
++                } catch (Throwable error) {
++                    error.printStackTrace(System.err);
++                    reply.put("error", error.toString());
++                }
++                send(protocol, reply);
++            }
++        } catch (Throwable error) {
++            error.printStackTrace(System.err);
++            JSONObject reply = new JSONObject();
++            reply.put("error", error.toString());
++            send(protocol, reply);
++            System.exit(1);
++        }
++    }
++
++    private static void send(PrintStream protocol, JSONObject reply) {
++        protocol.println(NativeShadowProcess.PREFIX + reply.toJSONString());
++        protocol.flush();
++    }
++}
+--- /dev/null
++++ b/src/main/java/sc/app/stc/parser/utils/ParserEngineFactory.java
+@@ -0,0 +1,84 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.parse.BondQuoteEngine;
++import cgws.ficc.parser.parse.JavaBondQuoteEngine;
++import com.alibaba.fastjson.JSONObject;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import sc.app.stc.utils.CommonDataUtils;
++import java.util.Locale;
++import java.util.function.Supplier;
++
++/** Explicit selection: a failed Java engine never silently falls back to native parsing. */
++public final class ParserEngineFactory {
++    private static final Logger LOG = LoggerFactory.getLogger("ficc.startup");
++
++    private ParserEngineFactory() {
++    }
++
++    public static BondQuoteEngine create(String configuredMode) {
++        BondQuoteEngine engine = create(configuredMode,
++                () -> new JavaBondQuoteEngine(new JdbcParserReferenceLoader(
++                        () -> CommonDataUtils.dbPoolResource.getConnection()), true),
++                NativeBondQuoteEngine::new);
++        if ("native".equalsIgnoreCase(configuredMode)) {
++            return engine;
++        }
++        return new ComparativeBondQuoteEngine(engine, () -> {
++            long started = System.nanoTime();
++            log("native-shadow", "STARTING", started, null);
++            try {
++                BondQuoteEngine shadow = new NativeShadowProcess();
++                log("native-shadow", "INITIALIZED", started, null);
++                return shadow;
++            } catch (RuntimeException | Error error) {
++                log("native-shadow", "FAILED", started, error);
++                throw error;
++            }
++        });
++    }
++
++    static BondQuoteEngine create(String configuredMode, Supplier<BondQuoteEngine> javaEngine,
++            Supplier<BondQuoteEngine> nativeEngine) {
++        String mode = configuredMode == null || configuredMode.trim().isEmpty()
++                ? "java" : configuredMode.trim().toLowerCase(Locale.ROOT);
++        long started = System.nanoTime();
++        log(mode, "STARTING", started, null);
++        try {
++            BondQuoteEngine engine;
++            if ("java".equals(mode)) {
++                engine = javaEngine.get();
++            } else if ("native".equals(mode)) {
++                engine = nativeEngine.get();
++            } else {
++                throw new IllegalArgumentException("ParserEngine must be java or native");
++            }
++            if (engine == null) {
++                throw new IllegalStateException("Parser engine initialization returned null");
++            }
++            log(mode, "INITIALIZED", started, null);
++            return engine;
++        } catch (RuntimeException | Error error) {
++            log(mode, "FAILED", started, error);
++            throw error;
++        }
++    }
++
++    private static void log(String mode, String state, long started, Throwable error) {
++        JSONObject message = new JSONObject(true);
++        message.put("service", "ParserSvr");
++        message.put("component", "native-shadow".equals(mode) ? "NATIVE_COMPARISON" : "QUOTE_PARSER");
++        message.put("state", state);
++        message.put("mode", mode);
++        message.put("implementation", "java".equals(mode) ? "JavaBondQuoteEngine"
++                : "native-shadow".equals(mode) ? "NativeShadowProcess" : "NativeBondQuoteEngine");
++        message.put("target", Consts.dbpoolDefault);
++        message.put("elapsedMillis", (System.nanoTime() - started) / 1000000);
++        if (error == null) {
++            LOG.info("COMPONENT {}", message.toJSONString());
++        } else {
++            message.put("errorType", error.getClass().getName());
++            LOG.error("COMPONENT " + message.toJSONString(), error);
++        }
++    }
++}
+--- /dev/null
++++ b/src/test/java/sc/app/stc/parser/utils/JavaParserIntegrationTest.java
+@@ -0,0 +1,188 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.model.BondReference;
++import cgws.ficc.parser.parse.BondQuoteEngine;
++import cgws.ficc.parser.parse.JavaBondQuoteEngine;
++import cgws.ficc.parser.parse.MessageReferenceData;
++import com.alibaba.fastjson.JSON;
++import com.alibaba.fastjson.JSONObject;
++import org.apache.log4j.FileAppender;
++import org.apache.log4j.ConsoleAppender;
++import org.apache.log4j.PatternLayout;
++import org.junit.Test;
++import sc.app.stc.parser.handler.BondParserHandler;
++import java.lang.reflect.Field;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.Arrays;
++import java.util.Map;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.CopyOnWriteArrayList;
++import java.util.List;
++import java.time.LocalDate;
++import cgws.ficc.parser.model.AllQuote;
++import static org.junit.Assert.*;
++
++public class JavaParserIntegrationTest {
++    public static final class ProtocolWorker {
++        public static void main(String[] args) throws Exception {
++            System.out.println(NativeShadowProcess.PREFIX + "{\"ready\":true}");
++            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(System.in, "UTF-8"));
++            String line;
++            while ((line = reader.readLine()) != null) {
++                JSONObject request = JSON.parseObject(line);
++                String reply = "fail".equals(request.getString("text")) ? "{\"error\":\"controlled parse error\"}"
++                        : "{\"output\":{\"lstQuote\":[]}}";
++                System.out.println(NativeShadowProcess.PREFIX + reply);
++                System.out.flush();
++            }
++        }
++    }
++
++    @Test
++    public void shadowProcessSurvivesAReportedParseError() {
++        try (NativeShadowProcess process = new NativeShadowProcess(ProtocolWorker.class.getName(), 5)) {
++            try {
++                process.parse("fail", LocalDate.now());
++                fail("Expected native error to be reported");
++            } catch (IllegalStateException expected) {
++                assertTrue(expected.getMessage().contains("controlled parse error"));
++            }
++            assertTrue(process.parse("next input", LocalDate.now()).lstQuote.isEmpty());
++        }
++    }
++
++    @Test
++    public void javaReplyDoesNotWaitForNativeAndBothPayloadsAreLogged() throws Exception {
++        CountDownLatch allowNative = new CountDownLatch(1);
++        CountDownLatch compared = new CountDownLatch(1);
++        List<String> events = new CopyOnWriteArrayList<String>();
++        org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger("ficc.parser.compare");
++        org.apache.log4j.AppenderSkeleton appender = new org.apache.log4j.AppenderSkeleton() {
++            protected void append(org.apache.log4j.spi.LoggingEvent event) {
++                events.add(event.getRenderedMessage());
++                if (event.getRenderedMessage().contains("\"state\":\"DIFFERENT\"")) {
++                    compared.countDown();
++                }
++            }
++            public void close() { }
++            public boolean requiresLayout() { return false; }
++        };
++        logger.addAppender(appender);
++        logger.setLevel(org.apache.log4j.Level.INFO);
++        try (ComparativeBondQuoteEngine engine = new ComparativeBondQuoteEngine(engine(), () -> {
++            try {
++                if (!allowNative.await(3, TimeUnit.SECONDS)) {
++                    throw new IllegalStateException("Java was blocked by shadow initialization");
++                }
++            } catch (InterruptedException error) {
++                throw new IllegalStateException(error);
++            }
++            return new BondQuoteEngine() {
++                public AllQuote parse(String text, LocalDate date) { return new AllQuote(); }
++                public void reload() { }
++            };
++        })) {
++            AllQuote reply = engine.parse("240210 2.5/2.4 1000", LocalDate.now());
++            assertEquals(2, reply.lstQuote.size());
++            assertEquals("2.4", reply.lstQuote.get(1).Price);
++            allowNative.countDown();
++            assertTrue(compared.await(3, TimeUnit.SECONDS));
++            assertEquals(2, events.stream().filter(line -> line.contains("\"state\":\"INPUT\"")) .count());
++            assertEquals(2, events.stream().filter(line -> line.contains("\"state\":\"OUTPUT\"")) .count());
++            assertTrue(events.stream().anyMatch(line -> line.contains("\"Price\":\"2.4\"")));
++        } finally {
++            allowNative.countDown();
++            logger.removeAppender(appender);
++        }
++    }
++
++    @Test
++    public void missingEngineSettingSelectsJava() {
++        BondQuoteEngine expected = engine();
++        assertSame(expected, ParserEngineFactory.create(null, () -> expected,
++                () -> { throw new AssertionError("Native is no longer the default"); }));
++        assertSame(expected, ParserEngineFactory.create("", () -> expected,
++                () -> { throw new AssertionError("Native is no longer the default"); }));
++    }
++    private static BondQuoteEngine engine() {
++        return new JavaBondQuoteEngine(() -> new MessageReferenceData(Arrays.asList(
++                new BondReference("240210.ib", "24国开10", "key-1", "BNC", true, false, false, "2.5"),
++                new BondReference("240215.ib", "24国开15", "key-2", "BNC", true, false, false, "2.4")), "fixture"), true);
++    }
++
++    @Test
++    public void engineStartupLogsSuccessAndFailureToConsoleAndFile() throws Exception {
++        Path path = Files.createTempFile("parser-startup-", ".log");
++        org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger("ficc.startup");
++        PatternLayout layout = new PatternLayout("%p %m%n");
++        FileAppender file = new FileAppender(layout, path.toString());
++        ConsoleAppender console = new ConsoleAppender(layout);
++        logger.addAppender(file);
++        logger.addAppender(console);
++        logger.setLevel(org.apache.log4j.Level.INFO);
++        try {
++            BondQuoteEngine expected = engine();
++            assertSame(expected, ParserEngineFactory.create("java", () -> expected,
++                    () -> { throw new AssertionError("Native engine must not be called"); }));
++            IllegalStateException failure = new IllegalStateException("controlled reference failure");
++            try {
++                ParserEngineFactory.create("java", () -> { throw failure; }, () -> expected);
++                fail("Failure must propagate");
++            } catch (IllegalStateException actual) {
++                assertSame(failure, actual);
++            }
++            file.close();
++            String contents = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
++            assertTrue(contents.contains("\"state\":\"INITIALIZED\""));
++            assertTrue(contents.contains("\"state\":\"FAILED\""));
++            assertTrue(contents.contains("\"mode\":\"java\""));
++            assertTrue(contents.contains("java.lang.IllegalStateException: controlled reference failure"));
++        } finally {
++            logger.removeAppender(file);
++            logger.removeAppender(console);
++            file.close();
++            console.close();
++        }
++    }
++
++    @Test
++    public void dpsHandlerReturnsBothSidesAndBothLinesWithoutNativeLibrary() throws Exception {
++        Field singleton = BondQuoteHelper.class.getDeclaredField("instance");
++        singleton.setAccessible(true);
++        Object previous = singleton.get(null);
++        int oldCrm = Consts.CRMConnSwitch;
++        try {
++            Consts.CRMConnSwitch = 0;
++            singleton.set(null, new BondQuoteHelper(engine()));
++            JSONObject request = new JSONObject();
++            request.put("userName", "parser-contract-test");
++            request.put("content", "240210 2.5/2.4 1000;240215 2.3 2000 bid");
++            Map<String, Object> reply = new BondParserHandler().handle("stc.parser.bond", null,
++                    request.toJSONString(), null, false);
++            JSONObject json = JSON.parseObject(JSON.toJSONString(reply));
++            assertEquals(json.toJSONString(), "0000", json.getString("Code"));
++            assertEquals(3, json.getJSONArray("Datas").size());
++            JSONObject offer = json.getJSONArray("Datas").getJSONObject(1);
++            assertEquals("240210.IB", offer.getString("securityId"));
++            assertEquals("2.4", offer.getBigDecimal("price").stripTrailingZeros().toPlainString());
++            assertEquals("1000", offer.getBigDecimal("qty").stripTrailingZeros().toPlainString());
++        } finally {
++            singleton.set(null, previous);
++            Consts.CRMConnSwitch = oldCrm;
++        }
++    }
++
++    @Test
++    public void invalidEngineSelectionFailsWithoutFallback() {
++        try {
++            ParserEngineFactory.create("unknown", JavaParserIntegrationTest::engine,
++                    () -> { throw new AssertionError("No silent fallback"); });
++            fail("Unknown selection must fail");
++        } catch (IllegalArgumentException expected) {
++            assertTrue(expected.getMessage().contains("java or native"));
++        }
++    }
++}
+--- /dev/null
++++ b/src/test/java/sc/app/stc/parser/utils/JdbcParserReadOnlyCheck.java
+@@ -0,0 +1,55 @@
++package sc.app.stc.parser.utils;
++
++import cgws.ficc.parser.parse.MessageReferenceData;
++import cgws.ficc.parser.parse.QuoteMessageParser;
++import cgws.ficc.parser.model.AllQuote;
++import java.io.File;
++import java.lang.reflect.InvocationTargetException;
++import java.lang.reflect.Proxy;
++import java.sql.Connection;
++import java.sql.DriverManager;
++import java.time.LocalDate;
++import javax.xml.parsers.DocumentBuilderFactory;
++import org.w3c.dom.Element;
++
++/** Explicit local-only functional check. Limits both loader queries to two bonds; no mutations. */
++public final class JdbcParserReadOnlyCheck {
++    public static void main(String[] args) throws Exception {
++        Element config = (Element) DocumentBuilderFactory.newInstance().newDocumentBuilder()
++                .parse(new File(args[0])).getElementsByTagName("Connect").item(0);
++        String server = config.getAttribute("server");
++        if (!(server.startsWith("127.0.0.1:") || server.startsWith("localhost:"))) {
++            throw new IllegalArgumentException("This check only accepts a local PostgreSQL server");
++        }
++        String url = "jdbc:postgresql://" + server + "/" + config.getAttribute("db")
++                + "?connectTimeout=3&socketTimeout=10";
++        JdbcParserReferenceLoader loader = new JdbcParserReferenceLoader(() -> {
++            Connection connection = DriverManager.getConnection(url, config.getAttribute("user"), config.getAttribute("pass"));
++            connection.setReadOnly(true);
++            return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[]{Connection.class},
++                    (proxy, method, arguments) -> {
++                        if ("prepareStatement".equals(method.getName()) && arguments[0] instanceof String) {
++                            String sql = (String) arguments[0];
++                            if (sql.equals(JdbcParserReferenceLoader.BONDS)) {
++                                arguments[0] = sql + " WHERE l.bond_id IN ('240210','240210.IB','240215','240215.IB')";
++                            } else if (sql.equals(JdbcParserReferenceLoader.VALUATIONS)) {
++                                arguments[0] = sql.replace(" ORDER BY", " WHERE bond_id IN ('240210','240210.IB','240215','240215.IB') ORDER BY");
++                            } else {
++                                throw new IllegalStateException("Unexpected query in limited reference check");
++                            }
++                        }
++                        try {
++                            return method.invoke(connection, arguments);
++                        } catch (InvocationTargetException error) {
++                            throw error.getCause();
++                        }
++                    });
++        });
++        MessageReferenceData reference = loader.load();
++        AllQuote result = new QuoteMessageParser(reference).parse("240210 2.5/2.4 1000;240215 2.3 2000 bid", LocalDate.now(), true);
++        if (result.lstQuote.size() != 3 || !"2.4".equals(result.lstQuote.get(1).Price)) {
++            throw new AssertionError("Unexpected parsing result from local STC reference data: " + result.lstQuote);
++        }
++        System.out.println("PASS local PostgreSQL reference loading and message parsing; quotes=3");
++    }
++}

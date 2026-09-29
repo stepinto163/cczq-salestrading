@@ -179,8 +179,11 @@ function Deploy-Package([string]$Name, $Package) {
     $service = if ($client) { 'STC-client' } else { $services[$Name] }
     $destination = if ($client) { Join-Path $clientSource 'runtime/native-client' } else { Join-Path $AtsRoot "stc/$service" }
     $destination = [IO.Path]::GetFullPath($destination)
-    $stage = Assert-Within (Join-Path $destination ".deploy/$stamp/new") $destination
-    $backup = Assert-Within (Join-Path $destination ".deploy/$stamp/previous") $destination
+    # STC recursively discovers plugin DLLs. Staging and backups must be outside its installation.
+    $operationBoundary = if ($client) { Split-Path $destination -Parent } else { $destination }
+    $deploymentRoot = if ($client) { Join-Path $operationBoundary 'native-client-deployment-backups' } else { Join-Path $destination '.deploy' }
+    $stage = Assert-Within (Join-Path $deploymentRoot "$stamp/new") $operationBoundary
+    $backup = Assert-Within (Join-Path $deploymentRoot "$stamp/previous") $operationBoundary
     New-Item -ItemType Directory -Force -Path $stage, $backup | Out-Null
     if ($client) {
         Copy-Item -LiteralPath (Join-Path $Package.payload 'bin'), (Join-Path $Package.payload 'STC.exe') -Destination $stage -Recurse
@@ -202,16 +205,19 @@ function Deploy-Package([string]$Name, $Package) {
     Write-Host "DEPLOY $Name -> $destination (environment configuration preserved)"
     # A stop failure leaves the existing installation intact.
     Invoke-Script $manager $stopArguments
+    if ($client -and (Test-Path -LiteralPath (Join-Path $destination '.deploy'))) {
+        Move-Checked (Join-Path $destination '.deploy') (Join-Path $deploymentRoot "legacy-$stamp") $operationBoundary
+    }
     try {
         foreach ($item in $oldItems) {
             $path = Join-Path $destination $item
             if (Test-Path -LiteralPath $path) {
-                Move-Checked $path (Join-Path $backup $item) $destination
+                Move-Checked $path (Join-Path $backup $item) $operationBoundary
                 $moved.Add($item)
             }
         }
         foreach ($item in Get-ChildItem -LiteralPath $stage) {
-            Move-Checked $item.FullName (Join-Path $destination $item.Name) $destination
+            Move-Checked $item.FullName (Join-Path $destination $item.Name) $operationBoundary
             $installed.Add($item.Name)
         }
         Invoke-Script $manager $startArguments
@@ -222,14 +228,14 @@ function Deploy-Package([string]$Name, $Package) {
         Write-Warning "Deployment failed; restoring $service from $backup"
         try {
             Invoke-Script $manager $stopArguments
-            $failed = Assert-Within (Join-Path $destination ".deploy/$stamp/failed") $destination
+            $failed = Assert-Within (Join-Path $deploymentRoot "$stamp/failed") $operationBoundary
             New-Item -ItemType Directory -Force -Path $failed | Out-Null
             foreach ($item in $installed) {
                 if (Test-Path -LiteralPath (Join-Path $destination $item)) {
-                    Move-Checked (Join-Path $destination $item) (Join-Path $failed $item) $destination
+                    Move-Checked (Join-Path $destination $item) (Join-Path $failed $item) $operationBoundary
                 }
             }
-            foreach ($item in $moved) { Move-Checked (Join-Path $backup $item) (Join-Path $destination $item) $destination }
+            foreach ($item in $moved) { Move-Checked (Join-Path $backup $item) (Join-Path $destination $item) $operationBoundary }
             Invoke-Script $manager $startArguments
             Write-Warning 'Previous binaries restored and startup checked.'
         } catch {

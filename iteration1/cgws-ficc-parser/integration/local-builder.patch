@@ -1,0 +1,39 @@
+--- a/build-parser-local.py
++++ b/build-parser-local.py
+@@ -3,6 +3,7 @@
+ import shutil
+ import subprocess
+ import urllib.request
++import os
+ 
+ ROOT = Path(__file__).resolve().parent
+ TOOLS = ROOT.parent / 'ficc/iteration1/runtime/tools'
+@@ -11,6 +12,20 @@
+ PRODUCT_SOURCES = ROOT.parent / 'ficc/iteration1'
+ CRM = PRODUCT_SOURCES / 'cgws-ficc-saletrading-crmsvr'
+ SERVICES = ROOT / 'ats_root/stc'
++
++
++def build_java_parser(destination):
++    """Build the engine before compiling ParserSvr's adapter against it."""
++    project = PRODUCT_SOURCES / 'cgws-ficc-parser'
++    environment = os.environ.copy()
++    environment['JAVA_HOME'] = str(JDK.parent)
++    environment['JAVA_TOOL_OPTIONS'] = '-Xmx256m -XX:ActiveProcessorCount=1 -Dfile.encoding=UTF-8'
++    subprocess.run([str(TOOLS / 'apache-maven-3.9.16/bin/mvn.cmd'),
++                    '-s', str(PRODUCT_SOURCES / 'build/qa-maven/settings-local.xml'),
++                    '-Dmaven.repo.local=' + str(PRODUCT_SOURCES / 'runtime/maven-repository'),
++                    '-f', str(project / 'pom.xml'), 'package'], env=environment, check=True)
++    artifact = project / 'target/cgws-ficc-parser-1.0.0-SNAPSHOT.jar'
++    shutil.copy2(artifact, destination / 'javalib' / artifact.name)
+ 
+ 
+ def prepare(service, source):
+@@ -71,6 +86,7 @@
+     build(PRODUCT_SOURCES / 'cgws-ficc-saletrading-common', crm,
+           'cgws-ficc-saletrading-common-0.1.0-SNAPSHOT.jar')
+     build(CRM, crm, 'cgws-ficc-saletrading-crmsvr-local.jar')
++    build_java_parser(parser)
+     build(PARSER, parser, 'sc-app-stc-parsersvr-local.jar')
+     from configure_parser_local import configure
+     configure(ROOT)

@@ -1,0 +1,33 @@
+{
+  "id": "windows-sample-1",
+  "platform": "windows-x64",
+  "note": "Synthetic dictionary, no database. Baseline produced by ParseLib.dll d3df85c550e5ea388b1f112a1e1e2e6a9b73ed047d619b8336896f83e5403559 + Parsing-1.8.7-SNAPSHOT.jar.",
+  "baselineSource": "WINDOWS_BASELINE_BINARY",
+  "baselineNativeSha256": "d3df85c550e5ea388b1f112a1e1e2e6a9b73ed047d619b8336896f83e5403559",
+  "baselineJarSha256": "0faf47d90cae856793c895523a3a42f6570ed718ece9b62b6e52e3da80ff24a9",
+  "dictionary": [
+    { "code": "240001", "name": "24国债01" },
+    { "code": "2400001", "name": "24国债02" },
+    { "code": "2400001.ib", "name": "24国债03" },
+    { "code": "092318001", "name": "23农发01" },
+    { "code": "190001", "name": "旧券01", "invalid": true }
+  ],
+  "cases": [
+    { "id": "C001", "capability": "bond-identification", "text": "2400001 2.35 1000", "businessDate": "20260929", "note": "7 digit code resolves to the .ib variant" },
+    { "id": "C002", "capability": "bond-identification", "text": "2400001.ib 2.35 1000", "businessDate": "20260929", "note": "code with market suffix" },
+    { "id": "C003", "capability": "bond-identification", "text": "24国债01 2.35 1000", "businessDate": "20260929", "note": "short name lookup" },
+    { "id": "C004", "capability": "bond-identification", "text": "23农发01 2.35 1000", "businessDate": "20260929", "note": "9 digit NCD style code through name" },
+    { "id": "C005", "capability": "invalid-bond", "text": "旧券01 2.35 1000", "businessDate": "20260929", "note": "invalid (matured/delisted) bond is still recognised" },
+    { "id": "C006", "capability": "quote-fields", "text": "2400001.ib 2.35/2.30 1000", "businessDate": "20260929", "note": "bid and offer price" },
+    { "id": "C007", "capability": "quote-fields", "text": "bid 2400001.ib 2.35 1000", "businessDate": "20260929", "note": "direction word bid" },
+    { "id": "C008", "capability": "quote-fields", "text": "ofr 2400001.ib 2.35 5000", "businessDate": "20260929", "note": "direction word ofr" },
+    { "id": "C009", "capability": "quote-fields", "text": "买 240001 2.35 1000", "businessDate": "20260929", "note": "unresolved 6 digit number becomes Number" },
+    { "id": "C010", "capability": "quote-fields", "text": "2400001.ib 2.35bp 1000", "businessDate": "20260929", "note": "bp float is not a price" },
+    { "id": "C011", "capability": "quote-fields", "text": "2400001.ib 2.35-2.30 1000", "businessDate": "20260929", "note": "range produces no price fields" },
+    { "id": "C012", "capability": "trader-context", "text": "2400001.ib 2.35 1000 今日", "businessDate": "20260929", "note": "trailing unknown word becomes trader name" },
+    { "id": "C013", "capability": "trader-context", "text": "2400001.ib 净价 99.5 1000", "businessDate": "20260929", "note": "net price keyword" },
+    { "id": "C014", "capability": "ambiguity", "text": "2400001 24国债01 2.35 1000", "businessDate": "20260929", "note": "code and name conflict" },
+    { "id": "C015", "capability": "negative", "text": "no bond text here", "businessDate": "20260929", "note": "nothing recognised" },
+    { "id": "C016", "capability": "multi-quote", "text": "2400001.ib 2.35 1000;240001 3.10 2000", "businessDate": "20260929", "note": "two quotes in one line" }
+  ]
+}
