@@ -18,7 +18,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new NotSupportedException("当前Price接口尚未提供仅本人／未报价债券筛选。");
             }
-            JObject filter = EmptyFilter();
+            JObject filter = query.ProductFilter?.ToJson() ?? EmptyFilter();
             filter["market"] = query.Market == BondMarket.Credit ? "CREDIT" : "RATE";
             if (!string.IsNullOrWhiteSpace(query.SearchText))
             {
@@ -136,7 +136,12 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         public async Task<IReadOnlyList<BoardAlertRow>> LoadAlertRowsAsync(CancellationToken ct)
         {
-            LivePage page = await QueryAsync("notifications", "notification", EmptyFilter(), ct);
+            return await LoadAlertRowsAsync(new Filter(), ct);
+        }
+
+        public async Task<IReadOnlyList<BoardAlertRow>> LoadAlertRowsAsync(Filter filter, CancellationToken ct)
+        {
+            LivePage page = await QueryAsync("notifications", "notification", filter?.ToJson() ?? EmptyFilter(), ct);
             return page.Rows.SelectMany(notification =>
             {
                 JObject display = DpsModelMapper.Display(WithReference(notification));

@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.RateFilterPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             components:SidebarFilter.Scope="Rate"
              xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -71,9 +72,9 @@
 
 <!-- ===== 报价筛选 ===== -->
 <components:FilterSectionHeader Title="报价筛选" />
-            <components:FilterTagRow Label="清算速度" Items="T+0,T+1,远期,非远期" />
+            <components:FilterTagRow components:SidebarFilter.Field="settlType" Label="清算速度" Items="T+0,T+1,远期,非远期" />
             <!-- 计价方式：见 CreditFilterPanel 注释（修 Grid.Column="1" + 换灰底筛选按钮） -->
-            <Grid Margin="0,0,0,8">
+            <Grid components:SidebarFilter.Field="quoteType" Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -95,26 +96,26 @@
             </Grid>
             <!-- 原型 .filter-grid：两列、行优先（顺序见 CreditFilterPanel 注释）；利率页 Bid-Ofr 同样整行置灰 -->
             <UniformGrid Columns="2" Margin="0,0,0,4">
-                <components:FilterRangeRow Label="Bid" Unit="%" />
-                <components:FilterRangeRow Label="Ofr" Unit="%" />
-                <components:FilterRangeRow Label="Bid-中债" Unit="BP" />
-                <components:FilterRangeRow Label="中债-Ofr" Unit="BP" />
-                <components:FilterRangeRow Label="Bid-Ofr" Unit="BP" IsDisabled="True" />
-                <components:FilterRangeRow Label="中债估值" Unit="%" />
-                <components:FilterRangeRow Label="中证估值" Unit="%" />
-                <components:FilterRangeRow Label="票面利率" Unit="%" />
-                <components:FilterRangeRow Label="Vol.Bid" Unit="万" ShowMax="False" />
-                <components:FilterRangeRow Label="Vol.Ofr" Unit="万" ShowMax="False" />
+                <components:FilterRangeRow components:SidebarFilter.Field="bidPrice" Label="Bid" Unit="%" />
+                <components:FilterRangeRow components:SidebarFilter.Field="offerPrice" Label="Ofr" Unit="%" />
+                <components:FilterRangeRow components:SidebarFilter.Field="bidValuationSpread" Label="Bid-中债" Unit="BP" />
+                <components:FilterRangeRow components:SidebarFilter.Field="offerValuationSpread" Label="中债-Ofr" Unit="BP" />
+                <components:FilterRangeRow components:SidebarFilter.Field="bidOfferSpread" Label="Bid-Ofr" Unit="BP" IsDisabled="True" />
+                <components:FilterRangeRow components:SidebarFilter.Field="valuationYield" Label="中债估值" Unit="%" />
+                <components:FilterRangeRow components:SidebarFilter.Field="csiValuationYield" Label="中证估值" Unit="%" />
+                <components:FilterRangeRow components:SidebarFilter.Field="couponRate" Label="票面利率" Unit="%" />
+                <components:FilterRangeRow components:SidebarFilter.Field="bidQuantity" Label="Vol.Bid" Unit="万" ShowMax="False" />
+                <components:FilterRangeRow components:SidebarFilter.Field="offerQuantity" Label="Vol.Ofr" Unit="万" ShowMax="False" />
             </UniformGrid>
 
             <!-- ===== 债券筛选 ===== -->
 <components:FilterSectionHeader Title="债券筛选" />
-            <components:FilterTagRow Label="细分券种" Items="国债,国开,农发,口行,地方债" />
-            <components:FilterTagRow Label="是否免税" Items="免税,非免税" />
-            <components:FilterTagRow Label="地方债类型" Items="一般债,专项债" />
-            <components:FilterComboRow Label="地方债专项" Items="不限,棚改,土储,收费公路,其他" />
+            <components:FilterTagRow components:SidebarFilter.Field="bondSubtype" Label="细分券种" Items="国债,国开,农发,口行,地方债" />
+            <components:FilterTagRow components:SidebarFilter.Field="isTaxExempt" Label="是否免税" Items="免税,非免税" />
+            <components:FilterTagRow components:SidebarFilter.Field="localGovernmentType" Label="地方债类型" Items="一般债,专项债" />
+            <components:FilterComboRow components:SidebarFilter.Field="localGovernmentUse" Label="地方债专项" Items="不限,棚改,土储,收费公路,其他" />
             <!-- 剩余期限：原型 .filter-group（label 70px 列 + 右侧 flex:1 内含 tags + 全宽输入行） -->
-            <Grid Margin="0,0,0,8">
+            <Grid components:SidebarFilter.Field="remainingYears" Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -152,11 +153,11 @@
                     </Grid>
                 </StackPanel>
             </Grid>
-            <components:FilterSearchRow Label="发行人" Placeholder="搜索发行人..." />
+            <components:FilterSearchRow components:SidebarFilter.Field="issuerName" Label="发行人" Placeholder="搜索发行人..." />
 
             <!-- ===== 流动性筛选 ===== -->
 <components:FilterSectionHeader Title="流动性筛选" />
-            <Grid Margin="0,0,0,8">
+            <Grid components:SidebarFilter.Field="liquidityGrade" Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -170,20 +171,20 @@
                     <ToggleButton Content="D" Style="{DynamicResource StcTagNeutral}" Foreground="#6B7280" Margin="0,0,3,3" />
                 </WrapPanel>
             </Grid>
-            <components:FilterTagRow Label="上市场所" Items="银行间,上交所,深交所,北交所" />
+            <components:FilterTagRow components:SidebarFilter.Field="listedMarket" Label="上市场所" Items="银行间,上交所,深交所,北交所" />
 
             <!-- ===== 条款筛选 ===== -->
 <components:FilterSectionHeader Title="条款筛选" />
-            <components:FilterTagRow Label="含权属性" Items="不含权,含权,赎回权,回售权,其他权" />
-            <components:FilterTagRow Label="偿还方式" Items="到期,提前还本" />
-            <components:FilterTagRow Label="付息方式" Items="按月,按季,半年,按年,其他" />
-            <components:FilterTagRow Label="利率方式" Items="SHIBOR,DEPO,LPR,固息" />
-            <components:FilterTagRow Label="发行年份" Items="2026,2025,2024,2023,更多" />
+            <components:FilterTagRow components:SidebarFilter.Field="optionType" Label="含权属性" Items="不含权,含权,赎回权,回售权,其他权" />
+            <components:FilterTagRow components:SidebarFilter.Field="repaymentType" Label="偿还方式" Items="到期,提前还本" />
+            <components:FilterTagRow components:SidebarFilter.Field="couponFrequency" Label="付息方式" Items="按月,按季,半年,按年,其他" />
+            <components:FilterTagRow components:SidebarFilter.Field="rateIndex" Label="利率方式" Items="SHIBOR,DEPO,LPR,固息" />
+            <components:FilterTagRow components:SidebarFilter.Field="issueYear" Label="发行年份" Items="2026,2025,2024,2023,更多" />
 
             <!-- ===== 区域筛选 ===== -->
 <components:FilterSectionHeader Title="区域筛选" />
-            <components:FilterComboRow Label="地区等级" Items="取值逻辑待确认" />
-            <components:FilterComboRow Label="地区" Items="加载全国省/市/区县..." RowMargin="0" />
+            <components:FilterComboRow components:SidebarFilter.Field="regionalRating" Label="地区等级" Items="取值逻辑待确认" />
+            <components:FilterComboRow components:SidebarFilter.Field="regionCategory" Label="地区" Items="加载全国省/市/区县..." RowMargin="0" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

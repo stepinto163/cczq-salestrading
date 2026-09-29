@@ -7,6 +7,8 @@ namespace STC.SalesTrading.Plugin.Abstractions.Queries
     /// </summary>
     public sealed class QuoteMgmtQuery
     {
+        public STC.SalesTrading.Plugin.Ficc.Protocol.Filter ProductFilter { get; set; }
+
         public bool Today { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -23,8 +23,19 @@ namespace STC.SalesTrading.Plugin.Ficc
 
     // Composition boundary: the product ViewModels keep their typed contracts; DPS stays here.
     public sealed partial class DpsSalesTradingServices : IQuoteService, IQuoteMgmtService,
-        IMarketCenterService, ISalesTradingUpdates, IDisposable
+        IMarketCenterService, IProductFilterCatalog, ISalesTradingUpdates, IDisposable
     {
+        private Task<DictionaryData> filterDictionaryTask;
+
+        public Task<DictionaryData> GetFilterDictionaryAsync()
+        {
+            if (filterDictionaryTask == null || filterDictionaryTask.IsFaulted || filterDictionaryTask.IsCanceled)
+            {
+                filterDictionaryTask = Api.RequestAsync(SalesTradingApi.QuoteDictionaryQuery, new DictionaryRequest());
+            }
+            return filterDictionaryTask;
+        }
+
         private readonly StcFiccTransport transport;
         private readonly Dictionary<string, QuerySession> sessions = new Dictionary<string, QuerySession>();
         private readonly Dictionary<string, JObject> securities = new Dictionary<string, JObject>();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -32,7 +32,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new NotSupportedException("当前QuoteSvr尚未提供长城交易员专属筛选接口。");
             }
-            JObject filter = EmptyFilter();
+            JObject filter = query.ProductFilter?.ToJson() ?? EmptyFilter();
             foreach (string text in new[] { query.BondSearchText, query.InstitutionSearchText })
             {
                 if (!string.IsNullOrWhiteSpace(text))

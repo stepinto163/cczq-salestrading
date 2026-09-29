@@ -9,10 +9,43 @@ using System.Collections.ObjectModel;
 namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
 {
     /// <summary>报价管理容器 VM：2 子页（今日报价/历史报价）切换 + 左侧筛选栏折叠（复用 filters-merged）。</summary>
-    public partial class QuoteMgmtViewModel : ObservableObject, IDisposable
+    public partial class QuoteMgmtViewModel : ObservableObject, IDisposable, IProductFilterHost
     {
+        private readonly IQuoteMgmtService service;
+        private STC.SalesTrading.Plugin.Ficc.Protocol.Filter sidebarFilter;
+
+        [ObservableProperty]
+        private string _filterSearchText = string.Empty;
+
+        partial void OnFilterSearchTextChanged(string value)
+        {
+            ApplyProductFilter("Combined", sidebarFilter);
+        }
+
+        public System.Threading.Tasks.Task<STC.SalesTrading.Plugin.Ficc.Protocol.DictionaryData> GetFilterDictionaryAsync()
+        {
+            if (service is IProductFilterCatalog catalog) return catalog.GetFilterDictionaryAsync();
+            throw new InvalidOperationException("当前报价服务未提供筛选字典。");
+        }
+
+        public void ApplyProductFilter(string scope, STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
+        {
+            sidebarFilter = filter;
+            var combined = new STC.SalesTrading.Plugin.Ficc.Protocol.Filter
+            {
+                Conditions = new System.Collections.Generic.List<STC.SalesTrading.Plugin.Ficc.Protocol.FilterCondition>(
+                    filter?.Conditions ?? new System.Collections.Generic.List<STC.SalesTrading.Plugin.Ficc.Protocol.FilterCondition>())
+            };
+            if (!string.IsNullOrWhiteSpace(FilterSearchText))
+                combined.Conditions.Add(new STC.SalesTrading.Plugin.Ficc.Protocol.FilterCondition
+                { Field = "searchText", Operator = "CONTAINS", Value = FilterSearchText.Trim() });
+            Today.ApplyProductFilter(combined);
+            History.ApplyProductFilter(combined);
+        }
+
         public QuoteMgmtViewModel(IQuoteMgmtService mgmtService)
         {
+            service = mgmtService;
             Today = new MgmtTodayViewModel(mgmtService);
             History = new MgmtHistoryViewModel(mgmtService);
 

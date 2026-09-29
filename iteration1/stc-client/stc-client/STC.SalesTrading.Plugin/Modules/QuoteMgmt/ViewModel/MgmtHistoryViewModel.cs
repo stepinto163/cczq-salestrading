@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
@@ -138,12 +138,22 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
             OnPropertyChanged(nameof(IsEmpty));
         }
 
-                        private async System.Threading.Tasks.Task QueryAsync()
+        private STC.SalesTrading.Plugin.Ficc.Protocol.Filter productFilter;
+
+        public void ApplyProductFilter(STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
+        {
+            productFilter = filter;
+            _queryCoordinator.CancelCurrent();
+            _ = QueryAsync();
+        }
+
+        private async System.Threading.Tasks.Task QueryAsync()
         {
             await QueryFlow.RunAsync(_queryCoordinator, this, async lease =>
             {
                 var result = await _mgmtService.QueryHistoryRowsAsync(new QuoteMgmtQuery
                 {
+                    ProductFilter = productFilter,
                     Today = false,
                     StartDate = StartDate,
                     EndDate = EndDate,

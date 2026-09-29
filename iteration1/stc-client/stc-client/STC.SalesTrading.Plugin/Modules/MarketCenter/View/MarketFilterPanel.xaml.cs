@@ -25,6 +25,11 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         {
             var scope = ResolveActivePanel();
             if (scope == null) return;
+            if (scope != IntentHost)
+            {
+                STC.SalesTrading.Plugin.Shared.Components.SidebarFilter.Reset((FrameworkElement)scope);
+                return;
+            }
 
             foreach (var toggle in FindChildren<ToggleButton>(scope))
             {

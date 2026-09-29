@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -22,11 +22,32 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     /// 行情中心容器 VM：左筛选侧栏 + 6 子页 + 右债券详情。
     /// 选中行联动：各看板 VM 的 SelectedRow 变化 → 映射基础字段 → 服务异步回填多档/成交。
     /// </summary>
-    public partial class MarketCenterViewModel : ObservableObject, IDisposable
+    public partial class MarketCenterViewModel : ObservableObject, IDisposable, IProductFilterHost
     {
         private readonly IMarketCenterService _marketCenterService;
 
         /// <summary>关注债券/筛选分组弹窗的识别回填取数入口（面板 code-behind 经此传入弹窗）。</summary>
+        public System.Threading.Tasks.Task<STC.SalesTrading.Plugin.Ficc.Protocol.DictionaryData> GetFilterDictionaryAsync()
+        {
+            if (_marketCenterService is IProductFilterCatalog catalog) return catalog.GetFilterDictionaryAsync();
+            throw new InvalidOperationException("当前行情服务未提供筛选字典。");
+        }
+
+        public void ApplyProductFilter(string scope, STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
+        {
+            if (scope == "Credit")
+            {
+                CreditAll.ApplyProductFilter(filter);
+                CreditBest.ApplyProductFilter(filter);
+            }
+            else if (scope == "Rate")
+            {
+                RateAll.ApplyProductFilter(filter);
+                RateBest.ApplyProductFilter(filter);
+            }
+            else Alert.ApplyProductFilter(filter);
+        }
+
         public IMarketCenterService MarketCenterService => _marketCenterService;
 
         public MarketCenterViewModel(IMarketCenterService marketCenterService)

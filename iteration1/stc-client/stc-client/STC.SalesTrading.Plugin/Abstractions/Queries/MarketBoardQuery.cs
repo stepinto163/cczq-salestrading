@@ -4,6 +4,8 @@ namespace STC.SalesTrading.Plugin.Abstractions.Queries
 {
     public sealed class MarketBoardQuery
     {
+        public STC.SalesTrading.Plugin.Ficc.Protocol.Filter ProductFilter { get; set; }
+
         public BondMarket Market { get; set; }
         public bool IncludeBid { get; set; } = true;
         public bool IncludeOfr { get; set; } = true;

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -24,6 +24,15 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     /// 报价提醒 VM：23 列提醒表 + 4 开关（关注债券/筛选分组/对价提醒/我的最优报价）+ 右下角弹窗推送（待接）。
     /// </summary>
     public partial class BoardAlertViewModel : ObservableObject, IDisposable, IQueryLoadContext    {
+        private STC.SalesTrading.Plugin.Ficc.Protocol.Filter productFilter;
+
+        public void ApplyProductFilter(STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
+        {
+            productFilter = filter;
+            _loadCoordinator.CancelCurrent();
+            _ = LoadAsync();
+        }
+
         private readonly IMarketCenterService _marketCenterService;
         private readonly LatestRequestCoordinator _loadCoordinator = new LatestRequestCoordinator();
 
@@ -143,7 +152,9 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         {
             await QueryFlow.RunAsync(_loadCoordinator, this, async lease =>
             {
-                var rows = await _marketCenterService.LoadAlertRowsAsync(lease.Token);
+                var rows = _marketCenterService is DpsSalesTradingServices dps
+                    ? await dps.LoadAlertRowsAsync(productFilter, lease.Token)
+                    : await _marketCenterService.LoadAlertRowsAsync(lease.Token);
                 if (!lease.IsCurrent) return null;
 
                 Rows.Clear();

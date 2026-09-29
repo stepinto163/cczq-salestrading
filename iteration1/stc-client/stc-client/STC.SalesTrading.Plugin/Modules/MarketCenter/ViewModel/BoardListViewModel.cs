@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -186,7 +186,16 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             OnPropertyChanged(nameof(IsEmpty));
         }
 
-                        private async System.Threading.Tasks.Task QueryAsync()
+        private STC.SalesTrading.Plugin.Ficc.Protocol.Filter productFilter;
+
+        public void ApplyProductFilter(STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
+        {
+            productFilter = filter;
+            _queryCoordinator.CancelCurrent();
+            _ = QueryAsync();
+        }
+
+        private async System.Threading.Tasks.Task QueryAsync()
         {
             await QueryFlow.RunAsync(_queryCoordinator, this, async lease =>
             {
@@ -201,6 +210,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                         | (ShowWhole ? QuoteFlag.Whole : QuoteFlag.None),
                     UnquotedOnly = ShowUnquoted,
                     SearchText = SearchText,
+                    ProductFilter = productFilter,
                 };
                 var result = await _marketCenterService.QueryBoardRowsAsync(query, lease.Token);
                 if (!lease.IsCurrent) return null;

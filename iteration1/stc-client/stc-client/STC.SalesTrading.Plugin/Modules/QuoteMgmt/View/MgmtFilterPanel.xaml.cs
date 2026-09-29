@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Media;
+using STC.SalesTrading.Plugin.Shared.Components;
 
 namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
 {
@@ -13,27 +12,14 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
             InitializeComponent();
         }
 
-        /// <summary>清除过滤：重置面板内全部筛选标签与输入框（视觉走树，Mock 阶段不驱动数据过滤）。</summary>
+        /// <summary>同时清除侧栏控件和服务端筛选条件。</summary>
         private void OnClearFilters(object sender, RoutedEventArgs e)
         {
-            foreach (var toggle in FindChildren<ToggleButton>(this))
+            if (DataContext is ViewModel.QuoteMgmtViewModel viewModel)
             {
-                toggle.IsChecked = false;
+                viewModel.FilterSearchText = string.Empty;
             }
-            foreach (var box in FindChildren<TextBox>(this))
-            {
-                box.Clear();
-            }
-        }
-
-        private static System.Collections.Generic.IEnumerable<T> FindChildren<T>(DependencyObject root) where T : DependencyObject
-        {
-            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-            {
-                var child = VisualTreeHelper.GetChild(root, i);
-                if (child is T t) yield return t;
-                foreach (var inner in FindChildren<T>(child)) yield return inner;
-            }
+            SidebarFilter.Reset(CombinedHost);
         }
     }
 }
