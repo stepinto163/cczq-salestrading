@@ -2,9 +2,11 @@
 
 ## 代码与选择
 
-核心入口为 `QuoteMessageParser`，服务边界为 `BondQuoteEngine`。现有 ParserSvr 的 `BondQuoteHelper` 调用该边界，`ParserManager`、DPS handler 使用明确的 `AllQuote` / `BondQuote` 模型。`stc.parser.bond` 请求与应答字段保持原样，CRM 后处理继续使用原有 CRMSvr 链路。
+核心入口为 `QuoteMessageParser`，服务边界为 `BondQuoteEngine`。现有 ParserSvr 的 `BondQuoteHelper` 调用该边界，`ParserManager`、DPS handler 使用明确的 `AllQuote` / `BondQuote` 模型。`stc.parser.bond` 保留原请求与应答字段；可选 `Warnings` 字符串数组承载识别警告，CRM 后处理继续使用原有 CRMSvr 链路。
 
 外部服务源码位置：`qa_env/sc-app-stc-parsersvr/sc-app-stc-parsersvr`。本次修改已在该目录实现；`parsersvr-java-engine.patch` 只保留本轮增量，基线是本机已接入 FICC CRM 的版本，不是原始上游 HEAD。应用前在服务仓库运行 `git apply --check --ignore-space-change <补丁路径>`，确认通过后 `git apply --ignore-space-change <补丁路径>`，兼容 Windows 换行。已应用的本机目录不要重复应用。补丁不含数据库配置、密码或完整反编译厂商源码。
+
+2026-09-30 增量 `expired-preview-warning.patch` 在上述引擎补丁之后应用：已到期/摘牌债券保留识别预览，DPS 应答携带 `Warnings`，不改变 QuoteSvr 发布校验。补丁包括对应服务合同测试。先用 `git apply --check --ignore-space-change` 检查，已应用目录不要重复应用。
 
 服务的 `control/ParserSvr/streamCfg.ini` 中设置：
 

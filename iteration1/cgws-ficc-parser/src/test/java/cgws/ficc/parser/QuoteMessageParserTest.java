@@ -39,7 +39,7 @@ class QuoteMessageParserTest {
                 .getResource("/legacy-messages.json").toURI())), StandardCharsets.UTF_8);
         List<Object> records = Json.asArray(Json.parse(data));
         // Other cases are separately tested as explicit corrections, not falsely labelled matches.
-        Set<Integer> matching = new HashSet<Integer>(Arrays.asList(0, 1, 2, 3, 4, 7, 8, 9, 10, 16, 17, 20, 21, 22, 23, 24));
+        Set<Integer> matching = new HashSet<Integer>(Arrays.asList(0, 1, 2, 3, 4, 7, 8, 9, 10, 16, 17, 20, 22, 23, 24));
         List<DynamicTest> cases = new ArrayList<DynamicTest>();
         for (int index = 0; index < records.size(); index++) {
             if (!matching.contains(index)) {
@@ -161,10 +161,61 @@ class QuoteMessageParserTest {
     }
 
     @Test
-    void invalidBondsAreNotPublished() {
+    void expiredBondsRemainInPreviewWithExplicitWarning() {
         MessageReferenceData invalid = new MessageReferenceData(Collections.singletonList(
                 new BondReference("240210.ib", "24国开10", "key", "BNC", true, true, false, null)), "invalid");
-        assertTrue(new QuoteMessageParser(invalid).parse("240210 2.5 1000", DATE, true).lstQuote.isEmpty());
+        AllQuote result = new QuoteMessageParser(invalid).parse("240210 2.5 1000", DATE, true);
+        assertEquals(1, result.lstQuote.size());
+        assertEquals(1, result.warnings.size());
+        assertTrue(result.warnings.get(0).contains("240210.IB 已到期或摘牌"));
+    }
+
+    @Test
+    void cdQuoteWithUnitQuantityBeforeIntegerYield() {
+        MessageReferenceData reference = new MessageReferenceData(Collections.singletonList(
+                new BondReference("112508306.ib", "25中信银行CD306", "cd-key", "NCD", false, false, false, "1.8")), "valid-cd");
+        QuoteMessageParser parser = new QuoteMessageParser(reference);
+        for (String body : Arrays.asList("2000w 2", "2 2000w", "2000万 2")) {
+            AllQuote result = parser.parse("Bid 112508306.IB 25中信银行CD306 " + body + " 到期 明天+0", DATE, true);
+            assertEquals(1, result.lstQuote.size());
+            BondQuote quote = result.lstQuote.get(0);
+            assertEquals("112508306.ib", quote.Code);
+            assertEquals("bid", quote.Direction);
+            assertEquals("2", quote.Price);
+            assertEquals("2000", quote.Volume);
+            assertEquals(0, quote.priceType);
+            assertEquals("明天+0", quote.settlementDay);
+            assertNull(result.warnings);
+        }
+    }
+
+    @Test
+    void integerYieldIsRecognizedInsteadOfRepeatingLegacyEmptyPrice() {
+        BondQuote quote = parse("240210 2 1000 bid").lstQuote.get(0);
+        assertEquals("2", quote.Price);
+        assertEquals("1000", quote.Volume);
+    }
+
+    @Test
+    void multilineIntegerPricesAndSettlementsStayWithTheirOwnQuote() {
+        MessageReferenceData data = new MessageReferenceData(Arrays.asList(
+                new BondReference("199385.ib", "25山东债91", "a", "BNC", false, false, false, null),
+                new BondReference("250210.ib", "25国开10", "b", "BNC", true, false, false, null)), "two-lines");
+        QuoteMessageParser parser = new QuoteMessageParser(data);
+        for (String separator : Arrays.asList("\n", "\r\n", "\\r\\n", "\\n", ";")) {
+            AllQuote result = parser.parse("199385 3 1000 +1" + separator + "250210 2 2000 +0", DATE, true);
+            assertEquals(2, result.lstQuote.size(), separator);
+            BondQuote first = result.lstQuote.get(0);
+            BondQuote second = result.lstQuote.get(1);
+            assertEquals("199385.ib", first.Code);
+            assertEquals("3", first.Price);
+            assertEquals("1000", first.Volume);
+            assertEquals("+1", first.settlementDay);
+            assertEquals("250210.ib", second.Code);
+            assertEquals("2", second.Price);
+            assertEquals("2000", second.Volume);
+            assertEquals("+0", second.settlementDay);
+        }
     }
 
     @Test

@@ -1,0 +1,60 @@
+--- a/src/test/java/sc/app/stc/parser/utils/JavaParserIntegrationTest.java
++++ b/src/test/java/sc/app/stc/parser/utils/JavaParserIntegrationTest.java
+@@ -176,6 +176,36 @@
+     }
+ 
+     @Test
++    public void expiredCdReturnsPreviewWarningAndTomorrowSettlement() throws Exception {
++        Field singleton = BondQuoteHelper.class.getDeclaredField("instance");
++        singleton.setAccessible(true);
++        Object previous = singleton.get(null);
++        int oldCrm = Consts.CRMConnSwitch;
++        try {
++            Consts.CRMConnSwitch = 0;
++            BondQuoteEngine parser = new JavaBondQuoteEngine(() -> new MessageReferenceData(Arrays.asList(
++                    new BondReference("112508306.ib", "25中信银行CD306", "cd", "NCD", false, true, false, null)), "expired"), true);
++            singleton.set(null, new BondQuoteHelper(parser));
++            JSONObject request = new JSONObject();
++            request.put("userName", "parser-contract-test");
++            request.put("content", "Bid 112508306.IB 25中信银行CD306 2000w 2 到期 明天+0");
++            Map<String, Object> reply = new BondParserHandler().handle("stc.parser.bond", null,
++                    request.toJSONString(), null, false);
++            JSONObject json = JSON.parseObject(JSON.toJSONString(reply));
++            assertEquals(json.toJSONString(), "0000", json.getString("Code"));
++            assertEquals(1, json.getJSONArray("Datas").size());
++            assertTrue(json.getJSONArray("Warnings").getString(0).contains("112508306.IB 已到期或摘牌"));
++            JSONObject quote = json.getJSONArray("Datas").getJSONObject(0);
++            assertEquals("3", quote.getString("settlType"));
++            assertEquals("2", quote.getBigDecimal("price").toPlainString());
++            assertEquals("2000", quote.getBigDecimal("qty").toPlainString());
++        } finally {
++            singleton.set(null, previous);
++            Consts.CRMConnSwitch = oldCrm;
++        }
++    }
++
++    @Test
+     public void invalidEngineSelectionFailsWithoutFallback() {
+         try {
+             ParserEngineFactory.create("unknown", JavaParserIntegrationTest::engine,
+--- a/src/main/java/sc/app/stc/parser/handler/BondParserHandler.java
++++ b/src/main/java/sc/app/stc/parser/handler/BondParserHandler.java
+@@ -47,7 +47,7 @@
+             }
+             List<BondQuote> lstQuote = allQuote.lstQuote;
+             if (CollectionUtils.isEmpty(lstQuote)) {
+-                return ResultUtils.getMapResult(ResultMessage.REG_CONTENT_EMPTY);
++                return ResultUtils.getMapResult(ResultMessage.REG_QUOTE_EMPTY);
+             }
+             if (lstQuote.size() > Consts.IntentionQuoteSize) {
+                 return ResultUtils.getMapResult(ResultMessage.REG_QUOTE_LIMIT);
+@@ -57,6 +57,9 @@
+             result.put(Consts.Msg, Consts.SuccessMsg);
+             result.put(Consts.TotalSize, quoteList.size());
+             result.put(Consts.DATAS,quoteList);
++            if (allQuote.warnings != null && !allQuote.warnings.isEmpty()) {
++                result.put("Warnings", allQuote.warnings);
++            }
+             logger.info("convert bond result:{}", MsgHelper.Serializer(quoteList, CharsetConvertType.None));
+             return result;
+         } catch (Exception e) {

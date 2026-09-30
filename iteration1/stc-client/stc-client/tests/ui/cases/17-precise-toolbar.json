@@ -1,0 +1,228 @@
+{
+  "Version": 1,
+  "Id": "17-precise-toolbar",
+  "Name": "精确报价工具栏选择范围与数量操作",
+  "Description": "P0：用户截图回归，只验证识别预览和控件行为，不创建报价。",
+  "Steps": [
+    {
+      "Name": "1. 输入原文并识别 ",
+      "Action": "parse",
+      "Parameters": {
+        "text": "199385 3 1000 +0\n250210 2 2000 +0",
+        "expectedRows": "2"
+      }
+    },
+    {
+      "Name": "2. 点击工具栏 Bid",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "Bid"
+      }
+    },
+    {
+      "Name": "3. 核对可见提示 ",
+      "Action": "parse.warning",
+      "Parameters": {
+        "message": "请先勾选"
+      }
+    },
+    {
+      "Name": "4. 核对报价字段 第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "199385.IB",
+        "side": "Ofr",
+        "price": "3",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "5. 勾选报价 第1行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "6. 点击工具栏 Bid",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "Bid"
+      }
+    },
+    {
+      "Name": "7. 点击工具栏 +1k",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "+1k"
+      }
+    },
+    {
+      "Name": "8. 核对报价字段 第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "199385.IB",
+        "side": "Bid",
+        "price": "3",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "9. 点击工具栏 -1k",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "-1k"
+      }
+    },
+    {
+      "Name": "10. 核对报价字段 第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "199385.IB",
+        "side": "Bid",
+        "price": "3",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "11. 设置批量字段 AmountInput",
+      "Action": "parse.toolbar",
+      "Parameters": {
+        "control": "AmountInput",
+        "value": "1500"
+      }
+    },
+    {
+      "Name": "12. 设置批量字段 BpInput",
+      "Action": "parse.toolbar",
+      "Parameters": {
+        "control": "BpInput",
+        "value": "1"
+      }
+    },
+    {
+      "Name": "13. 点击工具栏 +",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "+"
+      }
+    },
+    {
+      "Name": "14. 核对报价字段 第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "199385.IB",
+        "side": "Bid",
+        "price": "3.01",
+        "quantity": "1500"
+      }
+    },
+    {
+      "Name": "15. 设置批量字段 ToolbarSettlement",
+      "Action": "parse.toolbar",
+      "Parameters": {
+        "control": "ToolbarSettlement",
+        "value": "T+1"
+      }
+    },
+    {
+      "Name": "16. 核对清算速度与交易日 第1行",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "1",
+        "settlement": "T+1",
+        "dayOffset": "0",
+        "priceType": "到期收益率"
+      }
+    },
+    {
+      "Name": "17. 核对报价字段 第2行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "2",
+        "securityId": "250210.IB",
+        "side": "Ofr",
+        "price": "2",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "18. 核对清算速度与交易日 第2行",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "2",
+        "settlement": "T+0",
+        "dayOffset": "0",
+        "priceType": "到期收益率"
+      }
+    },
+    {
+      "Name": "19. 勾选报价 第1行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "false",
+        "expectedCount": "0"
+      }
+    },
+    {
+      "Name": "20. 勾选报价 第2行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "2",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "21. 设置批量字段 ToolbarSettlement",
+      "Action": "parse.toolbar",
+      "Parameters": {
+        "control": "ToolbarSettlement",
+        "value": "T+1"
+      }
+    },
+    {
+      "Name": "22. 核对清算速度与交易日 第2行",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "2",
+        "settlement": "T+1",
+        "dayOffset": "0",
+        "priceType": "到期收益率"
+      }
+    },
+    {
+      "Name": "23. 设置批量字段 ToolbarPriceType",
+      "Action": "parse.toolbar",
+      "Parameters": {
+        "control": "ToolbarPriceType",
+        "value": "净价"
+      }
+    },
+    {
+      "Name": "24. 设置批量字段 ToolbarPriceType",
+      "Action": "parse.toolbar",
+      "Parameters": {
+        "control": "ToolbarPriceType",
+        "value": "到期收益率"
+      }
+    },
+    {
+      "Name": "25. 核对清算速度与交易日 第2行",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "2",
+        "settlement": "T+1",
+        "dayOffset": "0",
+        "priceType": "到期收益率"
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -54,7 +54,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             }
 
             List<QuoteConfirmRow> rows = new List<QuoteConfirmRow>();
-            List<string> warnings = new List<string>();
+            List<string> warnings = new List<string>(parsedReply.Warnings ?? new List<string>());
             foreach (ParserQuote item in data)
             {
                 if (item == null)
@@ -114,6 +114,9 @@ namespace STC.SalesTrading.Plugin.Ficc
                     throw new InvalidOperationException("ParserSvr 返回了不支持的计价类型：" + (string)quote["priceType"]);
             }
             string settlement = (string)quote["settlType"];
+            // ParserSvr uses STC codes 3/4 for tomorrow +0/+1, not T+2/T+3.
+            bool tomorrow = settlement == "3" || settlement == "4";
+            string quoteSettlement = settlement == "3" ? "1" : settlement == "4" ? "2" : settlement;
             QuoteConfirmRow row = new QuoteConfirmRow
             {
                 Code = (string)quote["securityId"],
@@ -126,12 +129,10 @@ namespace STC.SalesTrading.Plugin.Ficc
                 Institution = (string)quote["institutionName"],
                 ContactId = (string)quote["traderId"],
                 Trader = (string)quote["traderName"],
-                SettlementCode = settlement,
-                Settlement = settlement == "1" ? SettlementType.T0
-                    : settlement == "2" ? SettlementType.T1
-                    : settlement == "3" ? SettlementType.T2
-                    : settlement == "4" ? SettlementType.T3 : SettlementType.Forward,
-                TradeDate = DateTime.Today,
+                SettlementCode = quoteSettlement,
+                Settlement = quoteSettlement == "1" ? SettlementType.T0
+                    : quoteSettlement == "2" ? SettlementType.T1 : SettlementType.Forward,
+                TradeDate = tomorrow ? DateTime.Today.AddDays(1) : DateTime.Today,
                 TextContent = (string)quote["text"],
                 Maturity = (string)quote["timeToMaturity"],
                 NzValuation = (decimal?)quote["chinaBondValuation"],

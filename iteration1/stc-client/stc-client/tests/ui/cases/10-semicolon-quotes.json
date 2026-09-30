@@ -1,0 +1,38 @@
+{
+  "Version": 1,
+  "Id": "10-semicolon-quotes",
+  "Name": "分号分隔报价不丢第二条",
+  "Description": "P1：解析历史缺陷回归，逐行核对方向、价格、数量。",
+  "Steps": [
+    {
+      "Name": "1. 识别文本",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} bid 2.5 1000; ${securityId} ofr 2.4 2000",
+        "expectedRows": "2"
+      }
+    },
+    {
+      "Name": "2. 逐字段核对预览行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "${securityId}",
+        "side": "Bid",
+        "price": "2.5",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "3. 逐字段核对预览行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "2",
+        "securityId": "${securityId}",
+        "side": "Ofr",
+        "price": "2.4",
+        "quantity": "2000"
+      }
+    }
+  ]
+}

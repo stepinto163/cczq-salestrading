@@ -54,11 +54,11 @@ namespace SalesTrading.UiTests
             }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new RunnerWindow(source));
+            Application.Run(new RunnerWindow(source, options.ContainsKey("--config") ? options["--config"] : null));
             return 0;
         }
 
-        public RunnerWindow(string source)
+        public RunnerWindow(string source, string configFile = null)
         {
             caseDirectory = source;
             Directory.CreateDirectory(source);
@@ -75,7 +75,7 @@ namespace SalesTrading.UiTests
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
             FlowLayoutPanel settings = new FlowLayoutPanel { Dock = DockStyle.Fill };
             settings.Controls.Add(new Label { Text = "STC 配置", AutoSize = true });
-            config.Text = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "STC.exe.config");
+            config.Text = configFile ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "STC.exe.config");
             settings.Controls.Add(config);
             AddButton(settings, "选择配置", () =>
             {

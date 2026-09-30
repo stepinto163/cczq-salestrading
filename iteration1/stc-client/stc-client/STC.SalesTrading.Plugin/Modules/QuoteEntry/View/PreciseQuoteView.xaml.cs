@@ -21,16 +21,16 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.View
             vm.InputHeight += e.VerticalChange;
         }
 
-        /// <summary>Enter 识别 / Shift+Enter 换行（原型语义）。</summary>
+        /// <summary>Enter 换行；Ctrl+Enter 识别。</summary>
         private void InputBox_OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key != Key.Enter) return;
             var vm = DataContext as PreciseQuoteViewModel;
             if (vm == null) return;
 
-            if ((Keyboard.Modifiers & ModifierKeys.Shift) != 0)
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
             {
-                // Shift+Enter 换行：走默认行为
+                // Enter 和 Shift+Enter 保持 TextBox 默认换行行为。
                 return;
             }
 

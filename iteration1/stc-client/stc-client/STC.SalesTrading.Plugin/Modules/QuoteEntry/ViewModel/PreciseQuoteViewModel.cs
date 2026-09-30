@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -20,7 +20,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 {
     /// <summary>
     /// 精确报价页 VM：多行文本粘贴 → 识别为结构化行 → 18+1 列可编辑预览表 → 批量工具栏 → 确认入库。
-    /// 输入区高度可拖拽（100–500px）；Enter 识别 / Shift+Enter 换行（原型语义）。
+    /// 输入区高度可拖拽（100–500px）；Enter 换行 / Ctrl+Enter 识别。
     /// </summary>
     public partial class PreciseQuoteViewModel : ObservableObject, IDisposable
     {
@@ -288,33 +288,33 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         private string _traderInput = string.Empty;
 
         [ObservableProperty]
-        private string _toolbarPriceType = "到期收益率";
+        private string _toolbarPriceType;
 
         partial void OnToolbarPriceTypeChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in SelectedRows) row.PriceType = value;
+            foreach (var row in RowsForBatchEdit()) row.PriceType = value;
         }
 
         [ObservableProperty]
-        private string _toolbarSettlement = "T+1";
+        private string _toolbarSettlement;
 
         partial void OnToolbarSettlementChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in SelectedRows) row.Settlement = value;
+            foreach (var row in RowsForBatchEdit()) row.Settlement = value;
         }
 
         [RelayCommand]
         private void SetDirectionBid()
         {
-            foreach (var row in SelectedRows) row.Direction = "Bid";
+            foreach (var row in RowsForBatchEdit()) row.Direction = "Bid";
         }
 
         [RelayCommand]
         private void SetDirectionOfr()
         {
-            foreach (var row in SelectedRows) row.Direction = "Ofr";
+            foreach (var row in RowsForBatchEdit()) row.Direction = "Ofr";
         }
 
         [RelayCommand]
@@ -326,14 +326,18 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         private void ApplyBp(int sign)
         {
             decimal bp;
-            if (!decimal.TryParse(BpInput, out bp)) bp = 0;
+            if (!decimal.TryParse(BpInput, NumberStyles.Number, CultureInfo.InvariantCulture, out bp) || bp < 0)
+            {
+                StatusMessage = "请输入非负 BP 调整值。";
+                return;
+            }
             var delta = bp * sign;
 
-            foreach (var row in SelectedRows)
+            foreach (var row in RowsForBatchEdit())
             {
                 decimal price;
                 if (!decimal.TryParse(row.Price, out price)) continue;
-                var step = row.PriceType == "净价" || row.PriceType == "全价" ? 0.01m : 0.0001m;
+                var step = 0.01m;
                 row.Price = (price + delta * step).ToString("0.####", CultureInfo.InvariantCulture);
             }
         }
@@ -346,34 +350,62 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void ApplyAmount(int sign)
         {
-            decimal amount;
-            if (!decimal.TryParse(AmountInput, out amount)) amount = 0;
-            var delta = amount * sign * 1000m;
-
-            foreach (var row in SelectedRows)
+            // The buttons are labelled +1k/-1k; quantity is expressed in 万.
+            foreach (var row in RowsForBatchEdit())
             {
-                decimal vol;
-                if (!decimal.TryParse(row.Volume, out vol)) vol = 0;
-                row.Volume = Math.Max(0, vol + delta).ToString("0.#", CultureInfo.InvariantCulture);
+                decimal volume;
+                if (decimal.TryParse(row.Volume, NumberStyles.Number, CultureInfo.InvariantCulture, out volume))
+                {
+                    row.Volume = Math.Max(0, volume + sign * 1000m).ToString("0.####", CultureInfo.InvariantCulture);
+                }
             }
+        }
+
+        partial void OnAmountInputChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+            decimal amount;
+            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out amount) || amount < 0)
+            {
+                StatusMessage = "报量必须为非负数，单位为万。";
+                return;
+            }
+            foreach (var row in RowsForBatchEdit())
+            {
+                row.Volume = amount.ToString("0.####", CultureInfo.InvariantCulture);
+            }
+        }
+
+        private List<QuoteConfirmRowViewModel> RowsForBatchEdit()
+        {
+            var selected = SelectedRows.ToList();
+            if (selected.Count == 0)
+            {
+                StatusMessage = "请先勾选要批量修改的报价。";
+                ToastService.Show(StatusMessage, ToastKind.Warning);
+            }
+            return selected;
         }
 
         partial void OnInstitutionInputChanged(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
-            foreach (var row in SelectedRows) row.Institution = value.Trim();
+            foreach (var row in RowsForBatchEdit()) row.Institution = value.Trim();
         }
 
         partial void OnTraderInputChanged(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
-            foreach (var row in SelectedRows) row.Trader = value.Trim();
+            foreach (var row in RowsForBatchEdit()) row.Trader = value.Trim();
         }
 
         [RelayCommand]
         private void ToggleFlag(string flag)
         {
-            foreach (var row in SelectedRows)
+            foreach (var row in RowsForBatchEdit())
             {
                 switch (flag)
                 {
@@ -393,6 +425,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(QuoteConfirmRowViewModel.IsSelected))
+            {
+                // A new selection must be able to apply any choice, including the previous value.
+                ToolbarPriceType = null;
+                ToolbarSettlement = null;
+                RecomputeStats();
+            }
+            else if (e.PropertyName == nameof(QuoteConfirmRowViewModel.Direction))
             {
                 RecomputeStats();
             }

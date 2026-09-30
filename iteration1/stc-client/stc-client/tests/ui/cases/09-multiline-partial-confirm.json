@@ -1,0 +1,102 @@
+{
+  "Version": 1,
+  "Id": "09-multiline-partial-confirm",
+  "Name": "多行识别分两次确认",
+  "Description": "P0：先确认一条、保留另一条，再确认剩余；每次核对并清理。",
+  "Steps": [
+    {
+      "Name": "1. 识别文本",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} bid 2.5 1000 T+1\n${securityId} ofr 2.6 2000 T+1",
+        "expectedRows": "2"
+      }
+    },
+    {
+      "Name": "2. 逐字段核对预览行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "${securityId}",
+        "side": "Bid",
+        "price": "2.5",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "3. 逐字段核对预览行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "2",
+        "securityId": "${securityId}",
+        "side": "Ofr",
+        "price": "2.6",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "4. 勾选或取消报价",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "5. 确认选中报价并核对持久化",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "6. 核对剩余预览和选中数量",
+      "Action": "parse.count",
+      "Parameters": {
+        "rows": "1",
+        "selected": "0"
+      }
+    },
+    {
+      "Name": "7. 逐字段核对预览行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "${securityId}",
+        "side": "Ofr",
+        "price": "2.6",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "8. 勾选或取消报价",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "9. 确认选中报价并核对持久化",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "10. 核对剩余预览和选中数量",
+      "Action": "parse.count",
+      "Parameters": {
+        "rows": "0",
+        "selected": "0"
+      }
+    },
+    {
+      "Name": "11. 核对管理页推送",
+      "Action": "management.assert",
+      "Parameters": {}
+    }
+  ]
+}

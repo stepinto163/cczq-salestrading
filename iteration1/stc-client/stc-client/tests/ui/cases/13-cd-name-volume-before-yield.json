@@ -1,0 +1,44 @@
+{
+  "Version": 1,
+  "Id": "13-cd-name-volume-before-yield",
+  "Name": "用户原文：存单简称、报量在前、明天清算",
+  "Description": "P0：真实原文必须识别 Bid、2000 万、收益率 2、明天 T+0。已到期债券保留预览并显示明确警告；不创建报价。",
+  "Steps": [
+    {
+      "Name": "识别用户原文",
+      "Action": "parse",
+      "Parameters": {
+        "text": "Bid 112508306.IB 25中信银行CD306 2000w 2 到期 明天+0",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "核对代码方向价格数量",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "112508306.IB",
+        "side": "Bid",
+        "price": "2",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "核对明天交易日及到期收益率",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "1",
+        "settlement": "T+0",
+        "dayOffset": "1",
+        "priceType": "到期收益率"
+      }
+    },
+    {
+      "Name": "核对已到期警告可见",
+      "Action": "parse.warning",
+      "Parameters": {
+        "message": "112508306.IB 已到期或摘牌"
+      }
+    }
+  ]
+}

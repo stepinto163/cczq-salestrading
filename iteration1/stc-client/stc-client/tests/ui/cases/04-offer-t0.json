@@ -1,0 +1,52 @@
+{
+  "Version": 1,
+  "Id": "04-offer-t0",
+  "Name": "卖出 T+0 报价确认及持久化",
+  "Description": "P0：补齐 Ofr/T+0 分支，核对数量、方向、清算及管理页。",
+  "Steps": [
+    {
+      "Name": "1. 打开手工报价",
+      "Action": "manual.open",
+      "Parameters": {}
+    },
+    {
+      "Name": "2. 填写报价",
+      "Action": "manual.fill",
+      "Parameters": {
+        "securityId": "${securityId}",
+        "price": "2.5",
+        "quantity": "1",
+        "side": "2",
+        "settlType": "1"
+      }
+    },
+    {
+      "Name": "3. 操作报价",
+      "Action": "manual.click",
+      "Parameters": {
+        "button": "保存待确认"
+      }
+    },
+    {
+      "Name": "4. 操作报价",
+      "Action": "manual.click",
+      "Parameters": {
+        "button": "确认"
+      }
+    },
+    {
+      "Name": "5. 核对方向、数量和清算",
+      "Action": "quote.fields",
+      "Parameters": {
+        "side": "2",
+        "settlType": "1",
+        "quantity": "1"
+      }
+    },
+    {
+      "Name": "6. 核对管理页推送",
+      "Action": "management.assert",
+      "Parameters": {}
+    }
+  ]
+}

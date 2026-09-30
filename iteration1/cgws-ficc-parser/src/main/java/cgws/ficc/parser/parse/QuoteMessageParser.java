@@ -42,7 +42,7 @@ public final class QuoteMessageParser {
         if (input.length() > 200000) {
             throw new IllegalArgumentException("Parser text exceeds 200000 characters");
         }
-        String text = input.replace('\u00a0', ' ').replace('；', ';').toLowerCase(Locale.ROOT).trim();
+        String text = input.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\\r", "\n").replace('\u00a0', ' ').replace('；', ';').toLowerCase(Locale.ROOT).trim();
         List<Segment> segments = segments(text);
         if (segments.size() > 1000) {
             throw new IllegalArgumentException("Parser text exceeds 1000 segments");
@@ -107,8 +107,17 @@ public final class QuoteMessageParser {
             }
             for (String code : fields.lstCode) {
                 BondReference bond = reference.get(code);
-                if (bond == null || bond.invalid) {
+                if (bond == null) {
                     continue;
+                }
+                if (bond.invalid) {
+                    if (result.warnings == null) {
+                        result.warnings = new ArrayList<String>();
+                    }
+                    String warning = bond.code.toUpperCase(Locale.ROOT) + " 已到期或摘牌，请核对债券有效期；识别结果仅供预览。";
+                    if (!result.warnings.contains(warning)) {
+                        result.warnings.add(warning);
+                    }
                 }
                 boolean paired = fields.BidPrice != null || fields.OfrPrice != null;
                 if (paired && !title.appointsPrice()) {
@@ -195,12 +204,47 @@ public final class QuoteMessageParser {
         String parseText = QUALIFIERS.matcher(normalized).replaceAll(" ");
         QuoteInfo fields = QuoteFieldParser.parseLine(parseText, reference.dictionary);
         if (fields != null) {
+            resolveIntegerPriceAndVolume(parseText, fields);
             Matcher settlement = SETTLEMENT.matcher(normalized);
             if (settlement.find()) {
-                fields.tradeDay = "+" + settlement.group(1);
+                fields.tradeDay = (normalized.contains("明天") ? "明天" : "") + "+" + settlement.group(1);
             }
         }
         return fields;
+    }
+
+    private static void resolveIntegerPriceAndVolume(String text, QuoteInfo fields) {
+        if (!fields.lstSingle.isEmpty() || fields.BidPrice != null || fields.OfrPrice != null) {
+            return;
+        }
+        String explicitVolume = null;
+        String integerPrice = null;
+        int volumeCount = 0;
+        int priceCount = 0;
+        for (String token : text.trim().split("\\s+")) {
+            if (token.matches("[0-9]{1,3}")) {
+                BigDecimal number = new BigDecimal(token);
+                if (number.signum() > 0 && number.compareTo(BigDecimal.valueOf(200)) < 0) {
+                    integerPrice = token;
+                    priceCount++;
+                }
+            } else if (token.matches("[0-9]{3,5}") && new BigDecimal(token).compareTo(BigDecimal.valueOf(200)) >= 0) {
+                explicitVolume = token;
+                volumeCount++;
+            } else if (token.matches("[0-9]+(?:\\.[0-9]+)?(?:w|万|e|亿|k)")) {
+                String amount = MoneyMarketFields.amount(token);
+                if (amount.endsWith(":0")) {
+                    explicitVolume = amount.substring(0, amount.length() - 2);
+                    volumeCount++;
+                }
+            }
+        }
+        // One unit-marked quantity or ordinary large quantity disambiguates one integer price.
+        // Do not guess between multiple unlabelled numbers or touch paired prices.
+        if (volumeCount == 1 && priceCount == 1) {
+            fields.lstSingle.add(integerPrice);
+            fields.Volume = explicitVolume;
+        }
     }
 
     private static String price(QuoteInfo fields) {

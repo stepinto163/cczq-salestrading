@@ -12,6 +12,9 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         [JsonProperty("Msg")]
         public string Msg { get; set; }
 
+        [JsonProperty("Warnings")]
+        public List<string> Warnings { get; set; }
+
         [JsonProperty("Datas")]
         public List<ParserQuote> Datas { get; set; }
 

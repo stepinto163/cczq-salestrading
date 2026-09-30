@@ -24,6 +24,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart
 
 桌面客户端从本地独立 STC 客户端工程构建、启动，并使用相应环境的 GW 地址。本文不提供已移除原型的可执行文件路径。
 
+在 `qa_env\ats_root\scripts` 使用 `client.cmd start|stop|restart|status` 管理日常客户端，使用 `autotest.cmd start|stop|restart|status|build|report` 管理 UI 自动化测试窗口。仓库内也可执行 `iteration1\scripts\autotest.cmd`；启动窗口后选择用例运行，不会自动发起测试。详见 [UI 自动化测试管理](../stc-client/stc-client/docs/ui-automation.zh-CN.md)。
+
 ## API 调试与日志
 
 ```powershell

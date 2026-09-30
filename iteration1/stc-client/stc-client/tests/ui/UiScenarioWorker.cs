@@ -1,4 +1,4 @@
-﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,7 +26,7 @@ namespace SalesTrading.UiTests
 {
     // Hosts the production STC application and its real controls, not replacement screens.
     // Business writes go through UI button handlers. APIs are used for assertions and cleanup only.
-    internal sealed class UiScenarioWorker
+    internal sealed partial class UiScenarioWorker
     {
         private static string reportDirectory;
         private static CaseDefinition definition;
@@ -118,7 +118,7 @@ namespace SalesTrading.UiTests
                 try
                 {
                     await CleanupAsync();
-                    Emit("清理", "PASSED", "本例报价已删除；没有清空数据库或其他用户数据");
+                    Emit("清理", "PASSED", "本例报价已删除；提醒夹具及偏好已恢复（如使用）；没有清空数据库或其他用户数据");
                 }
                 catch (Exception error)
                 {
@@ -253,15 +253,50 @@ namespace SalesTrading.UiTests
                     Require(((JArray)history["records"]).Count >= int.Parse(Parameter(step, "minimumCount")), "持久化变更历史条数不足");
                     File.WriteAllText(Path.Combine(reportDirectory, "history.json"), history.ToString());
                     break;
+                case "parse.keyboard":
                 case "parse":
                     CloseEditor();
                     await NavigateAsync("entry");
                     SelectTab("quote-precise");
                     await Until(() => Descendants<PreciseQuoteView>(view).Any(control => control.IsVisible), "精确报价页面");
                     PreciseQuoteView precise = Descendants<PreciseQuoteView>(view).First(control => control.IsVisible);
-                    ((TextBox)precise.FindName("InputBox")).Text = Parameter(step, "text");
+                    TextBox inputBox = (TextBox)precise.FindName("InputBox");
+                    if (step.Action == "parse.keyboard")
+                    {
+                        string[] lines = Parameter(step, "text").Split('\n');
+                        Require(lines.Length == 2, "键盘用例要求两行输入");
+                        inputBox.Focus();
+                        inputBox.Text = lines[0];
+                        inputBox.CaretIndex = inputBox.Text.Length;
+                        var keyboard = System.Windows.Input.Keyboard.PrimaryDevice;
+                        var previewKey = new System.Windows.Input.KeyEventArgs(keyboard, PresentationSource.FromVisual(inputBox),
+                            Environment.TickCount, System.Windows.Input.Key.Return)
+                            { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
+                        inputBox.RaiseEvent(previewKey);
+                        Require(!previewKey.Handled && !model.QuotePage.Precise.IsParsing, "Enter 被识别命令拦截");
+                        inputBox.RaiseEvent(new System.Windows.Input.KeyEventArgs(keyboard, PresentationSource.FromVisual(inputBox),
+                            Environment.TickCount, System.Windows.Input.Key.Return)
+                            { RoutedEvent = System.Windows.Input.Keyboard.KeyDownEvent });
+                        Require(inputBox.Text.Contains("\n"), "Enter 没有插入换行");
+                        inputBox.SelectedText = lines[1];
+                        Require(inputBox.Text.Replace("\r\n", "\n") == Parameter(step, "text"), "键盘输入未保留两行原文");
+                    }
+                    else
+                    {
+                        inputBox.Text = Parameter(step, "text");
+                    }
                     Click(Button(precise, "识别报价"));
                     await AwaitCommand(model.QuotePage.Precise.IdentifyCommand.ExecutionTask);
+                    File.WriteAllText(Path.Combine(reportDirectory, stepNumber.ToString("D2") + "-parse.json"), new JObject
+                    {
+                        ["input"] = Parameter(step, "text"),
+                        ["status"] = model.QuotePage.Precise.StatusMessage,
+                        ["rows"] = JArray.FromObject(model.QuotePage.Precise.Rows.Select(row => new
+                        {
+                            row.Code, row.Direction, row.Price, row.Volume, row.PriceType,
+                            row.TradeDate, row.Settlement, row.Institution, row.Trader
+                        }))
+                    }.ToString());
                     Require(model.QuotePage.Precise.Rows.Count == int.Parse(Parameter(step, "expectedRows")), "识别数量不匹配：" + model.QuotePage.Precise.StatusMessage);
                     break;
                 case "parse.assert":
@@ -281,12 +316,13 @@ namespace SalesTrading.UiTests
                     Require(selected.IsSelected == expected && model.QuotePage.Precise.SelectedCount == int.Parse(Parameter(step, "expectedCount")), "勾选状态与已选数量不一致");
                     break;
                 case "parse.confirm":
-                    submittedPreview.AddRange(model.QuotePage.Precise.Rows.Where(row => row.IsSelected));
-                    Require(submittedPreview.Count == int.Parse(Parameter(step, "expectedCount")), "确认前已选数量不匹配");
+                    var selectedPreview = model.QuotePage.Precise.Rows.Where(row => row.IsSelected).ToArray();
+                    submittedPreview.AddRange(selectedPreview);
+                    Require(selectedPreview.Length == int.Parse(Parameter(step, "expectedCount")), "确认前已选数量不匹配");
                     Click(Button(Descendants<PreciseQuoteView>(view).First(control => control.IsVisible), "确认报价"));
                     await AwaitCommand(model.QuotePage.Precise.ConfirmSelectedCommand.ExecutionTask);
                     CollectCreatedQuotes();
-                    foreach (QuoteConfirmRowViewModel submitted in submittedPreview)
+                    foreach (QuoteConfirmRowViewModel submitted in selectedPreview)
                     {
                         Require(submitted.Row.Revision > 0 && !model.QuotePage.Precise.Rows.Contains(submitted), "确认未完成；查看 Toast 及 DPS 日志");
                         JObject stored = await model.Backend.Api.GetQuoteAsync(submitted.RecognitionId);
@@ -294,7 +330,8 @@ namespace SalesTrading.UiTests
                     }
                     break;
                 default:
-                    throw new InvalidOperationException("不支持的动作：" + step.Action);
+                    await ExecuteRegressionAsync(step);
+                    break;
             }
         }
 
@@ -331,6 +368,28 @@ namespace SalesTrading.UiTests
         }
 
         private async Task CleanupAsync()
+        {
+            var failures = new List<string>();
+            try
+            {
+                await CleanupQuotesAsync();
+            }
+            catch (Exception error)
+            {
+                failures.Add(error.ToString());
+            }
+            try
+            {
+                await CleanupNotificationFixtureAsync();
+            }
+            catch (Exception error)
+            {
+                failures.Add(error.ToString());
+            }
+            Require(failures.Count == 0, string.Join(Environment.NewLine, failures));
+        }
+
+        private async Task CleanupQuotesAsync()
         {
             CollectCreatedQuotes();
             CloseEditor();

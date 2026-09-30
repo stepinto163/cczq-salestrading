@@ -13,4 +13,7 @@ public class AllQuote {
     public String traderSuffix;
     public boolean isShortCode;
     public boolean isFullCode;
+
+    /** Recognition diagnostics; a preview does not authorize quote publication. */
+    public List<String> warnings;
 }

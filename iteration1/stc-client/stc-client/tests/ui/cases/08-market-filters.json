@@ -1,0 +1,88 @@
+{
+  "Version": 1,
+  "Id": "08-market-filters",
+  "Name": "行情中心侧栏过滤与重置",
+  "Description": "P0：自建有效报价，真实区间和搜索控件验证消失、恢复、清除。",
+  "Steps": [
+    {
+      "Name": "1. 打开手工报价",
+      "Action": "manual.open",
+      "Parameters": {}
+    },
+    {
+      "Name": "2. 填写报价",
+      "Action": "manual.fill",
+      "Parameters": {
+        "securityId": "${securityId}",
+        "price": "2.5",
+        "quantity": "1",
+        "side": "1",
+        "settlType": "2"
+      }
+    },
+    {
+      "Name": "3. 操作报价",
+      "Action": "manual.click",
+      "Parameters": {
+        "button": "保存待确认"
+      }
+    },
+    {
+      "Name": "4. 操作报价",
+      "Action": "manual.click",
+      "Parameters": {
+        "button": "确认"
+      }
+    },
+    {
+      "Name": "5. 核对行情页推送",
+      "Action": "market.assert",
+      "Parameters": {}
+    },
+    {
+      "Name": "6. 输入区间并核对筛选结果",
+      "Action": "sidebar.range",
+      "Parameters": {
+        "page": "market",
+        "field": "bidPrice",
+        "min": "3",
+        "max": "4",
+        "visible": "false"
+      }
+    },
+    {
+      "Name": "7. 输入区间并核对筛选结果",
+      "Action": "sidebar.range",
+      "Parameters": {
+        "page": "market",
+        "field": "bidPrice",
+        "min": "2.5",
+        "max": "2.5",
+        "visible": "true"
+      }
+    },
+    {
+      "Name": "8. 清除过滤并核对恢复",
+      "Action": "sidebar.reset",
+      "Parameters": {
+        "page": "market"
+      }
+    },
+    {
+      "Name": "9. 输入关键词并核对筛选结果",
+      "Action": "sidebar.search",
+      "Parameters": {
+        "page": "market",
+        "text": "UI-ABSENT-BOND-938172",
+        "visible": "false"
+      }
+    },
+    {
+      "Name": "10. 清除过滤并核对恢复",
+      "Action": "sidebar.reset",
+      "Parameters": {
+        "page": "market"
+      }
+    }
+  ]
+}

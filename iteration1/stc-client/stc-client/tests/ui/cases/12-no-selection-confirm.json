@@ -1,0 +1,63 @@
+{
+  "Version": 1,
+  "Id": "12-no-selection-confirm",
+  "Name": "未勾选不能确认报价",
+  "Description": "P0：未选时点击确认不得提交，勾选后同一报价能够确认。",
+  "Steps": [
+    {
+      "Name": "1. 识别文本",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} bid 2.5 1000",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "2. 核对剩余预览和选中数量",
+      "Action": "parse.count",
+      "Parameters": {
+        "rows": "1",
+        "selected": "0"
+      }
+    },
+    {
+      "Name": "3. 点击预览工具栏",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "确认报价"
+      }
+    },
+    {
+      "Name": "4. 核对剩余预览和选中数量",
+      "Action": "parse.count",
+      "Parameters": {
+        "rows": "1",
+        "selected": "0"
+      }
+    },
+    {
+      "Name": "5. 勾选或取消报价",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "6. 确认选中报价并核对持久化",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "7. 核对剩余预览和选中数量",
+      "Action": "parse.count",
+      "Parameters": {
+        "rows": "0",
+        "selected": "0"
+      }
+    }
+  ]
+}

@@ -93,6 +93,20 @@ internal static class ParserIntegrationChecks
             && row.Revision == 0, "parser identity is separate from persisted quote identity");
         Check(parsed.Rows[1].PriceType == PriceType.CleanPrice && parsed.Rows[1].Price == 101.12345m, "clean price mapping retains precision");
 
+        transport.Response = Reply();
+        transport.Response["Warnings"] = new JArray("112508306.IB 已到期或摘牌");
+        transport.Response["Datas"][0]["settlType"] = "3";
+        transport.Response["Datas"][1]["settlType"] = "4";
+        QuoteParseResult tomorrow = await parser.ParseAsync("明天+0", CancellationToken.None);
+        Check(tomorrow.Warnings.Contains("112508306.IB 已到期或摘牌"), "expired-bond warning survives protocol mapping");
+        Check(tomorrow.Rows[0].TradeDate == DateTime.Today.AddDays(1)
+            && tomorrow.Rows[0].Settlement == SettlementType.T0 && tomorrow.Rows[0].SettlementCode == "1",
+            "STC tomorrow +0 maps to tomorrow trade date and FICC T0");
+        Check(tomorrow.Rows[1].TradeDate == DateTime.Today.AddDays(1)
+            && tomorrow.Rows[1].Settlement == SettlementType.T1 && tomorrow.Rows[1].SettlementCode == "2",
+            "STC tomorrow +1 maps to tomorrow trade date and FICC T1");
+        transport.Response = Reply();
+
         QuoteConfirmRowViewModel edit = new QuoteConfirmRowViewModel(parsed.Rows[1]);
         Check(edit.Price == "101.12345", "preview does not round parsed price");
         edit.Commit();

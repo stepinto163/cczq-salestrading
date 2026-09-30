@@ -1,0 +1,58 @@
+{
+  "Version": 1,
+  "Id": "16-enter-multiline",
+  "Name": "Enter 换行及多行识别",
+  "Description": "P0：用户截图回归，只验证识别预览和控件行为，不创建报价。",
+  "Steps": [
+    {
+      "Name": "1. 通过 Enter 输入两行后识别 ",
+      "Action": "parse.keyboard",
+      "Parameters": {
+        "text": "199385 3 1000 +1\n250210 2 2000 +0",
+        "expectedRows": "2"
+      }
+    },
+    {
+      "Name": "2. 核对报价字段 第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "199385.IB",
+        "side": "Ofr",
+        "price": "3",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "3. 核对清算速度与交易日 第1行",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "1",
+        "settlement": "T+1",
+        "dayOffset": "0",
+        "priceType": "到期收益率"
+      }
+    },
+    {
+      "Name": "4. 核对报价字段 第2行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "2",
+        "securityId": "250210.IB",
+        "side": "Ofr",
+        "price": "2",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "5. 核对清算速度与交易日 第2行",
+      "Action": "parse.settlement",
+      "Parameters": {
+        "row": "2",
+        "settlement": "T+0",
+        "dayOffset": "0",
+        "priceType": "到期收益率"
+      }
+    }
+  ]
+}
