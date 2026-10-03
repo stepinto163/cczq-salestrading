@@ -81,6 +81,25 @@ public final class QtIntakeSmoke {
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(args[0]))) {
             configuration.load(reader);
         }
+        if (args.length == 4 && "verify-restart".equals(args[1])) {
+            String restartSchema = args[2];
+            if (!restartSchema.matches("ficc_qtintake_check_[0-9]+")) {
+                throw new IllegalArgumentException("Unexpected restart test schema");
+            }
+            configuration.setProperty("db.schema", restartSchema);
+            try (PgStore database = new PgStore(configuration)) {
+                QuoteService restarted = new QuoteService(database, new ReferenceData());
+                long eventTail = database.tail();
+                JSONObject reply = new IntakeCreateEndpoint(TOKEN).create(restarted, request("qt-a", "U-001"));
+                JSONObject result = reply.getJSONObject("Data").getJSONArray("results").getJSONObject(0);
+                check(args[3].equals(result.getString("quoteId")) && "1".equals(result.getString("revision")),
+                        "fresh JVM returns original create receipt");
+                check(restarted.quotes.size() == 7 && database.tail() == eventTail
+                                && "2".equals(restarted.quotes.get(args[3]).revision),
+                        "fresh JVM retry neither duplicates nor overwrites later edit");
+            }
+            return;
+        }
         String schema = "ficc_qtintake_check_" + System.currentTimeMillis();
         configuration.setProperty("db.schema", schema);
         String firstId;
@@ -221,6 +240,68 @@ public final class QtIntakeSmoke {
                 Files.write(Paths.get(args[1]), JsonUtils.toJson(JsonUtils.array(
                         firstGrouped, secondGrouped, otherMessage)).getBytes(StandardCharsets.UTF_8));
             }
+            // Fail after saveQuote/event have run, before history/receipt commit.
+            JSONObject interrupted = request("rollback", "U-001");
+            String quoteCount = database.scalar("SELECT count(*) FROM quotes");
+            String eventCountBeforeFailure = database.scalar("SELECT count(*) FROM events");
+            String historyCount = database.scalar("SELECT count(*) FROM history");
+            database.exec("CREATE FUNCTION fail_history() RETURNS trigger LANGUAGE plpgsql AS $$ "
+                    + "BEGIN RAISE EXCEPTION 'injected history failure'; END $$");
+            database.exec("CREATE TRIGGER fail_history BEFORE INSERT ON history "
+                    + "FOR EACH ROW EXECUTE PROCEDURE fail_history()");
+            try {
+                endpoint.create(service, interrupted);
+                throw new AssertionError("injected database failure was ignored");
+            } catch (java.sql.SQLException expected) {
+                check(expected.getMessage().contains("injected history failure"),
+                        "database failure propagates for retry");
+            } finally {
+                database.exec("DROP TRIGGER fail_history ON history");
+                database.exec("DROP FUNCTION fail_history()");
+            }
+            check(quoteCount.equals(database.scalar("SELECT count(*) FROM quotes"))
+                            && eventCountBeforeFailure.equals(database.scalar("SELECT count(*) FROM events"))
+                            && historyCount.equals(database.scalar("SELECT count(*) FROM history"))
+                            && service.quotes.size() == 6,
+                    "failed transaction leaves no quote, history, event or cache change");
+            check("[]".equals(database.scalar("SELECT results::text FROM requests WHERE request_id=?",
+                    interrupted.getString("requestId"))), "failed transaction has no final receipt");
+            JSONObject recovered = endpoint.create(service, interrupted);
+            String recoveredId = recovered.getJSONObject("Data").getJSONArray("results")
+                    .getJSONObject(0).getString("quoteId");
+            check(recoveredId != null && service.quotes.size() == 7,
+                    "same request succeeds once after database recovery");
+            check(recovered.equals(endpoint.create(service, interrupted)) && service.quotes.size() == 7,
+                    "lost response retry returns original result without another quote");
+
+            JSONObject invalid = request("invalid", "U-001");
+            invalid.getJSONArray("quotes").getJSONObject(0).put("side", "INVALID");
+            long tailBeforeInvalid = database.tail();
+            JSONObject invalidReply = endpoint.create(service, invalid);
+            JSONObject invalidResult = invalidReply.getJSONObject("Data").getJSONArray("results")
+                    .getJSONObject(0);
+            check("1001".equals(invalidResult.getString("Code"))
+                            && "VALIDATION_FAILED".equals(invalidResult.getJSONObject("error").getString("type"))
+                            && "side".equals(invalidResult.getJSONObject("error").getString("field")),
+                    "permanent rejection exposes code, type and field used by forwarder");
+            check(service.quotes.size() == 7 && database.tail() == tailBeforeInvalid
+                            && invalidReply.equals(endpoint.create(service, invalid)),
+                    "rejected retry has no quote or event and returns stable rejection");
+
+            JSONObject updateResult = (JSONObject) service.write(new QuoteService.Call(
+                    "U-001", "<test>", "ficc.quote.update", JsonUtils.object(
+                            "requestId", "later-edit", "quotes", JsonUtils.array(JsonUtils.object(
+                                    "quoteId", firstId, "expectedRevision", "1", "price", "2.7")))),
+                    "update", null);
+            check("0000".equals(updateResult.getJSONArray("results").getJSONObject(0).getString("Code")),
+                    "later edit succeeds");
+            long tailAfterEdit = database.tail();
+            endpoint.create(service, request);
+            check("2".equals(service.quotes.get(firstId).revision)
+                            && new java.math.BigDecimal("2.7").compareTo(
+                                    service.quotes.get(firstId).toJson().getBigDecimal("price")) == 0
+                            && database.tail() == tailAfterEdit,
+                    "old create retry cannot overwrite later edit or republish it");
             JSONObject confirmed = (JSONObject) service.write(new QuoteService.Call(
                     "U-001", "<test>", "ficc.quote.confirm", JsonUtils.object(
                             "requestId", "confirm-group-member",
@@ -246,6 +327,16 @@ public final class QtIntakeSmoke {
                                     firstGrouped.getString("quoteId")).sourceMessageId),
                     "deleting a sibling preserves confirmed quote and source identity");
         }
+        Process restartCheck = new ProcessBuilder(
+                Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
+                "-Xmx128m", "-XX:ActiveProcessorCount=2", "-cp", System.getProperty("java.class.path"),
+                QtIntakeSmoke.class.getName(), args[0], "verify-restart", schema, firstId)
+                .inheritIO().start();
+        if (!restartCheck.waitFor(15, java.util.concurrent.TimeUnit.SECONDS)) {
+            restartCheck.destroyForcibly();
+            throw new AssertionError("Fresh JVM recovery check exceeded watchdog");
+        }
+        check(restartCheck.exitValue() == 0, "independent JVM recovery check passed");
         try (PgStore database = new PgStore(configuration)) {
             QuoteService restarted = new QuoteService(database, new ReferenceData());
             JSONObject result =
@@ -257,12 +348,16 @@ public final class QtIntakeSmoke {
                                     .getJSONObject(0)
                                     .getString("quoteId")),
                     "idempotency survives QuoteSvr restart");
-            check(restarted.quotes.size() == 6, "restart keeps all persisted quotes");
+            check(restarted.quotes.size() == 7, "restart keeps all persisted quotes");
+            check("2".equals(restarted.quotes.get(firstId).revision)
+                            && new java.math.BigDecimal("2.7").compareTo(
+                                    restarted.quotes.get(firstId).toJson().getBigDecimal("price")) == 0,
+                    "restart and old create retry preserve later edit");
             JSONObject group = importGrouped(new IntakeCreateEndpoint(TOKEN), restarted,
                     "group-row-2", "message-a", "U-001");
             JSONObject groupedSource = database.rows("SELECT payload FROM sources WHERE id=?",
                     group.getString("sourceMessageId")).get(0);
-            check(groupedSource.getJSONArray("quoteIds").size() == 2 && restarted.quotes.size() == 6,
+            check(groupedSource.getJSONArray("quoteIds").size() == 2 && restarted.quotes.size() == 7,
                     "group membership and per-quote replay survive restart");
             // Only the generated test schema is removed; never a configured service schema.
             if (!schema.matches("ficc_qtintake_check_[0-9]+")) {

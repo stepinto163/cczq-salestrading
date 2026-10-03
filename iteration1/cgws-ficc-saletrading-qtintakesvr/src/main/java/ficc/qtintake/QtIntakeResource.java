@@ -148,11 +148,7 @@ public final class QtIntakeResource extends ResourceAdapter {
     }
 
     public void forward() {
-        try {
-            forwarder.tick();
-        } catch (Exception error) {
-            LOGGER.error("FORWARD state=RETRY; durable request retained", error);
-        }
+        forwarder.run();
     }
 
     public Map<String, Object> status() {
@@ -163,7 +159,8 @@ public final class QtIntakeResource extends ResourceAdapter {
                 JsonUtils.object(
                         "fixConnected", receiver != null && receiver.loggedOn(),
                         "storageFailed", receiver != null && receiver.storageFailed(),
-                        "quoteSvrOnline", transport != null && transport.online()));
+                        "quoteSvrOnline", transport != null && transport.online(),
+                        "pendingCount", inbox == null ? 0 : inbox.pendingCount()));
     }
 
     @Override

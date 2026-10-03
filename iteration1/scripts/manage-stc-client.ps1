@@ -1,11 +1,12 @@
 param(
-    [ValidateSet('start', 'stop', 'restart', 'status')]
     [string]$Action = 'status',
     [string]$StcConfig,
     [switch]$Force
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'resolve-command-name.ps1')
+$Action = Resolve-CommandName $Action @('start', 'stop', 'restart', 'status') -Label 'action'
 $iterationRoot = Split-Path $PSScriptRoot -Parent
 $repositoryRoot = Split-Path $iterationRoot -Parent
 $clientRoot = Join-Path $iterationRoot 'stc-client/stc-client'

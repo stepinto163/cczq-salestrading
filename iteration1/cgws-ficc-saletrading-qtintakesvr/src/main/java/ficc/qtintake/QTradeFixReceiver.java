@@ -122,7 +122,7 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
         log("RECEIVE", message, sessionId);
         if (storageFailed) {
             throw new IllegalStateException(
-                    "QtIntakeSvr storage failed; FIX replay is required after recovery");
+                    "QtIntakeSvr storage failed; unsaved input requires reconciliation");
         }
         try {
             com.alibaba.fastjson2.JSONObject request;
@@ -150,7 +150,7 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
         } catch (IOException error) {
             storageFailed = true;
             LOGGER.error(
-                    "FIX state=FAILED reason=INBOX_UNAVAILABLE; disconnecting; replay required",
+                    "FIX state=FAILED reason=INBOX_UNAVAILABLE; disconnecting; unsaved input requires reconciliation",
                     error);
             // Do not join QuickFIX worker threads from inside their callback.
             Thread stop = new Thread(this::close, "qtintake-storage-failure");

@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet('build', 'deploy')]
     [string]$Action,
     [Parameter(Position=0)]
     [string]$Target,
@@ -13,6 +12,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'resolve-command-name.ps1')
+$Action = Resolve-CommandName $Action @('build', 'deploy') -Label 'action'
 $iterationRoot = Split-Path $PSScriptRoot -Parent
 $repositoryRoot = Split-Path $iterationRoot -Parent
 $clientSource = Join-Path $iterationRoot 'stc-client/stc-client'
@@ -31,11 +32,11 @@ if (!$Target) {
     Write-Host 'Optional: -SettingsFile <Maven settings> -AtsRoot <local ATS_ROOT> -ClientConfig <STC.exe.config>'
     exit 0
 }
-$Target = $Target.ToLowerInvariant()
-if ($Target -eq 'notifications') { $Target = 'notificationsvr' }
-if ($Target -eq 'notification') { $Target = 'notificationsvr' }
-if ($Target -eq 'stc-client') { $Target = 'client' }
-if ($Target -notin $allowed) { throw "Unknown target '$Target'. Supported: $($allowed -join ', ')" }
+$Target = Resolve-CommandName $Target $allowed -Aliases @{
+    'notifications' = 'notificationsvr'
+    'notification' = 'notificationsvr'
+    'stc-client' = 'client'
+} -Label 'target'
 if ($Action -eq 'build' -and $NoBuild) { throw '-NoBuild is only valid for deploy.' }
 if ($Action -eq 'deploy' -and $Target -in @('parent-pom', 'common')) {
     throw "$Target is a Maven library, not a process. Deploy the service that consumes it."

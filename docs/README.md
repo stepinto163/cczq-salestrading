@@ -1,6 +1,6 @@
 # 文档目录
 
-当前开发以 [API 规格](ficc-api-spec.zh-CN.md)、[筛选字典](product-filter-contract.zh-CN.md)及对应实现为依据；架构和模型文档中的规划不等于已上线能力。运行步骤以各服务部署说明及本轮实际配置为准。
+业务规则以[产品需求](../FICC销售智能交易平台.html)及用户明确确认的产品决定为准；产品未规定处参考 SZ 旧实现，不用当前代码反向定义需求。[业务规则与实现核查](business-invariants.zh-CN.md)记录约束与差距。[API 规格](ficc-api-spec.zh-CN.md)和[筛选字典](product-filter-contract.zh-CN.md)用于接入；架构和模型文档中的规划不等于已上线能力。运行步骤以各服务部署说明及本轮实际配置为准。
 
 2026-09-28 清理：移除旧接口草案、重复构建入口、已退役 C# 原型操作说明及一次性测试报告。历史内容可通过 Git 历史查阅，不再维护另一份备份文档。
 
@@ -8,6 +8,7 @@
 
 ## 架构、模型与前端协议
 
+- [销售交易业务规则与实现核查](business-invariants.zh-CN.md)
 - [FICC服务API规范（实现对照与评审稿）](ficc-api-spec.zh-CN.md)
 - [应用消息协议代码与维护](application-protocol.zh-CN.md)
 - [FICC销售交易系统架构（讨论稿）](ficc-sales-trading-architecture.zh-CN.md)

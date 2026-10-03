@@ -8,9 +8,9 @@ import ficc.qtintake.QtIntakeResource;
 
 import java.util.concurrent.*;
 
-/** BBox owns the forward worker lifecycle. Each tick submits at most one buffered quote. */
+/** BBox owns the forward worker lifecycle. One worker drains pending requests in arrival order. */
 public final class QtIntakeStream extends StreamAdapter {
-    private ScheduledExecutorService worker;
+    private ExecutorService worker;
 
     @Override
     public void start() throws LifecycleException {
@@ -18,13 +18,13 @@ public final class QtIntakeStream extends StreamAdapter {
         QtIntakeResource resource =
                 (QtIntakeResource) Server.getServer().getResource("QtIntakeResource");
         worker =
-                Executors.newSingleThreadScheduledExecutor(
+                Executors.newSingleThreadExecutor(
                         task -> {
                             Thread thread = new Thread(task, "qtintake-forward");
                             thread.setDaemon(true);
                             return thread;
                         });
-        worker.scheduleWithFixedDelay(resource::forward, 1, 1, TimeUnit.SECONDS);
+        worker.submit(resource::forward);
     }
 
     @Override

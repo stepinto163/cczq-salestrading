@@ -19,6 +19,20 @@ cd D:\workspace\greatewall\ficc\ficc
 
 入口为 `build.cmd` / `deploy.cmd`，内部调用 `iteration1/scripts/product.ps1`。CMD 入口已设置本次 PowerShell 进程的执行策略，不需要修改系统执行策略。
 
+完整本机环境的 `qa_env\ats_root\scripts` 也提供同名入口，与 `start.cmd`、`show.cmd` 放在一起。它们复用同一构建脚本，并固定选择所在环境的 `ATS_ROOT`，不受当前工作目录或全局 `ATS_ROOT` 影响：
+
+```powershell
+cd D:\workspace\greatewall\ficc\qa_env\ats_root\scripts
+.\build.cmd quo -Plan
+.\deploy.cmd NOT -Plan
+.\build.cmd all
+.\deploy.cmd all -NoBuild
+.\build.cmd client
+.\deploy.cmd client -NoBuild
+```
+
+目标支持大小写不敏感的唯一前缀，参数及覆盖范围与仓库入口相同。`-Plan` 只检查执行计划，不构建或重启。此处入口已绑定本环境；需要其他环境时使用仓库入口的 `-AtsRoot` 参数。`qa_env` 为本地部署目录，不随仓库提交。
+
 ## 目标和依赖
 
 | 目标 | 构建内容 | 部署位置 |

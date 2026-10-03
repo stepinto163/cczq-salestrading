@@ -27,7 +27,7 @@ try {
     Add-Content -LiteralPath (Join-Path $dataPath 'postgresql.conf') -Encoding ASCII -Value @"
 listen_addresses = '127.0.0.1'
 port = 55432
-max_connections = 16
+max_connections = 64
 shared_buffers = '32MB'
 work_mem = '2MB'
 maintenance_work_mem = '16MB'

@@ -28,6 +28,40 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\iteration1\scripts\restart
 
 ## API 调试与日志
 
+### 命令前缀匹配
+
+本机 `start/stop/restart/show/log.cmd` 的服务参数、`build/deploy.cmd` 的目标，以及 `client/autotest.cmd` 的操作参数，均支持**大小写不敏感的唯一前缀**。`log` 的 `-Kind` 也支持前缀。完整名称优先匹配；多个候选时列出候选并报错，不执行任何操作。
+
+```powershell
+.\show.cmd QUO                 # QuoteSvr
+.\start.cmd qt                 # QtIntakeSvr
+.\log.cmd not -Kind APP        # NotificationSvr 应用日志
+.\log.cmd CL                   # client
+.\client.cmd STAT              # status
+.\autotest.cmd REP             # report
+# 在仓库根目录：
+.\build.cmd quo -Plan
+.\deploy.cmd NOT -Plan
+```
+
+`q` 同时匹配 QuoteSvr / QtIntakeSvr，因此必须至少写 `quo` / `qt`；`client st` 匹配 start / stop / status，因此使用 `start` / `sto` / `stat`。`autotest re` 匹配 restart / report，使用 `res` / `rep`。前缀是字面匹配，不支持通配符。仍兼容 `Registry`、`stc-client` 和 `stc/QuoteSvr/QuoteSvr` 等已有名称形式。脚本文件名不支持缩写，缩写仅适用于参数。
+
+共享匹配逻辑位于 `iteration1/scripts/resolve-command-name.ps1`；本机 `qa_env/ats_root/scripts/service.ps1` 也加载该文件。验证：`powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/tests/test-command-prefixes.ps1`。
+
+在 `qa_env\ats_root\scripts` 执行以下命令，每次都会打开独立日志控制台；也可使用仓库内的 `iteration1\scripts\log.cmd`：
+
+```powershell
+.\log.cmd QuoteSvr                  # 控制台日志，最近 80 行并持续跟随
+.\log.cmd ParserSvr
+.\log.cmd QtIntakeSvr
+.\log.cmd client                    # 日常 STC 客户端当前最新日志
+.\log.cmd QuoteSvr -Kind app         # 应用日志 QuoteSvr.log
+.\log.cmd QuoteSvr -Kind error       # 标准错误日志
+.\log.cmd NotificationSvr -Lines 200
+```
+
+服务名来自 `ATS_ROOT/scripts/serverlist.csv`。客户端路径读取 `runtime/native-client/STC.exe.config` 的 `LogPath`。关闭日志窗口不会停止服务或客户端；Ctrl+C 停止跟随。日志轮转或客户端跨日生成新文件后，重新执行命令打开新日志。`-Here` 在当前控制台跟随，`-Once` 只输出最近几行，便于脚本检查。仓库入口环境优先级为 `-AtsRoot` → `ATS_ROOT` 环境变量 → 同级 `qa_env/ats_root`；本机环境入口固定指向自己的 ATS_ROOT。
+
 ```powershell
 dotnet build iteration1/api-debugger/DpsApiDebugger.csproj
 Start-Process .\iteration1\api-debugger\bin\Debug\net472\Ficc.DpsApiDebugger.exe

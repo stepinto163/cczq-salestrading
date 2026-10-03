@@ -386,7 +386,8 @@ class QtIntakeTest {
                                     "results",
                                     JsonUtils.array(
                                             JsonUtils.object(
-                                                    "Code", "1001", "Msg", "Invalid bond"))));
+                                                    "Code", "1001", "Msg", "Invalid bond",
+                                                    "error", JsonUtils.object("type", "VALIDATION_FAILED", "field", "securityId")))));
             forwarder.tick();
             assertEquals(first, transport.last);
             assertEquals(1, resolutions.get());

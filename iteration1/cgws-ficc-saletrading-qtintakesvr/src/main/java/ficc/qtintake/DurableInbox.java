@@ -11,12 +11,19 @@ import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Comparator;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
+import org.apache.log4j.Logger;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 /** One process owns the directory. Received work is flushed before the FIX callback returns. */
 public final class DurableInbox implements AutoCloseable {
+    private static final Logger LOGGER = Logger.getLogger(DurableInbox.class);
+    private final TreeMap<Long, Path> pendingFiles = new TreeMap<>();
+    private long lastSequence;
+    private boolean closed;
     private final Path root;
     private final int capacity;
     private final FileChannel lockChannel;
@@ -49,7 +56,8 @@ public final class DurableInbox implements AutoCloseable {
             for (String state : new String[] {"pending", "sent", "rejected"}) {
                 Files.createDirectories(this.root.resolve(state));
             }
-        } catch (IOException error) {
+            restorePendingOrder();
+        } catch (IOException | RuntimeException error) {
             close();
             throw error;
         }
@@ -75,29 +83,70 @@ public final class DurableInbox implements AutoCloseable {
                 return;
             }
         }
-        try (Stream<Path> files = Files.list(root.resolve("pending"))) {
-            if (files.filter(path -> path.toString().endsWith(".json")).limit(capacity).count()
-                    >= capacity) {
-                throw new IOException(
-                        "QtIntakeSvr inbox capacity reached; stop intake and recover before replay");
-            }
+        if (closed) {
+            throw new IOException("Inbox is closed");
         }
-        write(root.resolve("pending").resolve(file), JsonUtils.object("request", request));
+        if (pendingFiles.size() >= capacity) {
+            throw new IOException("QtIntakeSvr inbox capacity reached; incoming request not saved");
+        }
+        long sequence = Math.addExact(lastSequence, 1);
+        Path target = root.resolve("pending").resolve(file);
+        write(target, JsonUtils.object("arrivalSequence", sequence, "request", request));
+        lastSequence = sequence;
+        pendingFiles.put(sequence, target);
+        notifyAll();
     }
 
-    public synchronized Path next() throws IOException {
-        try (Stream<Path> files = Files.list(root.resolve("pending"))) {
-            Optional<Path> first =
-                    files.filter(path -> path.toString().endsWith(".json"))
-                            .min(Comparator.comparingLong(path -> path.toFile().lastModified()));
-            if (first.isPresent()) {
-                // An unmapped account must not block later quotes indefinitely.
-                Files.setLastModifiedTime(
-                        first.get(),
-                        java.nio.file.attribute.FileTime.fromMillis(System.currentTimeMillis()));
+    private void restorePendingOrder() throws IOException {
+        List<Path> legacy = new ArrayList<>();
+        for (String state : new String[] {"pending", "sent", "rejected"}) {
+            try (Stream<Path> files = Files.list(root.resolve(state))) {
+                for (Path file : (Iterable<Path>) files.filter(path -> path.toString().endsWith(".json"))::iterator) {
+                    JSONObject record = read(file);
+                    Long sequence = record.getLong("arrivalSequence");
+                    if (sequence != null) {
+                        if (sequence < 1) {
+                            throw new IOException("Invalid inbox arrival sequence: " + file);
+                        }
+                        lastSequence = Math.max(lastSequence, sequence);
+                        if ("pending".equals(state) && pendingFiles.put(sequence, file) != null) {
+                            throw new IOException("Duplicate pending arrival sequence: " + sequence);
+                        }
+                    } else if ("pending".equals(state)) {
+                        legacy.add(file);
+                    }
+                }
             }
-            return first.orElse(null);
         }
+        legacy.sort(Comparator.comparingLong((Path path) -> path.toFile().lastModified())
+                .thenComparing(path -> path.getFileName().toString()));
+        if (!legacy.isEmpty()) {
+            LOGGER.warn("INBOX state=MIGRATING legacyPending=" + legacy.size()
+                    + " order=LAST_MODIFIED originalArrivalOrder=UNAVAILABLE");
+        }
+        for (Path file : legacy) {
+            JSONObject record = read(file);
+            long sequence = Math.addExact(lastSequence, 1);
+            record.put("arrivalSequence", sequence);
+            write(file, record);
+            lastSequence = sequence;
+            pendingFiles.put(sequence, file);
+        }
+    }
+
+    public synchronized Path next() {
+        return pendingFiles.isEmpty() ? null : pendingFiles.firstEntry().getValue();
+    }
+
+    public synchronized boolean awaitPending() throws InterruptedException {
+        while (pendingFiles.isEmpty() && !closed) {
+            wait();
+        }
+        return !closed;
+    }
+
+    public synchronized int pendingCount() {
+        return pendingFiles.size();
     }
 
     public JSONObject request(Path file) throws IOException {
@@ -105,7 +154,9 @@ public final class DurableInbox implements AutoCloseable {
     }
 
     public synchronized void saveRequest(Path file, JSONObject request) throws IOException {
-        write(file, JsonUtils.object("request", request));
+        JSONObject record = read(file);
+        record.put("request", request);
+        write(file, record);
     }
 
     public synchronized void finish(Path pending, JSONObject reply, boolean success)
@@ -117,6 +168,7 @@ public final class DurableInbox implements AutoCloseable {
                 pending,
                 root.resolve(success ? "sent" : "rejected").resolve(pending.getFileName()),
                 StandardCopyOption.ATOMIC_MOVE);
+        pendingFiles.remove(record.getLong("arrivalSequence"));
     }
 
     public synchronized void rejectRaw(String fix, String reason) throws IOException {
@@ -157,7 +209,12 @@ public final class DurableInbox implements AutoCloseable {
     }
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        notifyAll();
         try {
             lock.release();
         } finally {
