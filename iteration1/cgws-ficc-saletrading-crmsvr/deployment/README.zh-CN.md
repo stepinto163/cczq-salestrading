@@ -19,12 +19,13 @@ CRMSvr 是 FICC 侧唯一的 CRM 出口：它直连 `ficc_ibor` 的 `crm_*` 表�
 
 ## 部署步骤
 
-1. 解压完整 ZIP，保留业务 JAR、lib、control、config 的相对位置。部署包不包含密码和许可证。
-2. 复制 `config/crmsvr.example.properties` 为 `config/crmsvr.local.properties`，填写只读 CRM 账号。
-   密码优先用 `crm.passwordEnv` 指向环境变量；该文件包含凭据，不得进入 Git、Jenkins 模板或服务包。
-3. 修改 `control/ATSConfig.ini` 的注册中心与监听地址（默认 `127.0.0.1:18681`）。示例为本机配置，
-   不能直接作为 QA 配置。
-4. 消费方（QuoteSvr / NotificationSvr / ParserSvr）在各自 `ATSConfig.ini` 中保留或新增
+1. 将 Jenkins QA 包解压至 `/opt/sumscope/stc`，保留 `CRMSvr` 下 javalib、control、config 的相对位置。
+2. 包内 `config/crmsvr.properties` 通过 `crm.sourceName=FICC_CRM` 读取
+   `$ATS_ROOT/control/DBPoolConfig.ini` 中的连接；该数据源应指向 `ficc_ibor`，CRM 表位于 `public`。
+   数据库账号与密码由共享 DBPoolConfig.ini 管理，无需另建 local 配置或密码环境变量。
+   `control/CRMSvr/resourceCfg.ini` 的 `crm.properties` 必须指向此包内文件。
+3. 在 `$ATS_ROOT/control/ATSConfig.ini` 中配置 `SERVER.CRMSvr` 的注册中心与监听地址。
+4. 消费方（QuoteSvr / NotificationSvr / ParserSvr）在共享 `ATSConfig.ini` 中保留或新增
    `SERVER.CRMSvr` 发现条目，端口与第 3 步一致；parsersvr 本身无需改代码。
 5. 设置 Java 8，工作目录切换至解压后的服务根目录，设置 `ATS_ROOT` 后启动：
 

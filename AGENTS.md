@@ -5,7 +5,15 @@
 - Use the task's `sourceBranch`, not an assumed `main`. Read the task at the fetched publication commit before creating its work branch.
 - Report actual validation and untested behavior. Do not treat a worker's completion report as review approval or permission to merge.
 - Use commit author `adrian` and the repository's existing email; do not change global Git identity.
+- 完成并验证当前任务后主动提交相关改动，不要求用户重复提醒；用户明确要求暂不提交时除外。不要混入无关改动，并准确报告提交与验证结果。
 - When the user writes in English, briefly offer a more natural version when useful, then continue the task. Preserve code identifiers and Chinese business terms; avoid lengthy grammar explanations.
+
+# 部署配置规则
+
+- FICC 的部署配置由 Jenkins 流水线根据仓库中的配置、模板和环境参数自动生成，交付包不应要求手动复制 example 文件、补占位值或创建缺失配置。
+- 共享配置统一使用 `$ATS_ROOT/control`，由部署自动化管理；服务包中的引用必须与实际生成路径一致。
+- 不要自行以安全为由排除必要配置、另设凭据文件或增加密码环境变量。规则的例外和变更须先与用户讨论，不得擅自实施。
+- 验证渲染后的配置、必要资源和加载路径；区分配置验证、实际服务启动和端到端验证，不得将前者报告成后者。
 
 # Performance testing
 
