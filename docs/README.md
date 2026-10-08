@@ -8,6 +8,7 @@
 
 ## 架构、模型与前端协议
 
+- [Java 框架替换：第一轮约束、设计与验证状态](../iteration1/docs/framework-replacement.zh-CN.md)
 - [销售交易业务规则与实现核查](business-invariants.zh-CN.md)
 - [FICC服务API规范（实现对照与评审稿）](ficc-api-spec.zh-CN.md)
 - [应用消息协议代码与维护](application-protocol.zh-CN.md)
