@@ -26,6 +26,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
     /// </summary>
     public partial class QuoteConfirmViewModel : ObservableObject, IDisposable
     {
+        public ICrmDirectory CrmDirectory => _quoteService as ICrmDirectory;
+        public CrmBatchEditor CrmBatch { get; }
+
         private readonly IQuoteService _quoteService;
         private readonly HashSet<QuoteConfirmRowViewModel> _hookedRows = new HashSet<QuoteConfirmRowViewModel>();
         private readonly HashSet<QuoteConfirmBatchViewModel> _hookedBatches = new HashSet<QuoteConfirmBatchViewModel>();
@@ -35,6 +38,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         public QuoteConfirmViewModel(IQuoteService quoteService)
         {
             _quoteService = quoteService;
+            CrmBatch = new CrmBatchEditor(() => SelectedRows);
             if (quoteService is ISalesTradingUpdates updates)
             {
                 updates.QuotesChanged += OnBackendChanged;
@@ -436,11 +440,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [ObservableProperty]
         private string _amountInput = string.Empty;
 
-        [ObservableProperty]
-        private string _institutionInput = string.Empty;
 
-        [ObservableProperty]
-        private string _traderInput = string.Empty;
 
         [RelayCommand]
         private void AdjustBpUp() { ApplyBp(1); }
@@ -555,19 +555,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             foreach (var row in SelectedRows) row.Settlement = value;
         }
 
-        [RelayCommand]
-        private void ApplyInstitution()
-        {
-            if (string.IsNullOrWhiteSpace(InstitutionInput)) return;
-            foreach (var row in SelectedRows) row.Institution = InstitutionInput.Trim();
-        }
 
-        [RelayCommand]
-        private void ApplyTrader()
-        {
-            if (string.IsNullOrWhiteSpace(TraderInput)) return;
-            foreach (var row in SelectedRows) row.Trader = TraderInput.Trim();
-        }
 
         /// <summary>批量旗标切换（oco/packing/urgent/rec/whole）。</summary>
         [RelayCommand]

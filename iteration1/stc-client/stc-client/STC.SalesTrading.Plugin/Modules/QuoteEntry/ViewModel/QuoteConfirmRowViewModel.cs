@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using STC.SalesTrading.Plugin.Abstractions.Models;
+using CommunityToolkit.Mvvm.Input;
+using STC.SalesTrading.Plugin.Abstractions;
 using System;
 using System.Globalization;
 using PriceTypeEnum = STC.SalesTrading.Plugin.Abstractions.Models.PriceType;
@@ -34,6 +36,66 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         /// <summary>原始 DTO（提交时回写）。</summary>
         public QuoteConfirmRow Row { get; }
+
+        public string InstitutionId => Row.InstitutionId;
+        private bool selectingCrmParty;
+
+        partial void OnInstitutionChanged(string value)
+        {
+            if (selectingCrmParty) return;
+            Row.InstitutionId = null;
+            Row.ContactId = null;
+            Trader = string.Empty;
+            OnPropertyChanged(nameof(InstitutionId));
+        }
+
+        partial void OnTraderChanged(string value)
+        {
+            if (!selectingCrmParty) Row.ContactId = null;
+        }
+
+        [RelayCommand]
+        public void SelectInstitution(CrmChoice choice)
+        {
+            if (choice == null || string.IsNullOrWhiteSpace(choice.InstitutionId)) return;
+            selectingCrmParty = true;
+            try
+            {
+                if (Row.InstitutionId != choice.InstitutionId)
+                {
+                    Row.ContactId = null;
+                    Row.Trader = string.Empty;
+                    Trader = string.Empty;
+                }
+                Row.InstitutionId = choice.InstitutionId;
+                Row.Institution = choice.InstitutionName;
+                Institution = choice.InstitutionName;
+                OnPropertyChanged(nameof(InstitutionId));
+            }
+            finally
+            {
+                selectingCrmParty = false;
+            }
+        }
+
+        [RelayCommand]
+        public void SelectContact(CrmChoice choice)
+        {
+            if (choice == null || string.IsNullOrWhiteSpace(choice.ContactId)
+                || string.IsNullOrWhiteSpace(choice.InstitutionId)) return;
+            SelectInstitution(choice);
+            selectingCrmParty = true;
+            try
+            {
+                Row.ContactId = choice.ContactId;
+                Row.Trader = choice.ContactName;
+                Trader = choice.ContactName;
+            }
+            finally
+            {
+                selectingCrmParty = false;
+            }
+        }
 
         /// <summary>识别主键（recognitionId）。</summary>
         public string RecognitionId { get { return Row.RecognitionId; } }

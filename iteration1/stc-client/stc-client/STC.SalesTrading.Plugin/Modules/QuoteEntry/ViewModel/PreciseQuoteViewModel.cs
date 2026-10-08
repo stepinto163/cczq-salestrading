@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -38,6 +38,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             "bid 210210.IB 净价 101.020 1000 T+1\n" +
             "ofr 240210.IB 全价 102.380 2000 T+0";
 
+        public ICrmDirectory CrmDirectory => _quoteService as ICrmDirectory;
+        public CrmBatchEditor CrmBatch { get; }
+
         private readonly IQuoteService _quoteService;
         private readonly HashSet<QuoteConfirmRowViewModel> _hooked = new HashSet<QuoteConfirmRowViewModel>();
         private readonly LatestRequestCoordinator _parseCoordinator = new LatestRequestCoordinator();
@@ -45,6 +48,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         public PreciseQuoteViewModel(IQuoteService quoteService)
         {
             _quoteService = quoteService;
+            CrmBatch = new CrmBatchEditor(() => SelectedRows);
 
             _status.Add("title", "精确识别结果")
                    .Add("count", "共 0 条")
@@ -281,11 +285,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [ObservableProperty]
         private string _amountInput = string.Empty;
 
-        [ObservableProperty]
-        private string _institutionInput = string.Empty;
 
-        [ObservableProperty]
-        private string _traderInput = string.Empty;
 
         [ObservableProperty]
         private string _toolbarPriceType;
@@ -390,17 +390,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             return selected;
         }
 
-        partial void OnInstitutionInputChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return;
-            foreach (var row in RowsForBatchEdit()) row.Institution = value.Trim();
-        }
 
-        partial void OnTraderInputChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return;
-            foreach (var row in RowsForBatchEdit()) row.Trader = value.Trim();
-        }
 
         [RelayCommand]
         private void ToggleFlag(string flag)

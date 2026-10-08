@@ -2,14 +2,18 @@
     [string]$GatewayHost,
     [ValidateRange(1, 65535)]
     [int]$GatewayPort,
-    [switch]$Build
+    [switch]$Build,
+    [string]$BuildRoot,
+    [string]$PackageRoot
 )
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
-$buildRoot = Join-Path $clientRoot 'runtime/native-client'
-$packageRoot = Join-Path $clientRoot 'runtime/qa-client'
+if (!$BuildRoot) { $BuildRoot = Join-Path $clientRoot 'runtime/native-client' }
+if (!$PackageRoot) { $PackageRoot = Join-Path $clientRoot 'runtime/qa-client' }
+$buildRoot = [IO.Path]::GetFullPath($BuildRoot)
+$packageRoot = [IO.Path]::GetFullPath($PackageRoot)
 if ($Build) {
-    & (Join-Path $PSScriptRoot 'build-native-client.ps1')
+    & (Join-Path $PSScriptRoot 'build-native-client.ps1') -OutputRoot $buildRoot
 }
 if (!(Test-Path -LiteralPath (Join-Path $buildRoot 'STC.exe'))) {
     throw 'Build the client first, or specify -Build.'

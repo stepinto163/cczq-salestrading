@@ -1,8 +1,9 @@
-<UserControl x:Class="STC.SalesTrading.Plugin.Modules.QuoteEntry.View.PreciseQuoteView"
+﻿<UserControl x:Class="STC.SalesTrading.Plugin.Modules.QuoteEntry.View.PreciseQuoteView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel"
              xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
+             components:CrmLookup.Directory="{Binding CrmDirectory}"
              xmlns:conv="clr-namespace:STC.SalesTrading.Plugin.Shared.Converters">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -121,10 +122,14 @@
                 </Grid>
                 <Button Content="-1k" Style="{DynamicResource StcButton}"
                         Command="{Binding AdjustAmountDownCommand}" Margin="0,0,6,6" />
-                <TextBox Text="{Binding InstitutionInput, UpdateSourceTrigger=LostFocus}" Width="100"
-                         Style="{DynamicResource StcTextBox}" ToolTip="报价机构（失焦批量应用）" Tag="报价机构" Margin="0,0,6,6" />
-                <TextBox Text="{Binding TraderInput, UpdateSourceTrigger=LostFocus}" Width="110"
-                         Style="{DynamicResource StcTextBox}" ToolTip="报价交易员（失焦批量应用）" Tag="报价交易员" Margin="0,0,6,6" />
+                <components:CrmLookup Text="{Binding CrmBatch.InstitutionText, UpdateSourceTrigger=PropertyChanged}" Kind="INSTITUTION"
+                         InstitutionId="{Binding CrmBatch.InstitutionId}" SelectionCommand="{Binding CrmBatch.SelectInstitutionCommand}"
+                         Width="100" Style="{DynamicResource StcTextBox}"
+                         ToolTip="???????????" Tag="????" Margin="0,0,6,6" />
+                <components:CrmLookup Text="{Binding CrmBatch.ContactText, UpdateSourceTrigger=PropertyChanged}" Kind="CONTACT"
+                         InstitutionId="{Binding CrmBatch.InstitutionId}" SelectionCommand="{Binding CrmBatch.SelectContactCommand}"
+                         Width="110" Style="{DynamicResource StcTextBox}"
+                         ToolTip="????????????" Tag="?????" Margin="0,0,6,6" />
                 <ToggleButton Content="急" Style="{DynamicResource StcToolbarFlagUrgent}" Margin="0,0,6,6"
                               Command="{Binding ToggleFlagCommand}" CommandParameter="urgent" />
                 <ToggleButton Content="荐" Style="{DynamicResource StcToolbarFlagRecommend}" Margin="0,0,6,6"
@@ -247,16 +252,18 @@
                 <DataGridTemplateColumn Header="报价机构" Width="112">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Style="{DynamicResource StcFieldTextBox}"
-                                     Text="{Binding Institution, UpdateSourceTrigger=PropertyChanged}" />
+                            <components:CrmLookup Style="{DynamicResource StcFieldTextBox}"
+                                     Text="{Binding Institution, UpdateSourceTrigger=PropertyChanged}" Kind="INSTITUTION"
+                                     InstitutionId="{Binding InstitutionId}" SelectionCommand="{Binding SelectInstitutionCommand}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="报价交易员" Width="112">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Style="{DynamicResource StcFieldTextBox}"
-                                     Text="{Binding Trader, UpdateSourceTrigger=PropertyChanged}" />
+                            <components:CrmLookup Style="{DynamicResource StcFieldTextBox}"
+                                     Text="{Binding Trader, UpdateSourceTrigger=PropertyChanged}" Kind="CONTACT"
+                                     InstitutionId="{Binding InstitutionId}" SelectionCommand="{Binding SelectContactCommand}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
