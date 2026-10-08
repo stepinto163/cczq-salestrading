@@ -36,20 +36,17 @@ SZ 参考链路：旧 QtradeSvr 的 `MessageListener` 按用户列表、对手�
 升级顺序：先部署 QuoteSvr，再部署 QtIntakeSvr，最后更新 STC 客户端。旧队列及旧来源记录保持原样，新增分组字段不会让已有普通事件重放失败，也不自动重分历史报价。旧版曾以 `-10000` 作为事件标识的数据不能可靠反推 NegotiationID，升级前需核对这类旧记录，不自动重投历史数据。
 
 ## 用户与联系人
-归属人不再查库：QA 的 `stc_tbook_users` 里**没有 QTrade 账号列**（旧 `UserInfoDao.queryUserByQt`
-是 MySQL 写法，`qtAccount` 大小写不敏感，QA 的 MYSQL0 是 PostgreSQL）。归属关系改由运维维护的映射文件给出：
+归属人通过共享 DBPool 的 `MYSQL0` 查询 `stc_tbook_users`：FIX `OwnQtNO(18004)` 与 `inf1` 的纯文本账号精确匹配，只接受 `enable='1'` 且 `userid` 非空的唯一用户。
 
-```properties
-# $ATS_ROOT/control/QtIntakeOwnerMap.properties
-QT-0001=stc_userid_1
-QT-0002=stc_userid_2
+```sql
+SELECT userid FROM stc_tbook_users WHERE inf1 = ? AND enable = '1';
 ```
 
-左边是 QTrade 账号（FIX `OwnQtNO(18004)`），右边是 STC `userid`。文件改动会被自动重新加载，新增账号
-不用重启。映射未命中时落到 `owner.defaultUserId`；两者都没配置就**启动失败**；都没命中则该条报价留在
-待发送目录重试，不猜归属人。配置项写在 `config/service.properties`：`owner.mapFile`、`owner.defaultUserId`。
+没有默认归属人，不使用映射文件，不查询不存在的 `qtAccount` 列。`owner.mapFile`、`owner.defaultUserId` 已移除，旧配置可删除，不再参与解析。请在 STC 用户数据中维护 `inf1`，不要填用户名、JSON 或逗号分隔账号列表。
 
-参数是报价的 `OwnQtNO(18004)`，数据库来源为共享 DBPool 配置的 `MYSQL0`。结果必须是唯一有效用户；没有结果、多个结果或数据库不可用时，报价保留在待发送目录并记录错误。用户不需要在线。首次解析的归属人在发送前持久化，超时重试不重新分配归属人。
+启动时验证数据库连接及 `userid/inf1/enable` 列，失败记录 OWNER_LOOKUP 的 ERROR 与堆栈并抛出异常，FIX 接收器不会继续启动。运行时没有启用用户、存在多个启用用户、userid 为空或数据库查询失败都会抛出异常；保留 pending 队首，每 1 秒重试，无最大次数、无默认值、无失败后自动跳过。
+
+用户不需要在线。未解析成功的消息每次重试重新查库，修复映射后无需重启即可按原顺序恢复。首次解析成功的归属人在发送前持久化，通信重试不重新分配。升级不会自动改写此前已持久化的 ownerUserId；已有错误归属应按原始 FIX 记录单独核对。
 
 `InterloNickname(18006)` 是对手联系人名称，`OppInstiFullName(18036)`／`OppInstiShortName(18037)` 是对手机构名称，不能作为报价归属人。接入时不猜测 CRM ID；确认阶段由前端选择正确机构和联系人。
 

@@ -3,6 +3,7 @@ package ficc.qtintake;
 import ats.bbox.framework.LifecycleException;
 import ats.bbox.framework.Server;
 import ats.bbox.framework.resource.ResourceAdapter;
+import com.app.common.db.DBPoolResource;
 
 import ficc.common.ComponentLog;
 import ficc.common.JsonUtils;
@@ -101,15 +102,10 @@ public final class QtIntakeResource extends ResourceAdapter {
                                             Long.parseLong(
                                                     configuration.getProperty(
                                                             "quote.timeoutMillis", "3000"))));
-            // STC has no QTrade account column, so the owner comes from an operator-owned file.
-            OwnerMapping owners =
-                    ComponentLog.initialize(
-                            configuration,
-                            "OWNER_LOOKUP",
-                            "files",
-                            "OwnerMapping",
-                            configuration.getProperty("owner.mapFile", "owner.defaultUserId"),
-                            () -> OwnerMapping.load(configuration));
+            DBPoolResource database =
+                    (DBPoolResource) Server.getServer().getResource("DBPoolResource");
+            StcQuoteOwnerResolver owners =
+                    StcQuoteOwnerResolver.initialize(configuration, database::getConnection);
             forwarder =
                     new QuoteForwarder(
                             inbox, transport, configuration.getProperty("intake.token"), owners);
