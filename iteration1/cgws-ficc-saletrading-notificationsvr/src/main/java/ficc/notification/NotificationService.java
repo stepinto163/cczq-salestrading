@@ -247,8 +247,14 @@ final class NotificationService {
     }
 
     Set<String> bestIds(String sec, List<JSONObject> active) {
+        return bestIds(sec, active, active);
+    }
+
+    Set<String> bestIds(String sec, List<JSONObject> allActive, List<JSONObject> visible) {
         Set<String> ids = new LinkedHashSet<>();
-        if (!bookMatchesQuotes(sec, active)) return ids;
+        if (!bookMatchesQuotes(sec, allActive)) return ids;
+        Set<String> visibleIds = visible.stream().map(q -> q.getString("quoteId"))
+                .collect(Collectors.toSet());
         Map<String, BigDecimal> first = new HashMap<>();
         // QuoteSvr already sorted the complete book. Preserve its side order and all ties.
         for (JSONObject entry :
@@ -256,6 +262,8 @@ final class NotificationService {
                         .getJSONObject("marketData")
                         .getJSONArray("NoMDEntries")
                         .toJavaList(JSONObject.class)) {
+            String quoteId = entry.getString("MDEntryID").substring("FICC:".length());
+            if (!visibleIds.contains(quoteId)) continue;
             String side = entry.getString("MDEntryType");
             BigDecimal px = new BigDecimal(entry.getString("MDEntryPx"));
             first.putIfAbsent(side, px);
@@ -291,7 +299,12 @@ final class NotificationService {
             JSONObject pref = preference(user);
             for (Map.Entry<String, List<JSONObject>> bond : byBond.entrySet()) {
                 String sec = bond.getKey();
-                List<JSONObject> active = bond.getValue();
+                List<JSONObject> active = bond.getValue().stream().filter(quote -> {
+                    JSONObject source = quote.getJSONObject("source");
+                    return access.canViewQuote(user, quote.getString("ownerUserId"),
+                            source == null ? null : source.getString("type"), quote.getString("status"));
+                }).collect(Collectors.toList());
+                if (active.isEmpty()) continue;
                 JSONArray reasons = new JSONArray();
                 Set<String> links = new TreeSet<>();
                 for (String kind : Arrays.asList("watchlist", "filterGroup"))
@@ -343,7 +356,7 @@ final class NotificationService {
                                             kind.equals("watchlist") ? "命中关注债券分组" : "命中行情筛选分组"));
                     }
                 if (pref.getBooleanValue("myBestEnabled")) {
-                    Set<String> best = bestIds(sec, active);
+                    Set<String> best = bestIds(sec, bond.getValue(), active);
                     List<String> mine =
                             active.stream()
                                     .filter(

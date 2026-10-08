@@ -559,15 +559,21 @@ final class ViewService {
     }
 
     void changed(QuoteRecord q, JSONObject event, String previousSecurity) {
+        String oldSecurity = previousSecurity == null ? q.securityId : previousSecurity;
+        Map<String, QuoteRecord> previousQuotes = quotesBySecurity.get(oldSecurity);
+        QuoteRecord previous = previousQuotes == null ? null : previousQuotes.get(q.quoteId);
+        boolean affectsPrice = "ACTIVE".equals(q.status)
+                || (previous != null && "ACTIVE".equals(previous.status));
         indexQuote(q, previousSecurity);
         Set<String> securities = new LinkedHashSet<>();
-        if (q.securityId != null) securities.add(q.securityId);
+        if (affectsPrice && q.securityId != null) securities.add(q.securityId);
         // Include the previous security when an active quote changes bond.
-        if (previousSecurity != null) securities.add(previousSecurity);
+        if (affectsPrice && previousSecurity != null) securities.add(previousSecurity);
         for (String id : securities) bookRevisions.merge(id, 1L, Long::sum);
         marketSequence++;
         for (Stream s : streams.values())
-            if (s.subscribed) {
+            if (s.subscribed && (s.domain.equals("quote") || (affectsPrice
+                    && (svc.canView(s.user, q) || (previous != null && svc.canView(s.user, previous)))))) {
                 try {
                     publishChanges(s, q, event, null, previousSecurity);
                 } catch (ApiException ex) {

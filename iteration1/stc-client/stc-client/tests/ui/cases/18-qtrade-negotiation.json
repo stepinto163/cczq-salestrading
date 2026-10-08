@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Id": "18-qtrade-negotiation",
+  "Name": "QT 双边议价待确认与正式行情隔离",
+  "Description": "真实 STC 登录及 GW；接入接口准备同一意向下两个双边会话，UI 确认，核对待确认更新不污染正式价格、确认只替换本会话旧价。需要本机 STC_UI_INTAKE_TOKEN；不发送外部 FIX 消息。清理本例全部报价。",
+  "Steps": [
+    { "Name": "打开手工报价", "Action": "manual.open", "Parameters": {} },
+    { "Name": "准备归属夹具", "Action": "manual.fill", "Parameters": { "securityId": "${securityId}", "price": "2.5000", "quantity": "1", "side": "1", "settlType": "2" } },
+    { "Name": "保存本例归属夹具", "Action": "manual.click", "Parameters": { "button": "保存待确认" } },
+    { "Name": "双边提案、确认及价格隔离", "Action": "qtrade.negotiation", "Parameters": {} }
+  ]
+}

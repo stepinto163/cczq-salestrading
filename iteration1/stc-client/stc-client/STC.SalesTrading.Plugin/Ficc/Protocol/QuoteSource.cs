@@ -24,8 +24,22 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         [JsonProperty("originalMessageId")]
         public string OriginalMessageId { get; set; }
 
+        // Sender's QTrade intention ID; -10000 means unavailable on a receiver message.
         [JsonProperty("externalQuoteId")]
         public string ExternalQuoteId { get; set; }
+
+        // Bilateral conversation ID. One intention can have multiple conversations.
+        [JsonProperty("negotiationId")]
+        public string NegotiationId { get; set; }
+
+        [JsonProperty("counterpartyId")]
+        public string CounterpartyId { get; set; }
+
+        [JsonProperty("chatType")]
+        public string ChatType { get; set; }
+
+        [JsonProperty("chatGroupId")]
+        public string ChatGroupId { get; set; }
 
         [JsonProperty("externalRevision")]
         public string ExternalRevision { get; set; }

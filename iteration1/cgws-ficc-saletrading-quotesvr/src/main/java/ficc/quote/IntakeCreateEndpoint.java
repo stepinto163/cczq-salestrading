@@ -88,6 +88,10 @@ final class IntakeCreateEndpoint {
                 "externalMessageId",
                 "originalMessageId",
                 "externalQuoteId",
+                "negotiationId",
+                "counterpartyId",
+                "chatType",
+                "chatGroupId",
                 "sourceTime",
                 "transType",
                 "text");
@@ -161,13 +165,34 @@ final class IntakeCreateEndpoint {
         provenance.put("originService", "QtIntake");
         provenance.put("externalQuoteId", externalQuote);
         JSONObject metadata = JsonUtils.object("sourceMessageId", sourceId, "source", provenance);
+        String operation = "create";
+        String negotiation = source.getString("negotiationId");
+        if (negotiation != null && !negotiation.trim().isEmpty()) {
+            JSONObject item = quotes.getJSONObject(0);
+            for (ficc.api.QuoteRecord existing : service.quotes.values()) {
+                if ("PENDING_CONFIRM".equals(existing.status)
+                        && owner.equals(existing.ownerUserId)
+                        && existing.source != null && "QT".equals(existing.source.type)
+                        && account.equals(existing.source.sourceUserId)
+                        && negotiation.equals(existing.source.negotiationId)
+                        && java.util.Objects.equals(existing.side, item.getString("side"))) {
+                    // Only a pending proposal may be refreshed by intake. A confirmed
+                    // quote remains unchanged until its recipient confirms a new proposal.
+                    item.remove("clientQuoteId");
+                    item.put("quoteId", existing.quoteId);
+                    item.put("expectedRevision", existing.revision);
+                    operation = "update";
+                    break;
+                }
+            }
+        }
         JSONObject create = JsonUtils.object("requestId", requestId, "quotes", quotes);
         JSONObject result =
                 (JSONObject)
                         service.write(
                                 new QuoteService.Call(
                                         owner, "<qtintake>", "ficc.quote.create/qtintake", create),
-                                "create",
+                                operation,
                                 metadata,
                                 hash);
         JSONObject raw =

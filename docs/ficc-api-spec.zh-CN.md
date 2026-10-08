@@ -162,7 +162,11 @@ clone是复制输入生成新Quote，不是恢复旧ID。confirm可在同一条�
 | yieldType | 1到期，2行权；quoteType不为1时必须为null |
 | quantityUnit / currency | WAN（万单位面值）／CNY |
 | settlType | 按 STC SettlTypeEnum：1=T+0、2=T+1、3=T+2、4=T+3、5=T+4、9=T+5、10=T+6，之后至16=T+12；非远期为1/2，远期为其余上述代码。明+0／明+1尚无独立输入语义 |
-| source.type（本稿建议） | MANUAL、QT、IDEAL；source含externalQuoteId、externalRevision和sourceTime |
+| source.type（本稿建议） | MANUAL、QT、IDEAL；source含externalQuoteId、negotiationId、externalRevision和sourceTime |
+
+QT 来源身份不能混用：`source.externalQuoteId` 是发送方意向 QuoteID（FIX 117），一个意向可关联多个 `source.negotiationId`（FIX 18033，双边会话）。接收方 QuoteID=-10000 表示不可用，不是有效关联键。`source.sourceUserId` 是本地接收 QT 账号，`ownerUserId` 是映射后的内部交易员；`source.counterpartyId` 保留 18058 对手标识，不假定它就是可直接登录的 QT 账号。`source.chatType`、`source.chatGroupId` 保留会话类型及群来源；群来源不取代双边会话。FICC `quoteId` 和 `revision` 分别标识本地记录及其版本，不冒充上游意向或会话身份。
+
+2026-10-08 业务补充：未确认 QT 输入仅影响报价确认。已有正式报价收到新提案时保持 ACTIVE 记录及行情不变；确认后才替换本人同会话同方向的上一笔 ACTIVE 记录（旧记录保留为 REFERRED）。QT 行情按接收交易员隔离，确认不会扩大可见范围。非 QT 正式报价保留原有共享规则。行情 FULL/BEST/DEPTH 均基于当前用户可见的 ACTIVE 报价，`quoteRefs` 指向 FICC 本地 quoteId/revision；不能仅按上游 QuoteID 合并双边回价。授权内部全量 feed 与普通用户行情不同，通知必须再次按用户筛选。
 
 价格和数量使用十进制字符串；收益率为百分数且输入最多4位小数，超过直接拒绝。时间用带时区ISO 8601，日期YYYY-MM-DD。当前确认／恢复有效报价时，securityId、side、quoteType、price、quantity、tradeDate、settlType必填，收益率报价还需yieldType；quantity必须大于0。CalSvr换算及其他精度规则仍待完善。未知正式报价类型不能静默转成收益率。
 
@@ -2769,7 +2773,7 @@ text必填，默认最大20000字符；sourceMessageId与context可选。只返�
 
 服务：`QuoteSvr`；topic：`ficc.quote.intake.apply`；handler：`QuoteIntakeApplyHandler.handle`。
 
-仅对应intake服务可调用；sourceType、externalMessageId、sourceTime、text和quotes必填。按(sourceType,externalMessageId)去重原文，按(sourceType,externalQuoteId)关联Quote；首次创建PENDING_CONFIRM。现有人工确认报价与来源更新冲突见评审R4，不允许直接覆盖。sourceUserId须经服务器映射到ownerUserId，映射失败逐项报错。
+仅对应intake服务可调用；sourceType、externalMessageId、sourceTime、text和quotes必填。按(sourceType,externalMessageId)去重原文。QT 不能仅按 externalQuoteId 关联双边报价：来源接收账号、映射后的 ownerUserId、negotiationId 和方向确定本人的会话报价。同向待确认提案可刷新，正式报价不允许被来源更新直接覆盖，须创建新的 PENDING_CONFIRM 提案并等待用户确认。sourceUserId须经服务器映射到ownerUserId，映射失败逐项报错。
 
 请求：
 

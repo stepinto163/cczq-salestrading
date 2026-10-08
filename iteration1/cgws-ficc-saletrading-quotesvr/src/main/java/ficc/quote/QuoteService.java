@@ -286,13 +286,18 @@ final class QuoteService {
 
     QuoteRecord get(String id, String user) {
         QuoteRecord q = quotes.get(id);
-        if (q == null || (!"ACTIVE".equals(q.status) && !owns(user, q)))
+        if (q == null || !canView(user, q))
             throw ApiException.forField("1002", "NOT_FOUND", "Quote not found", "quoteId");
         return q;
     }
 
     boolean owns(String user, QuoteRecord quote) {
         return access.owns(user, quote.ownerUserId);
+    }
+
+    boolean canView(String user, QuoteRecord quote) {
+        return access.canViewQuote(user, quote.ownerUserId,
+                quote.source == null ? null : quote.source.type, quote.status);
     }
 
     QuoteRecord visible(QuoteRecord quote, String user) {
@@ -360,6 +365,8 @@ final class QuoteService {
             JSONObject event = null;
             JSONObject result;
             String previousSecurity = null;
+            List<QuoteRecord> replacedQuotes = new ArrayList<>();
+            List<JSONObject> replacementEvents = new ArrayList<>();
             try {
                 store.begin();
                 QuoteRecord before = null;
@@ -434,6 +441,9 @@ final class QuoteService {
                 }
                 if (q.status.equals("ACTIVE") && !op.equals("refer"))
                     q.quoteTime = now;
+                if (op.equals("confirm") || op.equals("unrefer")) {
+                    replaceConfirmedNegotiationLeg(q, c, now, replacedQuotes, replacementEvents);
+                }
                 store.saveQuote(q);
                 event =
                         store.event(
@@ -513,12 +523,56 @@ final class QuoteService {
                 throw e;
             }
             if (q != null) {
+                for (int replacedIndex = 0; replacedIndex < replacedQuotes.size(); replacedIndex++) {
+                    QuoteRecord replaced = replacedQuotes.get(replacedIndex);
+                    JSONObject replacementEvent = replacementEvents.get(replacedIndex);
+                    quotes.put(replaced.quoteId, replaced);
+                    committed(replacementEvent);
+                    views.changed(replaced, replacementEvent, replaced.securityId);
+                }
                 quotes.put(q.quoteId, q);
                 committed(event);
                 views.changed(q, event, previousSecurity);
             }
         }
         return JsonUtils.object("results", results);
+    }
+
+    /** A confirmed new proposal replaces only this recipient's same-side negotiation leg. */
+    private void replaceConfirmedNegotiationLeg(QuoteRecord confirmed, Call call, String now,
+            List<QuoteRecord> replacedQuotes, List<JSONObject> replacementEvents) throws Exception {
+        QuoteSource source = confirmed.source;
+        if (source == null || !"QT".equals(source.type)
+                || source.negotiationId == null || source.negotiationId.trim().isEmpty()) {
+            return;
+        }
+        for (QuoteRecord existing : quotes.values()) {
+            if (existing.quoteId.equals(confirmed.quoteId) || !"ACTIVE".equals(existing.status)
+                    || !Objects.equals(existing.ownerUserId, confirmed.ownerUserId)
+                    || !Objects.equals(existing.side, confirmed.side)
+                    || existing.source == null || !"QT".equals(existing.source.type)
+                    || !Objects.equals(existing.source.sourceUserId, source.sourceUserId)
+                    || !Objects.equals(existing.source.negotiationId, source.negotiationId)) {
+                continue;
+            }
+            QuoteRecord replaced = ProtocolCodec.decode(existing.toJson(), QuoteRecord.class);
+            replaced.status = "REFERRED";
+            replaced.revision = Long.toString(Long.parseLong(existing.revision) + 1);
+            replaced.updateTime = now;
+            replaced.updatedBy = call.user;
+            store.saveQuote(replaced);
+            JSONObject event = store.event(JsonUtils.object("type", "QUOTE", "action", "REFER",
+                    "quoteId", replaced.quoteId, "quote", replaced.toJson(),
+                    "operatorUserId", call.user, "operationTime", now,
+                    "requestId", call.request.getString("requestId")));
+            store.history(JsonUtils.object("eventId", event.getString("eventId"),
+                    "quoteId", replaced.quoteId, "revision", replaced.revision, "action", "REFER",
+                    "operatorUserId", call.user, "operationTime", now,
+                    "before", existing.toJson(), "after", replaced.toJson(),
+                    "reason", "Replaced by confirmed negotiation quote " + confirmed.quoteId));
+            replacedQuotes.add(replaced);
+            replacementEvents.add(event);
+        }
     }
 
     QuoteRecord newQuote(String user, String clientId) {
@@ -729,7 +783,10 @@ final class QuoteService {
     }
 
     Predicate<QuoteRecord> matchingQuotes(String user, JSONObject filter) {
-        return matcher.prepare(user, filter == null ? null : ProtocolCodec.decode(filter, Filter.class));
+        Predicate<QuoteRecord> matches = matcher.prepare(user,
+                filter == null ? null : ProtocolCodec.decode(filter, Filter.class));
+        // Null is used only by authorized internal price feeds, never a client request.
+        return quote -> (user == null || canView(user, quote)) && matches.test(quote);
     }
 
     JSONArray referenceFor(List<QuoteRecord> qs) {
@@ -1004,6 +1061,7 @@ final class QuoteService {
                 RequestValidator.allowOnlyFields(request, "requestId");
                 List<String> securities =
                         quotes.values().stream()
+                                .filter(quote -> "ACTIVE".equals(quote.status))
                                 .map(quote -> quote.securityId)
                                 .filter(Objects::nonNull)
                                 .distinct()

@@ -96,6 +96,144 @@ internal static class ProtocolContractChecks
         Equal(legacy, ProtocolCodec.Decode<CrmLegacyData>(legacy).ToJson(), "legacy CRM flat reply");
         JObject parser = JObject.Parse("{\"Code\":\"0000\",\"Datas\":[{\"price\":2.5,\"qty\":1000,\"institutionId\":null}]}");
         Equal(parser, ProtocolCodec.Decode<ParserReply>(parser).ToJson(), "ParserSvr Datas reply");
+
+        QuoteSource firstConversation = ProtocolCodec.Decode<QuoteSource>(JObject.Parse(
+            "{\"type\":\"QT\",\"externalQuoteId\":\"INTENTION-1\",\"negotiationId\":\"A-B\",\"sourceUserId\":\"QT-A\"}"));
+        QuoteSource secondConversation = ProtocolCodec.Decode<QuoteSource>(JObject.Parse(
+            "{\"type\":\"QT\",\"externalQuoteId\":\"INTENTION-1\",\"negotiationId\":\"A-C\",\"sourceUserId\":\"QT-A\"}"));
+        Check(firstConversation.ExternalQuoteId == secondConversation.ExternalQuoteId
+            && firstConversation.NegotiationId != secondConversation.NegotiationId,
+            "one intention retains distinct bilateral conversations in typed client models");
+        Check((string)firstConversation.ToJson()["negotiationId"] == "A-B",
+            "conversation identity survives client serialization");
+
+        JArray captured = JArray.Parse(File.ReadAllText(fixturePath));
+        if (captured.OfType<JObject>().Any(row => (string)row["request"]?["viewId"] == "quote-A"))
+        {
+            await CheckNegotiationPages(captured);
+        }
+    }
+
+    // Run the real client page/update code against captured Java responses and pushes.
+    // This deliberately does not claim to test DPS transport or rendered desktop controls.
+    private static async Task CheckNegotiationPages(JArray fixtures)
+    {
+        var pages = new Dictionary<string, LivePage>();
+        var transports = new Dictionary<string, CapturedViewTransport>();
+        try
+        {
+            foreach (string user in new[] { "A", "B", "C" })
+            foreach (string domain in new[] { "quote", "price" })
+            {
+                string key = domain + "-" + user;
+                var transport = new CapturedViewTransport(fixtures, user, domain);
+                var page = new LivePage(new FiccApiClient(transport), transport, domain)
+                {
+                    PriceMode = "FULL", QuoteStatuses = new JArray("ACTIVE")
+                };
+                page.Failed += reason => { throw new InvalidOperationException(reason); };
+                pages.Add(key, page);
+                transports.Add(key, transport);
+                await page.OpenAsync(new JObject());
+            }
+            foreach (JObject fixture in fixtures.OfType<JObject>())
+            {
+                JObject message = fixture["message"] as JObject;
+                if (message == null) continue;
+                // The subsequent REFER/confirm pair is covered by Java's replacement checks.
+                // Stop before it: this replay needs no synthetic response to automatic page refills.
+                if ((message["events"] as JArray)?.OfType<JObject>()
+                    .Any(item => (string)item["action"] == "REFER") == true) break;
+                foreach (CapturedViewTransport transport in transports.Values)
+                    transport.Deliver((string)fixture["topic"], message);
+                foreach (JObject quote in (message["quotes"] as JArray ?? new JArray()).OfType<JObject>())
+                {
+                    if ((string)quote["status"] != "PENDING_CONFIRM") continue;
+                    string user = (string)quote["ownerUserId"];
+                    string id = (string)quote["quoteId"];
+                    Check(pages["quote-" + user].Rows.All(row => (string)row["quoteId"] != id),
+                        "pending report never inserts into client's confirmed quote page");
+                    Check(pages["price-" + user].Rows.All(row =>
+                        ((JObject)row["quoteRefs"]).Properties().All(reference =>
+                            (string)reference.Value["quoteId"] != id)),
+                        "pending report never inserts into client's price page");
+                }
+            }
+            foreach (string user in new[] { "A", "B", "C" })
+            {
+                LivePage quotes = pages["quote-" + user];
+                LivePage prices = pages["price-" + user];
+                Check(quotes.IsReady && prices.IsReady, user + " client streams remain synchronized");
+                Check(quotes.Rows.Count == (user == "A" ? 2 : 1)
+                    && quotes.Rows.All(row => (string)row["ownerUserId"] == user),
+                    user + " client confirmed rows contain only own conversations");
+                var quoteIds = new HashSet<string>(quotes.Rows.Select(row => (string)row["quoteId"]));
+                var priceIds = new HashSet<string>(prices.Rows.SelectMany(row =>
+                    ((JObject)row["quoteRefs"]).Properties().Select(reference => (string)reference.Value["quoteId"])));
+                Check(quoteIds.SetEquals(priceIds), user + " client price rows match own confirmed quotes");
+            }
+        }
+        finally
+        {
+            foreach (LivePage page in pages.Values) page.Dispose();
+        }
+    }
+
+    private sealed class CapturedViewTransport : IFiccTransport, IDisposable
+    {
+        private readonly JArray fixtures;
+        private readonly string user;
+        private readonly string domain;
+        private string viewId;
+        private string topic;
+        private Action<JObject> receive;
+        public event Action ConnectionChanged { add { } remove { } }
+
+        public CapturedViewTransport(JArray fixtures, string user, string domain)
+        {
+            this.fixtures = fixtures;
+            this.user = user;
+            this.domain = domain;
+        }
+
+        public Task<JObject> RequestAsync(string service, string requestedTopic, JObject request)
+        {
+            JObject fixture = fixtures.OfType<JObject>().First(row => (string)row["topic"] == requestedTopic
+                && (requestedTopic.EndsWith("stream.open")
+                    ? (string)row["reply"]?["Data"]?["sessionId"] == "SESSION-" + user
+                    : (string)row["request"]?["viewId"] == domain + "-" + user));
+            JObject reply = (JObject)fixture["reply"].DeepClone();
+            reply["requestId"] = request["requestId"].DeepClone();
+            if (requestedTopic.EndsWith("view.open"))
+            {
+                viewId = (string)request["viewId"];
+                Remap(reply);
+            }
+            return Task.FromResult(reply);
+        }
+
+        public IDisposable Subscribe(string service, string subscribedTopic, Action<JObject> callback, bool withImage = false)
+        {
+            topic = subscribedTopic;
+            receive = callback;
+            return this;
+        }
+
+        public void Deliver(string incomingTopic, JObject original)
+        {
+            if (incomingTopic != topic) return;
+            JObject copy = (JObject)original.DeepClone();
+            Remap(copy);
+            receive(copy);
+        }
+
+        private void Remap(JObject message)
+        {
+            foreach (JObject item in message.DescendantsAndSelf().OfType<JObject>())
+                if ((string)item["viewId"] == domain + "-" + user) item["viewId"] = viewId;
+        }
+
+        public void Dispose() { receive = null; }
     }
 
     private static void Equal(JToken expected, JToken actual, string name)

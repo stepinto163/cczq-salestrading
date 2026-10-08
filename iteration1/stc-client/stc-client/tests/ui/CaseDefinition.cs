@@ -102,7 +102,8 @@ namespace SalesTrading.UiTests
             { "parse.warning", new[] { "message" } },
             { "parse.settlement", new[] { "row", "settlement", "dayOffset", "priceType" } },
             { "notification.prepare", new[] { "securityId" } },
-            { "notification.read", new string[0] }
+            { "notification.read", new string[0] },
+            { "qtrade.negotiation", new string[0] }
         };
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
@@ -126,7 +127,8 @@ namespace SalesTrading.UiTests
             { "parse.warning", "核对识别警告" },
             { "parse.settlement", "核对识别交易日期、清算和计价方式" },
             { "notification.prepare", "准备独立关注分组（自动恢复偏好）" },
-            { "notification.read", "核对本例提醒推送并通过界面标记已读" }
+            { "notification.read", "核对本例提醒推送并通过界面标记已读" },
+            { "qtrade.negotiation", "QT 双边提案经 GW 入库、UI 确认及行情隔离" }
         };
 
         public static string Hint = "每例自动登录、收集截图及日志并清理本例报价。参数值支持 ${securityId}。" +

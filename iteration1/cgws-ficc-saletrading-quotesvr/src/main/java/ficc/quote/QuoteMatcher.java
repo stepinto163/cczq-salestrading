@@ -48,7 +48,8 @@ final class QuoteMatcher {
             throw ApiException.forField("1001", "VALIDATION_FAILED", "Unknown quote status", "status");
         }
         return quote -> statuses.contains(quote.status)
-                && ("ACTIVE".equals(quote.status) || access.owns(user, quote.ownerUserId))
+                && access.canViewQuote(user, quote.ownerUserId,
+                        quote.source == null ? null : quote.source.type, quote.status)
                 && (!"MINE".equals(scope) || user.equals(quote.ownerUserId))
                 && matches.test(quote);
     }

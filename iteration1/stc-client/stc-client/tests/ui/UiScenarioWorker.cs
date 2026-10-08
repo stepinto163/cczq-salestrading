@@ -25,7 +25,8 @@ using STC.SalesTrading.Plugin.View;
 namespace SalesTrading.UiTests
 {
     // Hosts the production STC application and its real controls, not replacement screens.
-    // Business writes go through UI button handlers. APIs are used for assertions and cleanup only.
+    // User operations go through UI button handlers. APIs assert results and clean up fixtures;
+    // the negotiation case also seeds incoming QTrade proposals through the real intake endpoint.
     internal sealed partial class UiScenarioWorker
     {
         private static string reportDirectory;

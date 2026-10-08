@@ -42,4 +42,10 @@ public final class AccessPolicy {
         return userId != null
                 && (userId.equals(ownerUserId) || administrator(userId) || internal(userId));
     }
+
+    /** Incoming QTrade quotes belong to their recipient, including after confirmation. */
+    public boolean canViewQuote(String userId, String ownerUserId, String sourceType, String status) {
+        return owns(userId, ownerUserId)
+                || (userId != null && "ACTIVE".equals(status) && !"QT".equals(sourceType));
+    }
 }

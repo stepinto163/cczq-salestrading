@@ -24,6 +24,9 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "qtrade.negotiation":
+                    await CheckQTradeNegotiationAsync();
+                    break;
                 case "quote.fields":
                     JObject stored = await model.Backend.Api.GetQuoteAsync(quoteId);
                     foreach (string field in new[] { "side", "settlType" })

@@ -55,6 +55,7 @@ public final class QTradeQuoteMapper {
         }
         String account = required(message, 18004);
         String quoteId = required(message, 117);
+        String negotiationId = optional(message, 18033);
         String eventQuoteId = quoteId;
         if ("-10000".equals(quoteId)) {
             // The downlink specification uses -10000 as an empty QuoteID.
@@ -107,17 +108,21 @@ public final class QTradeQuoteMapper {
         IntakeIdentity source = new IntakeIdentity();
         source.sourceUserId = account;
         source.externalQuoteId = quoteId;
+        source.negotiationId = negotiationId;
+        source.counterpartyId = optional(message, 18058);
+        source.chatType = optional(message, 18039);
+        source.chatGroupId = optional(message, 18474) == null
+                ? optional(message, 18136) : optional(message, 18474);
         source.sourceTime = time;
         source.transType = action;
         source.text = optional(message, 18026);
         if (source.text == null) {
             source.clearField("text");
         }
-        // The same QTrade quote/time/account is the same source event. Changed content
-        // under this identity is rejected, not silently turned into another quote.
-        String id =
-                JsonUtils.canonicalHash(
-                        JsonUtils.object(
+        // QuoteID identifies the intention, not a conversation. Include NegotiationID
+        // when the sender receives replies to one intention from different counterparties.
+        // Preserve the existing hash for receiver messages with the empty QuoteID sentinel.
+        JSONObject eventIdentity = JsonUtils.object(
                                 "account",
                                 account,
                                 "quoteId",
@@ -125,7 +130,11 @@ public final class QTradeQuoteMapper {
                                 "sourceTime",
                                 time,
                                 "action",
-                                action));
+                                action);
+        if (negotiationId != null && !"-10000".equals(quoteId)) {
+            eventIdentity.put("negotiationId", negotiationId);
+        }
+        String id = JsonUtils.canonicalHash(eventIdentity);
         source.externalMessageId = id;
         source.originalMessageId = originalMessageId(message, account, time, action, id);
         quote.clientQuoteId = "QT-" + id;
