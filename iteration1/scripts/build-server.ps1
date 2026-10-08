@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('all', 'parent-pom', 'common', 'quotesvr', 'notificationsvr', 'crmsvr', 'qtintakesvr')]
+    [ValidateSet('all', 'parent-pom', 'common', 'quotesvr', 'notificationsvr', 'crmsvr', 'qtintakesvr', 'parsersvr')]
     [string]$Module = 'all',
     [string]$SettingsFile = '',
     [switch]$Clean
@@ -13,7 +13,7 @@ $maven = if ($mavenCommand) { $mavenCommand.Source } else {
 if (!(Test-Path -LiteralPath $maven)) { throw 'Maven 3.9.x is required.' }
 $modules = @('parent-pom')
 if ($Module -ne 'parent-pom') { $modules += 'common' }
-if ($Module -eq 'all') { $modules += @('quotesvr', 'notificationsvr', 'crmsvr', 'qtintakesvr') }
+if ($Module -eq 'all') { $modules += @('quotesvr', 'notificationsvr', 'crmsvr', 'qtintakesvr', 'parsersvr') }
 elseif ($Module -notin @('parent-pom', 'common')) { $modules += $Module }
 $mavenArguments = @('-B', '-ntp')
 if ($SettingsFile) { $mavenArguments += @('-s', (Resolve-Path -LiteralPath $SettingsFile).Path) }
@@ -21,7 +21,8 @@ $previousMavenOptions = $env:MAVEN_OPTS
 try {
     if (!$env:MAVEN_OPTS) { $env:MAVEN_OPTS = '-Xmx256m -XX:ActiveProcessorCount=2' }
     foreach ($name in $modules) {
-        $pom = Join-Path $taskRoot "cgws-ficc-saletrading-$name/pom.xml"
+        $project = if ($name -eq 'parsersvr') { 'cgws-ficc-parsersvr' } else { "cgws-ficc-saletrading-$name" }
+        $pom = Join-Path $taskRoot "$project/pom.xml"
         $goals = @('install')
         if ($Clean) { $goals = @('clean', 'install') }
         & $maven @mavenArguments -f $pom @goals

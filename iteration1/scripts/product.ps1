@@ -23,6 +23,7 @@ $services = [ordered]@{
     notificationsvr = 'NotificationSvr'
     crmsvr = 'CRMSvr'
     qtintakesvr = 'QtIntakeSvr'
+    parsersvr = 'ParserSvr'
 }
 $allowed = @('parent-pom', 'common') + @($services.Keys) + @('client', 'all')
 if (!$Target) {
@@ -99,7 +100,8 @@ function Write-Package([string]$Name) {
     New-Item -ItemType Directory -Force -Path $payload | Out-Null
     $application = $null
     if ($Name -ne 'client') {
-        $project = Join-Path $iterationRoot "cgws-ficc-saletrading-$Name"
+        $projectName = if ($Name -eq 'parsersvr') { 'cgws-ficc-parsersvr' } else { "cgws-ficc-saletrading-$Name" }
+        $project = Join-Path $iterationRoot $projectName
         [xml]$pom = Get-Content (Join-Path $project 'pom.xml') -Raw
         $version = if ($pom.project.version) { [string]$pom.project.version } else { [string]$pom.project.parent.version }
         $application = "$($pom.project.artifactId)-$version.jar"
@@ -142,6 +144,14 @@ function Test-JavaPackage([string]$Name, [string]$Jar, [string]$Dependencies) {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [IO.Compression.ZipFile]::OpenRead($Jar)
     try {
+        if ($Name -eq 'parsersvr') {
+            if (!$archive.GetEntry('cgws/ficc/parser/parse/QuoteMessageParser.class')) {
+                throw 'ParserSvr package must contain the Java parser engine.'
+            }
+            if (@(Get-ChildItem -LiteralPath $Dependencies -Filter 'cgws-ficc-parser-*.jar').Count) {
+                throw 'ParserSvr must not depend on a standalone parser engine JAR.'
+            }
+        }
         $reader = New-Object IO.StreamReader($archive.GetEntry('META-INF/MANIFEST.MF').Open())
         try { $manifest = ($reader.ReadToEnd() -replace '\r?\n ', '') } finally { $reader.Dispose() }
         if ($manifest -notmatch ('(?m)^Main-Class: ' + [regex]::Escape($services[$Name]) + '\r?$')) { throw "Unexpected main class in $Jar" }
@@ -190,9 +200,9 @@ function Deploy-Package([string]$Name, $Package) {
         Copy-Item -LiteralPath (Join-Path $Package.payload 'bin'), (Join-Path $Package.payload 'STC.exe') -Destination $stage -Recurse
     } else {
         Copy-Item -LiteralPath (Join-Path $Package.payload 'javalib') -Destination $stage -Recurse
-        # CRMSvr uses the standard javalib-only entrypoint; the other local services
+        # CRM/Parser use the standard javalib-only entrypoint; the other local services
         # retain their existing root application JAR layout.
-        $jarDirectory = if ($Name -eq 'crmsvr') { Join-Path $stage 'javalib' } else { $stage }
+        $jarDirectory = if ($Name -in @('crmsvr', 'parsersvr')) { Join-Path $stage 'javalib' } else { $stage }
         Copy-Item -LiteralPath (Join-Path $Package.payload $Package.application) -Destination $jarDirectory
     }
     $manager = if ($client) { Join-Path $PSScriptRoot 'manage-stc-client.ps1' } else { Join-Path $AtsRoot 'scripts/service.ps1' }

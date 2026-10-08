@@ -44,6 +44,8 @@
 
 ## 服务工程及随包说明
 
+- [ParserSvr · 服务与 Java 解析引擎](../iteration1/cgws-ficc-parsersvr/README.md)
+
 deployment 下的说明参与服务打包，保留独立副本供离线部署使用。修改 QA 公共部署规则时，应同步 QuoteSvr 与 NotificationSvr 的随包 QA 说明。
 
 - [common · cgws-ficc-saletrading-common](../iteration1/cgws-ficc-saletrading-common/README.md)

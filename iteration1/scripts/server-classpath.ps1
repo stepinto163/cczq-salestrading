@@ -1,11 +1,11 @@
 ﻿param(
     [Parameter(Mandatory=$true)]
-    [ValidateSet('quotesvr', 'notificationsvr', 'crmsvr', 'qtintakesvr')]
+    [ValidateSet('quotesvr', 'notificationsvr', 'crmsvr', 'qtintakesvr', 'parsersvr')]
     [string]$Server
 )
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path $PSScriptRoot -Parent
-$artifact = "cgws-ficc-saletrading-$Server"
+$artifact = if ($Server -eq 'parsersvr') { 'cgws-ficc-parsersvr' } else { "cgws-ficc-saletrading-$Server" }
 $target = Join-Path $taskRoot "$artifact/target"
 $serverJar = Join-Path $target "$artifact-0.1.0-SNAPSHOT.jar"
 $library = Join-Path $target 'javalib'

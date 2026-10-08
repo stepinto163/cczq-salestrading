@@ -9,11 +9,12 @@ cd D:\workspace\greatewall\ficc\ficc
 .\deploy quotesvr                # 先构建，成功后替换二进制并重启
 .\deploy quotesvr -NoBuild       # 部署最近一次成功打包的产物
 
+.\build parsersvr                # 服务和 Java 引擎统一构建
 .\build client                   # 独立目录编译 STC 客户端
 .\deploy client -NoBuild         # 替换客户端二进制并启动
 .\deploy notificationsvr
-.\build all                      # 构建四个业务服务及客户端
-.\deploy all -NoBuild            # 依次部署四个业务服务及客户端
+.\build all                      # 构建五个业务服务及客户端
+.\deploy all -NoBuild            # 依次部署五个业务服务及客户端
 .\deploy quotesvr -Plan          # 只查看目标和执行计划
 ```
 
@@ -43,12 +44,13 @@ cd D:\workspace\greatewall\ficc\qa_env\ats_root\scripts
 | `notificationsvr` | parent-pom → common → notificationsvr | `ATS_ROOT/stc/NotificationSvr` |
 | `crmsvr` | parent-pom → common → crmsvr | `ATS_ROOT/stc/CRMSvr` |
 | `qtintakesvr` | parent-pom → common → qtintakesvr | `ATS_ROOT/stc/QtIntakeSvr` |
+| `parsersvr` | parent-pom → common → parsersvr（含 Java 引擎） | `ATS_ROOT/stc/ParserSvr` |
 | `client` | netapi、Common、Frame、SalesTrading.Plugin、STC | `iteration1/stc-client/stc-client/runtime/native-client` |
-| `all` | 四个业务服务及客户端 | 按上表依次部署 |
+| `all` | 五个业务服务及客户端 | 按上表依次部署 |
 
 Java 执行 `mvn clean install`，不跳过测试。先使用 `JAVA_HOME`，未设置时尝试仓库 runtime 中的 JDK 8；主 POM 以 Java 8 为编译目标。Maven 优先使用 PATH，其次使用 runtime 中的 Maven。客户端需要 MSBuild、WPF 和 .NET Framework 4.7.2 开发工具。
 
-本入口不编译或重启外部 STC 底座：GW、LoginSvr、BaseSvr、ParserSvr、ZooKeeper、PostgreSQL 等。它们仍由环境启停脚本管理。`deploy all` 会启动 QtIntakeSvr，使用该命令前应确认当前需要建立 QTrade 连接。
+本入口不编译或重启外部 STC 底座：GW、LoginSvr、BaseSvr、ZooKeeper、PostgreSQL 等。它们仍由环境启停脚本管理。`deploy all` 会启动 QtIntakeSvr，使用该命令前应确认当前需要建立 QTrade 连接。
 
 ## 环境选择
 
