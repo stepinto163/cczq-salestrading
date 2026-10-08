@@ -51,9 +51,9 @@ Set-QASetting 'LogLevel' 'info'
 Set-QASetting 'LogPath' './logs/STC_'
 Set-QASetting 'DefaultPlugin' '230-销交平台'
 Set-QASetting 'DefaultFocusPlugin' '销交平台'
-# Preserve the tested binding redirects and framework settings for this build.
+# Preserve the binding redirects and framework settings generated for these binaries.
 $binaryConfig = New-Object System.Xml.XmlDocument
-$binaryConfig.Load((Join-Path $clientRoot 'client/STC.exe.config'))
+$binaryConfig.Load((Join-Path $buildRoot 'bin/STC.exe.config'))
 foreach ($sectionName in @('runtime', 'startup')) {
     $replacement = $config.ImportNode($binaryConfig.configuration.SelectSingleNode($sectionName), $true)
     $old = $config.configuration.SelectSingleNode($sectionName)
