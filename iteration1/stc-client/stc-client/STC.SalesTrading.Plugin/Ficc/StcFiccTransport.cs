@@ -39,12 +39,30 @@ namespace STC.SalesTrading.Plugin.Ficc
             Log("REQ", topic, body);
             try
             {
-                JObject reply = await Task.Run(() => api.Request<JObject>(service, topic, body, 5000));
+                long queued = ClientPerformanceTrace.Start();
+                long returned = 0;
+                JObject reply = await Task.Run(() =>
+                {
+                    ClientPerformanceTrace.End("worker.queue:" + topic, queued);
+                    long requestStarted = ClientPerformanceTrace.Start();
+                    try
+                    {
+                        return api.Request<JObject>(service, topic, body, 5000);
+                    }
+                    finally
+                    {
+                        ClientPerformanceTrace.End("sdk.request:" + topic, requestStarted);
+                        returned = ClientPerformanceTrace.Start();
+                    }
+                });
+                ClientPerformanceTrace.End("ui.resume:" + topic, returned);
                 if (reply == null)
                 {
                     throw new InvalidOperationException("服务未返回应答：" + topic);
                 }
+                long logStarted = ClientPerformanceTrace.Start();
                 Log("REP", topic, reply);
+                ClientPerformanceTrace.End("reply.log:" + topic, logStarted);
                 return reply;
             }
             catch (Exception error)

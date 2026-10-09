@@ -40,11 +40,15 @@ namespace STC.SalesTrading.Plugin.Ficc
             switch (domain)
             {
                 case "quote":
-                    return (await api.RequestAsync(SalesTradingApi.QuoteViewOpen, new QuoteViewOpenRequest
+                    var quoteReply = await api.RequestAsync(SalesTradingApi.QuoteViewOpen, new QuoteViewOpenRequest
                     {
                         ViewId = viewId, PageSize = pageSize, Filter = filter,
                         OwnerScope = ownerScope, Status = statuses
-                    })).ToJson();
+                    });
+                    long projectionStarted = ClientPerformanceTrace.Start();
+                    JObject projection = quoteReply.ToJson();
+                    ClientPerformanceTrace.End("view.projection:quote", projectionStarted);
+                    return projection;
                 case "price":
                     return (await api.RequestAsync(SalesTradingApi.PriceViewOpen, new PriceViewOpenRequest
                     {

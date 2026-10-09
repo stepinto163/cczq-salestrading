@@ -22,8 +22,12 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         public static ProtocolModel Decode(JObject input, Type type)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));
+            long deserializeStarted = ClientPerformanceTrace.Start();
             ProtocolModel model = (ProtocolModel)input.ToObject(type, Serializer());
+            ClientPerformanceTrace.End("codec.deserialize:" + type.Name, deserializeStarted);
+            long attachStarted = ClientPerformanceTrace.Start();
             Attach(model, input);
+            ClientPerformanceTrace.End("codec.attach:" + type.Name, attachStarted);
             return model;
         }
 

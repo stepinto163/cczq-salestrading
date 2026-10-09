@@ -99,6 +99,35 @@ namespace SalesTrading.UiTests
                 ["virtualization"] = true, ["samples"] = measurements
             };
             string output = Path.Combine(reportDirectory, "filter-latency.json");
+            var traceGate = new object();
+            var traces = new List<Tuple<string, long, long, int>>();
+            bool profiling = Environment.GetEnvironmentVariable("STC_UI_PROFILE") == "1";
+            long traceOrigin = Stopwatch.GetTimestamp();
+            var dispatcherOperations = new Dictionary<DispatcherOperation, long>();
+            DispatcherHookEventHandler operationStarted = (sender, args) =>
+            {
+                dispatcherOperations[args.Operation] = Stopwatch.GetTimestamp();
+            };
+            DispatcherHookEventHandler operationCompleted = (sender, args) =>
+            {
+                if (dispatcherOperations.TryGetValue(args.Operation, out long started))
+                {
+                    dispatcherOperations.Remove(args.Operation);
+                    ClientPerformanceTrace.End("dispatcher:" + args.Operation.Priority, started);
+                }
+            };
+            if (profiling)
+            {
+                grid.Dispatcher.Hooks.OperationStarted += operationStarted;
+                grid.Dispatcher.Hooks.OperationCompleted += operationCompleted;
+                ClientPerformanceTrace.Sink = (stage, start, end, thread) =>
+                {
+                    lock (traceGate)
+                    {
+                        traces.Add(Tuple.Create(stage, start, end, thread));
+                    }
+                };
+            }
             try
             {
                 // 第一次单列，不混入预热后的分位数。相邻样本必须切换条件，禁止复用相同查询结果。
@@ -111,10 +140,11 @@ namespace SalesTrading.UiTests
                         (item.Item2 % 2 == 0) == even && item.Item2 % 10 >= 4 && item.Item2 % 10 <= 8
                         && (item.Item2 / 10) % 5 >= 3).Select(item => item.Item1));
                     Require(expected.Count > 0 && expected.Count <= 100, "筛选结果应在单页内，核对完整 ID 集合");
+                    long sampleStart = Stopwatch.GetTimestamp();
                     var timer = new Stopwatch();
                     double queryStart = -1;
                     double rowsReady = -1;
-                    var completion = new TaskCompletionSource<bool>();
+                    var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     PropertyChangedEventHandler handler = (sender, args) => {
                         if (args.PropertyName != "LoadState") return;
                         if (model.QuoteMgmtPage.Today.IsLoading) {
@@ -158,6 +188,8 @@ namespace SalesTrading.UiTests
                         int realized = Descendants<DataGridRow>(grid).Count();
                         measurements.Add(new JObject {
                             ["mode"] = iteration < 0 ? "cold-click" : automatic ? "automatic" : "click",
+                            ["traceStartMs"] = (sampleStart - traceOrigin) * 1000.0 / Stopwatch.Frequency,
+                            ["traceEndMs"] = (Stopwatch.GetTimestamp() - traceOrigin) * 1000.0 / Stopwatch.Frequency,
                             ["settlement"] = settlement, ["expectedRows"] = expected.Count,
                             ["gridItems"] = grid.Items.Count, ["realizedRows"] = realized,
                             ["inputToQueryMs"] = queryStart, ["queryToRowsMs"] = rowsReady - queryStart,
@@ -194,6 +226,21 @@ namespace SalesTrading.UiTests
             }
             finally
             {
+                grid.Dispatcher.Hooks.OperationStarted -= operationStarted;
+                grid.Dispatcher.Hooks.OperationCompleted -= operationCompleted;
+                ClientPerformanceTrace.Sink = null;
+                if (profiling)
+                {
+                    lock (traceGate)
+                    {
+                        report["profile"] = new JArray(traces.Select(item => new JObject {
+                            ["stage"] = item.Item1,
+                            ["startMs"] = (item.Item2 - traceOrigin) * 1000.0 / Stopwatch.Frequency,
+                            ["durationMs"] = (item.Item3 - item.Item2) * 1000.0 / Stopwatch.Frequency,
+                            ["thread"] = item.Item4
+                        }));
+                    }
+                }
                 File.WriteAllText(output, report.ToString());
             }
         }
@@ -216,8 +263,16 @@ namespace SalesTrading.UiTests
 
         private static async Task WaitForLatencyRenderAsync(DataGrid grid)
         {
-            await grid.Dispatcher.InvokeAsync(() => grid.UpdateLayout(), DispatcherPriority.Render);
-            var completion = new TaskCompletionSource<bool>();
+            long queued = ClientPerformanceTrace.Start();
+            await grid.Dispatcher.InvokeAsync(() =>
+            {
+                ClientPerformanceTrace.End("render.dispatch-wait", queued);
+                long layoutStarted = ClientPerformanceTrace.Start();
+                grid.UpdateLayout();
+                ClientPerformanceTrace.End("render.update-layout", layoutStarted);
+            }, DispatcherPriority.Render);
+            long renderingStarted = ClientPerformanceTrace.Start();
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             EventHandler handler = (sender, args) => completion.TrySetResult(true);
             CompositionTarget.Rendering += handler;
             try {
@@ -229,6 +284,7 @@ namespace SalesTrading.UiTests
             finally
             {
                 CompositionTarget.Rendering -= handler;
+                ClientPerformanceTrace.End("render.next-callback", renderingStarted);
             }
         }
 

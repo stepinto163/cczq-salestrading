@@ -199,12 +199,21 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                 }, lease.Token);
                 if (!lease.IsCurrent) return null;
 
+                long collectionStarted = ClientPerformanceTrace.Start();
                 Rows.Clear();
-                foreach (var row in result.Items) Rows.Add(row);
+                foreach (var row in result.Items)
+                {
+                    Rows.Add(row);
+                }
+                ClientPerformanceTrace.End("today.collection", collectionStarted);
+                long propertiesStarted = ClientPerformanceTrace.Start();
                 TotalCount = result.TotalCount;
                 QueryId = result.QueryId;
                 IsPartial = result.IsPartial;
+                ClientPerformanceTrace.End("today.properties", propertiesStarted);
+                long suggestionsStarted = ClientPerformanceTrace.Start();
                 BuildSuggestions();
+                ClientPerformanceTrace.End("today.suggestions", suggestionsStarted);
                 return Rows.Count > 0;
             }, Title);
         }

@@ -43,7 +43,9 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new InvalidOperationException("请求与应答的 requestId 不一致。");
             }
+            long decoded = ClientPerformanceTrace.Start();
             ApiReply<TData> result = ProtocolCodec.Decode<ApiReply<TData>>(reply);
+            ClientPerformanceTrace.End("protocol.decode:" + topic, decoded);
             return result.Data ?? ProtocolCodec.Decode<TData>(new JObject());
         }
 

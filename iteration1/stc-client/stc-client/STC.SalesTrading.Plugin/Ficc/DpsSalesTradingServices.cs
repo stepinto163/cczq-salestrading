@@ -111,7 +111,9 @@ namespace STC.SalesTrading.Plugin.Ficc
                 page.Updated += () => NotifyDomain(domain);
                 page.Failed += error => LogHelper.Error("Sales trading stream unavailable: " + domain + ": " + error);
             }
+            long gateStarted = ClientPerformanceTrace.Start();
             await session.Gate.WaitAsync(cancellation);
+            ClientPerformanceTrace.End("query.gate:" + key, gateStarted);
             try
             {
                 cancellation.ThrowIfCancellationRequested();
@@ -137,11 +139,13 @@ namespace STC.SalesTrading.Plugin.Ficc
                     await page.QueryAsync(pageNumber);
                 }
                 cancellation.ThrowIfCancellationRequested();
+                long cacheStarted = ClientPerformanceTrace.Start();
                 foreach (JObject quote in page.Rows.Where(row => row["quoteId"] != null))
                 {
                     displayedQuotes[(string)quote["quoteId"]] = (JObject)quote.DeepClone();
                 }
                 await LoadSecuritiesAsync(page.Rows.Select(row => (string)row["securityId"]), cancellation);
+                ClientPerformanceTrace.End("query.cache-reference:" + key, cacheStarted);
                 return page;
             }
             finally

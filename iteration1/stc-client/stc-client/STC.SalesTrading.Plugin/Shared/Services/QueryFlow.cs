@@ -1,4 +1,5 @@
 ﻿using System;
+using STC.SalesTrading.Plugin.Ficc;
 using System.Threading;
 using System.Threading.Tasks;
 using STC.SalesTrading.Plugin.Abstractions.Queries;
@@ -35,8 +36,12 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             {
                 var hasRows = await loadAsync(lease);
                 if (hasRows == null || !lease.IsCurrent) return;
+                long stateStarted = ClientPerformanceTrace.Start();
                 context.LoadState = hasRows.Value ? QueryLoadState.Loaded : QueryLoadState.Empty;
+                ClientPerformanceTrace.End("query.state:" + context.GetType().Name, stateStarted);
+                long afterStarted = ClientPerformanceTrace.Start();
                 context.AfterQuery();
+                ClientPerformanceTrace.End("query.after:" + context.GetType().Name, afterStarted);
             }
             catch (OperationCanceledException)
             {

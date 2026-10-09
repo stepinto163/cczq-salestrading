@@ -7,6 +7,7 @@ using STC.SalesTrading.Plugin.Shared.Converters;
 using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
 using System;
+using STC.SalesTrading.Plugin.Ficc;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -163,8 +164,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                 }, lease.Token);
                 if (!lease.IsCurrent) return null;
 
+                long collectionStarted = ClientPerformanceTrace.Start();
                 Rows.Clear();
-                foreach (var row in result.Items) Rows.Add(row);
+                foreach (var row in result.Items)
+                {
+                    Rows.Add(row);
+                }
+                ClientPerformanceTrace.End("history.collection", collectionStarted);
                 TotalCount = result.TotalCount;
                 QueryId = result.QueryId;
                 IsPartial = result.IsPartial;

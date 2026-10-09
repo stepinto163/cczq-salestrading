@@ -1,6 +1,7 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$StcConfig,
-    [Parameter(Mandatory=$true)][string]$ReportDirectory
+    [Parameter(Mandatory=$true)][string]$ReportDirectory,
+    [switch]$Profile
 )
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
@@ -12,7 +13,13 @@ $ReportDirectory = [IO.Path]::GetFullPath($ReportDirectory)
 New-Item -ItemType Directory -Force -Path $ReportDirectory | Out-Null
 $arguments = @('--cases', ('"' + (Join-Path $clientRoot 'tests/ui/benchmarks') + '"'),
     '--run', 'filter-latency-500', '--config', ('"' + $StcConfig + '"'), '--report', ('"' + $ReportDirectory + '"'))
-$process = Start-Process -FilePath $runner -WorkingDirectory $runtime -ArgumentList $arguments -PassThru -WindowStyle Hidden
+$previousProfile = $env:STC_UI_PROFILE
+$env:STC_UI_PROFILE = if ($Profile) { '1' } else { '0' }
+try {
+    $process = Start-Process -FilePath $runner -WorkingDirectory $runtime -ArgumentList $arguments -PassThru -WindowStyle Hidden
+} finally {
+    $env:STC_UI_PROFILE = $previousProfile
+}
 $handle = $process.Handle
 $deadline = [DateTime]::UtcNow.AddSeconds(180)
 Write-Host "Started bounded test: runner PID $($process.Id); report $ReportDirectory"

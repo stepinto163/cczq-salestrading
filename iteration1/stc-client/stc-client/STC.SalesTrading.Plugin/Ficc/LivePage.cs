@@ -76,11 +76,15 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 throw new InvalidOperationException("视图忙碌或已关闭。");
             }
+            long closeStarted = ClientPerformanceTrace.Start();
             await CloseAsync();
+            ClientPerformanceTrace.End("live.close:" + domain, closeStarted);
             Generation++;
             IsBrowsing = false;
             changedIds.Clear();
+            long streamStarted = ClientPerformanceTrace.Start();
             StreamOpenData stream = await protocol.OpenStreamAsync();
+            ClientPerformanceTrace.End("live.stream:" + domain, streamStarted);
             streamId = stream.StreamId;
             Topic = stream.PushTopic;
             viewId = "NATIVE-" + Guid.NewGuid().ToString("N");
@@ -134,6 +138,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 {
                     return;
                 }
+                long rowsStarted = ClientPerformanceTrace.Start();
                 ViewPage view = ProtocolCodec.Decode<ViewPage>((JObject)reply["view"]);
                 if (overflow || (string)reply["streamId"] != streamId || view.ViewId != viewId)
                 {
@@ -145,6 +150,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 TotalCount = view.TotalCount.Value;
                 sequence = (long)reply["sequence"];
                 stale = false;
+                ClientPerformanceTrace.End("live.rows:" + domain, rowsStarted);
             }
             catch
             {

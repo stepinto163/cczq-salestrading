@@ -138,9 +138,12 @@ namespace STC.SalesTrading.Plugin.Ficc
             JArray statuses = query.Status == "有效" ? new JArray("ACTIVE") : query.Status == "撤销" ? new JArray("REFERRED")
                 : new JArray("ACTIVE", "REFERRED");
             LivePage page = await QueryAsync("management", "quote", ManagementFilter(query), ct, query.Page, query.PageSize, statuses: statuses);
+            long mappingStarted = ClientPerformanceTrace.Start();
+            MgmtQuoteRow[] mappedRows = page.Rows.Select(row => DpsModelMapper.Display(WithReference(row)).ToObject<MgmtQuoteRow>()).ToArray();
+            ClientPerformanceTrace.End("today.mapping", mappingStarted);
             return new PagedResult<MgmtQuoteRow>
             {
-                Items = page.Rows.Select(row => DpsModelMapper.Display(WithReference(row)).ToObject<MgmtQuoteRow>()).ToArray(),
+                Items = mappedRows,
                 TotalCount = page.TotalCount, QueryId = page.Topic, IsPartial = page.TotalCount > page.Rows.Count
             };
         }
@@ -161,6 +164,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 Filter = ProtocolCodec.Decode<Filter>(ManagementFilter(query))
             });
             ct.ThrowIfCancellationRequested();
+            long mappingStarted = ClientPerformanceTrace.Start();
             List<MgmtQuoteRow> rows = new List<MgmtQuoteRow>();
             foreach (QuoteHistoryRow item in result.Rows)
             {
@@ -171,6 +175,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 }
                 rows.Add(DpsModelMapper.Display(WithReference(quote)).ToObject<MgmtQuoteRow>());
             }
+            ClientPerformanceTrace.End("history.mapping", mappingStarted);
             return new PagedResult<MgmtQuoteRow>
             {
                 Items = rows, TotalCount = result.TotalCount ?? rows.Count,
