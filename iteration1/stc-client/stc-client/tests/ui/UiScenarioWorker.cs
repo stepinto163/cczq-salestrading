@@ -394,6 +394,7 @@ namespace SalesTrading.UiTests
         {
             CollectCreatedQuotes();
             CloseEditor();
+            await CleanupLatencyQuotesAsync();
             if (ownedQuotes.Count == 0) return;
             Require(model?.Backend != null, "无法连接服务执行清理");
             List<string> failures = new List<string>();

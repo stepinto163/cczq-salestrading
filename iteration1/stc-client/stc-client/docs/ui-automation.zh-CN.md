@@ -139,3 +139,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 ```
 
 `-Cases 01-quote-lifecycle` 运行单例；多个 ID 以逗号分隔。退出码 0 表示全部通过，1 表示用例失败/取消，2 表示配置或运行器错误。新增现有动作组合无需编译；新增动作种类需修改测试代码并构建，不向正式产品添加业务绕过路径。
+
+## 组合筛选延迟测量
+
+独立性能用例、执行命令及 500 报价首轮测量结果见[报价组合筛选端到端延迟](filter-latency.zh-CN.md)。不在默认功能套件中执行；每次需用户明确授权。

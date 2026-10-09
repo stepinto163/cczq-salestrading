@@ -77,6 +77,7 @@ namespace SalesTrading.UiTests
     {
         public static readonly Dictionary<string, string[]> Fields = new Dictionary<string, string[]>
         {
+            { "filter.latency", new[] { "quotes", "samples", "securityId" } },
             { "manual.open", new string[0] },
             { "manual.fill", new[] { "securityId", "price", "quantity", "side", "settlType" } },
             { "manual.click", new[] { "button" } },
@@ -108,6 +109,7 @@ namespace SalesTrading.UiTests
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
         {
+            { "filter.latency", "组合筛选延迟（需显式授权，最多500报价）" },
             { "manual.open", "点击手工报价" }, { "manual.fill", "填写手工报价" },
             { "manual.click", "点击报价操作按钮" }, { "quote.assert", "核对服务端报价状态及价格" },
             { "pending.assert", "核对报价确认页推送" }, { "market.assert", "核对行情中心推送" },

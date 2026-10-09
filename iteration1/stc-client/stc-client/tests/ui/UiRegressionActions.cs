@@ -24,6 +24,9 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "filter.latency":
+                    await MeasureFilterLatencyAsync(step);
+                    break;
                 case "qtrade.negotiation":
                     await CheckQTradeNegotiationAsync();
                     break;
