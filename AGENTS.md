@@ -17,6 +17,12 @@
 
 # Performance testing
 
+## 本机运行契约
+
+- 每个 Java 服务工程必须支持从源码目录在 IntelliJ Run / Debug：提交完整的 control/config 和共享运行配置，不能只让 Jenkins 打包结果可运行。
+- 本机共享连接配置和许可证统一引用已有 ATS_ROOT；配置变更同时核对源码启动和 Salt 打包路径，不能留不存在的文件引用或要求手工补 example。
+- 验证时明确区分配置加载检查与实际服务启动；调试同名服务之前需避免与已运行实例发生端口、存储锁或 FIX 会话冲突。
+
 The user had to hard-reboot after an earlier grid benchmark hung the laptop.
 Treat performance experiments conservatively:
 - Never launch a performance test without explicit user authorization.

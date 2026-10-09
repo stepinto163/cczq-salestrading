@@ -92,3 +92,32 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-prod
 ```
 
 该检查使用临时目录与假的启停脚本，覆盖启动失败恢复、停止失败保护、配置保留和旧依赖替换，不停止真实服务。
+
+## IntelliJ 本机 Run / Debug
+
+五个业务服务都提交了完整的源码启动配置和 `.run/<服务名> Local.run.xml`，不再要求手动复制 example 文件。parent/common 是 Maven 库，不是独立进程。
+
+1. 在 IntelliJ 单独打开所需服务的 `pom.xml`，导入 Maven 依赖，Project SDK 选择 Java 8。
+2. 选择 `QuoteSvr Local`、`NotificationSvr Local`、`CRMSvr Local`、`QtIntakeSvr Local` 或 `ParserSvr Local`。
+3. 运行配置默认工作目录为工程根目录，`ATS_ROOT=$PROJECT_DIR$/../../../qa_env/ats_root`；若独立 checkout 到别处，只需将该环境变量指向已准备好的本机 STC 根目录。
+4. 先停止本机原来运行的**同名服务**，再按 Run / Debug；保留它依赖的 PostgreSQL、ZooKeeper、LoginSvr、BaseSvr、CRMSvr 等服务。端口和数据库锁仍按共享配置使用，不启动第二份同名实例。
+
+| 服务 | 本机业务配置 | 依赖 |
+|---|---|---|
+| QuoteSvr | `config/service.properties`、`config/adapters.properties` | FICC_SALESTRADING / ficc_local_stc；LoginSvr、BaseSvr、CRMSvr |
+| NotificationSvr | 同上 | 同一数据源/schema；QuoteSvr、LoginSvr、BaseSvr、CRMSvr |
+| CRMSvr | `config/crmsvr.properties` | FICC_CRM / public |
+| QtIntakeSvr | `config/service.properties`、`config/qtrade-fix.cfg` | MYSQL0 用户映射、共享 QtIntakeSvrAuth.properties、QuoteSvr、QTrade FIX 网络 |
+| ParserSvr | `control/ParserSvr`、`config` | MYSQL0、BaseSvr、CRMSvr；共享本机 ParserSvr 字典及原生对照库 |
+
+`adapter.properties` 为空表示“不加载第二个配置文件”；例如 CRMSvr 使用单个完整配置文件即可。QuoteSvr/NotificationSvr 需要明确加载 STC adapters，现已填好。
+
+ParserSvr 的运行配置设置 `-Dhanlp.properties=./config/hanlp.properties`，该文件引用已部署的本机字典（无需把约 111 MB 字典复制进 Git）。Java 引擎仍为默认；原生库路径指向本机已部署 ParserSvr 的 javalib。独立 checkout 时相应修改这两个资源路径。入口未设置此参数时维持部署包原有的 classpath 配置方式。
+
+共享的 ATSConfig.ini、DBPoolConfig.ini、server.lic 和 QtIntakeSvrAuth.properties 由本机环境管理。Jenkins 继续使用 Salt 的 QA 配置生成，不使用源码中的本机 schema。ParserSvr 的 `config/database.xml` 仅是保留原生引擎接口所需的本机适配配置，Java 引擎从 MYSQL0 加载。
+
+配置检查（不启动服务、不连接 FIX、不执行业务写入）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-local-java-config.ps1
+```

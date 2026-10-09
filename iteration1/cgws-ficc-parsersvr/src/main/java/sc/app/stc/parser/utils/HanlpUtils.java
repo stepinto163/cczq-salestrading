@@ -36,7 +36,10 @@ public class HanlpUtils {
                     loader.getResourceAsStream("hanlp.properties") :
                     new FileInputStream(Predefine.HANLP_PROPERTIES_PATH)
                     , "UTF-8"));
-            HANLP_ROOT = p.getProperty("root", "");
+            // Resolve relative paths against the service working directory, including IDE runs
+            // where Hutool otherwise treats them as paths beneath target/classes.
+            HANLP_ROOT = java.nio.file.Paths.get(p.getProperty("root", ""))
+                    .toAbsolutePath().normalize().toString();
         } catch (Exception e) {
             HANLP_ROOT = System.getProperty("HANLP_ROOT");
             if (HANLP_ROOT == null) {

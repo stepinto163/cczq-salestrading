@@ -187,3 +187,7 @@ QuoteSvr 的 `QtIntakeSmoke` 使用本机 PostgreSQL 独立临时 schema，验�
 外层或条目级 1009/1099 均保留在 pending 重试；QuoteSvr 不将临时依赖失败写成最终幂等结果。
 
 2026-10-02 转发恢复核查：移除正常发送的一秒等待；增加持久化顺序、失败队首保留、保守错误分类及 pendingCount。新增功能用例覆盖超时后重启顺序、权限/未知错误保留、明确拒绝、旧文件迁移、空闲唤醒和两条请求连续转发。仅本机合成数据验证，不代表真实 QTrade → STC 延迟验收。
+
+## IntelliJ 本机 Run / Debug
+
+以 Java 8 导入本工程 `pom.xml`，选择已提交的 `.run/* Local.run.xml` 运行配置。源码包含启动配置；共享数据库、注册中心和许可证来自现有 `qa_env/ats_root/control`。具体依赖、调试前停止同名实例及验证方法见 [本机构建与部署](../docs/local-build-deploy.zh-CN.md#intellij-本机-run--debug)。
