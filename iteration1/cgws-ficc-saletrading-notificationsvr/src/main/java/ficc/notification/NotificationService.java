@@ -11,7 +11,11 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-/** Notification domain. Upstream quote facts and price books are separate inputs. */
+/**
+ * 提醒业务核心：结合用户偏好、关注/筛选分组、报价事实和价格簿生成提醒，并保存已读状态。
+ * 报价事件与价格事件是两条独立输入，不能假设同时到达；生成最优价提醒前需核对报价版本。
+ * 接收人可见性仍由 AccessPolicy 约束，内部全量同步不意味着用户能看见所有双边报价。
+ */
 final class NotificationService {
     static final List<String> SWITCHES =
             Arrays.asList(
@@ -170,6 +174,7 @@ final class NotificationService {
         ready = true;
     }
 
+    /** 忽略已处理事件；epoch 改变或 sequence 有缺口时返回 false，要求协调器重新同步。 */
     synchronized boolean quoteMessage(JSONObject message) throws Exception {
         if (!Objects.equals(quoteEpoch, message.getString("epoch"))) return false;
         if ("HEARTBEAT".equals(message.getString("kind")))
@@ -191,6 +196,7 @@ final class NotificationService {
         return true;
     }
 
+    /** SNAPSHOT 替换全部价格簿，增量必须属于同一流且序列连续；RESET_REQUIRED 触发恢复。 */
     synchronized boolean priceMessage(JSONObject message) throws Exception {
         String kind = message.getString("kind");
         if ("RESET_REQUIRED".equals(kind)) {
@@ -233,6 +239,7 @@ final class NotificationService {
                         null));
     }
 
+    /** 价格簿中的 quoteRefs 必须与当前有效报价及其 revision 一致，避免混用两个时点的数据。 */
     boolean bookMatchesQuotes(String sec, List<JSONObject> active) {
         JSONObject book = books.get(sec);
         if (book == null) return false;

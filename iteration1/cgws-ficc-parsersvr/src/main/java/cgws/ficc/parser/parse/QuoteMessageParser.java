@@ -19,7 +19,12 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Message-level coordination; separate from the legacy native single-line comparison boundary. */
+/**
+ * 整段报价文本的解析协调器：文本分段、债券识别、字段提取、标题继承及双边价格展开。
+ * 输入中的真实换行和字面量转义换行均先规范化；分号分段允许一条消息产生多条报价。
+ * 到期/摘牌债券保留预览并附警告，是否允许正式确认仍由 QuoteSvr 校验。
+ * 本类只产出识别结果，不创建或确认业务报价，也不持有用户界面的编辑状态。
+ */
 public final class QuoteMessageParser {
     private static final Pattern CLOCK = Pattern.compile("(?:[01]?\\d|2[0-3]):[0-5]\\d:[0-5]\\d");
     private static final Pattern CHINESE_WORD = Pattern.compile("[\\u4e00-\\u9fa5]{2,}");

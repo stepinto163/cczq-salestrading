@@ -10,7 +10,11 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Shared filter contract for requests, subscriptions and client editors. */
+/**
+ * 查询、订阅和前端筛选编辑器共用的字段契约：定义字段类型、可用操作符和展示元数据。
+ * 字段出现在目录中只表示协议支持，不保证当前 BaseSvr/CRM 数据源已提供该字段。
+ * 数据来源映射见 StcBaseMapper，实际取值见 QuoteFilterValues，条件组合规则见 FilterEngine。
+ */
 public final class FilterFields {
     private FilterFields() {}
 

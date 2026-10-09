@@ -7,7 +7,11 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Reads only requested filter attributes, without serializing or copying each quote. */
+/**
+ * 筛选字段的按需取值视图：组合报价自身字段与债券基础属性，不逐条序列化或复制整份报价。
+ * 买卖价格/数量按方向映射，估值利差仅在收益率口径一致时计算；净价差与 BP 利差使用不同字段。
+ * 原始字段优先取非空基础属性，再取报价属性；缺失值返回 null，不能用零冒充已知数据。
+ */
 public final class QuoteFilterValues implements FilterValues {
     private static final Map<String, Field> QUOTE_FIELDS = fields(QuoteRecord.class);
     private static final Map<String, Field> REFERENCE_FIELDS = fields(ReferenceRecord.class);

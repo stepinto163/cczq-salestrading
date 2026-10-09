@@ -7,8 +7,11 @@ using STC.SalesTrading.Plugin.Ficc.Protocol;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
-    // Shared panel mechanics adapt three distinct wire contracts. JObject rows remain
-    // a UI projection only; protocol membership and stream metadata are typed.
+    /// <summary>
+    /// 将报价、价格、提醒三个业务域的强类型视图协议适配为页面共用操作。
+    /// 报价按 quoteId、价格按 securityId、提醒按 notificationId 标识，不能互换主键或结果集合。
+    /// JObject 只作为现有表格的展示投影；流元数据与成员变更仍按协议模型解析。
+    /// </summary>
     internal sealed class ViewProtocolClient
     {
         private readonly FiccApiClient api;

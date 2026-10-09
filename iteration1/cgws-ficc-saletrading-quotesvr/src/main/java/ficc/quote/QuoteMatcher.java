@@ -23,7 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-/** Shared typed matching for searches and subscriptions. No per-row JSON conversion. */
+/**
+ * 查询与增量视图共用的报价筛选器，直接读取 QuoteRecord 和债券 ReferenceRecord。
+ * prepareQuery 组合状态、归属范围、权限与业务条件；prepare 只准备业务条件，不单独保证权限。
+ * 每次准备的谓词拥有自己的债券缓存，避免同次匹配重复查基础数据，也避免跨查询永久缓存。
+ */
 final class QuoteMatcher {
     private final ReferenceData references;
     private final Map<String, SettingRecord> settings;
@@ -33,7 +37,7 @@ final class QuoteMatcher {
         this.settings = settings;
     }
 
-    /** Identical visibility and filter semantics for queries and incremental view updates. */
+    /** 查询与增量视图使用同一套可见性、状态和条件规则，避免初次加载与后续推送口径不同。 */
     Predicate<QuoteRecord> prepareQuery(String user, QuoteQueryRequest request, AccessPolicy access) {
         Filter filter = request.filter;
         FilterEngine.validate(filter == null ? null : filter.toJson());

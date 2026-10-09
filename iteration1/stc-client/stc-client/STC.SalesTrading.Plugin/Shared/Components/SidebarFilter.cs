@@ -17,6 +17,8 @@ namespace STC.SalesTrading.Plugin.Shared.Components
     /// <summary>
     /// 给产品 XAML 控件显式标注协议字段；不通过中文标签猜字段。
     /// 枚举值取服务端字典，文本/区间保留原有产品控件。
+    /// 本类把控件值编译成 Filter 并通知对应页面，不在客户端重新判定全部报价是否匹配。
+    /// 新增控件需同时配置 Field/Scope 并核对后端数据映射，不能仅添加一个可点击的标签。
     /// </summary>
     public sealed class SidebarFilter
     {

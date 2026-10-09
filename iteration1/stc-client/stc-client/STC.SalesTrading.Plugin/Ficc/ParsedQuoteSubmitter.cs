@@ -9,6 +9,11 @@ using STC.SalesTrading.Plugin.Abstractions.Models;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
+    /// <summary>
+    /// 将识别预览提交为正式报价：先创建 Revision=0 的草稿，再读取服务器最新版本并逐条确认。
+    /// 部分成功时保留服务器 quoteId/revision，后续重试复用已有记录，避免再次创建成功行。
+    /// ACTIVE 表示此前已确认，可跳过；其他非待确认状态必须报错，不能擅自恢复或覆盖。
+    /// </summary>
     public sealed class ParsedQuoteSubmitter
     {
         private readonly FiccApiClient api;
@@ -34,7 +39,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 List<QuoteOperationResult> results = response.Results;
                 if (results != null)
                 {
-                    // Retain successful IDs even when another row in the batch failed.
+                    // 即使同批其他行失败，也先保存成功行的 ID；再抛异常才不会丢掉已入库结果。
                     foreach (QuoteOperationResult result in results)
                     {
                         QuoteConfirmRow row = drafts.FirstOrDefault(candidate =>
@@ -66,7 +71,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 string status = quote.Status;
                 if (status == "ACTIVE")
                 {
-                    // A previous submit may have confirmed this row before a later row failed.
+                    // 前一次提交可能已确认本行，只是在后续行失败；再次提交不重复确认它。
                     continue;
                 }
                 if (status != "PENDING_CONFIRM")

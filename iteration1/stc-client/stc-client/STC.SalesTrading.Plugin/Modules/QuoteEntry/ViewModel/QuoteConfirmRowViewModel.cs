@@ -40,6 +40,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         public string InstitutionId => Row.InstitutionId;
         private bool selectingCrmParty;
 
+        // 自由输入会使旧 ID 失效；下拉选择期间由 selectingCrmParty 防止联动赋值被当成手工修改。
         partial void OnInstitutionChanged(string value)
         {
             if (selectingCrmParty) return;
@@ -78,6 +79,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             }
         }
 
+        /// <summary>选中交易员时先填所属机构，再填联系人 ID/姓名；机构与联系人必须来自同一候选项。</summary>
         [RelayCommand]
         public void SelectContact(CrmChoice choice)
         {

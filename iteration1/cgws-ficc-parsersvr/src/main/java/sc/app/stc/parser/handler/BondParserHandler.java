@@ -21,6 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * stc.parser.bond 的 STC 协议入口：校验用户/文本，调用解析引擎，再转换为旧客户端所需报价结构。
+ * 返回 Code/Msg/Datas 和可选 Warnings；它不是 FICC 的 Data/requestId 应答格式。
+ * 此操作只识别和补全预览，正式入库/确认由客户端后续调用 QuoteSvr 完成。
+ */
 public class BondParserHandler extends ContentHandler {
     @Override
     public Map<String, Object> handle(String topic, Message message, String content, Map<String, Object> map, boolean fromList) {

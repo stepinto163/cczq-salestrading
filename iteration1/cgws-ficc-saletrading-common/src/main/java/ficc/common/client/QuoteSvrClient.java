@@ -12,7 +12,11 @@ import sc.app.stc.net.NetClientWrapper;
 
 import java.util.function.Consumer;
 
-/** Business client over STC discovery, connection management and subscriptions. */
+/**
+ * NotificationSvr 使用的 QuoteSvr 同步客户端；连接、发现与订阅交给 STC NetClientWrapper。
+ * 全量恢复读取内部报价状态和价格快照，后续变化分别从 quote events 与 price snapshots 接收。
+ * 内部读取不伪造终端登录会话；isOnline 仅表示连接在线，不代表两份业务快照已同步完成。
+ */
 public final class QuoteSvrClient {
     public static final String SERVER_KEY = "SERVER.QuoteSvr";
     public static final String QUOTE_EVENTS = "ficc.quote.events";

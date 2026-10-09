@@ -9,6 +9,10 @@ using STC.SalesTrading.Plugin.Shared.ViewModel;
 
 namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 {
+    /// <summary>
+    /// 报价确认/精确报价共用的 CRM 批量选择状态，应用时实时获取当前勾选行。
+    /// 输入文字仅改变搜索条件；选择候选项才调用各行的机构/联系人联动逻辑，不修改未勾选行。
+    /// </summary>
     public partial class CrmBatchEditor : ObservableObject
     {
         private readonly Func<IEnumerable<QuoteConfirmRowViewModel>> selectedRows;

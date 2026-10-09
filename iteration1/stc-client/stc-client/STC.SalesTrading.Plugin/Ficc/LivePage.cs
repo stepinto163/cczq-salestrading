@@ -9,7 +9,12 @@ using STC.SalesTrading.Plugin.Ficc.Protocol;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
-    // UI-thread owned; each panel has its own membership and query boundary.
+    /// <summary>
+    /// 单个页面的实时数据状态，由 UI 线程持有；每页独立维护视图、分页和查询边界。
+    /// 先订阅再读取快照，加载期间缓存推送，随后按 streamId/sequence 校验并应用增量。
+    /// 缓存溢出或序列不连续时将页面标为失效，避免把缺数据的列表当作最新结果。
+    /// 浏览冻结与恢复最新由本类协调，服务器缓存总数不等于当前渲染行数。
+    /// </summary>
     public sealed class LivePage : IDisposable
     {
         private readonly FiccApiClient api;
@@ -115,6 +120,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             return QueryAsync(1);
         }
 
+        // 快照确定本页成员与序列起点，再消费加载期间暂存的推送，避免请求与推送交错漏更新。
         private async Task LoadAsync(Func<Task<JObject>> query)
         {
             loadCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

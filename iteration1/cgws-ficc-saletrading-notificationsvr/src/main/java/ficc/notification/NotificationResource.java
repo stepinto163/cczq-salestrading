@@ -36,7 +36,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
-/** Owns notification business state; STC resources own outbound connections. */
+/**
+ * 提醒服务生命周期与 QuoteSvr 同步协调器；STC 资源负责连接，本类负责数据是否可用。
+ * 连接变化或增量缺口使 ready 失效；单个后台工作线程重新读取报价状态和价格快照。
+ * 两份快照恢复完成且连接代次未变化才对外服务；进程启动/端口在线不等于提醒数据已就绪。
+ */
 public final class NotificationResource extends ResourceAdapter {
     private static final org.apache.log4j.Logger LOGGER =
             org.apache.log4j.Logger.getLogger(NotificationResource.class);
@@ -196,6 +200,10 @@ public final class NotificationResource extends ResourceAdapter {
         }
     }
 
+    /**
+     * 先取分页报价状态，再取价格快照；期间收到的推送暂存在 incoming，恢复后按序消费。
+     * generation 防止恢复过程中断线重连后，把旧连接获取的快照误标为新连接已就绪。
+     */
     private void restore() throws Exception {
         long generation = sourceGeneration.get();
         incoming.clear();
@@ -231,6 +239,7 @@ public final class NotificationResource extends ResourceAdapter {
                 "NotificationSvr source synchronized at " + firstPage.sequence);
     }
 
+    /** 同步失败保留未就绪状态并延后重试；未就绪期间 dispatch 返回 1009，而不是空提醒列表。 */
     private void tick() {
         try {
             if (System.currentTimeMillis() < retryAt) {

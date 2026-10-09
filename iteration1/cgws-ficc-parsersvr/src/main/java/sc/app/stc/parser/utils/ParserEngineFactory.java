@@ -9,7 +9,11 @@ import sc.app.stc.utils.CommonDataUtils;
 import java.util.Locale;
 import java.util.function.Supplier;
 
-/** Explicit selection: a failed Java engine never silently falls back to native parsing. */
+/**
+ * 按 ParserEngine 选择解析实现：默认 java，显式 native 使用原 C++ 引擎。
+ * Java 模式返回 Java 结果，并包装异步 native 对照；对照结果只作日志证据，不替换返回值。
+ * 主引擎初始化失败向上传播，不能悄悄切换引擎；native 对照故障与主路径故障分别处理。
+ */
 public final class ParserEngineFactory {
     private static final Logger LOG = LoggerFactory.getLogger("ficc.startup");
 

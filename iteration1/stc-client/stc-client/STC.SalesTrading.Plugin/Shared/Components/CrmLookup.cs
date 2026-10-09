@@ -9,7 +9,11 @@ using STC.SalesTrading.Plugin.Abstractions;
 
 namespace STC.SalesTrading.Plugin.Shared.Components
 {
-    /// <summary>CRM 名称输入和显式选择；自由文本不代表已匹配的 CRM 身份。</summary>
+    /// <summary>
+    /// CRM 自动补全控件：延迟触发搜索，用请求版本过滤过时应答，支持鼠标与键盘显式选择。
+    /// 显示文字与业务身份分开；自由文本不代表匹配成功，选择命令携带机构和联系人 ID。
+    /// Directory 从父级继承，InstitutionId 限定联系人搜索范围；无机构时允许跨机构搜索。
+    /// </summary>
     public sealed class CrmLookup : TextBox
     {
         public static readonly DependencyProperty DirectoryProperty = DependencyProperty.RegisterAttached(

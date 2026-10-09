@@ -18,7 +18,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Uses the already configured STC DB pool; no extra credentials or native database client. */
+/**
+ * 复用 STC DBPool，通过 JDBC 读取 bond_list_info、bond 和 china_bond_valuation 构建解析词典。
+ * 在初始化/刷新时批量加载，解析每段文本时使用内存快照，不逐条回查数据库。
+ * 债券有效期、简称与短码资格在这里准备；机构和交易员匹配走独立 CRM 链路。
+ */
 public final class JdbcParserReferenceLoader implements JavaBondQuoteEngine.ReferenceLoader {
     public interface ConnectionProvider {
         Connection open() throws SQLException;

@@ -15,7 +15,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-/** Business facade; vendor fields and transport stay inside adapters. */
+/**
+ * 基础数据业务门面：债券属性来自 BaseDataClient，机构与联系人来自 CrmClient。
+ * 业务层通过本类查债券、补展示字段和校验交易对手，供应商字段与 DPS 细节留在适配器中。
+ * require 对缺失债券明确报错，不生成虚构债券；无参构造使用模拟数据，仅适合显式模拟场景。
+ */
 public final class ReferenceData implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(ReferenceData.class);
     private final BaseDataClient base;

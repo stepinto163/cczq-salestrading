@@ -27,14 +27,10 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * BBox resource: owns the CRM snapshot and answers every CRM topic.
- *
- * <p>{@code stc.crm.search} / {@code stc.crm.get} serve the FICC adapter; {@code stc.crm.inst.query},
- * {@code stc.crm.contact.query} and {@code stc.crm.account.query} serve the STC CRM image consumed
- * by CRMSvrClient, and {@code stc.crm.lookup} serves the per-name lookups parsersvr does.
- *
- * <p>The snapshot is loaded once at startup, so a CRM change reaches consumers when CRMSvr is
- * restarted; that matches how the deployment refreshes the legacy CRM image today.
+ * CRM 服务入口：启动时从数据库加载一次目录快照，对外同时兼容 FICC 和旧 STC 查询协议。
+ * stc.crm.search/get 供 FICC 分页搜索与 ID 查询，inst/contact/account.query 供旧 STC 镜像客户端，
+ * stc.crm.lookup 供 ParserSvr 按识别名称少量查询，避免解析进程复制整个机构库。
+ * 当前没有自动刷新快照；数据库修改需重启 CRMSvr 才进入本服务的查询结果。
  */
 public final class CrmResource extends ResourceAdapter {
     private static final Logger LOGGER = Logger.getLogger(CrmResource.class);

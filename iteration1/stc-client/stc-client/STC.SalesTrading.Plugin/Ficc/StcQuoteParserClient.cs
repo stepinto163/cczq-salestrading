@@ -9,7 +9,11 @@ using STC.SalesTrading.Plugin.Abstractions.Models;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
-    /// <summary>STC ParserSvr protocol adapter. Recognition never creates a QuoteSvr record.</summary>
+    /// <summary>
+    /// ParserSvr 协议适配器，将识别结果转换为可编辑报价预览，并保留警告与未匹配 CRM 提示。
+    /// 识别不创建 QuoteSvr 记录；用户确认后才由 ParsedQuoteSubmitter 创建并提交确认。
+    /// ParserSvr 使用 Code/Msg/Datas，应答不能按普通 FICC Data/requestId 格式读取。
+    /// </summary>
     public sealed class StcQuoteParserClient
     {
         private readonly IFiccTransport transport;

@@ -32,7 +32,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/** Shared price projection for queries and subscriptions, owned by the ordered dispatcher. */
+/**
+ * 查询与订阅共用的价格簿投影，由 QuoteSvr 串行调度路径持有，不是独立存储或线程安全容器。
+ * 按债券维护报价索引，先按用户可见性和条件筛选 ACTIVE 报价，再生成 FULL/BEST/DEPTH 价格档。
+ * 待确认提案不进入价格簿；同一债券在不同用户视角下可以有不同的最优价与可见报价。
+ */
 final class PriceBookService {
     private static final DateTimeFormatter ENTRY_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter ENTRY_TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
@@ -59,6 +63,10 @@ final class PriceBookService {
         return previous == null ? null : previous.get(quote.quoteId);
     }
 
+    /**
+     * 更新索引并返回需要重建价格簿的债券；修改债券代码时新旧两只债券都需处理。
+     * 从 ACTIVE 撤出也会影响价格；纯待确认记录更新只更新索引，不增加价格簿版本。
+     */
     Set<String> changed(QuoteRecord quote, String previousSecurity) {
         QuoteRecord previous = previousQuote(quote, previousSecurity);
         boolean affectsPrice = "ACTIVE".equals(quote.status)
@@ -153,6 +161,7 @@ final class PriceBookService {
                                 quote.source == null ? null : quote.source.type, quote.status))
                         && matches.test(quote))
                 .collect(Collectors.toList());
+        // 价格排序要求可比较的收益率口径；净价/全价或到期/行权不匹配时，不在此处猜测换算。
         boolean exercise = !quotes.isEmpty()
                 && references.require(security).getBooleanValue("hasExerciseOption");
         for (QuoteRecord quote : quotes) {

@@ -14,7 +14,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Supplier;
 
-/** Java is authoritative; a serialized, isolated native worker only supplies comparison evidence. */
+/**
+ * Java 主路径与 C++ 对照路径的组合：调用方始终获得主引擎结果，native 在隔离工作进程中对照。
+ * 先序列化 Java 结果留证，避免随后 CRM 补全修改对象而污染比较基准。
+ * 对照队列有界且单线程执行；初始化失败或队列满会记录日志，不阻塞等待 native 后再返回报价。
+ */
 public final class ComparativeBondQuoteEngine implements BondQuoteEngine, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger("ficc.parser.compare");
     private final BondQuoteEngine primary;

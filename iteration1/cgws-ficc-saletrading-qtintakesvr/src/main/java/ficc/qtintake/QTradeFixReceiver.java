@@ -8,7 +8,11 @@ import quickfix.*;
 import java.io.IOException;
 import java.util.Properties;
 
-/** Initiator based on the working PRL receiver; never sends trading application messages. */
+/**
+ * QuickFIX/J 主动连接端，读取 FIX 配置并记录会话/应用消息；不向 QT 发交易业务消息。
+ * 应用回调交给 QTradeQuoteMapper 判定接入范围，映射结果先写 DurableInbox，再由转发线程发送。
+ * FIX 登录成功仅证明上游会话在线，不代表归属人映射或下游 QuoteSvr 已经可用。
+ */
 public final class QTradeFixReceiver implements Application, AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(QTradeFixReceiver.class);
     private static final Logger MESSAGES = Logger.getLogger("ficc.qtintake.messages");

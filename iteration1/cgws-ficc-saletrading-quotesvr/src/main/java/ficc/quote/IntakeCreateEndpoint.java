@@ -13,7 +13,10 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Restricted service-to-service use of quote.create; ordinary client creates still require login.
+ * QT 接入边界：验证服务接入身份，将外部事件转为指定 STC 接收人的待确认报价。
+ * 同一接收账户、NegotiationID 和方向已有待确认提案时更新它；已有确认报价时新建待确认提案。
+ * 接口名虽然沿用 quote.create，内部可选择 create/update；它不会直接覆盖已确认价格。
+ * 原文分组与双边会话是两种关系：同一原文的多条报价共享 sourceMessageId，不共享本地 quoteId。
  */
 final class IntakeCreateEndpoint {
     private final String token;

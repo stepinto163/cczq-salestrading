@@ -5,7 +5,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Explicit FICC grants; preserve original STC userid in business data and audit. */
+/**
+ * 报价归属与可见性规则，使用 STC userid 判定，不使用 QTrade 昵称或机构名称代替身份。
+ * 所有人、配置的管理员和内部用户可访问归属报价；普通用户还能看非 QT 来源的 ACTIVE 报价。
+ * QT 报价确认后仍按接收人隔离；本类判断业务授权，不负责登录会话验证。
+ */
 public final class AccessPolicy {
     private final Set<String> administrators;
     private final Set<String> internalUsers;
@@ -43,7 +47,7 @@ public final class AccessPolicy {
                 && (userId.equals(ownerUserId) || administrator(userId) || internal(userId));
     }
 
-    /** Incoming QTrade quotes belong to their recipient, including after confirmation. */
+    /** QT 来源的报价始终归接收人；确认只改变状态，不将双边报价公开给其他普通用户。 */
     public boolean canViewQuote(String userId, String ownerUserId, String sourceType, String status) {
         return owns(userId, ownerUserId)
                 || (userId != null && "ACTIVE".equals(status) && !"QT".equals(sourceType));

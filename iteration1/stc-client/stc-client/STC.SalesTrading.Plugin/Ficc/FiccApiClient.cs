@@ -7,6 +7,11 @@ using STC.SalesTrading.Plugin.Ficc.Protocol;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
+    /// <summary>
+    /// FICC 强类型请求入口：按业务 topic 路由到服务，补 requestId，检查应答码和请求关联。
+    /// 这里只处理协议与错误，不拥有登录会话；底层传输由 IFiccTransport 提供。
+    /// 批量报价还需检查逐条结果，顶层 Code=0000 不代表每一行都操作成功。
+    /// </summary>
     public sealed class FiccApiClient
     {
         private readonly IFiccTransport transport;

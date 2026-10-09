@@ -9,7 +9,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
-/** Resolves the receiving QTrade account from stc_tbook_users.inf1, without a default owner. */
+/**
+ * 用收到消息中的 OwnQtNO(18004) 精确匹配 stc_tbook_users.inf1，返回启用用户的 STC userid。
+ * 这是本方接收人映射，不是对手方联系人查找；缺失、重复或空 userid 都抛异常，不设默认归属人。
+ * 每次解析直接查询数据库，修正映射后队首重试可以重新解析；成功映射随后由转发器写回收件箱。
+ */
 public final class StcQuoteOwnerResolver implements QuoteForwarder.OwnerResolver {
     private static final Logger LOGGER = Logger.getLogger(StcQuoteOwnerResolver.class);
     private static final String LOOKUP_SQL =

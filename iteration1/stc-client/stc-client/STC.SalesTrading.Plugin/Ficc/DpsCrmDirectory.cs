@@ -7,7 +7,11 @@ using STC.SalesTrading.Plugin.Ficc.Protocol;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
-    /// <summary>查询 CRM，并将联系人与所属机构解析成可明确选择的组合。</summary>
+    /// <summary>
+    /// 查询 CRM，并将联系人与所属机构解析成可明确选择的组合。
+    /// 未选机构时跨机构搜索；已选机构时限制范围；一个联系人有多个机构时分别生成候选项。
+    /// 候选项包含名称和真实 ID，输入框中仅有姓名文字不等同于已经选中 CRM 联系人。
+    /// </summary>
     public sealed class DpsCrmDirectory : ICrmDirectory
     {
         private readonly FiccApiClient api;

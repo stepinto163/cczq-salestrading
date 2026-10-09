@@ -12,10 +12,9 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Read-only loader of the CRM tables.
- *
- * <p>CRMSvr is the only service that connects to the CRM schema, so the table and column names
- * stay here; consumers see the page contract served by {@link CrmDirectory}.
+ * 从配置指向的 CRM schema 只读加载机构、联系人及其关联表，形成 CrmDataset。
+ * 在通过 CRMSvr 访问 CRM 的部署路径中，表名和字段映射集中在此，消费方使用 CrmDirectory 协议。
+ * load 是启动快照读取，不是逐次下拉搜索时访问数据库，也不会写回 CRM 主数据。
  */
 public final class CrmStore implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(CrmStore.class);

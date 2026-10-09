@@ -18,7 +18,12 @@ import org.apache.log4j.Logger;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-/** One process owns the directory. Received work is flushed before the FIX callback returns. */
+/**
+ * 本地持久收件箱：pending 保存待转发请求，sent/rejected 保存明确处理结果。
+ * 目录由单进程加锁持有；入箱先落盘再通知转发线程，arrivalSequence 保存本地接收顺序。
+ * 它保障 FIX 接收以后到 QuoteSvr 应答之间的恢复，不替代 FIX 会话自身的序列与重传机制。
+ * capacity 限制积压条数，不是吞吐配额；满时抛出异常，不能假装已保存消息。
+ */
 public final class DurableInbox implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(DurableInbox.class);
     private final TreeMap<Long, Path> pendingFiles = new TreeMap<>();
@@ -97,6 +102,7 @@ public final class DurableInbox implements AutoCloseable {
         notifyAll();
     }
 
+    /** 重启后按持久到达序号恢复；旧格式无序号时只能按文件时间迁移，并明确记录原顺序不可知。 */
     private void restorePendingOrder() throws IOException {
         List<Path> legacy = new ArrayList<>();
         for (String state : new String[] {"pending", "sent", "rejected"}) {

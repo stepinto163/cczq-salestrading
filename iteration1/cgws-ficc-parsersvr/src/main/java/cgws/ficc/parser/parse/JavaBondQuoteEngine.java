@@ -3,7 +3,11 @@ package cgws.ficc.parser.parse;
 import cgws.ficc.parser.model.AllQuote;
 import java.time.LocalDate;
 
-/** Refresh publishes a complete snapshot; an in-flight request keeps its previous snapshot. */
+/**
+ * Java 解析引擎入口，持有当前完整基础数据快照对应的 QuoteMessageParser。
+ * reload 先构建新快照，再通过 volatile 引用整体替换；进行中的解析继续使用旧实例。
+ * 刷新失败保留旧快照并抛异常，首次加载失败则不能宣称引擎可用。
+ */
 public final class JavaBondQuoteEngine implements BondQuoteEngine {
     public interface ReferenceLoader {
         MessageReferenceData load() throws Exception;

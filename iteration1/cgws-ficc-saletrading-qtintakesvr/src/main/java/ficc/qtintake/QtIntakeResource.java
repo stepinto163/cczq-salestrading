@@ -18,6 +18,11 @@ import java.nio.file.*;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * QtIntakeSvr 装配入口：配置与协议检查、持久收件箱、归属人查询、DPS 转发和 FIX 接收。
+ * FIX 接收与 QuoteSvr 转发解耦：接收成功入箱后，由独立单线程按到达顺序转发。
+ * FIX 登录、QuoteSvr 连接、归属人映射是不同的就绪条件，不能用其中一个代表整条链路可用。
+ */
 public final class QtIntakeResource extends ResourceAdapter {
     private static final Logger LOGGER = Logger.getLogger(QtIntakeResource.class);
     private final Properties configuration = new Properties();

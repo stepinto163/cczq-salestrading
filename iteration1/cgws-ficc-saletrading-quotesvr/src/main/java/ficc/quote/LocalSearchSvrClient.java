@@ -11,7 +11,11 @@ import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Iteration-one adapter, invoked on QuoteSvr ordered dispatcher. No network/subscription state. */
+/**
+ * SearchSvrClient 的进程内实现，名称中的 Client 不表示当前有独立 SearchSvr 网络服务。
+ * 当前报价读内存快照，历史读持久化记录，价格查询复用 PriceBookService。
+ * 调用由 QuoteSvr 串行调度协调；这里不持有网络连接或订阅状态。
+ */
 final class LocalSearchSvrClient implements SearchSvrClient {
     final AccessPolicy access;
     final PgStore store;

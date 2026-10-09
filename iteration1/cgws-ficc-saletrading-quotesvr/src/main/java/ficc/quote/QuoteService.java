@@ -14,8 +14,10 @@ import java.util.function.*;
 import java.util.stream.Collectors;
 
 /**
- * State changes and page capture are ordered under the service monitor. Captured quote-page
- * encoding runs outside it. Committed QuoteRecord instances must never be edited in place.
+ * 报价状态机与写入事务的业务核心：校验权限/版本，保存报价、历史、事件和请求回执。
+ * 状态变更与页面快照捕获在服务监视器下串行执行；已捕获报价页的编码可在锁外进行。
+ * 已提交的 QuoteRecord 不能原地修改，必须复制后替换，否则锁外读取会看到半更新对象。
+ * 查询匹配交给 QuoteMatcher，价格投影交给 PriceBookService，视图订阅交给 ViewService。
  */
 final class QuoteService {
     static final List<String> EDIT =
@@ -338,6 +340,11 @@ final class QuoteService {
         return write(c, op, source, JsonUtils.canonicalHash(c.request));
     }
 
+    /**
+     * 批量操作按行提交，每行报价、历史、事件与累计回执在同一事务中保存。
+     * 已提交行不会因后续行失败而回滚；重复请求依赖回执恢复结果，而不是重新创建报价。
+     * 仅在数据库提交成功后替换内存记录并发布变化，避免客户端先看到未提交状态。
+     */
     Object write(Call c, String op, JSONObject source, String receiptHash) throws Exception {
         RequestValidator.allowOnlyFields(c.request, "requestId", "quotes");
         JSONArray inputs = c.request.getJSONArray("quotes");
@@ -540,7 +547,10 @@ final class QuoteService {
         return JsonUtils.object("results", results);
     }
 
-    /** A confirmed new proposal replaces only this recipient's same-side negotiation leg. */
+    /**
+     * 新提案确认后，仅将同一接收人、QT 账户、NegotiationID 和方向的旧 ACTIVE 报价转为 REFERRED。
+     * 接入未确认提案时不调用本方法，其他交易员及其他双边会话的有效报价也不受影响。
+     */
     private void replaceConfirmedNegotiationLeg(QuoteRecord confirmed, Call call, String now,
             List<QuoteRecord> replacedQuotes, List<JSONObject> replacementEvents) throws Exception {
         QuoteSource source = confirmed.source;
@@ -1061,6 +1071,10 @@ final class QuoteService {
         return out;
     }
 
+    /**
+     * 向 NotificationSvr 提供恢复用的内部快照，不等同于某个终端用户的报价查询。
+     * 价格快照覆盖 ACTIVE 报价涉及的债券；目前任一债券构建失败会导致整次快照请求失败。
+     */
     synchronized JSONObject handleInternalRead(String topic, JSONObject request) {
         String requestId = request.getString("requestId");
         try {

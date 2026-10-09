@@ -12,7 +12,11 @@ import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Separate QuoteView and PriceView state; shared list-position utility only. */
+/**
+ * 按登录会话和业务域管理订阅流，再按 viewId 管理条件、排序成员与分页状态。
+ * QuoteView 以报价为成员，PriceView 以债券价格簿为成员，两者不能混用数量和主键。
+ * 报价变化走增量更新；条件或基础数据版本使缓存失效时才重建，推送携带序列供客户端验连续性。
+ */
 final class ViewService {
     final QuoteService svc;
     final Map<String, Stream> streams = new LinkedHashMap<>();
@@ -348,6 +352,7 @@ final class ViewService {
                 filter == null ? null : ProtocolCodec.decode(filter, ficc.api.Filter.class), mode, depth).toJson();
     }
 
+    /** 内部价格同步消息：SNAPSHOT 为全量恢复，UPDATE 只带受影响债券；并附报价事件位置。 */
     JSONObject feed(boolean initial, List<String> ids) {
         return JsonUtils.object(
                 "Code",

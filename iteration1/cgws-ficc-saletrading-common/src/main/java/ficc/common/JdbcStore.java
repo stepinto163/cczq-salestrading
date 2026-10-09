@@ -15,7 +15,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-/** Shared PostgreSQL schema, with independent event and request storage per service. */
+/**
+ * PostgreSQL 持久化基础：维护事务、事件序列和请求回执，供业务服务协调写入。
+ * QuoteSvr 与 NotificationSvr 可共用 schema，但各自使用独立的事件/回执表前缀和写入锁。
+ * advisory lock 限制同一服务存储只有一个写入进程；它不是线程锁，也不负责服务发现。
+ * 本类持有单个连接，调用方必须串行协调事务，不能将同一个实例当作并发连接池使用。
+ */
 public class JdbcStore implements AutoCloseable {
     private final Connection db;
     private final String tablePrefix;

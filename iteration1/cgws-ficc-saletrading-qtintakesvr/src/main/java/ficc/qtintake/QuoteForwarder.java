@@ -13,7 +13,12 @@ import org.apache.log4j.Logger;
 
 import java.nio.file.Path;
 
-/** A single worker submits one buffered quote at a time; no user login is fabricated. */
+/**
+ * 持久收件箱到 QuoteSvr 的有序转发器，同一时刻只处理队首请求，不伪造终端登录会话。
+ * 成功后立即处理下一条；固定一秒等待仅用于失败恢复，不是每秒一条的吞吐限制。
+ * 仅明确的报价字段校验错误进入 rejected；映射、权限、配置或未知错误保留队首，后续不越过它。
+ * 当前没有最大重试次数；相同 requestId 与已解析 ownerUserId 随文件保留，供重试复用。
+ */
 public final class QuoteForwarder {
     private static final long RETRY_INTERVAL_MILLIS = 1000;
     private static final Logger LOGGER = Logger.getLogger(QuoteForwarder.class);
@@ -39,7 +44,7 @@ public final class QuoteForwarder {
         IDLE, COMPLETED, RETRY, BLOCKED
     }
 
-    /** Wait only when idle or recovering; successful sends have no timer delay. */
+    /** 空闲时等入箱通知，失败时等待重试间隔，连续成功时不附加定时延迟。 */
     public void run() {
         String lastFailure = null;
         while (!Thread.currentThread().isInterrupted()) {
@@ -143,8 +148,7 @@ public final class QuoteForwarder {
             message = result.Msg;
         }
         boolean success = "0000".equals(code);
-        // Only an explicit field-validation rejection is terminal. Permission, mapping,
-        // configuration, conflicts and unknown outcomes retain the head for investigation.
+        // 只有白名单内字段的明确校验拒绝才能结束队首；权限、映射、冲突和未知结果不能当作坏报价丢弃。
         boolean rejected = "1001".equals(code) && detail != null
                 && "VALIDATION_FAILED".equals(detail.type) && detail.field != null
                 && java.util.Arrays.asList("securityId", "side", "quoteType", "yieldType", "price",

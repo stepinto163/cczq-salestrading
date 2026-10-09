@@ -17,7 +17,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-/** Same-field alternatives are OR; different fields are AND. Ranges use one BETWEEN. */
+/**
+ * 条件筛选的公共运算规则：同一字段的多个条件取 OR，不同字段之间取 AND。
+ * 上下界必须放在同一个 BETWEEN 条件中，否则两个独立范围会按同字段 OR 处理。
+ * validate 校验字段、操作符和字典值；match 只执行匹配，不负责用户权限或数据加载。
+ * FilterValues 重载用于高频路径，避免每次匹配都把报价转换成 JSONObject。
+ */
 public final class FilterEngine {
     public static final Set<String> FIELDS = FilterFields.DEFINITIONS.keySet();
     public static final Set<String> NUMBERS = FilterFields.NUMBERS;

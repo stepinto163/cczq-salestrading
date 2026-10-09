@@ -10,7 +10,10 @@ using Newtonsoft.Json.Linq;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
-    // Reuses the host's authenticated API. This class never logs in or disconnects the shared connection.
+    /// <summary>
+    /// 复用 STC 宿主已登录的 IApi，封装 DPS 请求、订阅、日志和 UI 上下文回调。
+    /// 插件不重新登录，也不主动断开宿主共享连接；释放时仅清理本适配器持有的订阅。
+    /// </summary>
     public sealed class StcFiccTransport : IFiccTransport, IDisposable
     {
         private readonly IApi api;

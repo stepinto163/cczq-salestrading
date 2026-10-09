@@ -13,7 +13,11 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-/** Resolves named connections from the existing STC shared database configuration. */
+/**
+ * 从共享 DBPoolConfig.ini 按数据源名称读取连接信息，复用 STC 的 INI/include 解析与解密方式。
+ * 配置 db.sourceName/crm.sourceName 后，对应连接地址、用户名和密码以共享数据源为准。
+ * 这里只读取并覆盖当前服务的 Properties，不修改共享文件，也不改变其他 STC 进程的数据源选择。
+ */
 final class StcDatabaseConfiguration {
     private StcDatabaseConfiguration() {}
 

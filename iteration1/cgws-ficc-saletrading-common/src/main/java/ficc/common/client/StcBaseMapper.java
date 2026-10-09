@@ -16,7 +16,12 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 
-/** Based on BondInfoView, TIssuerInfo and TBondValuationView in the supplied STC source. */
+/**
+ * 将 STC 债券、发行人、估值记录转换为 FICC 标准基础字段和筛选属性。
+ * 字段名称兼容逻辑集中在此；市场分类优先使用显式配置，否则按 STC 券种分类推导。
+ * base.filter.* 可显式指定来源字段，simulateMissing 必须显式开启；协议支持不等于上游有值。
+ * 修改映射时应核对真实源字段及口径，不能为了使某个筛选通过而硬编码某只债券的分类。
+ */
 public final class StcBaseMapper {
     private final Properties configuration;
 

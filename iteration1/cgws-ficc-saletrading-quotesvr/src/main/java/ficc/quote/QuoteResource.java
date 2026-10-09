@@ -17,7 +17,11 @@ import sc.app.stc.net.NetClientWrapper;
 import java.util.*;
 import java.util.function.BiConsumer;
 
-/** BBox resource: owns business state and the PostgreSQL connection. */
+/**
+ * QuoteSvr 的 BBox 生命周期与请求入口：加载配置、持有存储、装配身份和基础数据适配器。
+ * 业务写入交给 QuoteService，网络连接由 NetClientResource 管理，推送通过注入的 publisher 发出。
+ * 普通登录请求、QtIntake 接入请求与内部同步读取在这里区分，不能共用终端用户身份校验路径。
+ */
 public final class QuoteResource extends ResourceAdapter {
     private PgStore store;
     private QuoteService service;

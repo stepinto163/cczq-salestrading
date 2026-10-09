@@ -18,7 +18,12 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 
-/** QTrade custom tags verified against the legacy quickfixj-messages-fix44.jar. */
+/**
+ * QT 自定义 FIX 字段到接入请求的映射，不负责网络、数据库或最终确认状态。
+ * 当前范围为 35=S、TransType=N/H、Operator=2 的对手报价；其他类型按 ignoredReason 排除。
+ * QuoteID 标识发送方意向，NegotiationID 标识双边会话，OwnQtNO 标识本方接收账户。
+ * requestId/clientQuoteId 用稳定事件标识生成；本地 quoteId 由 QuoteSvr 分配，不由这些外部 ID 直接替代。
+ */
 public final class QTradeQuoteMapper {
     public JSONObject map(Message message) throws FieldNotFound {
         QuoteCreateRequest request = mapRequest(message);
@@ -145,7 +150,7 @@ public final class QTradeQuoteMapper {
         return request;
     }
 
-    /** Operator identifies the sender; Side only identifies Bid/Ofr. */
+    /** Operator 判断本方/对手方发送，Side 仅表示买卖方向，不能据 Side 判定消息归属。 */
     String ignoredReason(Message message) throws FieldNotFound {
         if (!"S".equals(message.getHeader().getString(35))) {
             return "OUTSIDE_QUOTE_CREATE_SCOPE";
@@ -167,6 +172,10 @@ public final class QTradeQuoteMapper {
         return null;
     }
 
+    /**
+     * 协议没有直接提供原始消息 ID，因此按原文、时间与会话来源推断分组键。
+     * 无原文时退回单事件分组，不能仅因同一聊天群或同一债券就合并不同消息。
+     */
     private static String originalMessageId(
             Message message, String account, String time, String action, String eventId)
             throws FieldNotFound {

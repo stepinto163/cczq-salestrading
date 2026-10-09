@@ -10,7 +10,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** JSON boundary preserving field presence, unknown fields and original scalar tokens. */
+/**
+ * JSON 与强类型协议模型的转换边界，保留未知字段、字段是否出现以及原始标量表示。
+ * 更新请求中“未提供字段”与“显式清空字段”含义不同；后者通过 ProtocolModel.clearField 表达。
+ * 兼容信息用于协议往返，不应在逐条报价的筛选热路径中反复编解码。
+ */
 public final class ProtocolCodec {
     private static final Map<Class<?>, Field[]> FIELDS = new ConcurrentHashMap<>();
 

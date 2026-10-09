@@ -15,7 +15,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Loads deployment properties and reports only the settings needed to diagnose adapter selection.
+ * 服务配置入口：先读取业务配置，再读取适配器配置，最后解析共享 DBPool 数据源。
+ * 同名属性以后读入的值为准；数据库字段的覆盖规则由 StcDatabaseConfiguration 负责。
+ * 相对路径以进程工作目录为基准，$ATS_ROOT/ 前缀指向共享部署目录。
+ * 文件缺失或解析失败会向上传播，不能把“配置加载成功”等同于远端服务已就绪。
  */
 public final class ServiceConfiguration {
     private ServiceConfiguration() {}

@@ -9,7 +9,10 @@ import ficc.api.PriceQueryRequest;
 
 import java.util.List;
 
-/** Internal query boundary. No frontend topics, subscriptions, or quote commands. */
+/**
+ * 报价、价格簿、历史查询的内部强类型接口；便于将查询实现与命令处理分开维护。
+ * 当前由 LocalSearchSvrClient 在进程内实现；不在此定义前端 topic、订阅或报价修改操作。
+ */
 interface SearchSvrClient {
     List<QuoteRecord> queryQuotes(String userId, QuoteQueryRequest query);
 

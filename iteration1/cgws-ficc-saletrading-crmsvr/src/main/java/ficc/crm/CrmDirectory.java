@@ -28,26 +28,12 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * In-memory CRM index.
- *
- * <p>Two contracts are served from the same snapshot:
- * <ul>
- * <li>the FICC adapter page ({@code stc.crm.search} / {@code stc.crm.get}), with exactly the
- *     record fields and the {@code records/hasMore/nextOffset} shape of
- *     {@code PostgresCrmClient};</li>
- * <li>the STC CRM image consumed by {@code CRMSvrClient} in basesvr and the C# clients
- *     ({@code stc.crm.inst.query} / {@code stc.crm.contact.query} /
- *     {@code stc.crm.account.query});</li>
- * <li>the bounded lookup parsersvr does per parsed name ({@code stc.crm.lookup}).</li>
- * </ul>
- *
- * <p>Search is a case-insensitive substring match over the same text the SQL path builds: id,
- * name, short name and their pinyin for institutions; id, name and the CFETS trader fields for
- * contacts. Institutions sharing a short name are one entry: the row with contacts wins,
- * otherwise the smallest id.
- *
- * <p>The CRM directory holds several hundred thousand institutions, so rows are kept as compact
- * entries and JSON (or STC DTOs) is materialized only when a caller asks for them.
+ * CRM 内存目录，同一快照提供三类协议：FICC 分页/ID 查询、旧 STC 镜像以及 ParserSvr 名称查找。
+ * 分页保持 PostgresCrmClient 的 records/hasMore/nextOffset 结构，避免消费方依赖数据库表字段。
+ * 机构搜索覆盖 ID、名称、简称及拼音，联系人搜索覆盖 ID、姓名和 CFETS 交易员字段，忽略大小写。
+ * 同简称机构在搜索列表中去重：优先保留有关联联系人的记录，其次按较小 ID；ID 索引仍保留原记录。
+ * 联系人可关联多个机构，CONTACT 记录返回 institutionIds，不能假定总有唯一 institutionId 或机构名称。
+ * 目录使用紧凑 Entry 保存数据，返回页面或镜像时才构造 JSON/STC DTO，减少常驻对象体积。
  */
 public final class CrmDirectory {
     public static final String INSTITUTION = "INSTITUTION";
