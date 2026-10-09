@@ -200,10 +200,22 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                 if (!lease.IsCurrent) return null;
 
                 long collectionStarted = ClientPerformanceTrace.Start();
-                Rows.Clear();
-                foreach (var row in result.Items)
+                // 保持集合非空，避免 Clear 导致整张表的行容器被销毁后重新创建。
+                // 替换整条展示记录，仍由 WPF 更新绑定；不能仅比较 revision 跳过基础数据变化。
+                for (int index = 0; index < result.Items.Count; index++)
                 {
-                    Rows.Add(row);
+                    if (index < Rows.Count)
+                    {
+                        Rows[index] = result.Items[index];
+                    }
+                    else
+                    {
+                        Rows.Add(result.Items[index]);
+                    }
+                }
+                while (Rows.Count > result.Items.Count)
+                {
+                    Rows.RemoveAt(Rows.Count - 1);
                 }
                 ClientPerformanceTrace.End("today.collection", collectionStarted);
                 long propertiesStarted = ClientPerformanceTrace.Start();

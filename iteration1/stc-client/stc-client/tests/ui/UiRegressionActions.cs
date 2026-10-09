@@ -24,6 +24,14 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "management.select":
+                    await OpenSidebarAsync("mgmt");
+                    await Until(() => !model.QuoteMgmtPage.Today.IsLoading, "管理页查询完成");
+                    DataGrid managementGrid = Descendants<DataGrid>(view)
+                        .Single(grid => grid.IsVisible && grid.Name == "TodayGrid");
+                    managementGrid.SelectedItem = model.QuoteMgmtPage.Today.Rows.Single(row => row.QuoteId == quoteId);
+                    Require(model.QuoteMgmtPage.Today.SelectedRow.Count == 1, "实际表格选中报价未同步到操作目标");
+                    break;
                 case "filter.latency":
                     await MeasureFilterLatencyAsync(step);
                     break;
@@ -187,6 +195,12 @@ namespace SalesTrading.UiTests
             var displayedIds = Descendants<DataGrid>(view).Where(grid => grid.IsVisible)
                 .SelectMany(grid => grid.Items.Cast<object>()).Select(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item)).ToArray();
             Require(ownedQuotes.All(id => displayedIds.Contains(id) == visible), "视图模型与实际表格不一致");
+            if (page == "mgmt")
+            {
+                DataGrid grid = Descendants<DataGrid>(view).Single(item => item.IsVisible && item.Name == "TodayGrid");
+                Require(grid.SelectedItems.Count == 0 && model.QuoteMgmtPage.Today.SelectedRow.Count == 0,
+                    "筛选刷新后不得保留旧报价的操作选择");
+            }
         }
 
         private async Task PrepareNotificationFixtureAsync(string securityId)

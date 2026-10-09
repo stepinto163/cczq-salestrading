@@ -72,6 +72,32 @@ internal static class ProtocolContractChecks
         view.Quotes.Reverse();
         Check((int)view.ToJson()["quotes"][0]["futureField"] == 2, "extensions follow reordered record");
 
+        // 优化初始化快照后，嵌套编辑、未知字段、原文隔离和显式清空必须保持原语义。
+        JObject originalView = JObject.Parse("{\"quotes\":[{\"quoteId\":\"A\",\"price\":2.50,\"urgent\":false,\"source\":{\"type\":\"QT\",\"negotiationId\":\"N1\",\"extension\":{\"keep\":1}}}],\"extension\":7}");
+        QuoteViewData editableView = ProtocolCodec.Decode<QuoteViewData>(originalView);
+        Equal(originalView, editableView.ToJson(), "nested initial encoding retains original numeric tokens");
+        editableView.Quotes[0].Price = "2.6";
+        editableView.Quotes[0].Source.NegotiationId = "N2";
+        editableView.Quotes[0].ClearField("contactId");
+        JObject editedView = editableView.ToJson();
+        Check((string)editedView["quotes"][0]["price"] == "2.6", "nested numeric-to-string edit retained");
+        Check((string)editedView["quotes"][0]["source"]["negotiationId"] == "N2", "nested source edit retained");
+        Check((int)editedView["quotes"][0]["source"]["extension"]["keep"] == 1
+            && (int)editedView["extension"] == 7, "nested and outer extensions retained after edit");
+        Check(editedView["quotes"][0]["contactId"].Type == JTokenType.Null, "nested explicit clear retained");
+        originalView["extension"] = 99;
+        editedView["quotes"][0]["source"]["extension"]["keep"] = 99;
+        Check((int)editableView.ToJson()["extension"] == 7
+            && (int)editableView.ToJson()["quotes"][0]["source"]["extension"]["keep"] == 1,
+            "input and returned JSON cannot mutate saved originals");
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(index => Task.Run(() =>
+        {
+            QuoteViewData concurrent = ProtocolCodec.Decode<QuoteViewData>(originalView);
+            if (!JToken.DeepEquals(originalView, concurrent.ToJson()))
+                throw new InvalidOperationException("Concurrent protocol round trip changed content");
+        })));
+        Check(true, "metadata cache supports concurrent independent serializer operations");
+
         var transport = new RecordingTransport();
         var client = new FiccApiClient(transport);
         QuoteWriteData result = await client.CreateQuotesAsync(new[] { new QuoteCreateItem { SecurityId = "240210.IB", Price = "2.5000" } });
