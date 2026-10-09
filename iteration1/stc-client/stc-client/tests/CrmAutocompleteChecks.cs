@@ -69,6 +69,7 @@ internal static class CrmAutocompleteChecks
 
     private static async Task Fixtures()
     {
+        await DirectoryChecks();
         var row = new QuoteConfirmRowViewModel(Row("row"));
         row.Trader = "同名";
         Check(row.InstitutionId == null && row.Row.ContactId == null, "free trader text does not invent CRM IDs");
@@ -121,6 +122,20 @@ internal static class CrmAutocompleteChecks
         await Task.Delay(30);
         row.Commit();
         Check(row.Row.ContactId == "C-A" && row.Row.InstitutionId == "I-A", label + " keyboard selection preserves both IDs");
+        var institutionField = controls.First(control => control.DataContext == row && control.Kind == "INSTITUTION");
+        Check(institutionField.Text == alice.InstitutionName && row.Row.Institution == alice.InstitutionName,
+            label + " selecting trader fills visible institution name and submitted name");
+        row.Institution = string.Empty;
+        await Search(contact, "同名");
+        Items(contact).UpdateLayout();
+        var mouseItem = (ListBoxItem)Items(contact).ItemContainerGenerator.ContainerFromIndex(0);
+        mouseItem.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+        {
+            RoutedEvent = Mouse.PreviewMouseUpEvent
+        });
+        await Task.Delay(30);
+        Check(row.Row.ContactId == "C-A" && row.InstitutionId == "I-A" && institutionField.Text == alice.InstitutionName,
+            label + " mouse selection fills trader and institution together");
 
         await Search(contact, "同");
         Check(directory.LastInstitution == "I-A" && Items(contact).Items.Count == 1, label + " selected institution scopes contact search");
@@ -136,6 +151,9 @@ internal static class CrmAutocompleteChecks
         Key(toolbar, System.Windows.Input.Key.Enter);
         row.Commit();
         Check(row.Row.ContactId == "C-A" && batch.InstitutionId == "I-A", label + " toolbar selects CRM identity into checked rows");
+        var toolbarInstitution = controls.First(control => !(control.DataContext is QuoteConfirmRowViewModel) && control.Kind == "INSTITUTION");
+        Check(toolbarInstitution.Text == alice.InstitutionName && institutionField.Text == alice.InstitutionName,
+            label + " toolbar fills institution name in toolbar and checked row");
 
         directory.Fail = true;
         await Search(contact, "失败");
@@ -210,6 +228,8 @@ internal static class CrmAutocompleteChecks
                 Check(institutions.Count > 0 && institutions.All(item => !string.IsNullOrWhiteSpace(item.InstitutionId)), "live institution search returns IDs");
                 var contacts = await service.SearchAsync("CONTACT", "王", null);
                 Check(contacts.Count > 0, "live global contact search");
+                Check(contacts.All(item => !string.IsNullOrWhiteSpace(item.InstitutionName)
+                    && item.DisplayName.Contains(item.InstitutionName)), "live dropdown contains resolved institution names");
                 var choice = contacts.First(item => !string.IsNullOrEmpty(item.InstitutionId));
                 var row = new QuoteConfirmRowViewModel(Row("live-preview-only"));
                 var lookup = new CrmLookup
@@ -227,12 +247,98 @@ internal static class CrmAutocompleteChecks
                 Key(lookup, System.Windows.Input.Key.Enter);
                 row.Commit();
                 Check(!string.IsNullOrEmpty(row.Row.ContactId) && !string.IsNullOrEmpty(row.Row.InstitutionId), "live contact selection fills IDs in preview; no quote submitted");
+                Check(!string.IsNullOrWhiteSpace(row.Institution) && row.Row.Institution == row.Institution,
+                    "live contact selection fills institution name in preview");
                 window.Close();
             }
         }
         finally
         {
             api.DisConnect();
+        }
+    }
+
+    private static async Task DirectoryChecks()
+    {
+        var transport = new CrmTransport();
+        var directory = new DpsCrmDirectory(new FiccApiClient(transport));
+        var choices = await directory.SearchAsync("CONTACT", "同名", null);
+        Check(choices.Count == 2 && choices.All(item => !string.IsNullOrWhiteSpace(item.InstitutionName)),
+            "raw CRM contacts without institutionName are enriched by institution lookup");
+        Check(transport.GetRequests == 1, "contact institution names use one batched lookup");
+        Check(choices[0].DisplayName != choices[1].DisplayName, "same trader name is disambiguated by institution");
+        transport.MultipleInstitutions = true;
+        choices = await directory.SearchAsync("CONTACT", "同名", null);
+        Check(choices.Count == 2 && choices.All(item => item.ContactId == "C-A")
+            && choices.Select(item => item.InstitutionId).Distinct().Count() == 2,
+            "multiple affiliations produce explicit contact-institution choices");
+        choices = await directory.SearchAsync("CONTACT", "同名", "I-B");
+        Check(choices.Count == 1 && choices[0].InstitutionId == "I-B" && choices[0].InstitutionName == bob.InstitutionName,
+            "selected institution restricts a multi-institution contact");
+        transport.MissingInstitution = true;
+        try
+        {
+            await directory.SearchAsync("CONTACT", "同名", null);
+            throw new Exception("Missing institution was accepted");
+        }
+        catch (InvalidOperationException error)
+        {
+            Check(error.Message.Contains("所属机构未找到"), "unresolved institution is an explicit error, not a blank selection");
+        }
+    }
+
+    private sealed class CrmTransport : IFiccTransport
+    {
+        public bool MultipleInstitutions;
+        public bool MissingInstitution;
+        public int GetRequests;
+        public event Action ConnectionChanged { add { } remove { } }
+        public IDisposable Subscribe(string service, string topic, Action<JObject> receive, bool withImage = false)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<JObject> RequestAsync(string service, string topic, JObject request)
+        {
+            var records = new JArray();
+            string kind = (string)request["kind"];
+            string text = (string)request["text"] ?? "";
+            string institution = (string)request["institutionId"];
+            if (topic == "ficc.base.get")
+            {
+                GetRequests++;
+                if (!MissingInstitution)
+                {
+                    foreach (var choice in new[] { alice, bob }.Where(item => ((JArray)request["ids"]).Values<string>().Contains(item.InstitutionId)))
+                    {
+                        records.Add(new JObject { ["institutionId"] = choice.InstitutionId, ["institutionName"] = choice.InstitutionName });
+                    }
+                }
+            }
+            else if (kind == "INSTITUTION")
+            {
+                foreach (var choice in new[] { alice, bob }.Where(item => item.InstitutionName.Contains(text)))
+                {
+                    records.Add(new JObject { ["institutionId"] = choice.InstitutionId, ["institutionName"] = choice.InstitutionName });
+                }
+            }
+            else
+            {
+                foreach (var choice in (MultipleInstitutions ? new[] { alice } : new[] { alice, bob }))
+                {
+                    var ids = MultipleInstitutions ? new[] { "I-A", "I-B" } : new[] { choice.InstitutionId };
+                    if (!choice.ContactName.Contains(text) || (institution != null && !ids.Contains(institution))) continue;
+                    records.Add(new JObject
+                    {
+                        ["contactId"] = choice.ContactId, ["contactName"] = choice.ContactName,
+                        ["institutionIds"] = new JArray(ids), ["institutionId"] = ids.Length == 1 ? ids[0] : null
+                    });
+                }
+            }
+            return Task.FromResult(new JObject
+            {
+                ["Code"] = "0000", ["requestId"] = request["requestId"], ["Data"] = new JObject { ["records"] = records }
+            });
         }
     }
 
@@ -246,10 +352,8 @@ internal static class CrmAutocompleteChecks
             LastInstitution = institutionId;
             if (Fail) throw new InvalidOperationException("CRM OFFLINE fixture");
             if (Pending != null) return Pending.Task;
-            IEnumerable<CrmChoice> choices = new[] { alice, bob };
-            if (kind == "INSTITUTION") choices = choices.Where(item => item.InstitutionName.Contains(text));
-            else choices = choices.Where(item => item.ContactName.Contains(text) && (institutionId == null || item.InstitutionId == institutionId));
-            return Task.FromResult<IReadOnlyList<CrmChoice>>(choices.ToList());
+            // Exercise the production adapter with the actual CONTACT shape: IDs, no institutionName.
+            return new DpsCrmDirectory(new FiccApiClient(new CrmTransport())).SearchAsync(kind, text, institutionId);
         }
         public Task<IReadOnlyList<QuoteConfirmRow>> LoadPendingRowsAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<QuoteConfirmRow>>(new[] { Row("one"), Row("two") });
         public Task<QuoteParseResult> ParsePreciseTextAsync(string text, CancellationToken ct) => throw new NotSupportedException();
