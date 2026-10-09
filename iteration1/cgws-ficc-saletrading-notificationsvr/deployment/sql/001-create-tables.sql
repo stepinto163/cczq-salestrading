@@ -2,7 +2,8 @@
 -- 依据当前 JdbcStore、PgStore、NotificationService 的建表代码。
 -- 使用应用数据库账号连接目标数据库后执行；不创建数据库或账号。
 -- 不导入本机测试数据，不修改已有表结构。重复执行可跳过已有对象。
--- 部分业务写入使用 INSERT INTO ... VALUES，必须保持下列列顺序。
+-- quotes 的字段回填、校验约束及版本标记由新版 QuoteSvr 启动时自动完成。
+-- 其他表仍有按位置写入，必须保持其列顺序。
 
 BEGIN;
 
@@ -60,6 +61,25 @@ CREATE TABLE IF NOT EXISTS ficc_salestrading.quotes (
     revision bigint NOT NULL,
     update_time timestamptz NOT NULL,
     payload jsonb NOT NULL,
+    side text,
+    quote_type text,
+    yield_type text,
+    price numeric,
+    quantity numeric,
+    quantity_unit text,
+    currency text,
+    trade_date date,
+    settl_type text,
+    institution_id text,
+    institution_name text,
+    contact_id text,
+    contact_name text,
+    urgent boolean NOT NULL DEFAULT false,
+    recommended boolean NOT NULL DEFAULT false,
+    whole boolean NOT NULL DEFAULT false,
+    oco boolean NOT NULL DEFAULT false,
+    packing boolean NOT NULL DEFAULT false,
+    remark text,
     UNIQUE (owner_id, client_id)
 );
 
@@ -84,7 +104,7 @@ CREATE INDEX IF NOT EXISTS quotes_search_idx
     ON ficc_salestrading.quotes (status, security_id, update_time DESC);
 
 COMMENT ON TABLE ficc_salestrading.quotes IS '报价当前状态；删除为业务状态，保留记录';
-COMMENT ON COLUMN ficc_salestrading.quotes.payload IS '完整报价 JSON，包含 institutionId、institutionName、contactId、contactName 等业务字段';
+COMMENT ON COLUMN ficc_salestrading.quotes.payload IS '来源、审计时间及扩展元数据；当前报价业务属性以关系列为准（旧库由新版 QuoteSvr 启动迁移）';
 COMMENT ON TABLE ficc_salestrading.history IS '报价连续变更历史；payload 保存动作及变更前后内容';
 COMMENT ON TABLE ficc_salestrading.sources IS '外部来源消息及来源标识';
 COMMENT ON TABLE ficc_salestrading.settings IS '用户关注债券与筛选分组；成员和条件保存在 payload';

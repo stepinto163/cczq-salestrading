@@ -10,10 +10,34 @@ import java.util.stream.Collectors;
 import java.sql.*;
 import java.util.*;
 
-/** Quote-owned schema and persistence; shared JDBC/receipt/event utilities live in common. */
+/** 当前报价使用类型化列，来源/审计元数据与历史快照保留 JSONB；启动自动迁移旧表。 */
 final class PgStore extends JdbcStore {
+    private static final String READ_QUOTES = QuoteColumns.readSql();
+    private static final String SAVE_QUOTE = QuoteColumns.writeSql();
+
     PgStore(Properties cfg) throws Exception {
         super(cfg);
+        try {
+            initializeTables();
+            ComponentLog.initialize(cfg, "QUOTE_SCHEMA", "postgresql", "QuoteSchemaMigration",
+                    cfg.getProperty("db.schema", "ficc_salestrading") + ".quotes version="
+                            + QuoteSchemaMigration.VERSION,
+                    () -> {
+                        QuoteSchemaMigration.migrate(this);
+                        return this;
+                    });
+        } catch (Exception | LinkageError error) {
+            // 子类初始化失败也必须释放父类连接和单写入者锁，使修正数据后的启动可以重试。
+            try {
+                close();
+            } catch (SQLException closeError) {
+                error.addSuppressed(closeError);
+            }
+            throw error;
+        }
+    }
+
+    private void initializeTables() throws SQLException {
         exec(
                 "CREATE TABLE IF NOT EXISTS quotes (id text primary key,owner_id text not"
                     + " null,client_id text,security_id text,status text not null,revision bigint"
@@ -33,23 +57,12 @@ final class PgStore extends JdbcStore {
     }
 
     List<QuoteRecord> quotes() throws SQLException {
-        return rows("SELECT payload FROM quotes ORDER BY update_time DESC,id").stream()
+        return rows(READ_QUOTES).stream()
                 .map(row -> ProtocolCodec.decode(row, QuoteRecord.class)).collect(Collectors.toList());
     }
 
     void saveQuote(QuoteRecord q) throws SQLException {
-        update(
-                "INSERT INTO quotes VALUES (?,?,?,?,?,?,?::timestamptz,?::jsonb) ON CONFLICT(id) DO"
-                    + " UPDATE SET"
-                    + " security_id=excluded.security_id,status=excluded.status,revision=excluded.revision,update_time=excluded.update_time,payload=excluded.payload",
-                q.quoteId,
-                q.ownerUserId,
-                q.clientQuoteId,
-                q.securityId,
-                q.status,
-                Long.parseLong(q.revision),
-                q.updateTime,
-                JsonUtils.toJson(q.toJson()));
+        update(SAVE_QUOTE, QuoteColumns.values(q));
     }
 
     void history(JSONObject history) throws SQLException {

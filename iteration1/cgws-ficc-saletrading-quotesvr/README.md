@@ -49,3 +49,7 @@ QA 的 ATS 管理脚本 `~/scripts/startconsole <Svr>` 决定 JVM 主类的方�
 ## IntelliJ 本机 Run / Debug
 
 以 Java 8 导入本工程 `pom.xml`，选择已提交的 `.run/* Local.run.xml` 运行配置。源码包含启动配置；共享数据库、注册中心和许可证来自现有 `qa_env/ats_root/control`。具体依赖、调试前停止同名实例及验证方法见 [本机构建与部署](../docs/local-build-deploy.zh-CN.md#intellij-本机-run--debug)。
+
+## 报价持久化
+
+当前报价的业务属性使用类型化数据库列，OCO、急、荐、整、打包均为 Boolean 列。旧 payload 数据在服务启动时自动迁移；协议及历史完整快照保持不变。字段映射、升级和回退限制见[报价持久化与迁移](deployment/quote-storage.zh-CN.md)。

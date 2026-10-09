@@ -27,9 +27,9 @@ psql -h QA_DB_HOST -p 5432 -U ficc_quote -d ficc_quote -W -v ON_ERROR_STOP=1 -f 
 
 共 14 张表、2 个事件序列，以及代码要求的主键、唯一约束和查询索引。两个服务首次启动时会分别初始化 `metadata` 和 `notification_metadata` 中的 `epoch`。无需预置报价或提醒数据。
 
-机构名称、联系人名称与其他完整报价字段存于 `ficc_salestrading.quotes.payload` JSONB。待确认报价允许只有名称，确认时由用户选择 CRM 对应 ID，变更前后的内容保存在 `history.payload`。脚本保留现有存储方式。
+当前报价的稳定业务属性使用类型化列：价格、数量为 `numeric`，交易日为 `date`，`urgent/recommended/whole/oco/packing` 为 Boolean；机构及联系人 ID/名称也有独立列。`quotes.payload` 仅保存来源、审计时间及扩展元数据。待确认报价允许只有名称，确认时由用户选择 CRM 对应 ID，变更前后的完整快照仍保存在 `history.payload`。旧库由新版 QuoteSvr 启动时自动回填并移除 payload 中重复的业务字段，详见[报价持久化与迁移](../cgws-ficc-saletrading-quotesvr/deployment/quote-storage.zh-CN.md)。
 
-不创建本机 `ficc_notification` 中遗留的 `quotes`、`history`、`sources` 表。行情价格簿由报价状态重建，当前实现没有独立行情价格表。用户、债券、机构、联系人等基础资料仍由当前模拟器提供。
+不创建本机 `ficc_notification` 中遗留的 `quotes`、`history`、`sources` 表。行情价格簿由报价状态重建，当前实现没有独立行情价格表。用户、债券、机构、联系人等基础资料由配置的 STC/CRM 数据源提供。
 
 ## 服务配置
 
@@ -43,7 +43,7 @@ db.schema=ficc_salestrading
 
 两个服务使用同一业务 schema，通知表带独立前缀。实际 QA 可以使用其他 schema（如 `ficc_salestrading2`），但建表 SQL、检查 SQL 和服务配置必须一致；脚本默认创建 `ficc_salestrading`，不会创建数据库。共享数据源的追加方法见[QA 配置指南](jenkins-qa.zh-CN.md)，保留 STC 既有 `MYSQL0`。
 
-当前服务启动时仍执行 `CREATE ... IF NOT EXISTS`，所以仅授予增删改查权限不足以满足现有启动代码；使用拥有这些对象及专用数据库的应用账号最直接。若由 DBA 代为建表，应使用 `SET ROLE` 切换到应用账号后执行，使对象归属一致。
+当前服务启动时执行建表，QuoteSvr 升级还会执行 `ALTER TABLE` 和数据回填，所以仅授予增删改查权限不足以满足启动代码；使用拥有这些对象及专用数据库的应用账号最直接。若由 DBA 代为建表，应使用 `SET ROLE` 切换到应用账号后执行，使对象归属一致。
 
 完成建表后，按 [启动指南](local-startup.zh-CN.md) 的顺序启动服务，同时把 ZooKeeper 注册地址、服务对外地址和客户端 GW 地址改成 QA 对应地址。数据库初始化不替代这些网络配置。
 
@@ -57,8 +57,8 @@ WHERE table_schema = 'ficc_salestrading'
 ORDER BY table_schema, table_name;
 
 SELECT id,
-       payload->>'institutionName' AS institution_name,
-       payload->>'contactName' AS contact_name
+       institution_name, contact_name,
+       urgent, recommended, whole, oco, packing
 FROM ficc_salestrading.quotes
 ORDER BY update_time DESC;
 ```

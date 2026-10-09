@@ -78,6 +78,8 @@ public final class IncrementalViewSmoke {
                 "ownerUserId", owner, "status", "ACTIVE", "revision", "1",
                 "side", "1", "quoteType", "1", "yieldType", "1", "price", price,
                 "quantity", "1000", "settlType", "1", "tradeDate", "2026-09-29",
+                "urgent", false, "recommended", false, "whole", false,
+                "oco", false, "packing", false,
                 "updateTime", "2026-09-29T09:00:00+08:00"), QuoteRecord.class);
     }
 
