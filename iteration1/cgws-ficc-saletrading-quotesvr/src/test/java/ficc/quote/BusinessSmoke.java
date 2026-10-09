@@ -96,6 +96,7 @@ public final class BusinessSmoke {
     }
 
     public static void main(String[] args) throws Exception {
+        PriceSearchSmoke.main(new String[0]);
         Properties cfg = new Properties();
         try (BufferedReader r = Files.newBufferedReader(Paths.get(args[0]))) {
             cfg.load(r);

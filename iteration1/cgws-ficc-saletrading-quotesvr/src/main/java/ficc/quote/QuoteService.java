@@ -49,6 +49,7 @@ final class QuoteService {
     final Map<String, SettingRecord> settings = new LinkedHashMap<>();
     final ViewService views;
     final SearchSvrClient search;
+    final PriceBookService priceBooks;
     final QuoteMatcher matcher;
     BiConsumer<String, JSONObject> publish = (t, v) -> {};
     final Map<String, Cursor> cursors = new LinkedHashMap<>();
@@ -170,7 +171,8 @@ final class QuoteService {
             settings.put(settingId(group), ProtocolCodec.decode(group, SettingRecord.class));
         }
         matcher = new QuoteMatcher(refs, settings);
-        search = new LocalSearchSvrClient(store, refs, quotes, matcher, access);
+        priceBooks = new PriceBookService(refs, matcher, access, quotes.values());
+        search = new LocalSearchSvrClient(store, refs, quotes, matcher, access, priceBooks);
         lastSequence = store.tail();
         views = new ViewService(this);
         for (String op :
@@ -199,7 +201,7 @@ final class QuoteService {
         handlers.put("ficc.quote.sourceMessage.query", c -> unchecked(() -> sourceQuery(c)));
         handlers.put("ficc.quote.dictionary.query", c -> dictionary(false, c.request));
         handlers.put("ficc.price.dictionary.query", c -> dictionary(true, c.request));
-        handlers.put("ficc.price.query", c -> views.priceQuery(c));
+        handlers.put("ficc.price.query", this::priceQuery);
         for (String d : Arrays.asList("quote", "price")) {
             handlers.put("ficc." + d + ".stream.open", c -> views.openStream(c, d));
             handlers.put("ficc." + d + ".view.open", c -> views.openView(c, d));
@@ -771,6 +773,19 @@ final class QuoteService {
                         Long.toString(lastSequence),
                         "events",
                         JsonUtils.array(event)));
+    }
+
+    private Object priceQuery(Call call) {
+        RequestValidator.allowOnlyFields(call.request(), "requestId", "securityIds", "filter", "mode", "depth");
+        JSONArray securityIds = call.request().getJSONArray("securityIds");
+        if (securityIds == null || securityIds.size() > 100) {
+            throw ApiException.forField("1008", "RESOURCE_LIMIT", "securityIds required, max 100", null);
+        }
+        // Keep strict wire-field validation, including an explicitly supplied null depth.
+        PriceBookService.wireMode(call.request());
+        PriceQueryRequest request = ProtocolCodec.decode(call.request(), PriceQueryRequest.class);
+        return JsonUtils.object("prices", search.queryPrices(call.user(), request).stream()
+                .map(PriceBook::toJson).collect(Collectors.toList()));
     }
 
     List<QuoteRecord> selectQuotes(String user, JSONObject request) {

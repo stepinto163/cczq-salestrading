@@ -8,7 +8,6 @@ import ficc.api.ProtocolCodec;
 import ficc.api.QuoteQueryRequest;
 import java.util.function.Predicate;
 
-import java.math.*;
 import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,8 +16,6 @@ import java.util.stream.Collectors;
 final class ViewService {
     final QuoteService svc;
     final Map<String, Stream> streams = new LinkedHashMap<>();
-    final Map<String, Long> bookRevisions = new HashMap<>();
-    private final Map<String, Map<String, QuoteRecord>> quotesBySecurity = new HashMap<>();
     final String marketStream = IdGenerator.newId("MDE-");
     long marketSequence = 0;
 
@@ -52,30 +49,6 @@ final class ViewService {
 
     ViewService(QuoteService svc) {
         this.svc = svc;
-        for (QuoteRecord quote : svc.quotes.values()) {
-            indexQuote(quote, null);
-        }
-    }
-
-    private void indexQuote(QuoteRecord quote, String previousSecurity) {
-        if (previousSecurity != null && !Objects.equals(previousSecurity, quote.securityId)) {
-            Map<String, QuoteRecord> previous = quotesBySecurity.get(previousSecurity);
-            if (previous != null) {
-                previous.remove(quote.quoteId);
-                if (previous.isEmpty()) {
-                    quotesBySecurity.remove(previousSecurity);
-                }
-            }
-        }
-        if (quote.securityId != null) {
-            quotesBySecurity.computeIfAbsent(quote.securityId, ignored -> new LinkedHashMap<>())
-                    .put(quote.quoteId, quote);
-        }
-    }
-
-    private Collection<QuoteRecord> quotesForSecurity(String securityId) {
-        Map<String, QuoteRecord> quotes = quotesBySecurity.get(securityId);
-        return quotes == null ? Collections.emptyList() : quotes.values();
     }
 
     Stream find(String session, String domain) {
@@ -347,17 +320,8 @@ final class ViewService {
                 views);
     }
 
-    static String mode(JSONObject r) {
-        String mode = RequestValidator.requireString(r, "mode");
-        if (!Arrays.asList("FULL", "BEST", "DEPTH").contains(mode))
-            throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid mode", "mode");
-        if (mode.equals("DEPTH") && (r.getIntValue("depth") < 1 || r.getIntValue("depth") > 1000))
-            throw ApiException.forField(
-                    "1001", "VALIDATION_FAILED", "Positive depth required", "depth");
-        if (!mode.equals("DEPTH") && r.containsKey("depth"))
-            throw ApiException.forField(
-                    "1001", "VALIDATION_FAILED", "depth only allowed for DEPTH", "depth");
-        return mode;
+    static String mode(JSONObject request) {
+        return PriceBookService.wireMode(request);
     }
 
     List<String> priceIds(String user, JSONObject r) {
@@ -379,162 +343,9 @@ final class ViewService {
                 .collect(Collectors.toList());
     }
 
-    Object priceQuery(QuoteService.Call c) {
-        RequestValidator.allowOnlyFields(
-                c.request(), "requestId", "securityIds", "filter", "mode", "depth");
-        JSONArray ids = c.request().getJSONArray("securityIds");
-        if (ids == null || ids.size() > 100)
-            throw ApiException.forField(
-                    "1008", "RESOURCE_LIMIT", "securityIds required, max 100", null);
-        String mode = mode(c.request());
-        FilterEngine.validate(c.request().getJSONObject("filter"));
-        return JsonUtils.object(
-                "prices",
-                ids.toJavaList(String.class).stream()
-                        .map(
-                                id -> {
-                                    svc.refs.require(id);
-                                    return book(
-                                            c.user(),
-                                            id,
-                                            c.request().getJSONObject("filter"),
-                                            mode,
-                                            c.request().getIntValue("depth"));
-                                })
-                        .collect(Collectors.toList()));
-    }
-
     JSONObject book(String user, String security, JSONObject filter, String mode, int depth) {
-        long started = QuotePerformanceTrace.searchStart();
-        try {
-            return buildBook(user, security, filter, mode, depth);
-        } finally {
-            QuotePerformanceTrace.bookFinished(started);
-        }
-    }
-
-    private JSONObject buildBook(String user, String security, JSONObject filter, String mode, int depth) {
-        Predicate<QuoteRecord> matches = svc.matchingQuotes(user, filter);
-        List<QuoteRecord> qs =
-                quotesForSecurity(security).stream()
-                        .filter(
-                                q ->
-                                        security.equals(q.securityId)
-                                                && q.status.equals("ACTIVE")
-                                                && matches.test(q))
-                        .collect(Collectors.toList());
-        // The exercise flag is a property of the security, not of the quote: resolve it once
-        // instead of once per active quote.
-        boolean exercise = false;
-        if (!qs.isEmpty()) {
-            exercise = svc.refs.require(security).getBooleanValue("hasExerciseOption");
-        }
-        for (QuoteRecord q : qs) {
-            if (!"1".equals(q.quoteType)
-                    || !Objects.equals(q.yieldType, exercise ? "2" : "1"))
-                throw ApiException.forField(
-                        "1009",
-                        "NOT_READY",
-                        "CalSvr unavailable: enter the comparable yield for this client",
-                        "price");
-        }
-        JSONArray entries = new JSONArray();
-        JSONObject quoteRefs = JsonUtils.object();
-        for (String side : Arrays.asList("1", "2")) {
-            Comparator<QuoteRecord> cmp =
-                    Comparator.comparing(q -> new BigDecimal(q.price));
-            if (side.equals("2")) cmp = cmp.reversed();
-            cmp =
-                    cmp.thenComparing(
-                                    Comparator.<QuoteRecord, String>comparing(
-                                                    q -> q.updateTime)
-                                            .reversed())
-                            .thenComparing(q -> q.quoteId);
-            List<QuoteRecord> sorted =
-                    qs.stream()
-                            .filter(q -> side.equals(q.side))
-                            .sorted(cmp)
-                            .collect(Collectors.toList());
-            BigDecimal last = null;
-            int level = 0,
-                    ordinal = 0,
-                    max = mode.equals("FULL") ? Integer.MAX_VALUE : mode.equals("BEST") ? 1 : depth;
-            for (QuoteRecord q : sorted) {
-                BigDecimal value = new BigDecimal(q.price);
-                if (last == null || last.compareTo(value) != 0) {
-                    level++;
-                    last = value;
-                }
-                if (level > max) break;
-                String entryId = "FICC:" + q.quoteId;
-                OffsetDateTime time = OffsetDateTime.parse(q.updateTime);
-                JSONObject e =
-                        JsonUtils.object(
-                                "MDEntryID",
-                                entryId,
-                                "MDEntryType",
-                                side.equals("1") ? "0" : "1",
-                                "MDEntryPx",
-                                q.price,
-                                "MDEntrySize",
-                                q.quantity,
-                                "PriceType",
-                                "3",
-                                "ExerciseFlag",
-                                q.yieldType.equals("2") ? "0" : "1",
-                                "SettlType",
-                                q.settlType,
-                                "UserID",
-                                q.ownerUserId,
-                                "MDPriceLevel",
-                                Integer.toString(++ordinal),
-                                "MDEntryDate",
-                                time.format(
-                                        java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")),
-                                "MDEntryTime",
-                                time.format(
-                                        java.time.format.DateTimeFormatter.ofPattern(
-                                                "HH:mm:ss.SSS")));
-                e.put(
-                        q.yieldType.equals("2") ? "YieldToExecution" : "Yield",
-                        q.price);
-                if (user == null || svc.owns(user, q)) {
-                    e.put("InstitutionID", q.institutionId);
-                    e.put("TraderID", q.contactId);
-                }
-                entries.add(e);
-                quoteRefs.put(
-                        entryId,
-                        JsonUtils.object(
-                                "quoteId",
-                                q.quoteId,
-                                "quoteRevision",
-                                q.revision));
-            }
-        }
-        return JsonUtils.object(
-                "securityId",
-                security,
-                "updateTime",
-                qs.stream().map(q -> q.updateTime).max(String::compareTo).orElse(null),
-                "bookRevision",
-                Long.toString(bookRevisions.getOrDefault(security, 0L)),
-                "marketData",
-                JsonUtils.object(
-                        "SecurityID",
-                        security,
-                        "Symbol",
-                        svc.refs.require(security).getString("securityName"),
-                        "MarketIndicator",
-                        "4",
-                        "VenueTypeGW",
-                        "FICC",
-                        "Venues",
-                        "FICC",
-                        "NoMDEntries",
-                        entries),
-                "quoteRefs",
-                quoteRefs);
+        return svc.priceBooks.book(user, security,
+                filter == null ? null : ProtocolCodec.decode(filter, ficc.api.Filter.class), mode, depth).toJson();
     }
 
     JSONObject feed(boolean initial, List<String> ids) {
@@ -559,17 +370,9 @@ final class ViewService {
     }
 
     void changed(QuoteRecord q, JSONObject event, String previousSecurity) {
-        String oldSecurity = previousSecurity == null ? q.securityId : previousSecurity;
-        Map<String, QuoteRecord> previousQuotes = quotesBySecurity.get(oldSecurity);
-        QuoteRecord previous = previousQuotes == null ? null : previousQuotes.get(q.quoteId);
-        boolean affectsPrice = "ACTIVE".equals(q.status)
-                || (previous != null && "ACTIVE".equals(previous.status));
-        indexQuote(q, previousSecurity);
-        Set<String> securities = new LinkedHashSet<>();
-        if (affectsPrice && q.securityId != null) securities.add(q.securityId);
-        // Include the previous security when an active quote changes bond.
-        if (affectsPrice && previousSecurity != null) securities.add(previousSecurity);
-        for (String id : securities) bookRevisions.merge(id, 1L, Long::sum);
+        QuoteRecord previous = svc.priceBooks.previousQuote(q, previousSecurity);
+        Set<String> securities = svc.priceBooks.changed(q, previousSecurity);
+        boolean affectsPrice = !securities.isEmpty();
         marketSequence++;
         for (Stream s : streams.values())
             if (s.subscribed && (s.domain.equals("quote") || (affectsPrice

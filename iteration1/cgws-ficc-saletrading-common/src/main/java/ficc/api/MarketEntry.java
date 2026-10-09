@@ -9,6 +9,10 @@ public class MarketEntry extends ProtocolModel {
     public String MDEntryType;
     public String MDEntryPx;
     public String MDEntrySize;
+    public String PriceType;
+    public String ExerciseFlag;
+    public String UserID;
+    public String MDPriceLevel;
     public String SettlType;
     public String MDEntryPositionNo;
     public String MDEntryDate;

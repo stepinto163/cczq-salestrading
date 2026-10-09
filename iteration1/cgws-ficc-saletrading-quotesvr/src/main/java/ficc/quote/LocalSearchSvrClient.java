@@ -18,20 +18,24 @@ final class LocalSearchSvrClient implements SearchSvrClient {
     final ReferenceData refs;
     final Map<String, QuoteRecord> quotes;
     final QuoteMatcher matcher;
+    private final PriceBookService priceBooks;
 
     LocalSearchSvrClient(
             PgStore store,
             ReferenceData refs,
             Map<String, QuoteRecord> quotes,
             QuoteMatcher matcher,
-            AccessPolicy access) {
+            AccessPolicy access,
+            PriceBookService priceBooks) {
         this.access = access;
         this.store = store;
         this.refs = refs;
         this.quotes = quotes;
         this.matcher = matcher;
+        this.priceBooks = priceBooks;
     }
 
+    @Override
     public List<QuoteRecord> queryQuotes(String user, QuoteQueryRequest req) {
         Predicate<QuoteRecord> matches = matcher.prepareQuery(user, req, access);
         return quotes.values().stream()
@@ -43,6 +47,12 @@ final class LocalSearchSvrClient implements SearchSvrClient {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<PriceBook> queryPrices(String user, PriceQueryRequest query) {
+        return priceBooks.query(user, query);
+    }
+
+    @Override
     public List<QuoteHistoryRow> searchHistory(String user, QuoteHistorySearchRequest query) throws Exception {
         LocalDate from = LocalDate.parse(query.fromDate),
                 to = LocalDate.parse(query.toDate);
