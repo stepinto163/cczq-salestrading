@@ -428,24 +428,16 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             if (row is BoardQuoteRow q)
             {
                 MapIdentity(detail, q.Code, q.Name, q.Maturity, q.BondLibrary, q.IssuerRating, q.NzYtm, q.NzNetPrice);
-                if (q.Direction == QuoteDirection.Bid) detail.BidPrice = q.Price;
-                else detail.OfrPrice = q.Price;
+                // 最优条不再用选中行报价预填（看板行是单边报价，冒充市场最优会误导）；
+                // Bid/Ofr/价差由宿主快照（ApplyFeedLevels）填充，无快照时显示 —
             }
             else if (row is BoardBestRow b)
             {
                 MapIdentity(detail, b.Code, b.Name, b.Maturity, b.BondLibrary, b.IssuerRating, b.NzYtm, b.NzNetPrice);
-                detail.BidPrice = b.Bid;
-                detail.BidVolume = b.VolBid;
-                detail.OfrPrice = b.Ofr;
-                detail.OfrVolume = b.VolOfr;
             }
             else if (row is BoardAlertRow a)
             {
                 MapIdentity(detail, a.Code, a.Name, a.Maturity, a.BondLibrary, a.IssuerRating, a.NzYtm, a.NzNetPrice);
-                detail.BidPrice = a.Bid;
-                detail.BidVolume = a.VolBid;
-                detail.OfrPrice = a.Ofr;
-                detail.OfrVolume = a.VolOfr;
             }
             else
             {

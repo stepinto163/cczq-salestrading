@@ -32,6 +32,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             _selectedRecSide = QuoteDirection.Bid;
             _selectedRecScope = RecommendationScope.Combined;
             _selectedRecWindow = "30d";
+            RefreshRec();
         }
 
         /// <summary>渠道筛选（原型 inst-filter-bar：全部/国利/国际/平安/中诚/上田/信唐/X-Bond/双边），值为 Venues 渠道码。</summary>
@@ -78,6 +79,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                     InstOfr = SourceCell(ofr),
                     VenueBid = bid?.VenueCode,
                     VenueOfr = ofr?.VenueCode,
+                    IsBestBid = i == 0 && bid != null,
+                    IsBestOfr = i == 0 && ofr != null,
                 });
             }
 
@@ -107,6 +110,14 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         [ObservableProperty]
         private decimal? _lastPrice;
+
+        /// <summary>最新成交展示（0918：收益率%优先，无收益率回退净价）。</summary>
+        [ObservableProperty]
+        private string _lastExecDisplay = "—";
+
+        /// <summary>最新成交收益率；不能直接与昨收净价比较。</summary>
+        [ObservableProperty]
+        private decimal? _lastYield;
 
         [ObservableProperty]
         private decimal? _prevClose;
@@ -158,7 +169,10 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         /// <summary>最新成交较昨收：涨（红，中国习惯）或跌（绿）。</summary>
         public bool IsUp
         {
-            get { return LastPrice.HasValue && PrevClose.HasValue && LastPrice.Value >= PrevClose.Value; }
+            get
+            {
+                return LastPrice.HasValue && PrevClose.HasValue && LastPrice.Value >= PrevClose.Value;
+            }
         }
 
         /// <summary>多档行情。</summary>
@@ -227,7 +241,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         /// <summary>分页摘要。</summary>
         [ObservableProperty]
-        private string _recPageSummary = "等待加载";
+        private string _recPageSummary = "共0条 · 第1/1页";
 
         public bool CanPreviousRecPage { get { return RecCurrentPage > 1; } }
 
@@ -339,9 +353,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             foreach (var row in filtered.Skip((RecCurrentPage - 1) * RecPageSize).Take(RecPageSize))
                 RecPageItems.Add(row);
 
-            RecPageSummary = filtered.Count > 0
-                ? string.Format("共 {0} 条 · 第 {1}/{2} 页", filtered.Count, RecCurrentPage, RecTotalPages)
-                : "等待加载";
+            RecPageSummary = string.Format("共{0}条 · 第{1}/{2}页", filtered.Count, RecCurrentPage, RecTotalPages);
             OnPropertyChanged(nameof(CanPreviousRecPage));
             OnPropertyChanged(nameof(CanNextRecPage));
         }
@@ -371,25 +383,24 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         /// <summary>宿主 CT 快照：Bid/Ofr 分侧按档位排序后按行配对，覆盖多档表与最优报价条。</summary>
         public void ApplyFeedLevels(QuoteFeedLevel[] levels)
         {
-            if (!HasDetail || levels == null || levels.Length == 0) return;
+            if (!HasDetail || levels == null) return;
             // Bid/Ofr 是两条独立报价流：分侧排序缓存，表格行 = 当前筛选下两侧按序拉链
             _bidLevels = levels.Where(l => l.Side == QuoteFeedSide.Bid).OrderByDescending(l => l.Price).ToList();
             _ofrLevels = levels.Where(l => l.Side == QuoteFeedSide.Ofr).OrderBy(l => l.Price).ToList();
-            if (_bidLevels.Count == 0 && _ofrLevels.Count == 0) return;
+            // 空快照表示盘口清空，必须移除旧档位和最优价。
             RefreshTapeRows();
-
-            // 快照的收益率/净价刷新中债双值（全量最优档；快照未携带的段保持原值）
-            var best = _bidLevels.Count > 0 ? _bidLevels[0] : _ofrLevels[0];
-            SetNzParts(
-                best.Yield?.ToString("0.0000"),
-                best.NetPrice?.ToString("0.0000"));
+            // 盘口价格不是中债估值，估值仅由行内参考数据及债券主数据更新。
         }
 
         /// <summary>宿主最新成交：覆盖最新价与时间。</summary>
         public void ApplyFeedLastExec(QuoteFeedLastExec exec)
         {
-            if (!HasDetail || exec == null || !exec.Price.HasValue) return;
+            if (!HasDetail || exec == null || (!exec.Price.HasValue && !exec.Yield.HasValue)) return;
             LastPrice = exec.Price;
+            LastYield = exec.Yield;
+            LastExecDisplay = exec.Yield.HasValue
+                ? exec.Yield.Value.ToString("0.0000") + "%"
+                : exec.Price.Value.ToString("0.0000");
             if (exec.Time.HasValue) QuoteTimeDisplay = exec.Time.Value.ToString("HH:mm");
             OnPropertyChanged(nameof(IsUp));
         }
@@ -397,7 +408,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         /// <summary>宿主债券主数据：简称/剩余期限/中债估值收益率（仅覆盖有值字段）。</summary>
         public void ApplyFeedBondInfo(QuoteFeedBondInfo info)
         {
-            if (!HasDetail || info == null) return;
+            if (!HasDetail || info == null || info.Code != Code) return;
             if (!string.IsNullOrEmpty(info.ShortName)) Name = info.ShortName;
             if (!string.IsNullOrEmpty(info.RemainingTime)) Maturity = info.RemainingTime;
             if (!string.IsNullOrEmpty(info.ValuationShow)) SetNzParts(info.ValuationShow, null);

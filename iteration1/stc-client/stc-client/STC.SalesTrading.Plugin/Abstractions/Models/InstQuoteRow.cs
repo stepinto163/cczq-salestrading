@@ -26,5 +26,11 @@
 
         /// <summary>Ofr 侧渠道码（Venues）。</summary>
         public string VenueOfr { get; set; }
+
+        /// <summary>本行 Bid 侧为当前筛选下最优（行底色高亮，原型 rgba(245,158,11,.08)）。</summary>
+        public bool IsBestBid { get; set; }
+
+        /// <summary>本行 Ofr 侧为当前筛选下最优（行底色高亮，原型 rgba(59,130,246,.08)）。</summary>
+        public bool IsBestOfr { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using com.gateway.log;
 using STC.Common.Convertor;
@@ -31,10 +32,15 @@ namespace STC.SalesTrading.Plugin.Shared.Services
         private string _current;
         private bool _dataStatusHooked;
         private string _sampleLoggedFor;
+        private string _lastExecSampleLoggedFor;
+        private QuoteFeedLevel[] _lastLevels;
+        private QuoteFeedLastExec _lastExec;
+        private long _selectionVersion;
 
         // 命名方法委托（LastExecutionProcesser 按 声明类型.方法名 去重/退订，lambda 不可控）
         private void OnCtPrice(MarketDataSnapshotFullRefresh snapshot)
         {
+            long selectionVersion = Interlocked.Read(ref _selectionVersion);
             if (snapshot == null) return;
             // 过滤过期标的（切券后仍在队列里的旧快照不灌新面板）
             if (string.IsNullOrEmpty(_current) || snapshot.SecurityID != _current)
@@ -54,7 +60,9 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                     + " PartyName='" + e0.PartyName + "'"
                     + " PartySubName='" + e0.PartySubName + "'"
                     + " RoleName='" + e0.RoleName + "'"
-                    + " levels=" + levels.Length);
+                    + " levels=" + levels.Length
+                    + " bids=" + levels.Count(l => l.Side == QuoteFeedSide.Bid)
+                    + " ofrs=" + levels.Count(l => l.Side == QuoteFeedSide.Ofr));
                 _sampleLoggedFor = _current;
             }
             if (levels.Length == 0)
@@ -64,20 +72,41 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                     + " entries but 0 usable levels for " + _current
                     + "; firstPx=" + (snapshot.NoMDEntries != null && snapshot.NoMDEntries.Count > 0 ? snapshot.NoMDEntries[0].MDEntryPx : "<none>"));
             }
-            RaiseOnUi(levels, h => _snapshot?.Invoke(h));
+            RaiseOnUi(snapshot.SecurityID, selectionVersion, levels, currentLevels =>
+            {
+                _lastLevels = currentLevels;
+                _snapshot?.Invoke(currentLevels);
+            });
         }
 
         private void OnLastExecution(ExecutionReport report)
         {
+            long selectionVersion = Interlocked.Read(ref _selectionVersion);
             if (report == null || _current == null || report.SecurityID != _current) return;
+            if (_lastExecSampleLoggedFor != _current)
+            {
+                LogHelper.Info("[HostQuoteFeed] last exec sample for " + _current
+                    + " LastPx='" + report.LastPx + "'"
+                    + " LastQty='" + report.LastQty + "'"
+                    + " Side='" + report.Side + "'"
+                    + " ExecType='" + report.ExecType + "'"
+                    + " Symbol='" + report.Symbol + "'"
+                    + " TransactTime='" + report.TransactTime + "'");
+                _lastExecSampleLoggedFor = _current;
+            }
             var exec = new QuoteFeedLastExec
             {
                 Price = ParseDecimal(report.LastPx),
                 Volume = ParseDecimal(report.LastQty),
                 Side = report.Side,
+                Yield = ParseDecimal(report.Yield),
                 Time = ParseDateTime(report.TransactTime),
             };
-            RaiseOnUi(exec, h => _lastExecution?.Invoke(h));
+            RaiseOnUi(report.SecurityID, selectionVersion, exec, currentExecution =>
+            {
+                _lastExec = currentExecution;
+                _lastExecution?.Invoke(currentExecution);
+            });
         }
 
         private void OnLoadDataStatus(bool ready)
@@ -107,8 +136,19 @@ namespace STC.SalesTrading.Plugin.Shared.Services
         {
             if (!IsLive) return;
             var code = securityCode ?? string.Empty;
-            if (code == _current) return;
 
+            // 同券重入（切换同券的不同报价行）：订阅不动，把缓存的快照/成交/主数据向新面板回放——
+            // 详情面板每次选中都会新建实例，不回放的话要等下一次实时推送才有数据
+            if (code == _current)
+            {
+                if (string.IsNullOrEmpty(code)) return;
+                ReplayCurrent();
+                RaiseBondInfo(code);
+                return;
+            }
+
+            // 切券时先使已排队的旧回调失效，包括 A→B→A 的情况。
+            Interlocked.Increment(ref _selectionVersion);
             // 先退旧订（PriceHandler 最后一个回调移除时自动退订 MD topic，不泄漏）
             if (!string.IsNullOrEmpty(_current))
             {
@@ -117,6 +157,10 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                 LogHelper.Info("[HostQuoteFeed] unsubscribed: " + _current);
             }
 
+            _lastLevels = null;
+            _lastExec = null;
+            _sampleLoggedFor = null;
+            _lastExecSampleLoggedFor = null;
             _current = string.IsNullOrEmpty(code) ? null : code;
             if (_current == null) return;
 
@@ -134,23 +178,29 @@ namespace STC.SalesTrading.Plugin.Shared.Services
 
         public void Dispose()
         {
-            if (string.IsNullOrEmpty(_current)) return;
+            Interlocked.Increment(ref _selectionVersion);
+            string previousCode = _current;
+            _current = null;
+            _lastLevels = null;
+            _lastExec = null;
             try
             {
-                PriceHandler.Instance.UnregisterCTPrice(_current, OnCtPrice);
-                LastExecutionProcesser.Processer.UnSubscribeLastExecution(_current, OnLastExecution);
-                LogHelper.Info("[HostQuoteFeed] unsubscribed: " + _current);
+                if (!string.IsNullOrEmpty(previousCode))
+                {
+                    PriceHandler.Instance.UnregisterCTPrice(previousCode, OnCtPrice);
+                    LastExecutionProcesser.Processer.UnSubscribeLastExecution(previousCode, OnLastExecution);
+                    LogHelper.Info("[HostQuoteFeed] unsubscribed: " + previousCode);
+                }
                 if (_dataStatusHooked)
                 {
                     BaseHandler.Instance.UnSubscribeLoadDataStatus(OnLoadDataStatus);
                     _dataStatusHooked = false;
                 }
             }
-            catch (Exception)
+            catch (Exception error)
             {
-                // 通道清理失败不影响插件卸载
+                LogHelper.Warn(error);
             }
-            _current = null;
         }
 
         private Action<QuoteFeedLevel[]> _snapshot;
@@ -177,6 +227,7 @@ namespace STC.SalesTrading.Plugin.Shared.Services
 
         private void RaiseBondInfo(string code)
         {
+            long selectionVersion = Interlocked.Read(ref _selectionVersion);
             var po = CommonUtils.GetBondsInfoPoBySecurityID(code);
             var info = new QuoteFeedBondInfo
             {
@@ -184,22 +235,56 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                 ShortName = po?.Short_Name,
                 RemainingTime = po?.RemaingingTime,
                 CouponRate = po?.Coupon_Rate_Current,
-                ValuationShow = po?.CCDCValua == null ? null : po.CCDCValua.CCDCValuationShow,
+                ValuationShow = ExtractValuationYtm(po),
                 MarketIndicator = po?.MarketIndicator,
             };
-            RaiseOnUi(info, h => _bondInfo?.Invoke(h));
+            RaiseOnUi(code, selectionVersion, info, currentInfo => _bondInfo?.Invoke(currentInfo));
         }
 
-        private static void RaiseOnUi<T>(T arg, Action<T> invoke)
+        /// <summary>
+        /// 中债估值收益率（纯数值）：取原始字段 CCDCValuation（行权债为 "行权ytm|到期ytm"，按宿主
+        /// CCDCValuationShow 同口径取 "|" 前段）。不用 CCDCValuationShow——宿主拼了“中债: /行权: ”前缀，
+        /// 而详情面板自带“中债”标签，整串塞入会显示成“中债 中债: …”。
+        /// </summary>
+        private static string ExtractValuationYtm(BondsInfoPo po)
         {
-            // 回调来自会话/线程池线程：归集到 UI 线程，VM 侧可直接更新绑定集合
+            var raw = po?.CCDCValua?.CCDCValuation;
+            if (string.IsNullOrEmpty(raw)) return null;
+            return raw.Split('|')[0].Trim();
+        }
+
+        private void ReplayCurrent()
+        {
+            long selectionVersion = Interlocked.Read(ref _selectionVersion);
+            if (_lastLevels != null)
+            {
+                RaiseOnUi(_current, selectionVersion, _lastLevels, levels => _snapshot?.Invoke(levels));
+            }
+            if (_lastExec != null)
+            {
+                RaiseOnUi(_current, selectionVersion, _lastExec, execution => _lastExecution?.Invoke(execution));
+            }
+        }
+
+        private void RaiseOnUi<T>(string securityCode, long selectionVersion, T arg, Action<T> invoke)
+        {
+            // 入队时检查不足以隔离旧债券；UI 真正执行时再次校验，缓存也仅在校验通过后更新。
+            Action publish = () =>
+            {
+                if (!string.IsNullOrEmpty(securityCode)
+                    && securityCode == _current
+                    && selectionVersion == Interlocked.Read(ref _selectionVersion))
+                {
+                    invoke(arg);
+                }
+            };
             var ui = Application.Current?.Dispatcher;
             if (ui == null)
             {
-                invoke(arg);
+                publish();
                 return;
             }
-            ui.BeginInvoke(new Action(() => invoke(arg)));
+            ui.BeginInvoke(publish);
         }
 
         // ============ 快照解析（取 CTPriceControler.UpdateDataToBaseDV 的最小子集） ============

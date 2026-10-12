@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace STC.SalesTrading.Plugin.Abstractions.Models
 {
@@ -61,6 +61,9 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
 
         /// <summary>方向（Side 原文：TRD/TKN/GVN 等）。</summary>
         public string Side { get; set; }
+
+        /// <summary>成交收益率%（ExecutionReport.Yield，可空）。</summary>
+        public decimal? Yield { get; set; }
 
         /// <summary>成交时间（TransactTime）。</summary>
         public DateTime? Time { get; set; }
