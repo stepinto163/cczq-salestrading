@@ -12,6 +12,8 @@
 
 安装 Visual Studio Build Tools（MSBuild、WPF、.NET Framework 4.7.2 开发工具）。在 `stc-client/client/bin` 准备匹配的 STC QA 运行依赖，在 `client/control` 准备部署所需配置及公钥；二进制、许可证、用户数据和运行日志不随本次源码导入提交。不能仅复制一个插件 DLL 作为完整客户端。
 
+Visual Studio 中打开 `stc-client/STC.sln`，还原 NuGet 包后生成解决方案。`common.netapi` 通过项目引用从源码先行构建，所有平台配置均输出到 `client/bin`，插件复用宿主目录中的程序集。RocksDB 和 Ats.Foundation 引用同一目录中的配套 DLL，无需另建旧版包目录或 `STC.Frame/lib` 目录。
+
 从本仓库根目录运行：
 
 ```powershell
