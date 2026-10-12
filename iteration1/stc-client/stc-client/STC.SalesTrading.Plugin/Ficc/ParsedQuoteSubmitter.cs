@@ -52,7 +52,8 @@ namespace STC.SalesTrading.Plugin.Ficc
                         }
                     }
                 }
-                FiccApiClient.RequireQuoteResults(response);
+                FiccApiClient.RequireQuoteResults(response, result =>
+                    drafts.FirstOrDefault(row => row.ClientQuoteId == result.ClientQuoteId)?.Code);
                 if (drafts.Any(row => row.Revision == 0))
                 {
                     throw new InvalidOperationException("创建应答缺少报价 ID；请在报价确认页核查，勿重复提交。");
@@ -82,7 +83,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 changes.QuoteId = quote.QuoteId;
                 changes.ExpectedRevision = quote.Revision;
                 QuoteWriteData response = await api.ChangeQuotesAsync(SalesTradingApi.QuoteConfirm, new[] { changes });
-                FiccApiClient.RequireQuoteResults(response);
+                FiccApiClient.RequireQuoteResults(response, result => row.Code);
             }
         }
     }

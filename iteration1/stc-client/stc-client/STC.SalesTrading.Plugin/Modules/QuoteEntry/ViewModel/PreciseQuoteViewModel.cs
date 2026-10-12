@@ -72,6 +72,10 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [ObservableProperty]
         private string _statusMessage = string.Empty;
 
+        /// <summary>提交失败信息持久保留，不随 Toast 自动消失；重试或重新识别时清除。</summary>
+        [ObservableProperty]
+        private string _submissionError = string.Empty;
+
         private readonly StatusSectionBag _status = new StatusSectionBag();
 
         public ObservableCollection<StatusBarSection> StatusSections { get { return _status.Sections; } }
@@ -103,6 +107,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         {
             UnhookAll();
             Rows.Clear();
+            SubmissionError = string.Empty;
             RecomputeStats();
         }
 
@@ -187,6 +192,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 var result = await _quoteService.ParsePreciseTextAsync(InputText, lease.Token);
                 if (!lease.IsCurrent) return;
 
+                SubmissionError = string.Empty;
                 UnhookAll();
                 Rows.Clear();
                 foreach (var row in result.Rows)
@@ -235,8 +241,14 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         private async Task ConfirmSelected()
         {
             var selected = SelectedRows.ToList();
-            if (selected.Count == 0) { ToastService.Show("请先勾选要确认的报价", ToastKind.Warning); return; }
+            if (selected.Count == 0)
+            {
+                ToastService.Show("请先勾选要确认的报价", ToastKind.Warning);
+                return;
+            }
 
+            SubmissionError = string.Empty;
+            StatusMessage = "正在提交所选报价…";
             try
             {
                 foreach (var row in selected)
@@ -247,11 +259,16 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     selected.Select(row => row.Row).ToList(),
                     CancellationToken.None);
                 RemoveRows(selected);
-                ToastService.Show(string.Format("已确认 {0} 条报价", selected.Count), ToastKind.Success);
+                StatusMessage = string.Format("已确认 {0} 条报价", selected.Count);
+                ToastService.Show(StatusMessage, ToastKind.Success);
             }
             catch (Exception ex)
             {
-                ToastService.Show("确认报价失败：" + ex.Message, ToastKind.Error);
+                com.gateway.log.LogHelper.Error("Precise quote submission failed", ex);
+                SubmissionError = "报价确认未完成：" + ex.Message
+                    + Environment.NewLine + "预览及已填写内容已保留。请修正后重试；同批已创建的报价会复用原记录。";
+                StatusMessage = "报价确认未完成，请查看上方错误详情。";
+                ToastService.Show("报价确认未完成，详情已保留在预览表上方。", ToastKind.Error);
             }
         }
 

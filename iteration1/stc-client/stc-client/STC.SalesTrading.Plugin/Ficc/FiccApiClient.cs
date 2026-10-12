@@ -159,12 +159,29 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         public static IReadOnlyList<QuoteOperationResult> RequireQuoteResults(QuoteWriteData response)
         {
+            return RequireQuoteResults(response, null);
+        }
+
+        public static IReadOnlyList<QuoteOperationResult> RequireQuoteResults(
+            QuoteWriteData response, Func<QuoteOperationResult, string> describeQuote)
+        {
             if (response.Results == null || response.Results.Count == 0)
             {
                 throw new InvalidOperationException("服务未返回逐条报价操作结果。");
             }
             string[] errors = response.Results.Where(item => item.Code != "0000")
-                .Select(item => (item.QuoteId ?? item.ClientQuoteId) + ": " + item.Msg).ToArray();
+                .Select(item =>
+                {
+                    string identity = describeQuote?.Invoke(item) ?? item.QuoteId ?? item.ClientQuoteId;
+                    string reason = item.Msg;
+                    // 兼容当前服务端缺券文案；不能把基础资料缺失直接推断成债券到期。
+                    if (item.Code == "1001" && item.Error?.Field == "securityId"
+                        && reason == "Security is not in the configured reference universe")
+                    {
+                        reason = "未找到债券基础资料，无法提交报价。请核对债券代码或联系管理员检查基础数据。";
+                    }
+                    return identity + "：" + reason + "（" + item.Code + "）";
+                }).ToArray();
             if (errors.Length > 0)
             {
                 throw new InvalidOperationException(string.Join(Environment.NewLine, errors));

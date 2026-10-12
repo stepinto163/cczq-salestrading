@@ -18,6 +18,7 @@
             <RowDefinition Height="Auto" />   <!-- 输入区 -->
             <RowDefinition Height="Auto" />   <!-- 识别工具行 -->
             <RowDefinition Height="Auto" />   <!-- 批量工具栏 -->
+            <RowDefinition Height="Auto" />   <!-- 提交失败详情 -->
             <RowDefinition Height="*" />      <!-- 预览表 -->
             <RowDefinition Height="Auto" />   <!-- 状态栏 -->
         </Grid.RowDefinitions>
@@ -149,7 +150,24 @@
         </Border>
 
         <!-- ===== 识别结果预览表（19 列 = 类型 + 18 列，同报价确认明细） ===== -->
-        <DataGrid Grid.Row="3" ItemsSource="{Binding Rows}" Style="{DynamicResource StcDataGrid}"
+        <Border x:Name="SubmissionErrorPanel" Grid.Row="3" Margin="12,4" Padding="10,8"
+                BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1" CornerRadius="4">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding SubmissionError}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="SubmissionErrorText" Text="{Binding SubmissionError}" TextWrapping="Wrap"
+                           Foreground="{DynamicResource DangerBrush}" />
+            </ScrollViewer>
+        </Border>
+
+        <DataGrid Grid.Row="4" ItemsSource="{Binding Rows}" Style="{DynamicResource StcDataGrid}"
                   AutoGenerateColumns="False" HeadersVisibility="Column" RowHeight="32"
                   CanUserAddRows="False" CanUserDeleteRows="False"
                   SelectionMode="Extended" SelectionUnit="FullRow">
@@ -317,6 +335,6 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <components:StatusBar Grid.Row="4" Sections="{Binding StatusSections}" />
+        <components:StatusBar Grid.Row="5" Sections="{Binding StatusSections}" />
     </Grid>
 </UserControl>

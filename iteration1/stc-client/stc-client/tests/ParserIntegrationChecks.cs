@@ -180,6 +180,7 @@ internal static class ParserIntegrationChecks
         catch (InvalidOperationException error) { Check(error.Message.Contains("Datas"), "malformed successful reply fails explicitly"); }
 
         await CheckSubmissionRetryAsync();
+        await CheckSubmissionFailureUiAsync();
 
         List<string> messages = new List<string>();
         using (StcFiccTransport hostTransport = new StcFiccTransport(
@@ -321,6 +322,111 @@ internal static class ParserIntegrationChecks
         Check(creates == 1 && confirms == 2, "retry reuses pending quote and skips already confirmed row");
     }
 
+    private static async Task CheckSubmissionFailureUiAsync()
+    {
+        var transport = new FakeTransport();
+        var submitter = new ParsedQuoteSubmitter(new FiccApiClient(transport));
+        var service = new ParserQuoteService(null) { SubmitHandler = rows => submitter.SubmitAsync(rows, CancellationToken.None) };
+        var missing = new QuoteConfirmRow { Code = "240201.IB", Price = 2m, Volume = 1000m,
+            PriceType = PriceType.YieldToMaturity, Settlement = SettlementType.T1 };
+        var valid = new QuoteConfirmRow { Code = "240210.IB", Price = 2m, Volume = 2000m,
+            PriceType = PriceType.YieldToMaturity, Settlement = SettlementType.T1 };
+        bool rejectMissing = true;
+        int validCreates = 0;
+        int confirms = 0;
+        var stored = new Dictionary<string, JObject>();
+        transport.Responder = (topic, request) =>
+        {
+            JObject data;
+            if (topic == "ficc.quote.create")
+            {
+                var results = new JArray();
+                foreach (JObject input in request["quotes"])
+                {
+                    string clientId = (string)input["clientQuoteId"];
+                    if (clientId == missing.ClientQuoteId && rejectMissing)
+                    {
+                        results.Add(new JObject { ["clientQuoteId"] = clientId, ["Code"] = "1001",
+                            ["Msg"] = "Security is not in the configured reference universe",
+                            ["error"] = new JObject { ["type"] = "VALIDATION_FAILED", ["field"] = "securityId" } });
+                    }
+                    else
+                    {
+                        if (clientId == valid.ClientQuoteId) validCreates++;
+                        string quoteId = "Q-" + clientId;
+                        stored[quoteId] = new JObject { ["quoteId"] = quoteId, ["revision"] = "1", ["status"] = "PENDING_CONFIRM" };
+                        results.Add(new JObject { ["clientQuoteId"] = clientId, ["Code"] = "0000", ["quoteId"] = quoteId, ["revision"] = "1" });
+                    }
+                }
+                data = new JObject { ["results"] = results };
+            }
+            else if (topic == "ficc.quote.get")
+            {
+                data = new JObject { ["quote"] = stored[(string)request["quoteId"]].DeepClone() };
+            }
+            else if (topic == "ficc.quote.confirm")
+            {
+                confirms++;
+                string id = (string)request["quotes"][0]["quoteId"];
+                stored[id]["status"] = "ACTIVE";
+                data = new JObject { ["results"] = new JArray(new JObject { ["quoteId"] = id, ["Code"] = "0000" }) };
+            }
+            else throw new InvalidOperationException("Unexpected topic " + topic);
+            return new JObject { ["Code"] = "0000", ["Msg"] = "成功", ["requestId"] = request["requestId"], ["Data"] = data };
+        };
+        using (var model = new PreciseQuoteViewModel(service))
+        {
+            var missingRow = new QuoteConfirmRowViewModel(missing) { IsSelected = true };
+            var validRow = new QuoteConfirmRowViewModel(valid) { IsSelected = true };
+            model.Rows.Add(missingRow);
+            model.Rows.Add(validRow);
+            model.InputText = "240201 2 1000 bid";
+            var view = new PreciseQuoteView { DataContext = model };
+            var window = new Window { Content = view, Width = 1200, Height = 800,
+                ShowActivated = false, ShowInTaskbar = false, Left = -20000, Top = -20000 };
+            try
+            {
+                window.Show();
+                await model.ConfirmSelectedCommand.ExecuteAsync(null);
+                await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                window.UpdateLayout();
+                var panel = (Border)view.FindName("SubmissionErrorPanel");
+                var text = (TextBlock)view.FindName("SubmissionErrorText");
+                Check(panel.IsVisible && panel.ActualHeight > 0 && text.Text.Contains("240201.IB")
+                    && text.Text.Contains("未找到债券基础资料") && text.Text.Contains("1001"),
+                    "item failure renders persistent Chinese explanation with bond code and error code");
+                Check(!text.Text.Contains(missing.ClientQuoteId) && !text.Text.Contains("到期"),
+                    "error does not expose opaque identity or invent expiry diagnosis");
+                Check(model.StatusMessage.Contains("未完成") && model.Rows.Count == 2 && confirms == 0,
+                    "outer success cannot remove preview or claim confirmation");
+                Check(missingRow.IsSelected && missingRow.Price == "2" && model.InputText == "240201 2 1000 bid",
+                    "failure keeps selection, edits and input");
+                Check(valid.Revision == 1 && valid.RecognitionId != null && missing.Revision == 0,
+                    "mixed create results preserve successful identity and leave rejected row unsaved");
+                var image = new System.Windows.Media.Imaging.RenderTargetBitmap(1200, 800, 96, 96, PixelFormats.Pbgra32);
+                image.Render(view);
+                var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));
+                using (var file = System.IO.File.Create("quote-submission-error.png")) encoder.Save(file);
+                await Task.Delay(3400);
+                Check(panel.IsVisible && text.Text.Contains("240201.IB"), "error persists after toast expiry");
+                await model.ConfirmSelectedCommand.ExecuteAsync(null);
+                Check(validCreates == 1 && model.Rows.Count == 2, "failed retry does not duplicate successful draft");
+                rejectMissing = false;
+                await model.ConfirmSelectedCommand.ExecuteAsync(null);
+                await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Check(model.Rows.Count == 0 && model.SubmissionError == "" && !panel.IsVisible,
+                    "successful retry clears error and removes submitted previews");
+                Check(validCreates == 1 && confirms == 2 && model.StatusMessage.Contains("已确认 2 条"),
+                    "success status appears only after both quotes confirm");
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+    }
+
     private sealed class HostApiProxy : RealProxy
     {
         public HostApiProxy() : base(typeof(netapi.Api.IApi)) { }
@@ -374,6 +480,7 @@ internal static class ParserIntegrationChecks
 
     private sealed class ParserQuoteService : IQuoteService
     {
+        public Func<IReadOnlyCollection<QuoteConfirmRow>, Task> SubmitHandler { get; set; }
         private readonly StcQuoteParserClient parser;
         public List<QuoteConfirmRow> SubmittedRows = new List<QuoteConfirmRow>();
         public ParserQuoteService(StcQuoteParserClient parser) { this.parser = parser; }
@@ -383,6 +490,7 @@ internal static class ParserIntegrationChecks
         public Task ConfirmQuotesAsync(IReadOnlyCollection<string> ids, CancellationToken ct) { throw new NotSupportedException(); }
         public Task SubmitQuotesAsync(IReadOnlyCollection<QuoteConfirmRow> rows, CancellationToken ct)
         {
+            if (SubmitHandler != null) return SubmitHandler(rows);
             SubmittedRows.AddRange(rows);
             return Task.CompletedTask;
         }
