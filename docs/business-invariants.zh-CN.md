@@ -132,9 +132,13 @@ A 是外部报价人，B/C 是两个普通长城用户；B/C 的 QT 账户分别
 
 ### F-04 行情身份显示链路缺失
 
-优先级：中。`DpsSalesTradingServices.Market.BookRows` 从行情 entry 构造 quote 时没有拷贝 UserID、InstitutionID、TraderID；`WithReference` 仅补债券资料。`DpsModelMapper` 又依赖 ownerUserName 显示 WallTrader。
+原问题：`DpsSalesTradingServices.Market.BookRows` 从行情 entry 构造 quote 时没有拷贝 UserID、InstitutionID、TraderID；`WithReference` 仅补债券资料。`DpsModelMapper` 又依赖 ownerUserName 显示 WallTrader。
 
-结果：源码没有完成“显示长城交易员”和“本人看完整报价来源”的链路。需要将内部用户名称解析和经授权返回的 CRM 身份接入；不能由客户端依据隐藏信息重新猜测他人身份。
+2026-10-12 修复：QuoteSvr 在已有身份权限分支内返回 InstitutionName/TraderName；客户端 FULL 和 BEST 明细保留三个身份，按 STC userid 从宿主用户目录读取 name 显示“长城交易员”。本方报价所有者不能用对手 TraderID 或当前查看者代填。未知用户显示原 userid；不会补查服务端已隐藏的对手资料。修复需同时部署 common、QuoteSvr 和客户端。
+
+SZ 依据：`sc-app-stc-sbpsvr` 的 `QuoteInfoAddHandler`、`ConfirmIntentionQuoteHandler` 使用 `userInfo.name` 设置 createUserName；`SbpStream` 的 QT 接入使用 `stcUserInfo.getName()`。本实现沿用该显示语义，并保留 ownerUserId 与 contactId 的区分。
+
+验证：Java PriceSearchSmoke 45 项、客户端协议/投影测试 287 项、WPF 行情组件 24 项通过，覆盖 FULL/BEST/DEPTH、本人/他人、姓名缺失、旧报文兼容及三个实际表格单元格。安装本地 common/QuoteSvr 和客户端插件后，经本地 GW 只读查询已有 240205.IB 报价，确认 price 条目的机构/联系人名称与报价一致，UserID 可在 STC 用户目录解析为 test2测试；未创建或修改报价。不代表 QA 已部署或完整桌面端到端验收完成。上表为原核查记录，VIS-005 的展示缺口以本节修复为准。
 
 ### F-05 批量越权与管理员授权边界
 

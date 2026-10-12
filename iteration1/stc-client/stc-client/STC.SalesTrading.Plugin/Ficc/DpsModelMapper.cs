@@ -1,12 +1,77 @@
 ﻿using System;
 using System.Globalization;
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using STC.SalesTrading.Plugin.Abstractions.Models;
+using STC.Common.Model.Admin;
 
 namespace STC.SalesTrading.Plugin.Ficc
 {
     internal static class DpsModelMapper
     {
+        public static Dictionary<string, string> UserNames(IEnumerable<StcTbookUsers> users,
+            string currentUserId, string currentName, string currentLoginName)
+        {
+            var names = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (StcTbookUsers user in users ?? new StcTbookUsers[0])
+            {
+                if (user != null && !string.IsNullOrWhiteSpace(user.Userid))
+                {
+                    names[user.Userid] = !string.IsNullOrWhiteSpace(user.Name) ? user.Name : user.Username;
+                }
+            }
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                // 登录资料在 AdminSvr 用户目录暂未加载时仍可识别本人的报价。
+                if (!string.IsNullOrWhiteSpace(currentName))
+                {
+                    names[currentUserId] = currentName;
+                }
+                else if (!names.ContainsKey(currentUserId))
+                {
+                    names[currentUserId] = currentLoginName;
+                }
+            }
+            return names;
+        }
+
+        // 行情档位和报价行共用展示映射，保留对手与本方归属两个独立身份。
+        public static JObject MarketQuote(JObject book, JObject entry)
+        {
+            JObject reference = book["quoteRefs"]?[(string)entry["MDEntryID"]] as JObject;
+            return new JObject
+            {
+                ["securityId"] = book["securityId"]?.DeepClone(),
+                ["quoteId"] = reference?["quoteId"]?.DeepClone(),
+                ["revision"] = reference?["quoteRevision"]?.DeepClone(),
+                ["side"] = (string)entry["MDEntryType"] == "0" ? "1" : "2",
+                ["quoteType"] = "1",
+                ["yieldType"] = (string)entry["ExerciseFlag"] == "0" ? "2" : "1",
+                ["price"] = entry["MDEntryPx"]?.DeepClone(),
+                ["quantity"] = entry["MDEntrySize"]?.DeepClone(),
+                ["settlType"] = entry["SettlType"]?.DeepClone(),
+                ["updateTime"] = book["updateTime"]?.DeepClone(),
+                ["ownerUserId"] = entry["UserID"]?.DeepClone(),
+                ["institutionId"] = entry["InstitutionID"]?.DeepClone(),
+                ["institutionName"] = entry["InstitutionName"]?.DeepClone(),
+                ["contactId"] = entry["TraderID"]?.DeepClone(),
+                ["contactName"] = entry["TraderName"]?.DeepClone()
+            };
+        }
+
+        public static void ApplyOwnerDisplay(JObject quote, IDictionary<string, string> names, string currentUserId)
+        {
+            string ownerId = (string)quote["ownerUserId"];
+            quote["isMine"] = !string.IsNullOrEmpty(ownerId)
+                && string.Equals(ownerId, currentUserId, StringComparison.Ordinal);
+            if (!string.IsNullOrEmpty(ownerId))
+            {
+                // 用户资料暂不可用时明确显示原 userid，不能把当前登录人或对手误当作归属人。
+                quote["ownerUserName"] = names.TryGetValue(ownerId, out string name)
+                    && !string.IsNullOrWhiteSpace(name) ? name : ownerId;
+            }
+        }
+
         public static JObject Display(JObject source)
         {
             JObject row = new JObject();
@@ -14,7 +79,8 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 "QuoteId|quoteId", "Revision|revision", "Code|securityId", "Name|securityName", "Price|price", "Volume|quantity",
                 "Institution|institutionName", "Trader|contactName", "InstitutionId|institutionId", "ContactId|contactId",
-                "WallTrader|ownerUserName", "LastPrice|lastTradePrice", "BondLibrary|bondSubtype", "IssuerRating|issuerRating",
+                "WallTrader|ownerUserName", "OwnerAccountId|ownerUserId", "IsMine|isMine",
+                "LastPrice|lastTradePrice", "BondLibrary|bondSubtype", "IssuerRating|issuerRating",
                 "BondRating|bondRating", "NzNetPrice|valuationCleanPrice", "NzYtm|valuationYield", "CsNetPrice|csiValuationCleanPrice",
                 "CsFullPrice|csiValuationFullPrice", "CsYtm|csiValuationYield", "QuoteTime|updateTime", "TradeDate|tradeDate"
             };

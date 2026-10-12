@@ -29,6 +29,7 @@ internal static class ProtocolContractChecks
 
     private static async Task Run(string fixturePath)
     {
+        CheckMarketParticipants();
         JObject partialBook = JObject.Parse("{\"securityId\":\"240210.IB\",\"marketData\":{\"NoMDEntries\":[]},\"calculationIssues\":[{\"quoteId\":\"Q-CAL\",\"code\":\"CALCULATOR_OFFLINE\"}]}");
         PriceBook decodedBook = ProtocolCodec.Decode<PriceBook>(partialBook);
         Check(decodedBook.CalculationIssues.Single().QuoteId == "Q-CAL", "typed per-quote calculation issue");
@@ -147,6 +148,62 @@ internal static class ProtocolContractChecks
         {
             await CheckNegotiationPages(captured);
         }
+    }
+
+    private static void CheckMarketParticipants()
+    {
+        Type mapper = typeof(DpsSalesTradingServices).Assembly.GetType("STC.SalesTrading.Plugin.Ficc.DpsModelMapper");
+        var users = new[]
+        {
+            new STC.Common.Model.Admin.StcTbookUsers { Userid = "A", Username = "alice", Name = "本方甲" },
+            new STC.Common.Model.Admin.StcTbookUsers { Userid = "B", Username = "bob", Name = "本方乙" }
+        };
+        var names = (Dictionary<string, string>)mapper.GetMethod("UserNames").Invoke(null,
+            new object[] { users, "A", "本方甲", "alice" });
+        Check(names["A"] == "本方甲" && names["B"] == "本方乙", "STC display names indexed by userid, not login name");
+        JObject book = JObject.Parse("{\"securityId\":\"240210.IB\",\"updateTime\":\"2026-10-12T10:00:00+08:00\",\"quoteRefs\":{\"FICC:Q\":{\"quoteId\":\"Q\",\"quoteRevision\":\"3\"}}}");
+        JObject entry = JObject.Parse("{\"MDEntryID\":\"FICC:Q\",\"MDEntryType\":\"0\",\"MDEntryPx\":\"2.5\",\"MDEntrySize\":\"1000\",\"SettlType\":\"2\",\"UserID\":\"A\",\"InstitutionID\":\"I\",\"InstitutionName\":\"对手机构\",\"TraderID\":\"C\",\"TraderName\":\"对手丙\",\"ExerciseFlag\":\"0\"}");
+        MarketEntry typedEntry = ProtocolCodec.Decode<MarketEntry>(entry);
+        Check(typedEntry.UserID == "A" && typedEntry.InstitutionName == "对手机构" && typedEntry.TraderName == "对手丙",
+            "typed market protocol carries participant names and owner id");
+        Equal(entry, typedEntry.ToJson(), "participant protocol round trip");
+        Func<JObject, STC.SalesTrading.Plugin.Abstractions.Models.BoardQuoteRow> mapRow = item =>
+        {
+            JObject quote = (JObject)mapper.GetMethod("MarketQuote").Invoke(null, new object[] { book, item });
+            mapper.GetMethod("ApplyOwnerDisplay").Invoke(null, new object[] { quote, names, "A" });
+            JObject display = (JObject)mapper.GetMethod("Display").Invoke(null, new object[] { quote });
+            Check((string)display["InstitutionId"] == (string)item["InstitutionID"]
+                && (string)display["ContactId"] == (string)item["TraderID"], "participant ids survive projection");
+            return display.ToObject<STC.SalesTrading.Plugin.Abstractions.Models.BoardQuoteRow>();
+        };
+        var row = mapRow(entry);
+        Check(row.Institution == "对手机构" && row.Trader == "对手丙" && row.WallTrader == "本方甲",
+            "ALL grid preserves counterparty institution, trader and STC owner separately");
+        Check(row.IsMine && row.OwnerAccountId == "A" && row.QuoteId == "Q" && row.Revision == 3,
+            "owner id and quote reference retained");
+        Check(row.PriceType == STC.SalesTrading.Plugin.Abstractions.Models.PriceType.YieldToExercise,
+            "market entry retains exercise yield basis");
+        var detail = (STC.SalesTrading.Plugin.Abstractions.Models.BestQuoteDetail)typeof(DpsSalesTradingServices)
+            .GetMethod("BestDetail", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { row });
+        Check(detail.Institution == row.Institution && detail.Trader == row.Trader
+            && detail.OwnerTrader == row.WallTrader && detail.IsMine, "BEST popup preserves all participant columns");
+        entry["UserID"] = "B";
+        foreach (string field in new[] { "InstitutionID", "InstitutionName", "TraderID", "TraderName" })
+        {
+            entry.Remove(field);
+        }
+        row = mapRow(entry);
+        Check(row.WallTrader == "本方乙" && !row.IsMine && row.Institution == null && row.Trader == null,
+            "another owner's public quote shows its actual owner without reconstructing hidden counterparty");
+        entry["UserID"] = "UNKNOWN";
+        row = mapRow(entry);
+        Check(row.WallTrader == "UNKNOWN" && !row.IsMine, "unknown owner stays identifiable, never replaced with current user");
+        entry.Remove("UserID");
+        row = mapRow(entry);
+        Check(string.IsNullOrEmpty(row.WallTrader) && !row.IsMine, "older payload without owner does not invent one");
+        var ownOnly = (Dictionary<string, string>)mapper.GetMethod("UserNames").Invoke(null,
+            new object[] { null, "A", "本方甲", "alice" });
+        Check(ownOnly["A"] == "本方甲", "login name data works without AdminSvr cache");
     }
 
     // Run the real client page/update code against captured Java responses and pushes.

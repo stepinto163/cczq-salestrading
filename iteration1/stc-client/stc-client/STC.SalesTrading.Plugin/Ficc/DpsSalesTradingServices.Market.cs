@@ -54,14 +54,7 @@ namespace STC.SalesTrading.Plugin.Ficc
         {
             foreach (JObject entry in ((JArray)book["marketData"]?["NoMDEntries"] ?? new JArray()).OfType<JObject>())
             {
-                JObject reference = book["quoteRefs"]?[(string)entry["MDEntryID"]] as JObject;
-                JObject quote = new JObject
-                {
-                    ["securityId"] = book["securityId"]?.DeepClone(), ["quoteId"] = reference?["quoteId"]?.DeepClone(),
-                    ["revision"] = reference?["quoteRevision"]?.DeepClone(), ["side"] = (string)entry["MDEntryType"] == "0" ? "1" : "2",
-                    ["quoteType"] = "1", ["price"] = entry["MDEntryPx"]?.DeepClone(), ["quantity"] = entry["MDEntrySize"]?.DeepClone(),
-                    ["settlType"] = entry["SettlType"]?.DeepClone(), ["updateTime"] = book["updateTime"]?.DeepClone()
-                };
+                JObject quote = DpsModelMapper.MarketQuote(book, entry);
                 BoardQuoteRow row = DpsModelMapper.Display(WithReference(quote)).ToObject<BoardQuoteRow>();
                 row.Market = market;
                 yield return row;
@@ -123,7 +116,12 @@ namespace STC.SalesTrading.Plugin.Ficc
             return new BestQuoteDetail
             {
                 QuoteId = row.QuoteId, Price = row.Price?.ToString("0.0000"), Yield = row.Price?.ToString("0.0000"),
-                Volume = row.Volume, Time = row.QuoteTime?.ToString("HH:mm:ss"), IsMine = row.IsMine
+                Volume = row.Volume,
+                Institution = row.Institution,
+                Trader = row.Trader,
+                OwnerTrader = row.WallTrader,
+                Time = row.QuoteTime?.ToString("HH:mm:ss"),
+                IsMine = row.IsMine
             };
         }
 

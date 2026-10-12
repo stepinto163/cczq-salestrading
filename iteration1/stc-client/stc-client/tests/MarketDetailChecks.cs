@@ -1,6 +1,12 @@
 using System;
 using System.Globalization;
 using System.Reflection;
+using System.Linq;
+using System.Collections.Generic;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Newtonsoft.Json.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using STC.Common.Model.Base;
@@ -25,6 +31,7 @@ internal static class MarketDetailChecks
         {
             new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             CheckDetail();
+            CheckParticipantColumns();
             CheckFeedReplay();
             Console.WriteLine("PASS market detail: " + passed + " checks");
             return 0;
@@ -33,6 +40,67 @@ internal static class MarketDetailChecks
         {
             Console.Error.WriteLine(error);
             return 1;
+        }
+    }
+
+    private static void CheckParticipantColumns()
+    {
+        Type mapper = typeof(DpsSalesTradingServices).Assembly.GetType("STC.SalesTrading.Plugin.Ficc.DpsModelMapper");
+        var book = JObject.Parse("{\"securityId\":\"240210.IB\",\"quoteRefs\":{\"FICC:Q\":{\"quoteId\":\"Q\",\"quoteRevision\":\"1\"}}}");
+        var entry = JObject.Parse("{\"MDEntryID\":\"FICC:Q\",\"MDEntryType\":\"0\",\"MDEntryPx\":\"2.5\",\"MDEntrySize\":\"1000\",\"SettlType\":\"2\",\"UserID\":\"A\",\"InstitutionName\":\"对手机构\",\"TraderName\":\"对手交易员\"}");
+        var quote = (JObject)mapper.GetMethod("MarketQuote").Invoke(null, new object[] { book, entry });
+        mapper.GetMethod("ApplyOwnerDisplay").Invoke(null, new object[]
+        {
+            quote, new Dictionary<string, string> { ["A"] = "本方归属人" }, "A"
+        });
+        var display = (JObject)mapper.GetMethod("Display").Invoke(null, new object[] { quote });
+        var row = display.ToObject<BoardQuoteRow>();
+        var view = new BoardListView
+        {
+            DataContext = new
+            {
+                LoadState = STC.SalesTrading.Plugin.Abstractions.Queries.QueryLoadState.Loaded,
+                PendingNewQuoteCount = 0
+            }
+        };
+        view.Measure(new Size(1550, 400));
+        view.Arrange(new Rect(0, 0, 1550, 400));
+        view.UpdateLayout();
+        var grid = Descendants(view).OfType<DataGrid>().First();
+        grid.ItemsSource = new[] { row };
+        view.Measure(new Size(1550, 400));
+        view.Arrange(new Rect(0, 0, 1550, 400));
+        view.UpdateLayout();
+        Pump();
+        foreach (var expected in new Dictionary<string, string>
+        {
+            ["报价机构"] = "对手机构", ["报价交易员"] = "对手交易员", ["长城交易员"] = "本方归属人"
+        })
+        {
+            var column = grid.Columns.OfType<DataGridTextColumn>().Single(item => (string)item.Header == expected.Key);
+            var cell = column.GetCellContent(row) as TextBlock;
+            Check(cell != null && cell.Text == expected.Value, "rendered market column: " + expected.Key);
+        }
+        var bitmap = new RenderTargetBitmap(1550, 400, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(view);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using (var file = System.IO.File.Create(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "market-participants.png")))
+        {
+            encoder.Save(file);
+        }
+    }
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, index);
+            yield return child;
+            foreach (DependencyObject nested in Descendants(child))
+            {
+                yield return nested;
+            }
         }
     }
 

@@ -56,6 +56,8 @@ public final class PriceSearchSmoke {
         quote.updateTime = "2026-10-09T08:00:00.000+08:00";
         quote.institutionId = "I-" + owner;
         quote.contactId = "C-" + owner;
+        quote.institutionName = "机构-" + owner;
+        quote.contactName = "对手-" + owner;
         quotes.put(id, quote);
         return quote;
     }
@@ -125,11 +127,26 @@ public final class PriceSearchSmoke {
         JSONObject expected = JsonUtils.object("MDEntryID", "FICC:bid2", "MDEntryType", "0",
                 "MDEntryPx", "2.000", "MDEntrySize", "1000", "PriceType", "3", "ExerciseFlag", "1",
                 "SettlType", "1", "UserID", "A", "MDPriceLevel", "1", "MDEntryDate", "20261009",
-                "MDEntryTime", "08:01:00.000", "Yield", "2.000", "InstitutionID", "I-A", "TraderID", "C-A");
+                "MDEntryTime", "08:01:00.000", "Yield", "2.000", "InstitutionID", "I-A", "TraderID", "C-A",
+                "InstitutionName", "机构-A", "TraderName", "对手-A");
         check(entry.equals(expected), "Exact existing market entry field names and scalar types");
         JSONObject publicEntry = full.marketData.NoMDEntries.get(3).toJson();
         check(!publicEntry.containsKey("InstitutionID") && !publicEntry.containsKey("TraderID"),
                 "Public quote hides another owner's institution and contact");
+        check(!publicEntry.containsKey("InstitutionName") && !publicEntry.containsKey("TraderName"),
+                "Public quote also hides counterparty names");
+        check("B".equals(publicEntry.getString("UserID")), "Public quote retains its actual STC owner");
+        for (String mode : Arrays.asList("FULL", "BEST", "DEPTH")) {
+            MarketEntry ownEntry = query("A", mode, "DEPTH".equals(mode) ? 1 : null)
+                    .marketData.NoMDEntries.get(0);
+            check("机构-A".equals(ownEntry.InstitutionName) && "对手-A".equals(ownEntry.TraderName)
+                    && "A".equals(ownEntry.UserID), mode + " keeps owner distinct from counterparty");
+        }
+        MarketEntry internalEntry = books.book(null, "250001.IB", null, "FULL", 0)
+                .marketData.NoMDEntries.stream().filter(item -> "FICC:privateB".equals(item.MDEntryID))
+                .findFirst().get();
+        check("机构-B".equals(internalEntry.InstitutionName) && "对手-B".equals(internalEntry.TraderName),
+                "Authorized internal projection carries names for the correct recipient");
 
         PriceQueryRequest filtered = request("FULL", null);
         filtered.filter = ProtocolCodec.decode(JsonUtils.object("conditions", JsonUtils.array(

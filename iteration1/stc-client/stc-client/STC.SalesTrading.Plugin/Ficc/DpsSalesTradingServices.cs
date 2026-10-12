@@ -40,6 +40,7 @@ namespace STC.SalesTrading.Plugin.Ficc
         private readonly Dictionary<string, QuerySession> sessions = new Dictionary<string, QuerySession>();
         private readonly Dictionary<string, JObject> securities = new Dictionary<string, JObject>();
         private readonly Dictionary<string, JObject> displayedQuotes = new Dictionary<string, JObject>();
+        private Dictionary<string, string> ownerNames = new Dictionary<string, string>();
         private event Action<QuoteEvent> priceChanged;
         private long priceChangeNumber;
         private bool disposed;
@@ -145,6 +146,12 @@ namespace STC.SalesTrading.Plugin.Ficc
                     displayedQuotes[(string)quote["quoteId"]] = (JObject)quote.DeepClone();
                 }
                 await LoadSecuritiesAsync(page.Rows.Select(row => (string)row["securityId"]), cancellation);
+                // 复用宿主登录时加载的 STC 用户目录。每页建一次索引，逐行仅做内存查找。
+                ownerNames = DpsModelMapper.UserNames(
+                    STC.Common.Handler.Admin.AdminHandler.Instance.GetCachestcUserQuery()?.Datas,
+                    STC.Common.Utils.LocalEnv.UserInfo.UserId,
+                    STC.Common.Utils.LocalEnv.UserInfo.FullName,
+                    STC.Common.Utils.LocalEnv.UserInfo.UserName);
                 ClientPerformanceTrace.End("query.cache-reference:" + key, cacheStarted);
                 return page;
             }
@@ -196,6 +203,7 @@ namespace STC.SalesTrading.Plugin.Ficc
         private JObject WithReference(JObject quote)
         {
             JObject result = (JObject)quote.DeepClone();
+            DpsModelMapper.ApplyOwnerDisplay(result, ownerNames, STC.Common.Utils.LocalEnv.UserInfo.UserId);
             if (securities.TryGetValue((string)quote["securityId"] ?? "", out JObject security))
             {
                 foreach (JProperty property in security.Properties())

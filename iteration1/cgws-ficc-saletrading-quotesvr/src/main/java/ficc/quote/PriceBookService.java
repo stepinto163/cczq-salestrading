@@ -278,6 +278,14 @@ final class PriceBookService {
         if (user == null || access.owns(user, quote.ownerUserId)) {
             entry.InstitutionID = quote.institutionId;
             entry.TraderID = quote.contactId;
+            entry.InstitutionName = quote.institutionName;
+            entry.TraderName = quote.contactName;
+            if (entry.InstitutionName == null) {
+                entry.clearField("InstitutionName");
+            }
+            if (entry.TraderName == null) {
+                entry.clearField("TraderName");
+            }
             if (entry.InstitutionID == null) {
                 entry.clearField("InstitutionID");
             }

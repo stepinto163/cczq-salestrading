@@ -17,7 +17,7 @@
 | BaseData / base.get | missingIds: string[]；referenceVersion: string | 按 ID 读取的实际输出 |
 | ParserReply | Warnings: string[]；TotalSize: integer | 服务返回，Java DTO 未声明；C# 有 Warnings |
 | ParserQuote | price、qty、chinaBondValuation: number | 实际由 TableIntentionQuote 的 BigDecimal 序列化；DTO 中是 String |
-| MarketEntry 双端声明 | PriceType、ExerciseFlag、UserID、MDPriceLevel: string | Java 有声明、C# 尚未声明；下文按 Java 列全字段 |
+| MarketEntry 双端声明 | PriceType、ExerciseFlag、UserID、MDPriceLevel: string | 2026-10-12 行情身份显示修复已补齐 C# 声明；并新增 InstitutionName、TraderName |
 
 Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及估值扩展；其字段清单见本文末尾 TableIntentionQuote，不能视为可直接写入 QuoteSvr 的对象。
 
@@ -456,7 +456,11 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `Yield` | `String` | 到期收益率 |
 | `YieldToExecution` | `String` | 行权收益率 |
 | `InstitutionID` | `String` | CRM 机构 ID，依权限返回 |
+| `InstitutionName` | `String` | 报价中已保存的对手机构名称，与 InstitutionID 同权限返回 |
 | `TraderID` | `String` | CRM 联系人 ID，依权限返回 |
+| `TraderName` | `String` | 报价中已保存的对手联系人姓名，与 TraderID 同权限返回 |
+
+客户端将 `UserID` 按 STC 用户目录的 `userid` 解析为 `name`，显示在“长城交易员”；`name` 为空时使用该用户的 `username`。目录使用宿主登录时加载的 AdminSvr 缓存，本人还可使用登录资料 `FullName`；未解析到的用户显示原 userid，不冒用当前登录人或对手姓名。每页构建内存索引，不逐条发起远程查询。FULL 行和 BEST 明细共用映射；对手资料被服务端省略时，客户端不补查隐藏身份。
 <a id="pricequeryrequest"></a>
 ### PriceQueryRequest
 

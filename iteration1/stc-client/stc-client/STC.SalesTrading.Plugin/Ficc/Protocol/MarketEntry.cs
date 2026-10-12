@@ -18,6 +18,19 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         [JsonProperty("MDEntrySize")]
         public string MDEntrySize { get; set; }
 
+        [JsonProperty("PriceType")]
+        public string PriceType { get; set; }
+
+        [JsonProperty("ExerciseFlag")]
+        public string ExerciseFlag { get; set; }
+
+        /// <summary>本方报价归属人的 STC userid，与对手 TraderID 不同。</summary>
+        [JsonProperty("UserID")]
+        public string UserID { get; set; }
+
+        [JsonProperty("MDPriceLevel")]
+        public string MDPriceLevel { get; set; }
+
         [JsonProperty("SettlType")]
         public string SettlType { get; set; }
 
@@ -39,8 +52,14 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         [JsonProperty("InstitutionID")]
         public string InstitutionID { get; set; }
 
+        [JsonProperty("InstitutionName")]
+        public string InstitutionName { get; set; }
+
         [JsonProperty("TraderID")]
         public string TraderID { get; set; }
+
+        [JsonProperty("TraderName")]
+        public string TraderName { get; set; }
 
     }
 }

@@ -1517,7 +1517,7 @@ inst/contact 支持请求及 image；account 当前仅 image，普通 request �
 | QuoteChangeItem / clone | 未声明 sourceQuoteId/clientQuoteId，clone 却要求它们；须经 JSON 扩展字段发送 |
 | BaseData | missingIds/referenceVersion 是实际输出扩展，模型未显式声明 |
 | ParserReply | Java DTO 未声明 Warnings/TotalSize；C# 声明 Warnings，服务实际可返回两者 |
-| Java/C# MarketEntry | C# 未声明 Java 的 PriceType、ExerciseFlag、UserID、MDPriceLevel；兼容 JSON 保留不等于强类型属性已对齐 |
+| Java/C# MarketEntry | 2026-10-12 行情身份修复已对齐 PriceType、ExerciseFlag、UserID、MDPriceLevel，并增加 InstitutionName、TraderName；详见模型字段表 |
 | ParserQuote | 只是桌面消费字段子集；服务实际序列化 TableIntentionQuote，价格/数量为 BigDecimal 数值 |
 | Notification 的 types | query 忽略它，view.open 白名单拒绝它；不能宣称支持按 types 筛选 |
 | ViewPage.hasMore | 当前三类 view 应答未写此字段，应依据 pageNumber/pageSize/totalCount 判断后续页 |
