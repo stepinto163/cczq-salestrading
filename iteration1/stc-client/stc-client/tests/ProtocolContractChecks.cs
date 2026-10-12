@@ -29,6 +29,15 @@ internal static class ProtocolContractChecks
 
     private static async Task Run(string fixturePath)
     {
+        JObject partialBook = JObject.Parse("{\"securityId\":\"240210.IB\",\"marketData\":{\"NoMDEntries\":[]},\"calculationIssues\":[{\"quoteId\":\"Q-CAL\",\"code\":\"CALCULATOR_OFFLINE\"}]}");
+        PriceBook decodedBook = ProtocolCodec.Decode<PriceBook>(partialBook);
+        Check(decodedBook.CalculationIssues.Single().QuoteId == "Q-CAL", "typed per-quote calculation issue");
+        Equal(partialBook, decodedBook.ToJson(), "calculation issue round trip");
+        MethodInfo warningMethod = typeof(DpsSalesTradingServices).GetMethod("PriceCalculationWarning", BindingFlags.NonPublic | BindingFlags.Static);
+        string warning = (string)warningMethod.Invoke(null, new object[] { new[] { partialBook, partialBook } });
+        Check(warning.Contains("1 条") && warning.Contains("报价管理"), "partial warning counts unique quotes and explains original quote access");
+        Check(warningMethod.Invoke(null, new object[] { new[] { JObject.Parse("{\"securityId\":\"240210.IB\"}") } }) == null,
+            "healthy and legacy price replies have no warning");
         Dictionary<string, Endpoint> endpoints = typeof(SalesTradingApi).GetFields()
             .Select(field => (Endpoint)field.GetValue(null)).ToDictionary(endpoint => endpoint.Topic);
         foreach (JObject fixture in JArray.Parse(File.ReadAllText(fixturePath)))

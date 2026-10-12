@@ -51,6 +51,7 @@ public final class PriceSearchSmoke {
         quote.quoteType = "1";
         quote.yieldType = "1";
         quote.settlType = "1";
+        quote.tradeDate = "2026-10-09";
         quote.revision = "1";
         quote.updateTime = "2026-10-09T08:00:00.000+08:00";
         quote.institutionId = "I-" + owner;
@@ -192,12 +193,28 @@ public final class PriceSearchSmoke {
         QuoteRecord incomparable = ProtocolCodec.decode(exercise.toJson(), QuoteRecord.class);
         incomparable.quoteType = "2";
         books.changed(incomparable, null);
-        try {
-            books.book("A", exercise.securityId, null, "FULL", 0);
-            throw new AssertionError("Incomparable prices accepted without CalSvr");
-        } catch (ApiException expectedError) {
-            check("1009".equals(expectedError.code), "Incomparable price retains NOT_READY behavior");
-        }
+        PriceBook unavailable = books.book("A", exercise.securityId, null, "FULL", 0);
+        check(unavailable.marketData.NoMDEntries.isEmpty() && unavailable.calculationIssues.size() == 1,
+                "Unconvertible quote is explicit partial data, not a failed page or false yield");
+        check(unavailable.calculationIssues.get(0).quoteId.equals(incomparable.quoteId),
+                "Calculation issue identifies the quote");
+        QuoteRecord cleanPrice = quote("clean", "A", "QT", "1", "101.25");
+        cleanPrice.quoteType = "2";
+        books.changed(cleanPrice, null);
+        check(query("A", "FULL", null).marketData.NoMDEntries.size() == 6,
+                "Healthy prices remain when a clean-price conversion is missing");
+        check(query("A", "BEST", null).calculationIssues.size() == 1,
+                "BEST reports excluded conversion without ranking clean price as yield");
+        check(books.book(null, "250001.IB", null, "FULL", 0).calculationIssues.size() == 1,
+                "Notification internal snapshot also tolerates a missing conversion");
+        check(query("B", "FULL", null).calculationIssues == null,
+                "Private calculation failures do not leak to another user");
+        books.yieldResolver = (quote, yieldType, version) -> new QuoteYieldResolver.Result("1.95", null);
+        PriceBook converted = query("A", "BEST", null);
+        check(ids(converted).contains("FICC:clean") && converted.calculationIssues == null,
+                "Converted quote participates in best-price selection");
+        check("101.25".equals(cleanPrice.price) && "2".equals(cleanPrice.quoteType),
+                "Conversion never changes original quote input");
     }
 
     public static void main(String[] args) {

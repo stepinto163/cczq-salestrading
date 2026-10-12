@@ -192,7 +192,9 @@ Parser 的旧服务还保留 image、deal、IRS 等处理器；当前销交客�
 
 仅 ACTIVE、用户可见、符合条件的报价参与投影。FULL 返回全部，BEST 返回每侧最佳价档，DEPTH 返回每侧前 depth 个不同价档；同价档成员不会按条数截断。DEPTH 的 depth 范围 1–1000，其他 mode 不能传 depth（包括显式 null）。
 
-当前投影要求可比收益率：有行权属性的债券要求 yieldType=2，否则要求 yieldType=1，且 quoteType=1；遇到需要 CalSvr 换算的报价会返回 1009，不能据 Quote 支持净价/全价推断 Price 已能比较它们。收益率 Bid 按低到高、Ofr 按高到低排序，同价按 updateTime 倒序和 quoteId 排序。当前 MDEntryType 的 `0`=Bid、`1`=Ofr，PriceType 固定 `3`（收益率），ExerciseFlag 的 `0`=行权、`1`=到期。MDPriceLevel 当前按同侧条目序号填写，不等同于不同价格档序号。
+当前投影要求可比收益率：有行权属性的债券要求 yieldType=2，否则要求 yieldType=1。输入价格口径不一致时，QuoteSvr 异步调用 `SERVER.CalSvr/stc.broker.calbond`，不在查询线程等待。等待、离线或换算失败的报价暂不参与行情排序，保留原报价，并通过每本价格簿的 `calculationIssues:[{quoteId,code}]` 返回问题；同页其他报价正常返回，不能将部分结果当作完整行情。换算成功后推送该券行情更新，不改变报价版本和确认状态。当前转换支持 T+0/T+1，其他清算代码暂返回 `CALCULATION_INVALID_INPUT`，不能将 STC CalSvr 的“明天+0”代码误当 FICC 的 T+2。收益率 Bid 按低到高、Ofr 按高到低排序，同价按 updateTime 倒序和 quoteId 排序。当前 MDEntryType 的 `0`=Bid、`1`=Ofr，PriceType 固定 `3`（收益率），ExerciseFlag 的 `0`=行权、`1`=到期。MDPriceLevel 当前按同侧条目序号填写，不等同于不同价格档序号。
+
+换算问题码包括 `CALCULATION_PENDING`、`CALCULATOR_OFFLINE`、`CALCULATOR_BUSY`、`CALCULATION_FAILED`、`CALCULATION_INVALID_INPUT`、`CALCULATOR_NOT_CONFIGURED` 和 `CALCULATOR_STOPPED`。成功结果按报价输入、目标口径和资料版本复用；连接变化及 `stc.cal.clear` 使缓存失效。失败结果不会定时无限重试；新开行情流会允许重试失败项。`cal.requestTimeoutMillis=3000` 限制单次后台 DPS 请求，单线程后台队列由 `cal.queueCapacity=256` 限制；队列满只影响新待算报价，不阻塞查询。协议/容错已用替身验证，真实 CalSvr 换算须在 QA 验证。
 
 单次 `ficc.price.query` 必填 securityIds（最多 100）和 mode，实际输出 **`Data.prices`**。视图接口输出 **`Data.books`**，两个名称目前不一致。虽然 PriceQueryRequest 继承 PageRequest，这个单次接口不接受 limit/cursor。
 

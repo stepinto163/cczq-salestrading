@@ -15,4 +15,6 @@ public class PriceBook extends ProtocolModel {
     public String bookRevision;
     public MarketData marketData;
     public Map<String,QuoteReference> quoteRefs;
+    /** 仅含当前用户可见且满足筛选的报价；为空时省略。 */
+    public List<PriceCalculationIssue> calculationIssues;
 }

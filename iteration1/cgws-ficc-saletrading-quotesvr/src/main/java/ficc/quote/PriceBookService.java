@@ -5,6 +5,8 @@ import ficc.api.Filter;
 import ficc.api.MarketData;
 import ficc.api.MarketEntry;
 import ficc.api.PriceBook;
+import ficc.api.PriceCalculationIssue;
+import ficc.api.ProtocolCodec;
 import ficc.api.PriceQueryRequest;
 import ficc.api.QuoteRecord;
 import ficc.api.QuoteReference;
@@ -46,6 +48,12 @@ final class PriceBookService {
     private final AccessPolicy access;
     private final Map<String, Map<String, QuoteRecord>> quotesBySecurity = new HashMap<>();
     private final Map<String, Long> revisions = new HashMap<>();
+    QuoteYieldResolver yieldResolver = (quote, yieldType, version) ->
+            new QuoteYieldResolver.Result(null, "CALCULATOR_NOT_CONFIGURED");
+
+    void calculationChanged(String securityId) {
+        revisions.merge(securityId, 1L, Long::sum);
+    }
 
     PriceBookService(ReferenceData references, QuoteMatcher matcher, AccessPolicy access,
             Collection<QuoteRecord> initialQuotes) {
@@ -86,6 +94,9 @@ final class PriceBookService {
     }
 
     private void indexQuote(QuoteRecord quote, String previousSecurity) {
+        if (!"ACTIVE".equals(quote.status)) {
+            yieldResolver.forget(quote.quoteId);
+        }
         if (previousSecurity != null && !Objects.equals(previousSecurity, quote.securityId)) {
             Map<String, QuoteRecord> previous = quotesBySecurity.get(previousSecurity);
             if (previous != null) {
@@ -161,18 +172,38 @@ final class PriceBookService {
                                 quote.source == null ? null : quote.source.type, quote.status))
                         && matches.test(quote))
                 .collect(Collectors.toList());
-        // 价格排序要求可比较的收益率口径；净价/全价或到期/行权不匹配时，不在此处猜测换算。
+        // 价格排序只使用同一收益率口径。单条换算失败不能使整个行情或内部快照失败。
         boolean exercise = !quotes.isEmpty()
                 && references.require(security).getBooleanValue("hasExerciseOption");
+        List<QuoteRecord> comparableQuotes = new ArrayList<>();
+        List<PriceCalculationIssue> issues = new ArrayList<>();
         for (QuoteRecord quote : quotes) {
             if (!"1".equals(quote.quoteType)
                     || !Objects.equals(quote.yieldType, exercise ? "2" : "1")) {
-                throw ApiException.forField("1009", "NOT_READY",
-                        "CalSvr unavailable: enter the comparable yield for this client", "price");
+                QuoteYieldResolver.Result calculation = yieldResolver.resolve(quote,
+                        exercise ? "2" : "1", references.version());
+                if (calculation.price == null) {
+                    PriceCalculationIssue issue = new PriceCalculationIssue();
+                    issue.quoteId = quote.quoteId;
+                    issue.code = calculation.code;
+                    issues.add(issue);
+                    continue;
+                }
+                // 只修改行情投影副本，保留报价原始价格、版本、类型和清算信息。
+                QuoteRecord projection = ProtocolCodec.decode(quote.toJson(), QuoteRecord.class);
+                projection.price = calculation.price;
+                projection.quoteType = "1";
+                projection.yieldType = exercise ? "2" : "1";
+                comparableQuotes.add(projection);
+            } else {
+                comparableQuotes.add(quote);
             }
         }
 
         PriceBook result = new PriceBook();
+        if (!issues.isEmpty()) {
+            result.calculationIssues = issues;
+        }
         result.securityId = security;
         result.updateTime = quotes.stream().map(quote -> quote.updateTime).max(String::compareTo).orElse(null);
         if (result.updateTime == null) {
@@ -199,7 +230,7 @@ final class PriceBookService {
             comparator = comparator.thenComparing(
                     Comparator.<QuoteRecord, String>comparing(quote -> quote.updateTime).reversed())
                     .thenComparing(quote -> quote.quoteId);
-            List<QuoteRecord> sorted = quotes.stream().filter(quote -> side.equals(quote.side))
+            List<QuoteRecord> sorted = comparableQuotes.stream().filter(quote -> side.equals(quote.side))
                     .sorted(comparator).collect(Collectors.toList());
             BigDecimal previousPrice = null;
             int level = 0;

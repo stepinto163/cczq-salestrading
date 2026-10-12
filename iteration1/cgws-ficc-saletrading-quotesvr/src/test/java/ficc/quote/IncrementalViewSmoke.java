@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Four persisted fixtures, direct service calls only. No load, UI or transport test. */
+/** Four persisted fixtures plus one in-memory conversion fixture; no load, UI or transport test. */
 public final class IncrementalViewSmoke {
     private final CountingBaseData base = new CountingBaseData();
     private final List<JSONObject> messages = new ArrayList<>();
@@ -331,6 +331,37 @@ public final class IncrementalViewSmoke {
                 "page query returns current payload");
         change("B", JsonUtils.object("price", "2.55"), "incremental update after page query", false);
         checkConcurrentClose(filter);
+        checkCalculationIsolation();
+    }
+
+    private void checkCalculationIsolation() {
+        QuoteRecord clean = quote("CAL-FAILURE", "250001.IB", "U-001", "101.25");
+        clean.quoteType = "2";
+        service.quotes.put(clean.quoteId, clean);
+        service.priceBooks.changed(clean, null);
+        open("U-001", "S-CAL", "price", "P-CAL", JsonUtils.object(), "FULL", null);
+        JSONObject snapshot = ProtocolBoundary.push("ficc.price.snapshots",
+                service.views.feed(true, Arrays.asList("250001.IB", "250002.IB")));
+        check("0000".equals(snapshot.getString("Code")), "Notification price snapshot succeeds with missing conversion");
+        check(snapshot.getJSONArray("prices").getJSONObject(0).getJSONArray("calculationIssues").size() == 1,
+                "Internal snapshot preserves calculation issue through protocol boundary");
+        messages.clear();
+        service.priceBooks.yieldResolver = (quote, yieldType, version) ->
+                new QuoteYieldResolver.Result("2.45", null);
+        service.views.calculationChanged(clean.securityId);
+        check(messages.stream().noneMatch(message -> message.getString("topic").startsWith("ficc.quote.")),
+                "Calculation completion never emits a quote operation or changes quote lifecycle");
+        check(messages.stream().anyMatch(message -> message.getString("topic").equals("ficc.price.snapshots")),
+                "Calculation completion refreshes NotificationSvr feed");
+        check(messages.stream().anyMatch(message -> message.getString("topic").equals("ficc.price.report.S-CAL")
+                        && message.getJSONObject("message").getJSONArray("books").size() > 0),
+                "Calculation completion pushes price view without reopening it");
+        JSONObject page = call("U-001", "S-CAL", "ficc.price.view.query",
+                JsonUtils.object("viewId", "P-CAL", "pageNumber", 1, "pageSize", 100));
+        check(page.getJSONArray("books").toJSONString().contains("FICC:CAL-FAILURE"),
+                "Recovered conversion is visible in the existing page");
+        check("101.25".equals(clean.price) && "2".equals(clean.quoteType) && "1".equals(clean.revision),
+                "Asynchronous recovery preserves stored quote attributes and version");
     }
 
     public static void main(String[] args) throws Exception {
@@ -344,8 +375,8 @@ public final class IncrementalViewSmoke {
             test.run(store);
         }
         Files.write(Paths.get(args[1]), JsonUtils.toJson(JsonUtils.object(
-                "result", "PASS", "checks", test.checks, "fixtureQuotes", 4,
+                "result", "PASS", "checks", test.checks, "fixtureQuotes", 5,
                 "transportTested", false, "performanceTested", false)).getBytes(StandardCharsets.UTF_8));
-        System.out.println("PASS " + test.checks + " checks; four fixtures; no load or transport test");
+        System.out.println("PASS " + test.checks + " checks; five fixtures; no load or transport test");
     }
 }

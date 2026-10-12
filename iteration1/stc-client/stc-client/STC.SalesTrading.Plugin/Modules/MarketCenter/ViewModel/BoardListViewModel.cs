@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -40,6 +40,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                    .Add("ofr", "Ofr: 0", "OfrBrush", "#3B82F6");
 
             View = CollectionViewSource.GetDefaultView(Rows);
+
+            _status.Add("calculation", "", "BidDeepBrush", "#D29922");
 
             // 侧栏分组 chip 激活/取消 → 重查（批次 A：关注分组闭环）
             MarketGroupSelectionService.ActiveGroupsChanged += OnActiveGroupsChanged;
@@ -149,6 +151,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             TotalCount = 0;
             QueryId = null;
             IsPartial = false;
+            _status.Set("calculation", "");
         }
 
         /// <summary>成功/失败路径末尾的计数回写（QueryFlow 调用）。</summary>
@@ -224,6 +227,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 TotalCount = result.TotalCount;
                 QueryId = result.QueryId;
                 IsPartial = result.IsPartial;
+                _status.Set("calculation", result.WarningMessage ?? "");
                 return Rows.Count > 0;
             }, Title);
         }

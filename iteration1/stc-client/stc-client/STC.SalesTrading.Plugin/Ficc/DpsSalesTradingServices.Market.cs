@@ -74,14 +74,17 @@ namespace STC.SalesTrading.Plugin.Ficc
             BoardQuoteRow[] rows = page.Rows.SelectMany(book => BookRows(book, query.Market)).ToArray();
             return new PagedResult<BoardQuoteRow>
             {
-                Items = rows, TotalCount = page.TotalCount, QueryId = page.Topic, IsPartial = page.TotalCount > page.Rows.Count
+                Items = rows, TotalCount = page.TotalCount, QueryId = page.Topic,
+                IsPartial = page.TotalCount > page.Rows.Count || PriceCalculationWarning(page.Rows) != null,
+                WarningMessage = PriceCalculationWarning(page.Rows)
             };
         }
 
         public async Task<PagedResult<BoardBestRow>> QueryBestRowsAsync(MarketBoardQuery query, CancellationToken ct)
         {
             LivePage page = await MarketPageAsync(query, "BEST", ct);
-            BoardBestRow[] rows = page.Rows.Select(book =>
+            BoardBestRow[] rows = page.Rows.Where(book =>
+                ((JArray)book["marketData"]?["NoMDEntries"])?.Count > 0).Select(book =>
             {
                 BoardBestRow row = DpsModelMapper.Display(WithReference(book)).ToObject<BoardBestRow>();
                 BoardQuoteRow[] entries = BookRows(book, query.Market).ToArray();
@@ -101,8 +104,18 @@ namespace STC.SalesTrading.Plugin.Ficc
             }).ToArray();
             return new PagedResult<BoardBestRow>
             {
-                Items = rows, TotalCount = page.TotalCount, QueryId = page.Topic, IsPartial = page.TotalCount > rows.Length
+                Items = rows, TotalCount = page.TotalCount, QueryId = page.Topic,
+                IsPartial = page.TotalCount > page.Rows.Count || PriceCalculationWarning(page.Rows) != null,
+                WarningMessage = PriceCalculationWarning(page.Rows)
             };
+        }
+
+        internal static string PriceCalculationWarning(IEnumerable<JObject> books)
+        {
+            int count = books.SelectMany(book => (book["calculationIssues"] as JArray ?? new JArray())
+                    .OfType<JObject>())
+                .Select(issue => (string)issue["quoteId"]).Distinct().Count();
+            return count == 0 ? null : $"本页有 {count} 条报价待收益率换算，暂未参与行情排序；可在报价管理查看原报价。";
         }
 
         private static BestQuoteDetail BestDetail(BoardQuoteRow row)

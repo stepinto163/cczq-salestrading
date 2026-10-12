@@ -24,5 +24,8 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         [JsonProperty("quoteRefs")]
         public Dictionary<string,QuoteReference> QuoteRefs { get; set; }
 
+        [JsonProperty("calculationIssues")]
+        public List<PriceCalculationIssue> CalculationIssues { get; set; }
+
     }
 }

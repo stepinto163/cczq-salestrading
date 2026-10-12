@@ -28,6 +28,8 @@ public final class QuoteResource extends ResourceAdapter {
     private Properties configuration;
     private LoginSessionClient identity;
     private IntakeCreateEndpoint intakeCreate;
+    private CalSvrQuoteYieldResolver calculator;
+    private volatile boolean stopping;
     private BiConsumer<String, JSONObject> publisher = (topic, value) -> {};
 
     @Override
@@ -73,6 +75,25 @@ public final class QuoteResource extends ResourceAdapter {
                                     new QuoteService(
                                             store, references, new AccessPolicy(configuration)));
             service.publish = this.publisher;
+            String calServer = configuration.getProperty("cal.serverKey", "SERVER.CalSvr");
+            long calTimeout = Long.parseLong(configuration.getProperty("cal.requestTimeoutMillis", "3000"));
+            int calQueueCapacity = Integer.parseInt(configuration.getProperty("cal.queueCapacity", "256"));
+            calculator = ComponentLog.initialize(configuration, "PRICE_CALCULATOR", "stc",
+                    "CalSvrQuoteYieldResolver", calServer + "/stc.broker.calbond (local adapter only)",
+                    () -> {
+                        if (calTimeout <= 0 || calQueueCapacity <= 0) {
+                            throw new IllegalArgumentException("CalSvr timeout and queue capacity must be positive");
+                        }
+                        return new CalSvrQuoteYieldResolver(new NetClientTransport(network, calServer, calTimeout),
+                                calQueueCapacity, security -> {
+                                    synchronized (service) {
+                                        if (!stopping) {
+                                            service.views.calculationChanged(security);
+                                        }
+                                    }
+                                });
+                    });
+            service.priceBooks.yieldResolver = calculator;
             identity.onInvalidated(
                     sessionId -> {
                         synchronized (service) {
@@ -198,7 +219,11 @@ public final class QuoteResource extends ResourceAdapter {
 
     @Override
     public void stop() throws LifecycleException {
+        stopping = true;
         try {
+            if (calculator != null) {
+                calculator.close();
+            }
             if (service != null) {
                 service.refs.close();
             }

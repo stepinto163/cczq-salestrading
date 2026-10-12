@@ -64,6 +64,10 @@ final class ViewService {
 
     Object openStream(QuoteService.Call c, String domain) {
         RequestValidator.allowOnlyFields(c.request(), "requestId");
+        if ("price".equals(domain)
+                && svc.priceBooks.yieldResolver instanceof CalSvrQuoteYieldResolver) {
+            ((CalSvrQuoteYieldResolver) svc.priceBooks.yieldResolver).retryFailures();
+        }
         Stream s =
                 streams.computeIfAbsent(
                         c.session() + ":" + domain,
@@ -543,7 +547,8 @@ final class ViewService {
                 JSONObject book = book(stream.user, securityId,
                         view.request.getJSONObject("filter"), mode(view.request),
                         view.request.getIntValue("depth"));
-                if (book.getJSONObject("marketData").getJSONArray("NoMDEntries").isEmpty()) {
+                if (book.getJSONObject("marketData").getJSONArray("NoMDEntries").isEmpty()
+                        && !book.containsKey("calculationIssues")) {
                     removals.add(securityId);
                 } else {
                     upserts.put(securityId, book);
@@ -623,6 +628,26 @@ final class ViewService {
                                     Long.toString(++s.sequence)));
                 }
             }
+    }
+
+    /** 换算就绪只刷新对应债券的行情，不伪造报价操作、报价版本或确认事件。 */
+    void calculationChanged(String securityId) {
+        QuoteRecord representative = svc.quotes.values().stream()
+                .filter(quote -> securityId.equals(quote.securityId) && "ACTIVE".equals(quote.status))
+                .findFirst().orElse(null);
+        if (representative == null) {
+            return;
+        }
+        svc.priceBooks.calculationChanged(securityId);
+        marketSequence++;
+        for (Stream stream : streams.values()) {
+            if (stream.subscribed && "price".equals(stream.domain)) {
+                publishChanges(stream, representative, null, null, null);
+            }
+        }
+        svc.publish.accept("ficc.price.snapshots", feed(false, Collections.singletonList(securityId)));
+        svc.publish.accept("ficc.price.book." + securityId,
+                book(null, securityId, JsonUtils.object(), "FULL", 0).getJSONObject("marketData"));
     }
 
     void heartbeat() {

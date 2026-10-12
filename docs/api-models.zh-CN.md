@@ -409,6 +409,18 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `bookRevision` | `String` | 债券价格簿版本 |
 | `marketData` | `MarketData` | STC 风格行情内容 |
 | `quoteRefs` | `Map<String,QuoteReference>` | 行情条目 ID 到报价 ID/版本的映射 |
+| `calculationIssues` | `List<PriceCalculationIssue>` | 未参与排序的报价及原因；无问题时省略，前端提示部分行情 |
+
+<a id="pricecalculationissue"></a>
+### PriceCalculationIssue
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/PriceCalculationIssue.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/PriceCalculationIssue.cs)；继承 [ProtocolModel](#protocolmodel)。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `quoteId` | `String` | 当前用户可见、满足筛选，但尚无可比收益率的原始报价 ID |
+| `code` | `String` | 等待换算、离线、超时/计算失败、队列满或输入不支持等原因，见 API 文档 |
+
 <a id="marketdata"></a>
 ### MarketData
 
