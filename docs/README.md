@@ -9,7 +9,8 @@
 ## 架构、模型与前端协议
 
 - [销售交易业务规则与实现核查](business-invariants.zh-CN.md)
-- [FICC服务API规范（实现对照与评审稿）](ficc-api-spec.zh-CN.md)
+- [FICC 前后端 API：按模型、逐接口输入输出（2026-10-12 代码基线）](ficc-api-spec.zh-CN.md)
+- [协议模型字段表：类型、继承、Java/C# 定义与实际报文差异](api-models.zh-CN.md)
 - [应用消息协议代码与维护](application-protocol.zh-CN.md)
 - [FICC销售交易系统架构（讨论稿）](ficc-sales-trading-architecture.zh-CN.md)
 - [核心数据模型ER图（讨论草稿）](models/core-data-model-er.zh-CN.md)

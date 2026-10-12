@@ -10,7 +10,7 @@ AI 协作从 [handoff/INDEX.md](handoff/INDEX.md) 开始；WorkBuddy 使用[启�
 
 - 了解系统：[架构](docs/ficc-sales-trading-architecture.zh-CN.md)、[核心模型](docs/models/core-data-model-er.zh-CN.md)。
 - 产品约束：[业务规则与实现核查](docs/business-invariants.zh-CN.md)，以产品需求为准，记录权限边界、实现缺口及验收用例。
-- 开发接入：[API 规格](docs/ficc-api-spec.zh-CN.md)、[协议模型代码](docs/application-protocol.zh-CN.md)、[筛选字段与枚举](docs/product-filter-contract.zh-CN.md)、[STC 开发约定](docs/stc-development-principles.zh-CN.md)。
+- 开发接入：[前后端 API 输入输出](docs/ficc-api-spec.zh-CN.md)、[协议模型字段表](docs/api-models.zh-CN.md)、[协议模型代码](docs/application-protocol.zh-CN.md)、[筛选字段与枚举](docs/product-filter-contract.zh-CN.md)、[STC 开发约定](docs/stc-development-principles.zh-CN.md)。
 - 筛选数据接入：[79 个条件字段的数据来源与实现状态](docs/product-filter-source-status.zh-CN.md)。
 - 构建部署：[Maven 构建](iteration1/docs/maven-jenkins.zh-CN.md)、[QA Jenkins](iteration1/docs/jenkins-qa.zh-CN.md)、[数据库初始化与迁移](iteration1/docs/qa-database.zh-CN.md)。
 - 运行联调：[本机启动](iteration1/docs/local-startup.zh-CN.md)、[依赖适配](iteration1/docs/stc-adapters.zh-CN.md)、[API 调试器](iteration1/docs/api-debugger.zh-CN.md)。
