@@ -127,8 +127,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
                 if (!lease.IsCurrent) return;
 
-                var selectedIds = new HashSet<string>(Batches.SelectMany(batch => batch.Rows)
-                    .Where(row => row.IsSelected).Select(row => row.Row.RecognitionId));
+                var selectedRows = Batches.SelectMany(batch => batch.Rows)
+                    .Where(row => row.IsSelected)
+                    .ToDictionary(row => row.RecognitionId);
                 var expandedGroups = Batches.ToDictionary(batch => batch.BatchId, batch => batch.IsExpanded);
                 UnhookAllRows();
                 Batches.Clear();
@@ -168,8 +169,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     }
                     foreach (var row in kv.Value)
                     {
-                        var rvm = new QuoteConfirmRowViewModel(row);
-                        rvm.IsSelected = selectedIds.Contains(row.RecognitionId);
+                        // 推送仍须移除已确认/删除的报价；仅复用版本未变的选中行，保留未提交编辑。
+                        QuoteConfirmRowViewModel rvm;
+                        if (!selectedRows.TryGetValue(row.RecognitionId, out rvm)
+                            || rvm.Row.Revision != row.Revision)
+                        {
+                            rvm = new QuoteConfirmRowViewModel(row);
+                        }
                         HookRow(rvm);
                         batch.Rows.Add(rvm);
                     }
@@ -580,10 +586,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void OnBackendChanged()
         {
-            if (!SelectedRows.Any())
-            {
-                _ = InitializeAsync();
-            }
+            _ = InitializeAsync();
         }
 
         public void Dispose()

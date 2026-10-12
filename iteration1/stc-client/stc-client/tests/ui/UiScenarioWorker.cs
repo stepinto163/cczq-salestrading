@@ -299,6 +299,10 @@ namespace SalesTrading.UiTests
                         }))
                     }.ToString());
                     Require(model.QuotePage.Precise.Rows.Count == int.Parse(Parameter(step, "expectedRows")), "识别数量不匹配：" + model.QuotePage.Precise.StatusMessage);
+                    var previewClientIds = new HashSet<string>(model.QuotePage.Precise.Rows.Select(row => row.Row.ClientQuoteId));
+                    var pendingAfterParse = await model.Backend.LoadPendingRowsAsync(System.Threading.CancellationToken.None);
+                    Require(!pendingAfterParse.Any(row => previewClientIds.Contains(row.ClientQuoteId)),
+                        "仅识别不得创建待确认报价");
                     break;
                 case "parse.assert":
                     QuoteConfirmRowViewModel parsed = model.QuotePage.Precise.Rows.Single();
@@ -329,6 +333,9 @@ namespace SalesTrading.UiTests
                         JObject stored = await model.Backend.Api.GetQuoteAsync(submitted.RecognitionId);
                         Require((string)stored["status"] == "ACTIVE", "识别报价未持久化为 ACTIVE");
                     }
+                    await Until(() => !model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
+                        .Any(row => selectedPreview.Any(submitted => submitted.RecognitionId == row.RecognitionId)),
+                        "已确认识别报价从报价确认页移除");
                     break;
                 default:
                     await ExecuteRegressionAsync(step);

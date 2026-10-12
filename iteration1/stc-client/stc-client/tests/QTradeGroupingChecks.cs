@@ -116,6 +116,18 @@ internal static class QTradeGroupingChecks
                 await model.DeleteSelectedCommand.ExecuteAsync(null);
                 Check(service.Deleted.Single() == "Q-late-arrival" && model.Batches.Count == 1,
                     "removing last pending member removes only its group");
+                QuoteConfirmRowViewModel selectedPending = model.Batches[0].Rows[0];
+                selectedPending.IsSelected = true;
+                selectedPending.Price = "2.6789";
+                await (Task)typeof(QuoteConfirmViewModel).GetMethod("InitializeAsync", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(model, null);
+                Check(ReferenceEquals(model.Batches[0].Rows[0], selectedPending)
+                    && selectedPending.Price == "2.6789" && model.SelectedCount == 1,
+                    "pending refresh preserves selected unsubmitted edits at unchanged revision");
+                service.Rows.Clear();
+                typeof(QuoteConfirmViewModel).GetMethod("OnBackendChanged", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(model, null);
+                await Idle();
+                Check(model.TotalRowCount == 0 && model.SelectedCount == 0,
+                    "confirmed or deleted quote leaves pending view even while selected");
             }
             finally
             {
