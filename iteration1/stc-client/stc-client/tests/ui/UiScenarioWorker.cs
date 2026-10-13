@@ -68,14 +68,14 @@ namespace SalesTrading.UiTests
             return application.Run();
         }
 
-        private static void Emit(string step, string state, string detail)
+        private static void Emit(string step, string state, string detail, long? waitMillis = null)
         {
             string secret = Environment.GetEnvironmentVariable("STC_UI_PASSWORD");
             if (!string.IsNullOrEmpty(secret)) detail = (detail ?? "").Replace(secret, "[REDACTED]");
             JObject entry = new JObject
             {
                 ["time"] = DateTime.Now.ToString("O"), ["caseId"] = definition.Id,
-                ["step"] = step, ["state"] = state, ["detail"] = detail
+                ["step"] = step, ["waitMillis"] = waitMillis, ["state"] = state, ["detail"] = detail
             };
             events.Add(entry);
             File.AppendAllText(Path.Combine(reportDirectory, "events.jsonl"), entry.ToString(Formatting.None) + Environment.NewLine);
@@ -94,6 +94,12 @@ namespace SalesTrading.UiTests
                 {
                     stepNumber++;
                     ThrowIfCancelled();
+                    if (stepNumber > 1)
+                    {
+                        await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
+                            Emit(step.Name, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE",
+                                waiting ? "操作间隔等待中；可在管理窗口实时调整" : "操作间隔等待 " + milliseconds + " ms", milliseconds));
+                    }
                     Emit(step.Name, "RUNNING", step.Action);
                     Stopwatch duration = Stopwatch.StartNew();
                     await ExecuteAsync(step);

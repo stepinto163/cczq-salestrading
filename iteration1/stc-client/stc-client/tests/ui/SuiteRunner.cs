@@ -19,6 +19,26 @@ namespace SalesTrading.UiTests
         public bool StopRequested { get; private set; }
         public event Action<JObject> Progress;
 
+        private int operationIntervalMilliseconds;
+        private OperationWaitBudget operationWaitBudget;
+
+        public int OperationIntervalMilliseconds
+        {
+            get { return operationIntervalMilliseconds; }
+            set
+            {
+                if (value < 0 || value > OperationInterval.MaximumMilliseconds)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                if (CurrentDirectory != null)
+                {
+                    new OperationInterval(CurrentDirectory).Save(value);
+                }
+                operationIntervalMilliseconds = value;
+            }
+        }
+
         public void Stop()
         {
             StopRequested = true;
@@ -60,6 +80,8 @@ namespace SalesTrading.UiTests
                         }
                         CurrentDirectory = Path.Combine(OutputDirectory, definition.Id);
                         Directory.CreateDirectory(CurrentDirectory);
+                        new OperationInterval(CurrentDirectory).Save(OperationIntervalMilliseconds);
+                        operationWaitBudget = new OperationWaitBudget();
                         string caseFile = Path.Combine(CurrentDirectory, "case.json");
                         definition.Save(caseFile);
                         SetSetting(config, "IsSingle", "false");
@@ -104,7 +126,7 @@ namespace SalesTrading.UiTests
                                     stopTime = DateTime.UtcNow;
                                     File.WriteAllText(Path.Combine(CurrentDirectory, "cancel"), "stop");
                                 }
-                                if (elapsed.Elapsed.TotalSeconds > timeoutSeconds || (stopTime != null && DateTime.UtcNow - stopTime > TimeSpan.FromSeconds(30)))
+                                if (elapsed.ElapsedMilliseconds - operationWaitBudget.ExcludedMilliseconds > timeoutSeconds * 1000L || (stopTime != null && DateTime.UtcNow - stopTime > TimeSpan.FromSeconds(30)))
                                 {
                                     // This is the single worker started above, never an unrelated STC process.
                                     process.Kill();
@@ -152,7 +174,19 @@ namespace SalesTrading.UiTests
             while (count < lines.Length - 1)
             {
                 string line = lines[count].Trim();
-                if (line.Length > 0) Progress?.Invoke(JObject.Parse(line));
+                if (line.Length > 0)
+                {
+                    JObject entry = JObject.Parse(line);
+                    if ((string)entry["state"] == "INTERVAL_WAIT")
+                    {
+                        operationWaitBudget.Begin();
+                    }
+                    else if ((string)entry["state"] == "INTERVAL_DONE")
+                    {
+                        operationWaitBudget.Complete((long?)entry["waitMillis"] ?? 0);
+                    }
+                    Progress?.Invoke(entry);
+                }
                 count++;
             }
         }

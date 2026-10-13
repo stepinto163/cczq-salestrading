@@ -1,6 +1,7 @@
 param(
     [string]$Cases = 'all',
     [string]$StcConfig,
+    [ValidateRange(0, 60000)][int]$OperationIntervalMilliseconds = 0,
     [string]$ReportDirectory
 )
 $ErrorActionPreference = 'Stop'
@@ -10,7 +11,7 @@ if (!$StcConfig) { $StcConfig = Join-Path $runtime 'STC.exe.config' }
 if (!$ReportDirectory) { $ReportDirectory = Join-Path $runtime ('ui-test-reports/' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff')) }
 if (!$env:STC_UI_USER -or !$env:STC_UI_PASSWORD) { throw 'Set STC_UI_USER and STC_UI_PASSWORD to the dedicated test account.' }
 $arguments = @('--cases', ('"' + (Join-Path $clientRoot 'tests/ui/cases') + '"'), '--run', $Cases,
-    '--config', ('"' + $StcConfig + '"'), '--report', ('"' + $ReportDirectory + '"'))
+    '--interval-ms', $OperationIntervalMilliseconds.ToString(), '--config', ('"' + $StcConfig + '"'), '--report', ('"' + $ReportDirectory + '"'))
 $process = Start-Process -FilePath (Join-Path $runtime 'SalesTradingUiTests.exe') -WorkingDirectory $runtime -ArgumentList $arguments -PassThru -WindowStyle Hidden
 Write-Host "Report: $ReportDirectory"
 $null = $process.Handle

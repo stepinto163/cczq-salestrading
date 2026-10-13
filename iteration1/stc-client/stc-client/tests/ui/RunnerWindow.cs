@@ -18,6 +18,11 @@ namespace SalesTrading.UiTests
         private readonly TextBox user = new TextBox { Width = 130, Text = "localqa" };
         private readonly TextBox password = new TextBox { Width = 130, UseSystemPasswordChar = true };
         private readonly TextBox security = new TextBox { Width = 120, Text = "240210.IB" };
+        private readonly NumericUpDown operationInterval = new NumericUpDown
+        {
+            Name = "OperationIntervalSeconds", Width = 95, Minimum = 0, Maximum = 60,
+            DecimalPlaces = 1, Increment = 0.1m, Value = 0
+        };
         private readonly Label status = new Label { AutoSize = true, Text = "就绪；请使用专用测试账号。" };
         private readonly List<Button> lockedButtons = new List<Button>();
         private SuiteRunner runner;
@@ -38,6 +43,10 @@ namespace SalesTrading.UiTests
                     List<CaseDefinition> selected = Directory.GetFiles(source, "*.json").Select(CaseDefinition.Read)
                         .Where(item => ids.Contains(item.Id) || ids.Contains("all")).ToList();
                     SuiteRunner cli = new SuiteRunner();
+                    if (options.ContainsKey("--interval-ms"))
+                    {
+                        cli.OperationIntervalMilliseconds = int.Parse(options["--interval-ms"], System.Globalization.CultureInfo.InvariantCulture);
+                    }
                     return cli.RunAsync(selected, options["--config"], Environment.GetEnvironmentVariable("STC_UI_USER"),
                         Environment.GetEnvironmentVariable("STC_UI_PASSWORD"), Environment.GetEnvironmentVariable("STC_UI_SECURITY") ?? "240210.IB",
                         options["--report"]).GetAwaiter().GetResult() ? 0 : 1;
@@ -68,7 +77,7 @@ namespace SalesTrading.UiTests
             Font = new Font("Microsoft YaHei UI", 10);
             StartPosition = FormStartPosition.CenterScreen;
             TableLayoutPanel root = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 5, ColumnCount = 1, Padding = new Padding(10) };
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 85));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 45));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 58));
@@ -91,6 +100,24 @@ namespace SalesTrading.UiTests
                 settings.Controls.Add(setting.Item2);
             }
             settings.Controls.Add(new Label { Text = "连接真实服务；每例独立登录；小批量串行执行。", AutoSize = true });
+            settings.SetFlowBreak(settings.Controls[settings.Controls.Count - 1], true);
+            settings.Controls.Add(new Label { Text = "操作间隔（秒）", AutoSize = true });
+            settings.Controls.Add(operationInterval);
+            settings.Controls.Add(new Label { Text = "0 = 不额外等待；运行中修改立即影响当前等待；按用例动作间隔。", AutoSize = true });
+            operationInterval.ValueChanged += (sender, args) =>
+            {
+                try
+                {
+                    if (runner != null)
+                    {
+                        runner.OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000);
+                    }
+                }
+                catch (Exception error)
+                {
+                    status.Text = "操作间隔更新失败：" + error.Message;
+                }
+            };
             root.Controls.Add(settings, 0, 0);
             FlowLayoutPanel commands = new FlowLayoutPanel { Dock = DockStyle.Fill };
             AddButton(commands, "新增用例", () => Edit(false));
@@ -228,7 +255,7 @@ namespace SalesTrading.UiTests
             cases.EndEdit();
             List<CaseDefinition> selected = cases.Rows.Cast<DataGridViewRow>()
                 .Where(row => (bool?)row.Cells[0].Value == true).Select(row => CaseDefinition.Read((string)row.Tag)).ToList();
-            runner = new SuiteRunner();
+            runner = new SuiteRunner { OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000) };
             report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui-test-reports", DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
             progress.Rows.Clear();
             running = true;

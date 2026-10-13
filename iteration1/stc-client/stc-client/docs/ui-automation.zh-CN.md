@@ -156,3 +156,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 ```
 
 2026-10-13 已在本地真实 STC/GW/QuoteSvr/CRM 链路验证；本轮范围为报价确认工具栏，不代表所有页面或 QA 环境已完成回归。
+
+## 运行中调整操作间隔
+
+管理窗口顶部新增「操作间隔（秒）」，范围 0–60，精度 0.1 秒，默认 0（保持原有执行速度）。运行中仍可调整；调小或调大都会影响当前等待，约 100ms 内读取新值，已经等待的时间不会清零。点击「停止并清理」会中断等待并进入原有清理流程。
+
+间隔应用于每个用例中相邻的 JSON `steps` 动作之间；首步、登录和清理不额外等待。`groups.manage`、`pending.toolbar` 等复合动作内部的多个点击仍作为一个动作执行，不逐次插入间隔。网络超时、页面就绪轮询不随此设置改变；性能计时在动作开始后启动，不包含动作前的人工间隔。
+
+执行日志会记录 `INTERVAL_WAIT` / `INTERVAL_DONE` 和实际 `waitMillis`；每例报告目录的 `operation-interval-ms.txt` 是窗口与工作进程之间的实时控制文件。看门狗只扣除这段有界的人工间隔，业务执行超时和停止后 30 秒清理宽限期保持不变。关闭并重新打开管理窗口时恢复默认 0。
+
+命令行可指定初始间隔，例如：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/run-ui-tests.ps1 -Cases 22-account-groups -OperationIntervalMilliseconds 1000
+```
+
+单动作复合用例没有相邻步骤，因此不会增加等待；观察逐步流程时应选择多步骤用例。无业务写入的间隔控制回归检查：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-ui-operation-interval.ps1
+```
