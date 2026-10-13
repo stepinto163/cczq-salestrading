@@ -23,6 +23,10 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         public static string ServiceFor(string topic)
         {
+            if (topic.StartsWith("ficc.qtrade.", StringComparison.Ordinal) || topic.StartsWith("ficc.qtintake.", StringComparison.Ordinal))
+            {
+                return "QtIntakeSvr";
+            }
             return topic.StartsWith("ficc.notification.", StringComparison.Ordinal)
                 ? "NotificationSvr" : "QuoteSvr";
         }

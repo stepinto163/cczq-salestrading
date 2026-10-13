@@ -59,6 +59,12 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "qtrade.publish":
+                    await PublishQTradeAsync(step);
+                    break;
+                case "qtrade.confirmPublished":
+                    await ConfirmPublishedQTradeAsync(step);
+                    break;
                 case "fixture.pending":
                 case "management.edit":
                 case "management.save":

@@ -72,6 +72,17 @@ class FixLoopbackTest {
                     public void onLogon(SessionID id) {
                         connected.countDown();
                     }
+
+                    @Override
+                    public void fromApp(Message message, SessionID id) throws FieldNotFound {
+                        if ("U41".equals(message.getHeader().getString(35))) {
+                            try {
+                                Session.sendToTarget(QTradePublishTest.ack(message.getString(18044), "0", 1), id);
+                            } catch (SessionNotFound error) {
+                                throw new AssertionError(error);
+                            }
+                        }
+                    }
                 };
         SessionSettings serverSettings =
                 new SessionSettings(
@@ -125,6 +136,12 @@ class FixLoopbackTest {
             assertEquals("240210.IB", quote.getString("securityId"));
             assertEquals("2026-09-22", quote.getString("tradeDate"));
             assertEquals("2", quote.getString("settlType"));
+            QTradePublisher publisher = new QTradePublisher(directory.resolve("publish-receipts"), 1000);
+            receiver.setPublisher(publisher);
+            ficc.api.QTradePublishData published = publisher.publish(
+                    QTradePublishTest.request("APP-LOOPBACK-123"), receiver::sendPublish);
+            assertEquals("ACKNOWLEDGED", published.status, "U41 and U29 traverse the actual FIX socket callbacks");
+            assertNotNull(published.fixSequence);
             String output = new String(Files.readAllBytes(log), StandardCharsets.UTF_8);
             assertTrue(output.contains("FIX RECEIVE"));
             assertTrue(output.contains("117=QT-CAPTURE-1"));

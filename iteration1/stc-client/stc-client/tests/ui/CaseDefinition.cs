@@ -77,6 +77,8 @@ namespace SalesTrading.UiTests
     {
         public static readonly Dictionary<string, string[]> Fields = new Dictionary<string, string[]>
         {
+            { "qtrade.publish", new[] { "appId", "senderQtAccount", "receiverQtAccount", "receiverLogin", "routingType", "routingId", "mode", "securityId", "symbol", "price", "expectedRows" } },
+            { "qtrade.confirmPublished", new[] { "contactName", "institutionName" } },
             { "fixture.pending", new[] { "securityId", "price", "quantity", "side", "settlType" } },
             { "management.edit", new[] { "securityId", "price", "quantity", "side", "settlType" } },
             { "management.save", new string[0] },
@@ -115,6 +117,8 @@ namespace SalesTrading.UiTests
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
         {
+            { "qtrade.publish", "发布真实 QTrade 意向并核对 FIX 接收及待确认" },
+            { "qtrade.confirmPublished", "确认收到的 QTrade 报价并核对行情" },
             { "fixture.pending", "API准备待确认夹具（非UI录入）" },
             { "management.edit", "报价管理打开修改表单并填写" },
             { "management.save", "保存报价修改" },

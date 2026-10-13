@@ -47,7 +47,8 @@ class ProtocolCodecTest {
 
     @Test
     void requestCatalogHasDistinctDomainsAndPreservesUnknownFieldsForValidation() {
-        assertEquals(58, SalesTradingApi.all().size());
+        assertEquals(59, SalesTradingApi.all().size());
+        assertEquals(QTradePublishData.class, SalesTradingApi.QTradeQuotePublish.dataType);
         assertEquals(QuoteViewData.class, SalesTradingApi.QuoteViewOpen.dataType);
         assertEquals(PriceViewData.class, SalesTradingApi.PriceViewOpen.dataType);
         assertEquals(NotificationViewData.class, SalesTradingApi.NotificationViewOpen.dataType);

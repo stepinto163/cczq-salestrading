@@ -8,6 +8,8 @@
 
 ## 目录
 
+新增：[QTrade 意向发布 API、回执与真实 UI 用例](qtrade-publish.zh-CN.md)。
+
 - [1. 接入与公共契约](#transport)
 - [2. Quote：报价与来源](#quote)
 - [3. Parser：识别预览](#parser)

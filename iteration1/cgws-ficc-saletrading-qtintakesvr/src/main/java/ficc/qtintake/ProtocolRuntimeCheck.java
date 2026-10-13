@@ -9,7 +9,7 @@ final class ProtocolRuntimeCheck {
         String[] contracts = {
             "ficc.api.QuoteCreateItem", "ficc.api.QuoteCreateRequest", "ficc.api.IntakeIdentity",
             "ficc.api.QuoteOperationResult", "ficc.api.QuoteWriteData", "ficc.api.ApiReply",
-            "ficc.api.SalesTradingApi"
+            "ficc.api.SalesTradingApi", "ficc.api.QTradePublishRequest", "ficc.api.QTradePublishData"
         };
         for (String name : contracts) {
             try {

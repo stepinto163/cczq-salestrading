@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProtocolRuntimeCheckTest {
     @Test
     void acceptsMatchingRuntime() {
-        assertEquals(7, ProtocolRuntimeCheck.verify(getClass().getClassLoader()));
+        assertEquals(9, ProtocolRuntimeCheck.verify(getClass().getClassLoader()));
     }
 
     @Test

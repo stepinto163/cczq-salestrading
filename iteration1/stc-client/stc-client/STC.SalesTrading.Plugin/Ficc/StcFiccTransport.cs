@@ -177,7 +177,13 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         private void Log(string direction, string topic, JObject body)
         {
-            string line = direction + " " + topic + " " + body.ToString(Formatting.None);
+            JObject loggedBody = body;
+            if (body.Property("token") != null)
+            {
+                loggedBody = (JObject)body.DeepClone();
+                loggedBody["token"] = "[REDACTED]";
+            }
+            string line = direction + " " + topic + " " + loggedBody.ToString(Formatting.None);
             LogHelper.Info(line);
             context.Post(_ => MessageLogged?.Invoke(line), null);
         }

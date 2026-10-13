@@ -14,7 +14,8 @@ QTrade FIX → QtIntakeSvr → 本地持久化待发送目录
 
 ## 本版范围
 
-- 使用现有 PRL 接收程序的 QuickFIX/J 连接方式，不向 QTrade 发出报价、订单或撤单。
+- 使用现有 PRL QuickFIX/J 连接，通过 `ficc.qtrade.quote.publish` 发布新的意向报价（U41），支持单聊和群聊；不提供订单、修改、撤单或回价发送接口。
+- 发布协议及真实 UI 用例见 [QTrade 意向发布](../../docs/qtrade-publish.zh-CN.md)。服务发现名称仍为 `SERVER.QtIntakeSvr`，避免破坏现有部署，职责已包含收发网关。
 - 接收 `35=S`、`TransType(18045)=N/H` 且 `Operator(18035)=2` 的对手方报价，每条创建一条待确认报价。本方发送的 `Operator=1` 不进入待确认列表。
 - STC 的 resource、stream、handler、control 模式；通过 `SERVER.QuoteSvr` 发现服务，不填写 QuoteSvr IP，不模拟用户登录。
 - 复用 `ficc.quote.create` 的校验、写库、历史与事件推送逻辑。接入服务提交带鉴权的 `intake` 来源信息；普通客户端创建接口不变。

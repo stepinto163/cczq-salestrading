@@ -243,7 +243,9 @@ namespace netapi.Api
             else
                 content = string.IsNullOrEmpty(content) ? JsonConvert.SerializeObject(paras, _jsonSerializerSettings) : content;
 
-            LogHelper.Info(string.Format("Request:{0},{1},{2}", svrId, topic, content));
+            // 发布请求可能带内部服务凭据；插件层已有脱敏业务日志，底层不重复输出原文。
+            string loggedContent = topic == "ficc.qtrade.quote.publish" ? "[publish request omitted]" : content;
+            LogHelper.Info(string.Format("Request:{0},{1},{2}", svrId, topic, loggedContent));
             T t = _gateWayApi.requestSync<T>(svrId, topic, content);
 
             string result = t != null?JsonConvert.SerializeObject(t):string.Empty;
@@ -266,7 +268,8 @@ namespace netapi.Api
             else
                 content = string.IsNullOrEmpty(content) ? JsonConvert.SerializeObject(paras, _jsonSerializerSettings) : content;
 
-            LogHelper.Info(string.Format("Request:{0},{1},{2},{3}", svrId, topic, content,waitTime));
+            string loggedContent = topic == "ficc.qtrade.quote.publish" ? "[publish request omitted]" : content;
+            LogHelper.Info(string.Format("Request:{0},{1},{2},{3}", svrId, topic, loggedContent, waitTime));
             T t = _gateWayApi.requestSync<T>(svrId, topic, content, waitTime);
 
             string result = t != null ? JsonConvert.SerializeObject(t) : string.Empty;

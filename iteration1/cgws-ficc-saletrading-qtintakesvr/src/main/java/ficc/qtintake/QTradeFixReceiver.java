@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * QuickFIX/J 主动连接端，读取 FIX 配置并记录会话/应用消息；不向 QT 发交易业务消息。
+ * QuickFIX/J 主动连接端；接收报价并支持经授权的 U41 意向广播，不发送成交指令。
  * 应用回调交给 QTradeQuoteMapper 判定接入范围，映射结果先写 DurableInbox，再由转发线程发送。
  * FIX 登录成功仅证明上游会话在线，不代表归属人映射或下游 QuoteSvr 已经可用。
  */
@@ -22,6 +22,20 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
     private ThreadedSocketInitiator initiator;
     private volatile boolean loggedOn;
     private volatile boolean storageFailed;
+    private volatile SessionID activeSession;
+    private QTradePublisher publisher;
+
+    public void setPublisher(QTradePublisher publisher) {
+        this.publisher = publisher;
+    }
+
+    public boolean sendPublish(Message message) throws Exception {
+        SessionID session = activeSession;
+        if (!loggedOn || session == null) {
+            return false;
+        }
+        return Session.sendToTarget(message, session);
+    }
 
     public QTradeFixReceiver(Properties configuration, DurableInbox inbox) {
         this.configuration = configuration;
@@ -79,6 +93,7 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
 
     @Override
     public void onLogon(SessionID sessionId) {
+        activeSession = sessionId;
         loggedOn = true;
         LOGGER.info("FIX state=CONNECTED session=" + sessionId);
     }
@@ -86,6 +101,10 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
     @Override
     public void onLogout(SessionID sessionId) {
         loggedOn = false;
+        activeSession = null;
+        if (publisher != null) {
+            publisher.disconnected();
+        }
         LOGGER.warn("FIX state=DISCONNECTED session=" + sessionId);
     }
 
@@ -106,12 +125,27 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
     @Override
     public void fromAdmin(Message message, SessionID sessionId) {
         log("RECEIVE", message, sessionId);
+        try {
+            if (publisher != null && "3".equals(message.getHeader().getString(35))) {
+                publisher.reject(message);
+            }
+        } catch (Exception error) {
+            LOGGER.error("PUBLISH state=ACK_FAILED type=FIX_REJECT", error);
+        }
     }
 
     @Override
     public void toApp(Message message, SessionID sessionId) throws DoNotSend {
-        log("SUPPRESSED", message, sessionId);
-        throw new DoNotSend();
+        try {
+            if (publisher == null || !"U41".equals(message.getHeader().getString(35))) {
+                throw new DoNotSend();
+            }
+            publisher.sending(message);
+            log("SEND", message, sessionId);
+        } catch (Exception error) {
+            LOGGER.error("PUBLISH state=SEND_SUPPRESSED", error);
+            throw new DoNotSend();
+        }
     }
 
     // Compatibility with the modified QuickFIX interface in older STC runtimes.
@@ -124,6 +158,15 @@ public final class QTradeFixReceiver implements Application, AutoCloseable {
     @Override
     public void fromApp(Message message, SessionID sessionId) {
         log("RECEIVE", message, sessionId);
+        try {
+            if (publisher != null && "U29".equals(message.getHeader().getString(35))) {
+                publisher.acknowledge(message);
+                return;
+            }
+        } catch (Exception error) {
+            LOGGER.error("PUBLISH state=ACK_FAILED type=U29; outcome remains uncertain", error);
+            return;
+        }
         if (storageFailed) {
             throw new IllegalStateException(
                     "QtIntakeSvr storage failed; unsaved input requires reconciliation");

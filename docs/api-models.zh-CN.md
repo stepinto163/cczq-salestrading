@@ -1,5 +1,7 @@
 # FICC 协议模型字段表
 
+新增模型 QTradePublishRequest / QTradePublishData 及嵌套报价、路由、回执类型见 [QTrade 意向发布](qtrade-publish.zh-CN.md)。
+
 更新日期：2026-10-13；基线 `fix/csi-valuations` / `23cf916`。配套 [API 文档](ficc-api-spec.zh-CN.md)。
 
 本表逐项列出 Java `ficc.api` 声明的业务字段，按模型分组；继承字段通过父模型链接展开，避免重复复制。类型是 Java 声明类型，不自动表示必填、默认值或实际 JSON 标量类型。必填条件、可用字段、枚举、实际响应扩展及未实现项以主文档和处理器为准。

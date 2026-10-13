@@ -30,6 +30,9 @@ public final class QtIntakeResource extends ResourceAdapter {
     private QTradeFixReceiver receiver;
     private QuoteForwarder forwarder;
     private NetClientTransport transport;
+    private StcQuoteOwnerResolver owners;
+    private ficc.common.client.LoginSessionClient identity;
+    private QTradePublisher publisher;
 
     @Override
     public void init() throws LifecycleException {
@@ -109,8 +112,15 @@ public final class QtIntakeResource extends ResourceAdapter {
                                                             "quote.timeoutMillis", "3000"))));
             DBPoolResource database =
                     (DBPoolResource) Server.getServer().getResource("DBPoolResource");
-            StcQuoteOwnerResolver owners =
+            owners =
                     StcQuoteOwnerResolver.initialize(configuration, database::getConnection);
+            identity = ComponentLog.initialize(configuration, "PUBLISH_IDENTITY", "stc",
+                    "StcLoginSessionClient", "SERVER.LoginSvr",
+                    () -> new ficc.common.client.StcLoginSessionClient(network.getNetClientWrapper(), configuration));
+            publisher = ComponentLog.initialize(configuration, "PUBLISHER", "quickfix",
+                    "QTradePublisher", configuration.getProperty("publish.receiptsPath", "./data/publish-receipts"),
+                    () -> new QTradePublisher(Paths.get(configuration.getProperty("publish.receiptsPath", "./data/publish-receipts")),
+                            Long.parseLong(configuration.getProperty("publish.ackTimeoutMillis", "3000"))));
             forwarder =
                     new QuoteForwarder(
                             inbox, transport, configuration.getProperty("intake.token"), owners);
@@ -124,6 +134,7 @@ public final class QtIntakeResource extends ResourceAdapter {
                             () -> {
                                 QTradeFixReceiver candidate =
                                         new QTradeFixReceiver(configuration, inbox);
+                                candidate.setPublisher(publisher);
                                 try {
                                     candidate.start();
                                     return candidate;
@@ -150,6 +161,39 @@ public final class QtIntakeResource extends ResourceAdapter {
 
     public void forward() {
         forwarder.run();
+    }
+
+    public Map<String, Object> publish(String sessionId, String content) {
+        String requestId = null;
+        try {
+            ficc.api.QTradePublishRequest request;
+            try {
+                com.alibaba.fastjson2.JSONObject json = JsonUtils.parseObject(content);
+                requestId = json.getString("requestId");
+                request = ficc.api.SalesTradingApi.QTradeQuotePublish.request(json);
+            } catch (RuntimeException error) {
+                throw ficc.common.ApiException.forField("1001", "VALIDATION_FAILED", "Invalid publish request structure", null);
+            }
+            if (publisher == null || identity == null) {
+                throw ficc.common.ApiException.forField("1009", "NOT_READY", "QTrade publisher is starting", null);
+            }
+            QTradePublishMessage.create(request, java.time.LocalDateTime.now());
+            String principal = QTradePublishAuthorization.authorize(request, sessionId,
+                    configuration.getProperty("intake.token"), identity, owners);
+            // 内部调用复用已有接入凭据；QTrade 校验本机构发送账号。普通用户只能代表自身 inf1 发送。
+            LOGGER.info("PUBLISH authorized principal=" + principal + " senderQtAccount=" + request.senderQtAccount
+                    + " messageId=" + request.messageId);
+            // 重复 MsgID 只读原回执；首次发送遇到离线返回明确拒绝，不进入自动转发队列。
+            ficc.api.QTradePublishData result = publisher.publish(request, receiver::sendPublish);
+            return ficc.common.ApiResponse.success(requestId, result.toJson());
+        } catch (ficc.common.ApiException error) {
+            return ficc.common.ApiResponse.failure(requestId, error);
+        } catch (Exception error) {
+            LOGGER.error("PUBLISH state=FAILED requestId=" + requestId, error);
+            return ficc.common.ApiResponse.failure(requestId,
+                    ficc.common.ApiException.forField("1009", "PUBLISH_FAILED",
+                            "Publish failed; inspect server log and query the same MsgID before sending again", null));
+        }
     }
 
     public Map<String, Object> status() {
