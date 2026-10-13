@@ -1,10 +1,10 @@
 # FICC 协议模型字段表
 
-更新日期：2026-10-12；基线 `cc16316`。配套 [API 文档](ficc-api-spec.zh-CN.md)。
+更新日期：2026-10-13；基线 `fix/csi-valuations` / `23cf916`。配套 [API 文档](ficc-api-spec.zh-CN.md)。
 
 本表逐项列出 Java `ficc.api` 声明的业务字段，按模型分组；继承字段通过父模型链接展开，避免重复复制。类型是 Java 声明类型，不自动表示必填、默认值或实际 JSON 标量类型。必填条件、可用字段、枚举、实际响应扩展及未实现项以主文档和处理器为准。
 
-`String`→字符串，`Boolean`→布尔，`Integer`→整数，`List<T>`→数组，`Map<String,T>`→对象映射，`Object`→条件标量/数组等。null 与省略字段不同。Parser 的 BigDecimal 数值与兼容层保留的原始标量特别见主文档。
+`String`→字符串，`Boolean`→布尔，`Integer`→整数，`Double`→JSON 数字（推荐得分），`List<T>`→数组，`Map<String,T>`→对象映射，`Object`→条件标量/数组等。null 与省略字段不同。Parser 的 BigDecimal 数值与兼容层保留的原始标量特别见主文档。
 
 模型有字段不代表可写；记录、推送、只读资料字段不能整对象回传给严格写入接口。ReferenceRecord 是多种资料的联合字段集合，不是每种资料都返回全部字段。
 
@@ -17,6 +17,7 @@
 | BaseData / base.get | missingIds: string[]；referenceVersion: string | 按 ID 读取的实际输出 |
 | ParserReply | Warnings: string[]；TotalSize: integer | 服务返回，Java DTO 未声明；C# 有 Warnings |
 | ParserQuote | price、qty、chinaBondValuation: number | 实际由 TableIntentionQuote 的 BigDecimal 序列化；DTO 中是 String |
+| ReferenceRecord 双端声明 | csiValuationCleanPrice、csiValuationFullPrice、csiValuationDate、csiExerciseYield、csiExerciseCleanPrice、csiExerciseFullPrice、csiRecommendedBasis、csiValuationStatus: string | Java 已声明，C# 尚无对应强类型属性；扩展字段不能视为属性已对齐 |
 | MarketEntry 双端声明 | PriceType、ExerciseFlag、UserID、MDPriceLevel: string | 2026-10-12 行情身份显示修复已补齐 C# 声明；并新增 InstitutionName、TraderName |
 
 Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及估值扩展；其字段清单见本文末尾 TableIntentionQuote，不能视为可直接写入 QuoteSvr 的对象。
@@ -25,9 +26,10 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 
 - 公共封装与分页：[ProtocolModel](#protocolmodel)、[Request](#request)、[Reply](#reply)、[ApiReply](#apireply)、[EmptyData](#emptydata)、[ErrorDetail](#errordetail)、[PageRequest](#pagerequest)、[PageData](#pagedata)、[EventPosition](#eventposition)
 - 报价及来源：[QuoteChangeItem](#quotechangeitem)、[QuoteChangeRequest](#quotechangerequest)、[QuoteCreateItem](#quotecreateitem)、[QuoteCreateRequest](#quotecreaterequest)、[QuoteGetData](#quotegetdata)、[QuoteGetRequest](#quotegetrequest)、[QuoteHistoryData](#quotehistorydata)、[QuoteHistoryRecord](#quotehistoryrecord)、[QuoteHistoryRequest](#quotehistoryrequest)、[QuoteHistoryRow](#quotehistoryrow)、[QuoteHistorySearchData](#quotehistorysearchdata)、[QuoteHistorySearchRequest](#quotehistorysearchrequest)、[QuoteInput](#quoteinput)、[QuoteOperationResult](#quoteoperationresult)、[QuoteQueryData](#quotequerydata)、[QuoteQueryRequest](#quotequeryrequest)、[QuoteRecord](#quoterecord)、[QuoteReference](#quotereference)、[QuoteReport](#quotereport)、[QuoteSource](#quotesource)、[QuoteWriteData](#quotewritedata)、[SourceMessage](#sourcemessage)、[SourceMessageRequest](#sourcemessagerequest)、[SourceMessageData](#sourcemessagedata)
-- 行情：[PriceBook](#pricebook)、[MarketData](#marketdata)、[MarketEntry](#marketentry)、[PriceQueryRequest](#pricequeryrequest)、[PriceQueryData](#pricequerydata)
+- 行情：[PriceBook](#pricebook)、[PriceCalculationIssue](#pricecalculationissue)、[MarketData](#marketdata)、[MarketEntry](#marketentry)、[PriceQueryRequest](#pricequeryrequest)、[PriceQueryData](#pricequerydata)
 - 筛选、关注与字典：[DictionaryData](#dictionarydata)、[DictionaryOption](#dictionaryoption)、[DictionaryRequest](#dictionaryrequest)、[Filter](#filter)、[FilterCondition](#filtercondition)、[FilterField](#filterfield)、[FilterGroup](#filtergroup)、[FilterGroupData](#filtergroupdata)、[FilterGroupDeleteRequest](#filtergroupdeleterequest)、[FilterGroupQueryRequest](#filtergroupqueryrequest)、[FilterGroupSaveRequest](#filtergroupsaverequest)、[FilterSubgroup](#filtersubgroup)、[Watchlist](#watchlist)、[WatchlistData](#watchlistdata)、[WatchlistDeleteRequest](#watchlistdeleterequest)、[WatchlistQueryRequest](#watchlistqueryrequest)、[WatchlistSaveRequest](#watchlistsaverequest)、[WatchlistSecurity](#watchlistsecurity)
 - 资料与 CRM：[BaseData](#basedata)、[BaseGetRequest](#basegetrequest)、[BaseQueryRequest](#basequeryrequest)、[CrmGetData](#crmgetdata)、[CrmGetRequest](#crmgetrequest)、[CrmLegacyData](#crmlegacydata)、[CrmLegacyRecord](#crmlegacyrecord)、[CrmLookupRequest](#crmlookuprequest)、[CrmSearchRequest](#crmsearchrequest)、[ReferenceRecord](#referencerecord)
+- 智能推荐：[RecommendationQueryRequest](#recommendationqueryrequest)、[RecommendationQueryData](#recommendationquerydata)、[RecommendationRecord](#recommendationrecord)、[RecommendationEvidence](#recommendationevidence)、[RecommendationFeedbackRequest](#recommendationfeedbackrequest)、[RecommendationFeedbackData](#recommendationfeedbackdata)
 - 识别：[ParserRequest](#parserrequest)、[ParserReply](#parserreply)、[ParserQuote](#parserquote)
 - 提醒：[NotificationPreference](#notificationpreference)、[NotificationPreferenceData](#notificationpreferencedata)、[NotificationPreferenceSaveRequest](#notificationpreferencesaverequest)、[NotificationQueryData](#notificationquerydata)、[NotificationQueryRequest](#notificationqueryrequest)、[NotificationReadData](#notificationreaddata)、[NotificationReadRequest](#notificationreadrequest)、[NotificationReadResult](#notificationreadresult)、[NotificationReason](#notificationreason)、[NotificationRecord](#notificationrecord)
 - 视图与推送：[NotificationStreamBatch](#notificationstreambatch)、[NotificationViewData](#notificationviewdata)、[NotificationViewOpenRequest](#notificationviewopenrequest)、[PriceStreamBatch](#pricestreambatch)、[PriceViewData](#priceviewdata)、[PriceViewOpenRequest](#priceviewopenrequest)、[QuoteStreamBatch](#quotestreambatch)、[QuoteViewData](#quoteviewdata)、[QuoteViewOpenRequest](#quoteviewopenrequest)、[StreamMessage](#streammessage)、[StreamOpenData](#streamopendata)、[ViewCloseData](#viewclosedata)、[ViewCloseRequest](#viewcloserequest)、[ViewDelta](#viewdelta)、[ViewPage](#viewpage)、[ViewQueryRequest](#viewqueryrequest)
@@ -447,7 +449,7 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `MDEntrySize` | `String` | 报价量，万 |
 | `PriceType` | `String` | 当前投影为 3（收益率） |
 | `ExerciseFlag` | `String` | 0 行权 / 1 到期 |
-| `UserID` | `String` | 报价归属 STC userid |
+| `UserID` | `String` | 本方报价所有者 STC userid；客户端解析姓名显示为长城交易员 |
 | `MDPriceLevel` | `String` | 当前同侧条目顺序，从 1 开始，非不同价档序号 |
 | `SettlType` | `String` | Quote 清算编码 |
 | `MDEntryPositionNo` | `String` | 保留的 STC 条目位置字段；当前投影未赋值 |
@@ -456,11 +458,10 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `Yield` | `String` | 到期收益率 |
 | `YieldToExecution` | `String` | 行权收益率 |
 | `InstitutionID` | `String` | CRM 机构 ID，依权限返回 |
-| `InstitutionName` | `String` | 报价中已保存的对手机构名称，与 InstitutionID 同权限返回 |
+| `InstitutionName` | `String` | 对手机构名称，遵守行情可见性规则 |
 | `TraderID` | `String` | CRM 联系人 ID，依权限返回 |
-| `TraderName` | `String` | 报价中已保存的对手联系人姓名，与 TraderID 同权限返回 |
+| `TraderName` | `String` | 对手联系人姓名；不是本方报价归属人 |
 
-客户端将 `UserID` 按 STC 用户目录的 `userid` 解析为 `name`，显示在“长城交易员”；`name` 为空时使用该用户的 `username`。目录使用宿主登录时加载的 AdminSvr 缓存，本人还可使用登录资料 `FullName`；未解析到的用户显示原 userid，不冒用当前登录人或对手姓名。每页构建内存索引，不逐条发起远程查询。FULL 行和 BEST 明细共用映射；对手资料被服务端省略时，客户端不补查隐藏身份。
 <a id="pricequeryrequest"></a>
 ### PriceQueryRequest
 
@@ -480,6 +481,96 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | 字段 | 声明类型 | 说明 |
 |---|---|---|
 | `books` | `List<PriceBook>` | 视图价格簿数组；price.query 实际返回 prices |
+
+## 智能推荐
+
+<a id="recommendationqueryrequest"></a>
+### RecommendationQueryRequest
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/RecommendationQueryRequest.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/RecommendationQueryRequest.cs)；继承 [Request](#request) 的字段。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `securityId` | `String` | 债券代码 |
+| `startDate` | `String` | 查询起始自然日 yyyy-MM-dd，包含当天 |
+| `endDate` | `String` | 查询结束自然日 yyyy-MM-dd，包含当天；窗口共 1–365 天 |
+
+<a id="recommendationquerydata"></a>
+### RecommendationQueryData
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/RecommendationQueryData.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/RecommendationQueryData.cs)；继承 [ProtocolModel](#protocolmodel) 的字段。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `securityId` | `String` | 债券代码 |
+| `startDate` | `String` | 查询起始自然日 yyyy-MM-dd，包含当天 |
+| `endDate` | `String` | 查询结束自然日 yyyy-MM-dd，包含当天；窗口共 1–365 天 |
+| `scoringVersion` | `String` | 当前为 quote-evidence-v1 |
+| `recommendations` | `List<RecommendationRecord>` | 推荐条目，按得分降序、推荐 ID 排序；无证据为空数组 |
+
+<a id="recommendationrecord"></a>
+### RecommendationRecord
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/RecommendationRecord.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/RecommendationRecord.cs)；继承 [ProtocolModel](#protocolmodel) 的字段。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `recommendationId` | `String` | 按债券、方向、本方归属人及对手分组生成的稳定推荐 ID |
+| `securityId` | `String` | 债券代码 |
+| `securityName` | `String` | 债券简称 |
+| `side` | `String` | 1=Bid，2=Ofr |
+| `score` | `Double` | 时间衰减加权得分，JSON 数字，保留两位小数；公式见主文档 |
+| `quoteCount` | `Integer` | 窗口内去重后的正式报价证据数 |
+| `institutionName` | `String` | 本人证据的对手机构名；其他用户证据返回 null |
+| `contactName` | `String` | 本人证据的对手联系人名；其他用户证据返回 null |
+| `ownerUserId` | `String` | 证据归属人的 STC userid；客户端解析显示姓名 |
+| `latestPrice` | `String` | 最新证据的原口径价格，不统一转换为收益率 |
+| `quoteType` | `String` | 1=收益率，2=净价，3=全价 |
+| `yieldType` | `String` | 1=到期，2=行权 |
+| `latestQuantity` | `String` | 最新证据报量，万 |
+| `latestTime` | `String` | 最新证据更新时间 |
+| `feedback` | `String` | USEFUL / NOT_USEFUL / NOT_APPLICABLE；未反馈为空，首次反馈保留 |
+| `evidence` | `List<RecommendationEvidence>` | 正式报价历史证据列表，每个 quoteId 在窗口内只取最新 ACTIVE 快照 |
+
+<a id="recommendationevidence"></a>
+### RecommendationEvidence
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/RecommendationEvidence.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/RecommendationEvidence.cs)；继承 [ProtocolModel](#protocolmodel) 的字段。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `quoteId` | `String` | 内部报价主键 |
+| `ownerUserId` | `String` | 证据归属人的 STC userid；客户端解析显示姓名 |
+| `securityId` | `String` | 债券代码 |
+| `securityName` | `String` | 债券简称 |
+| `side` | `String` | 1=Bid，2=Ofr |
+| `price` | `String` | 原口径价格字符串 |
+| `quoteType` | `String` | 1=收益率，2=净价，3=全价 |
+| `yieldType` | `String` | 1=到期，2=行权 |
+| `quantity` | `String` | 报量，万 |
+| `updateTime` | `String` | 所选正式报价历史快照的更新时间 |
+| `institutionName` | `String` | 本人证据的对手机构名；其他用户证据返回 null |
+| `contactName` | `String` | 本人证据的对手联系人名；其他用户证据返回 null |
+
+<a id="recommendationfeedbackrequest"></a>
+### RecommendationFeedbackRequest
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/RecommendationFeedbackRequest.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/RecommendationFeedbackRequest.cs)；继承 [RecommendationQueryRequest](#recommendationqueryrequest) 的字段。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `recommendationId` | `String` | 按债券、方向、本方归属人及对手分组生成的稳定推荐 ID |
+| `feedback` | `String` | USEFUL / NOT_USEFUL / NOT_APPLICABLE；未反馈为空，首次反馈保留 |
+
+<a id="recommendationfeedbackdata"></a>
+### RecommendationFeedbackData
+
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/RecommendationFeedbackData.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/RecommendationFeedbackData.cs)；继承 [ProtocolModel](#protocolmodel) 的字段。
+
+| 字段 | 声明类型 | 说明 |
+|---|---|---|
+| `recommendationId` | `String` | 按债券、方向、本方归属人及对手分组生成的稳定推荐 ID |
+| `feedback` | `String` | USEFUL / NOT_USEFUL / NOT_APPLICABLE；未反馈为空，首次反馈保留 |
 
 ## 筛选、关注与字典
 
@@ -851,10 +942,12 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `listingStatus` | `String` | 上市状态 |
 | `issueMethod` | `String` | 发行方式 |
 | `csiValuationYield` | `String` | 中证到期收益率，百分数（1.7050 表示 1.7050%） |
-| `csiValuationCleanPrice` / `csiValuationFullPrice` | `String` | 中证到期净价／全价 |
-| `csiExerciseYield` | `String` | 中证行权收益率，百分数；不替代到期收益率 |
-| `csiExerciseCleanPrice` / `csiExerciseFullPrice` | `String` | 中证行权净价／全价 |
+| `csiValuationCleanPrice` | `String` | 中证到期净价 |
+| `csiValuationFullPrice` | `String` | 中证到期全价 |
 | `csiValuationDate` | `String` | 来源估值日期 YYYY-MM-DD；可能不是当日 |
+| `csiExerciseYield` | `String` | 中证行权收益率，百分数；不替代到期收益率 |
+| `csiExerciseCleanPrice` | `String` | 中证行权净价 |
+| `csiExerciseFullPrice` | `String` | 中证行权全价 |
 | `csiRecommendedBasis` | `String` | recommendation：1→EXERCISE，2→MATURITY；非含权债且有到期收益率时为 MATURITY，其余未提供则空 |
 | `csiValuationStatus` | `String` | LOADING／READY／MISSING／FAILED；只在完整加载成功且该券无记录时返回 MISSING |
 | `liquidityGrade` | `String` | 流动性等级 |
@@ -891,6 +984,7 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `localGovernmentUse` | `String` | 地方债用途 |
 | `isCrossMarket` | `Boolean` | 是否跨市场 |
 | `isMortgage` | `Boolean` | 是否可质押 |
+
 
 ## 识别
 

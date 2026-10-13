@@ -1,6 +1,6 @@
 # FICC 前后端 API 文档（按当前代码整理）
 
-更新日期：2026-10-12。代码基线：`feature/ficc-native-salestrading`，`cc16316`。
+更新日期：2026-10-13。代码基线：`fix/csi-valuations`，`23cf916`。
 
 本文描述此基线的实际接口，不以旧设计稿推断已实现能力。示例中的 ID、时间、机构和用户均为说明值，实际调用必须使用当前环境返回的值；示例是结构示例，不是本次执行得到的服务器应答。业务规则仍以产品需求和已确认的业务决定为准，代码与需求的差距不能由本文反向合法化。
 
@@ -12,6 +12,7 @@
 - [2. Quote：报价与来源](#quote)
 - [3. Parser：识别预览](#parser)
 - [4. Price：按用户视角生成的价格簿](#price)
+- [4.1 智能推荐](#recommendation)
 - [5. Filter、Watchlist、FilterGroup：筛选及用户配置](#filter)
 - [6. Base、CRM：基础资料与联系人](#crm)
 - [7. Notification：提醒](#notification)
@@ -29,7 +30,7 @@
 
 | 服务键 | 本文涉及的 topic | 用途 |
 |---|---|---|
-| `SERVER.QuoteSvr` | `ficc.quote.*`、`ficc.price.*`、`ficc.base.*`、`ficc.watchlist.*`、`ficc.filterGroup.*` | 报价、行情、资料、关注及筛选组 |
+| `SERVER.QuoteSvr` | `ficc.quote.*`、`ficc.price.*`、`ficc.base.*`、`ficc.watchlist.*`、`ficc.filterGroup.*`、`ficc.recommendation.*` | 报价、行情、资料、关注、筛选组及推荐 |
 | `SERVER.NotificationSvr` | `ficc.notification.*` | 提醒、偏好与独立筛选组 |
 | `SERVER.ParserSvr` | `stc.parser.bond` | 文本识别，返回预览 |
 | `SERVER.CRMSvr` | `stc.crm.*` | 主要供 QuoteSvr、ParserSvr 使用的资料服务 |
@@ -186,7 +187,7 @@ Parser 的旧服务还保留 image、deal、IRS 等处理器；当前销交客�
 <a id="price"></a>
 ## 4. Price：按用户视角生成的价格簿
 
-`PriceBook` = securityId、可选 viewId、updateTime、bookRevision、marketData、quoteRefs。每个 view 的同一只债券可能有不同结果，缓存键应包含 viewId 和 securityId。
+`PriceBook` = securityId、可选 viewId、updateTime、bookRevision、marketData、quoteRefs、可选 calculationIssues。每个 view 的同一只债券可能有不同结果，缓存键应包含 viewId 和 securityId。
 
 `marketData` 保留 STC 大写字段：SecurityID、Symbol、MarketIndicator、VenueTypeGW、Venues、NoMDEntries。条目包含 MDEntryID、MDEntryType、MDEntryPx、MDEntrySize、PriceType、ExerciseFlag、UserID、SettlType 等；quoteRefs 以条目标识关联 quoteId/quoteRevision。不能把行情条目 ID 当 quoteId，或把 Quote.side 数字直接套用 MDEntryType。
 
@@ -196,7 +197,38 @@ Parser 的旧服务还保留 image、deal、IRS 等处理器；当前销交客�
 
 换算问题码包括 `CALCULATION_PENDING`、`CALCULATOR_OFFLINE`、`CALCULATOR_BUSY`、`CALCULATION_FAILED`、`CALCULATION_INVALID_INPUT`、`CALCULATOR_NOT_CONFIGURED` 和 `CALCULATOR_STOPPED`。成功结果按报价输入、目标口径和资料版本复用；连接变化及 `stc.cal.clear` 使缓存失效。失败结果不会定时无限重试；新开行情流会允许重试失败项。`cal.requestTimeoutMillis=3000` 限制单次后台 DPS 请求，单线程后台队列由 `cal.queueCapacity=256` 限制；队列满只影响新待算报价，不阻塞查询。协议/容错已用替身验证，真实 CalSvr 换算须在 QA 验证。
 
+行情条目的 `UserID` 是本方报价归属人的 STC userid，用用户目录解析为“长城交易员”；`InstitutionID/InstitutionName`、`TraderID/TraderName` 是对手机构与联系人。最优价页同价多笔时，汇总报量保留同价成员合计，机构、交易员等展示信息采用最新报价；时间取条目的 MDEntryDate/MDEntryTime，不能取整本价格簿 updateTime。
+
 单次 `ficc.price.query` 必填 securityIds（最多 100）和 mode，实际输出 **`Data.prices`**。视图接口输出 **`Data.books`**，两个名称目前不一致。虽然 PriceQueryRequest 继承 PageRequest，这个单次接口不接受 limit/cursor。
+
+<a id="recommendation"></a>
+### 4.1 智能推荐（产品需求 4.9.2）
+
+`ficc.recommendation.query` 与 `ficc.recommendation.feedback` 均由 QuoteSvr 处理，使用网关登录会话确定查看者，客户端不能传入或替换用户身份。
+
+查询请求示例：
+
+```json
+{"requestId":"REC-QUERY-1","securityId":"2600004.IB","startDate":"2026-07-16","endDate":"2026-10-13"}
+```
+
+成功应答 `Data` 为 `RecommendationQueryData`：`securityId`、`startDate`、`endDate`、`scoringVersion`、`recommendations`。空证据返回空数组，不生成兜底候选。日期为业务时区 Asia/Shanghai 的自然日，首尾均包含，最多365天；无效窗口返回1001。
+
+当前已确认的第一版规则 `quote-evidence-v1`：
+
+- 只取所选债券的正式报价历史快照；包括所有用户、所有正式报价来源及已撤销/已过期报价此前的正式证据。待确认记录和从未确认便删除的报价不参与。
+- 每个 quoteId 在所选窗口内取最新 ACTIVE 快照，更新不重复增加次数。
+- 按债券、Bid/Ofr、本方归属用户、对手机构及联系人分组。相同对手但不同内部归属人不合并，以免混淆证据权限。
+- 每条证据权重为 `0.5^(距当前时间的天数/30)`；未来时间的年龄按0计。得分 `100 × (1 - exp(-权重合计/5))`，保留2位小数，按得分降序、稳定条目标识排序。方向分别展示，不混算。
+- 最新价格保留原价格类型，不把净价当成收益率。无真实用户归属成交存储，因此不使用成交数据。
+- 本人证据返回机构/联系人姓名，其他用户的这两个字段为空；列表与展开证据执行相同规则。内部归属 userid 正常返回，客户端通过 STC 用户目录显示姓名。
+- 推荐条目标识按分组稳定生成；反馈按“查看用户 + 推荐条目”唯一，切换日期窗口不会重置反馈。
+
+反馈请求在查询字段基础上增加 `recommendationId` 和 `feedback`（`USEFUL`、`NOT_USEFUL`、`NOT_APPLICABLE`）。返回 `RecommendationFeedbackData`：`recommendationId`、`feedback`。重复提交返回第一次保存的结果，不覆盖、不改变推荐排序；不存在的候选返回1002。反馈写入 `recommendation_feedback`，表和历史查询索引由 QuoteSvr 启动自动创建，Jenkins 包无需手工补配置。
+
+客户端选中债券后自动加载，默认 Bid；支持近7/30/90天、自定义日期、刷新、逐行展开证据和一次性反馈。切换日期或债券时取消旧请求的展示，迟到应答不能覆盖新选择。该模块不提供外发动作。产品4.9.2未定义相似券/相似机构算法，旧占位控件已移除。
+
+部署需同步 common、QuoteSvr（含资源注册配置）和 STC 插件；两个接口的请求与响应样例见第 9 节。
 
 <a id="filter"></a>
 ## 5. Filter、Watchlist、FilterGroup：筛选及用户配置
@@ -215,6 +247,32 @@ Filter = market + conditions + watchlistIds + filterGroupIds，均可省略；�
 
 Watchlist 包含 securities（securityId、displayOrder）；FilterGroup 包含 subgroups（subgroupId、name、displayOrder、conditions）。新增 save 省略组 ID；修改/删除必须传已返回 ID 和 expectedRevision。QuoteSvr 的 scope 为 MARKET/HISTORY、market 为 RATE/CREDIT。NotificationSvr 的筛选组是独立集合，不能混用 QuoteSvr 的 ID。
 
+### 5.1 桌面分组管理与请求流程
+
+关注分组和筛选分组均可新增、改名和删除，不是固定预置列表。配置按登录用户持久化到 QuoteSvr；行情中心与报价管理共享当前账户的配置。桌面当前加载 `scope=MARKET` 的组，不表示服务端不支持 HISTORY。
+
+1. 通过 query 读取组 ID、revision 和完整内容，编辑器保留打开时的原始快照。
+2. 新增省略组 ID；编辑提交完整组与原始 expectedRevision；删除提交组 ID 和 expectedRevision。删除组不删除债券或报价。取消编辑不写服务端。
+3. 保存多个组时分别调用 save/delete，并非整个编辑器的一次原子事务。发生部分失败或 1004 冲突时重新读取，显示失败，不覆盖其他用户操作/其他窗口保存的版本。
+4. 关注组添加债券先用 `ficc.base.get` 按明确代码读取资料；移除债券后保存完整 securities 列表。筛选组保存协议字段、操作符和类型正确的 value，不存控件显示标签。
+5. 选择组后把 ID 放入查询或 view.open 的 filter，由服务端在分页前筛选。新增/删除后刷新组列表；不得仅过滤客户端已经加载的当前页。
+
+服务端按每个筛选组自身的 market 限定匹配，避免合并行情中利率组命中信用报价。RATE 组加载/保存时清除 `localGovernmentRegion`、`issuerRating`、`marketMakerTags`、`perpetualType`、`isPerpetual` 历史禁用条件，并移除清理后的空子组。客户端可编辑条件还需服从字典 enabled 状态和产品允许范围。
+
+组合请求中的 filter 示例（两个关注组 OR，再与一个筛选组及临时报价方向 AND）：
+
+```json
+{"market":"RATE","watchlistIds":["W-001","W-002"],"filterGroupIds":["FG-001"],"conditions":[{"field":"side","operator":"EQ","value":"1"}]}
+```
+
+改名仍需发送完整组内容，例如：
+
+```json
+{"requestId":"GROUP-RENAME-1","watchlistId":"W-001","expectedRevision":"1","name":"重点国开债","market":"RATE","scope":"MARKET","securities":[{"securityId":"240210.IB","displayOrder":0}]}
+```
+
+成功后使用响应的新 revision；不能接着用旧 revision 删除。新增、查询、保存和删除的应答结构见第 9 节。
+
 <a id="crm"></a>
 ## 6. Base、CRM：基础资料与联系人
 
@@ -228,6 +286,22 @@ base.get 的 ids 必填；CRM 批量最多 200。实际额外返回 missingIds�
 
 CRM 内部接口的 search/get 平铺返回 records/record，不套 Data；账号 image 订阅与 request/reply 是不同能力，详见内部接口表。
 
+### 6.1 中证估值字段
+
+中证资料由 BaseSvr 的估值资料经 QuoteSvr/common 映射到 ReferenceRecord，与中债字段分开：
+
+| 源字段 | FICC 字段 | 口径 |
+|---|---|---|
+| yld_to_maturity | csiValuationYield | 到期收益率，百分数 |
+| clean_price_maturity / full_price_maturity | csiValuationCleanPrice / csiValuationFullPrice | 到期净价 / 全价 |
+| yld_to_exercise | csiExerciseYield | 行权收益率，百分数 |
+| clean_price_exercise / full_price_exercise | csiExerciseCleanPrice / csiExerciseFullPrice | 行权净价 / 全价 |
+| valuate_date | csiValuationDate | yyyy-MM-dd |
+| recommendation | csiRecommendedBasis | 1→EXERCISE，2→MATURITY；未知为空 |
+| implied_rating | csiRating | 中证隐含评级 |
+
+数值按十进制字符串返回；缺值保留为空，不能补零或以中债替代中证。`csiValuationStatus` 为 LOADING、READY、FAILED，缓存加载成功但该券无记录时为 MISSING。无行权债券在有到期估值且推荐口径为空时可推导 MATURITY。当前 C# 强类型声明尚未覆盖全部中证字段，差异见第 11 节及字段表。
+
 <a id="notification"></a>
 ## 7. Notification：提醒
 
@@ -238,6 +312,23 @@ reasons 含类型、关联组/报价、ownQuoteId/otherQuoteId 等原因。readT
 read 一批 1–200 个 notificationIds，read=true 标记已读，false 恢复未读；逐项检查 results。query/view 按当前用户、active 和 readState=ALL/READ/UNREAD 筛选；默认 ALL。来源尚未同步就绪时返回 1009，不能显示为“暂无数据”。
 
 模型中有 types，但当前 NotificationService.select 没有应用它；view.open 的字段白名单还会拒绝 types。不要据模型声明提供“types 已生效”的保证。
+
+### 7.1 关联报价、提醒原因与桌面行数
+
+`quoteIds` 是该提醒关联的报价集合，不是“本次发生更新的报价 ID 列表”。当前实现按用户和债券重算匹配集合，一条报价更新后仍可能产生关联多笔报价的提醒。
+
+| reason.type | 单个原因关联多笔报价的场景 |
+|---|---|
+| WATCHLIST | 关注债券下多笔可见有效报价 |
+| FILTER_GROUP | 同券多笔报价符合所选筛选组 |
+| MY_BEST | 本人多笔报价并列最优，或买卖两侧分别最优 |
+| COUNTER_QUOTE | 本方一笔与另一归属人同券反方向一笔；关联两条 ID，当前不要求价格交叉 |
+
+普通原因可合并成一个通知，其 quoteIds 是关联集合的并集。WATCHLIST/FILTER_GROUP 原因携带 groupIds，MY_BEST 原因携带 quoteIds，对价原因用 ownQuoteId/otherQuoteId。内部 contentToken 由关联 quoteId/revision 集合计算；关联版本变化可生成新的 notificationId。对外可见记录会去掉内部 active/contentToken 字段，不能因 DTO 声明就依赖其必定返回。
+
+桌面报价提醒页按 **reasons 展开行**，不是按 quoteIds 展开；例如 3 个关联 quoteId、2 个 reason 会产生 2 行，共享 notificationId 和已读状态。弹窗按提醒类型合并，也不是一条 NotificationRecord 固定对应一个弹窗；当前每轮最多取 2 个新原因行。弹窗“查看”定位仍为占位提示，不能视为完整导航已实现。
+
+当前没有单独的“触发本次提醒的报价 ID”字段。触发事件与关联上下文的进一步拆分仍属待改进项，本文不将它描述为已实现的业务规则。
 
 <a id="views"></a>
 ## 8. Stream、View：订阅及分页
@@ -274,7 +365,7 @@ QuoteStreamBatch 使用 quotes/reports/reference；PriceStreamBatch 使用 books
 
 | 业务组 | 接口数量（不含推送） |
 |---|---|
-| 本节 FICC 前端请求 | 42 |
+| 本节 FICC 前端请求 | 44 |
 | Parser 文本识别（第 3 节） | 1 |
 | 第 10 节内部/兼容/诊断 | 14 |
 
@@ -324,6 +415,8 @@ QuoteStreamBatch 使用 quotes/reports/reference；PriceStreamBatch 使用 books
 | [标记已读/未读](#ficc.notification.read) | `ficc.notification.read` | [NotificationReadRequest](api-models.zh-CN.md#notificationreadrequest) | [NotificationReadData](api-models.zh-CN.md#notificationreaddata) |
 | [读取提醒偏好](#ficc.notification.preference.get) | `ficc.notification.preference.get` | [Request](api-models.zh-CN.md#request) | [NotificationPreferenceData](api-models.zh-CN.md#notificationpreferencedata) |
 | [保存四类提醒开关](#ficc.notification.preference.save) | `ficc.notification.preference.save` | [NotificationPreferenceSaveRequest](api-models.zh-CN.md#notificationpreferencesaverequest) | [NotificationPreferenceData](api-models.zh-CN.md#notificationpreferencedata) |
+| [查询智能推荐](#ficc.recommendation.query) | `ficc.recommendation.query` | [RecommendationQueryRequest](api-models.zh-CN.md#recommendationqueryrequest) | [RecommendationQueryData](api-models.zh-CN.md#recommendationquerydata) |
+| [保存推荐反馈](#ficc.recommendation.feedback) | `ficc.recommendation.feedback` | [RecommendationFeedbackRequest](api-models.zh-CN.md#recommendationfeedbackrequest) | [RecommendationFeedbackData](api-models.zh-CN.md#recommendationfeedbackdata) |
 
 <a id="ficc.quote.create"></a>
 ### 1. 创建待确认报价
@@ -920,7 +1013,7 @@ rows 元素是 QuoteHistoryRow，含操作日期 tradeDate、quote、reference�
 
 输入模型：[WatchlistSaveRequest](api-models.zh-CN.md#watchlistsaverequest)；目录声明的输出模型：[WatchlistData](api-models.zh-CN.md#watchlistdata)。
 
-示例为新增；修改须另传 watchlistId 和 expectedRevision，提交完整组内容。服务补齐 ID、排序及时间；空条件子组会被去除。
+示例为新增；修改须另传 watchlistId 和 expectedRevision，提交完整组内容。服务补齐 ID、排序及时间。
 
 输入：
 
@@ -1207,6 +1300,88 @@ kind 可用于 SECURITY、DAILY_VALUATION、ISSUER、INSTITUTION、CONTACT；实
 {"preference":{"revision":"2","watchlistEnabled":true,"filterGroupEnabled":true,"counterQuoteEnabled":true,"myBestEnabled":true}}
 ```
 
+<a id="ficc.recommendation.query"></a>
+### 43. 查询智能推荐
+
+`SERVER.QuoteSvr` · `ficc.recommendation.query`
+
+输入模型：[RecommendationQueryRequest](api-models.zh-CN.md#recommendationqueryrequest)；输出模型：[RecommendationQueryData](api-models.zh-CN.md#recommendationquerydata)。规则见[智能推荐](#recommendation)。
+
+输入：
+
+```json
+{"requestId":"REC-QUERY-1","securityId":"2600004.IB","startDate":"2026-10-07","endDate":"2026-10-13"}
+```
+
+成功 Data：
+
+```json
+{
+  "securityId": "2600004.IB",
+  "startDate": "2026-10-07",
+  "endDate": "2026-10-13",
+  "scoringVersion": "quote-evidence-v1",
+  "recommendations": [
+    {
+      "recommendationId": "REC-EXAMPLE",
+      "securityId": "2600004.IB",
+      "securityName": "26超长期特别国债04",
+      "side": "1",
+      "score": 18.13,
+      "quoteCount": 1,
+      "institutionName": "示例机构",
+      "contactName": "示例联系人",
+      "ownerUserId": "U-001",
+      "latestPrice": "2.0000",
+      "quoteType": "1",
+      "yieldType": "1",
+      "latestQuantity": "1000",
+      "latestTime": "2026-10-13T10:00:00+08:00",
+      "feedback": null,
+      "evidence": [
+        {
+          "quoteId": "Q-001",
+          "ownerUserId": "U-001",
+          "securityId": "2600004.IB",
+          "securityName": "26超长期特别国债04",
+          "side": "1",
+          "price": "2.0000",
+          "quoteType": "1",
+          "yieldType": "1",
+          "quantity": "1000",
+          "updateTime": "2026-10-13T10:00:00+08:00",
+          "institutionName": "示例机构",
+          "contactName": "示例联系人"
+        }
+      ]
+    }
+  ]
+}
+```
+
+该样例假设查看者为 U-001，计分时刻与证据更新时间相同；无证据时 recommendations 返回空数组。其他用户证据的 institutionName/contactName 为 null。
+
+<a id="ficc.recommendation.feedback"></a>
+### 44. 保存推荐反馈
+
+`SERVER.QuoteSvr` · `ficc.recommendation.feedback`
+
+输入模型：[RecommendationFeedbackRequest](api-models.zh-CN.md#recommendationfeedbackrequest)；输出模型：[RecommendationFeedbackData](api-models.zh-CN.md#recommendationfeedbackdata)。规则见[智能推荐](#recommendation)。
+
+输入：
+
+```json
+{"requestId":"REC-FEEDBACK-1","securityId":"2600004.IB","startDate":"2026-10-07","endDate":"2026-10-13","recommendationId":"REC-EXAMPLE","feedback":"USEFUL"}
+```
+
+成功 Data：
+
+```json
+{"recommendationId":"REC-EXAMPLE","feedback":"USEFUL"}
+```
+
+推荐查询不接受分页参数，返回全部候选与 evidence，桌面自行分页。反馈必须使用查询实际返回的 recommendationId；请求中的日期窗口仍须有效且能查询到该条目。
+
 <a id="internal"></a>
 ## 10. 内部、兼容及诊断接口
 
@@ -1215,7 +1390,7 @@ kind 可用于 SECURITY、DAILY_VALUATION、ISSUER、INSTITUTION、CONTACT；实
 当前真实 QT 接入使用 `ficc.quote.create` 的 intake 分支（同一 topic，不另立前端 API）：请求携带 QuoteCreateRequest.intake，由 IntakeCreateEndpoint 在普通登录分派前处理，来源身份、提案复用、分组和撤回由该处理器校验。IntakeIdentity 继承 QuoteSource；这是内部输入，前端 create 不应携带。`ficc.quote.intake.apply` 则是另一个仍存在的模拟入口，**不能当作真实 QT 接入实现**。
 
 <a id="ficc.quote.state.query"></a>
-### 43. quote全量状态同步
+### 45. quote全量状态同步
 
 `SERVER.QuoteSvr` · `ficc.quote.state.query`
 
@@ -1236,7 +1411,7 @@ kind 可用于 SECURITY、DAILY_VALUATION、ISSUER、INSTITUTION、CONTACT；实
 ```
 
 <a id="ficc.quote.event.query"></a>
-### 44. quote事件补齐
+### 46. quote事件补齐
 
 `SERVER.QuoteSvr` · `ficc.quote.event.query`
 
@@ -1257,7 +1432,7 @@ kind 可用于 SECURITY、DAILY_VALUATION、ISSUER、INSTITUTION、CONTACT；实
 ```
 
 <a id="ficc.notification.state.query"></a>
-### 45. notification全量状态同步
+### 47. notification全量状态同步
 
 `SERVER.NotificationSvr` · `ficc.notification.state.query`
 
@@ -1278,7 +1453,7 @@ kind 可用于 SECURITY、DAILY_VALUATION、ISSUER、INSTITUTION、CONTACT；实
 ```
 
 <a id="ficc.notification.event.query"></a>
-### 46. notification事件补齐
+### 48. notification事件补齐
 
 `SERVER.NotificationSvr` · `ficc.notification.event.query`
 
@@ -1299,7 +1474,7 @@ kind 可用于 SECURITY、DAILY_VALUATION、ISSUER、INSTITUTION、CONTACT；实
 ```
 
 <a id="ficc.quote.internal.state.query"></a>
-### 47. 后端专用报价快照
+### 49. 后端专用报价快照
 
 `SERVER.QuoteSvr` · `ficc.quote.internal.state.query`
 
@@ -1320,7 +1495,7 @@ QuoteResource 专用内部读路径；NotificationSvr 启动同步使用。
 ```
 
 <a id="ficc.price.internal.snapshot.query"></a>
-### 48. 后端专用行情快照
+### 50. 后端专用行情快照
 
 `SERVER.QuoteSvr` · `ficc.price.internal.snapshot.query`
 
@@ -1341,7 +1516,7 @@ PriceFeedBatch；服务间价格源，不代表某个普通用户的可见行情
 ```
 
 <a id="ficc.quote.intake.apply"></a>
-### 49. 历史模拟接入入口
+### 51. 历史模拟接入入口
 
 `SERVER.QuoteSvr` · `ficc.quote.intake.apply`
 
@@ -1362,7 +1537,7 @@ PriceFeedBatch；服务间价格源，不代表某个普通用户的可见行情
 ```
 
 <a id="ficc.qtintake.status.query"></a>
-### 50. FIX 接入状态诊断
+### 52. FIX 接入状态诊断
 
 `SERVER.QtIntakeSvr` · `ficc.qtintake.status.query`
 
@@ -1383,7 +1558,7 @@ PriceFeedBatch；服务间价格源，不代表某个普通用户的可见行情
 ```
 
 <a id="stc.crm.search"></a>
-### 51. CRM 内部搜索
+### 53. CRM 内部搜索
 
 `SERVER.CRMSvr` · `stc.crm.search`
 
@@ -1404,7 +1579,7 @@ PriceFeedBatch；服务间价格源，不代表某个普通用户的可见行情
 ```
 
 <a id="stc.crm.get"></a>
-### 52. CRM 内部单条读取
+### 54. CRM 内部单条读取
 
 `SERVER.CRMSvr` · `stc.crm.get`
 
@@ -1425,7 +1600,7 @@ PriceFeedBatch；服务间价格源，不代表某个普通用户的可见行情
 ```
 
 <a id="stc.crm.lookup"></a>
-### 53. 旧 CRM 名称/ID 查找
+### 55. 旧 CRM 名称/ID 查找
 
 `SERVER.CRMSvr` · `stc.crm.lookup`
 
@@ -1446,7 +1621,7 @@ kind 为 INSTITUTION/CONTACT；id 优先于 name；match=exact 优先精确比�
 ```
 
 <a id="stc.crm.inst.query"></a>
-### 54. 旧 CRM inst查询/镜像
+### 56. 旧 CRM inst查询/镜像
 
 `SERVER.CRMSvr` · `stc.crm.inst.query`
 
@@ -1467,7 +1642,7 @@ inst/contact 支持请求及 image；account 当前仅 image，普通 request �
 ```
 
 <a id="stc.crm.contact.query"></a>
-### 55. 旧 CRM contact查询/镜像
+### 57. 旧 CRM contact查询/镜像
 
 `SERVER.CRMSvr` · `stc.crm.contact.query`
 
@@ -1488,7 +1663,7 @@ inst/contact 支持请求及 image；account 当前仅 image，普通 request �
 ```
 
 <a id="stc.crm.account.query"></a>
-### 56. 旧 CRM account查询/镜像
+### 58. 旧 CRM account查询/镜像
 
 `SERVER.CRMSvr` · `stc.crm.account.query`
 
@@ -1517,6 +1692,7 @@ inst/contact 支持请求及 image；account 当前仅 image，普通 request �
 | QuoteChangeItem / clone | 未声明 sourceQuoteId/clientQuoteId，clone 却要求它们；须经 JSON 扩展字段发送 |
 | BaseData | missingIds/referenceVersion 是实际输出扩展，模型未显式声明 |
 | ParserReply | Java DTO 未声明 Warnings/TotalSize；C# 声明 Warnings，服务实际可返回两者 |
+| ReferenceRecord | 八个新增中证字段仅 Java 声明，详见字段表；C# 兼容扩展读取不等于强类型属性已齐全 |
 | Java/C# MarketEntry | 2026-10-12 行情身份修复已对齐 PriceType、ExerciseFlag、UserID、MDPriceLevel，并增加 InstitutionName、TraderName；详见模型字段表 |
 | ParserQuote | 只是桌面消费字段子集；服务实际序列化 TableIntentionQuote，价格/数量为 BigDecimal 数值 |
 | Notification 的 types | query 忽略它，view.open 白名单拒绝它；不能宣称支持按 types 筛选 |
@@ -1534,52 +1710,12 @@ inst/contact 支持请求及 image；account 当前仅 image，普通 request �
 
 ### 源码依据
 
+- [推荐与反馈](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/RecommendationService.java)、[分组条件清理](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/FilterGroupRules.java)、[桌面分组持久化](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/DpsGroupStore.cs)、[中证映射](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/common/client/StcBaseMapper.java)。
+
 - [Java 接口目录](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/SalesTradingApi.java)、[协议转换边界](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/ProtocolBoundary.java)、[C# 接口目录](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/SalesTradingApi.cs)。
 - [QuoteService](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/QuoteService.java)、[QuoteResource](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/QuoteResource.java)、[PriceBookService](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/PriceBookService.java)、[ViewService](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/ViewService.java)。
 - [QuoteMatcher](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/QuoteMatcher.java)、[FilterEngine](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/common/FilterEngine.java)、[AccessPolicy](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/common/client/AccessPolicy.java)、[LocalSearchSvrClient](../iteration1/cgws-ficc-saletrading-quotesvr/src/main/java/ficc/quote/LocalSearchSvrClient.java)。
 - [NotificationService](../iteration1/cgws-ficc-saletrading-notificationsvr/src/main/java/ficc/notification/NotificationService.java)、[CrmResource](../iteration1/cgws-ficc-saletrading-crmsvr/src/main/java/ficc/crm/CrmResource.java)、[BondParserHandler](../iteration1/cgws-ficc-parsersvr/src/main/java/sc/app/stc/parser/handler/BondParserHandler.java)。
 - [解析结果映射](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/StcQuoteParserClient.cs)、[精确报价提交](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/ParsedQuoteSubmitter.cs)、[客户端分页和推送](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/LivePage.cs)。
 
-本次验证范围：静态核对服务目录、处理器、客户端调用和模型；校验文档接口覆盖、JSON 语法、模型字段覆盖和本地链接。现有 `python iteration1/scripts/check-app-protocol.py` 在 MarketEntry 双端字段不一致处失败；进一步逐项比较还发现 ParserReply.Warnings 只在 C# 声明。Java/C# topic 目录均为 56 项；不能据此声称模型一致性检查通过。未因文档更新启动服务、发送写入请求或重跑桌面 E2E；本文不作 QA 部署版本已经同步的保证。
-
-
-## 智能推荐（产品需求 4.9.2）
-
-`ficc.recommendation.query` 与 `ficc.recommendation.feedback` 均由 QuoteSvr 处理，使用网关登录会话确定查看者，客户端不能传入或替换用户身份。
-
-查询请求示例：
-
-```json
-{"requestId":"REC-QUERY-1","securityId":"2600004.IB","startDate":"2026-07-16","endDate":"2026-10-13"}
-```
-
-成功应答 `Data` 为 `RecommendationQueryData`：`securityId`、`startDate`、`endDate`、`scoringVersion`、`recommendations`。空证据返回空数组，不生成兜底候选。日期为业务时区 Asia/Shanghai 的自然日，首尾均包含，最多365天；无效窗口返回1001。
-
-当前已确认的第一版规则 `quote-evidence-v1`：
-
-- 只取所选债券的正式报价历史快照；包括所有用户、所有正式报价来源及已撤销/已过期报价此前的正式证据。待确认记录和从未确认便删除的报价不参与。
-- 每个 quoteId 在所选窗口内取最新 ACTIVE 快照，更新不重复增加次数。
-- 按债券、Bid/Ofr、本方归属用户、对手机构及联系人分组。相同对手但不同内部归属人不合并，以免混淆证据权限。
-- 每条证据权重为 `0.5^(距当前时间的天数/30)`；未来时间的年龄按0计。得分 `100 × (1 - exp(-权重合计/5))`，保留2位小数，按得分降序、稳定条目标识排序。方向分别展示，不混算。
-- 最新价格保留原价格类型，不把净价当成收益率。无真实用户归属成交存储，因此不使用成交数据。
-- 本人证据返回机构/联系人姓名，其他用户的这两个字段为空；列表与展开证据执行相同规则。内部归属 userid 正常返回，客户端通过 STC 用户目录显示姓名。
-- 推荐条目标识按分组稳定生成；反馈按“查看用户 + 推荐条目”唯一，切换日期窗口不会重置反馈。
-
-反馈请求在查询字段基础上增加 `recommendationId` 和 `feedback`（`USEFUL`、`NOT_USEFUL`、`NOT_APPLICABLE`）。返回 `RecommendationFeedbackData`：`recommendationId`、`feedback`。重复提交返回第一次保存的结果，不覆盖、不改变推荐排序；不存在的候选返回1002。反馈写入 `recommendation_feedback`，表和历史查询索引由 QuoteSvr 启动自动创建，Jenkins 包无需手工补配置。
-
-客户端选中债券后自动加载，默认 Bid；支持近7/30/90天、自定义日期、刷新、逐行展开证据和一次性反馈。切换日期或债券时取消旧请求的展示，迟到应答不能覆盖新选择。该模块不提供外发动作。产品4.9.2未定义相似券/相似机构算法，旧占位控件已移除。
-
-### 本次交付与验证（2026-10-13）
-
-本次新增2个 topic，Java/C# 接口目录共58项；上文56项为此前文档整理时的记录。部署需同步 common、QuoteSvr（含资源注册配置）和 STC 插件，不能只替换客户端。
-
-- Java 构建通过；独立 PostgreSQL schema 的 `RecommendationSmoke` 通过27项检查，覆盖历史证据去重、待确认排除、撤销历史、跨用户脱敏、衰减、日期边界及反馈持久化。
-- 客户端推荐检查通过19项（含真实 GW/QuoteSvr 查询与 WPF 控件），行情详情回归通过48项，推荐协议样本检查通过72项。
-- 管理式桌面用例 `20-smart-recommendation` 通过：真实 STC 登录 → 新建并确认报价 → 行情选券 → 推荐与证据展开 → Bid/Ofr及日期切换 → 保存反馈 → 刷新后核对反馈。清理本例报价成功；正式历史和该测试用户反馈按业务规则保留。
-- 本地 QuoteSvr 已部署启动；本次未部署 QA，未做负载或延迟基准测试，也未向 QT 外发消息。
-
-桌面用例可在测试管理器中选择运行，也可从仓库根目录执行（使用已有测试账户配置）：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/run-ui-tests.ps1 -Cases 20-smart-recommendation
-```
+本次验证范围：静态核对服务目录、处理器、客户端调用和模型，并检查文档接口覆盖、JSON 语法、模型字段及本地链接。Java/C# topic 目录均为 58 项，另有 Parser 文本识别入口。现有 `python iteration1/scripts/check-app-protocol.py` 在 ParserReply.Warnings 双端不一致处失败；进一步字段比对发现 ReferenceRecord 的八个中证字段尚未声明于 C#。检查脚本本身也尚未配置 RecommendationRecord.score 的 Double 类型映射。不能据此声称全量协议检查通过。本次只更新文档，未启动服务、发送业务请求或重跑桌面 E2E；不保证 QA 部署版本已同步。
