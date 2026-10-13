@@ -32,6 +32,7 @@ internal static class MarketDetailChecks
             new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             CheckDetail();
             CheckParticipantColumns();
+            CheckBestPriceParticipants();
             CheckFeedReplay();
             Console.WriteLine("PASS market detail: " + passed + " checks");
             return 0;
@@ -112,6 +113,91 @@ internal static class MarketDetailChecks
         {
             encoder.Save(file);
         }
+    }
+
+    private static void CheckBestPriceParticipants()
+    {
+        Type mapper = typeof(DpsSalesTradingServices).Assembly.GetType("STC.SalesTrading.Plugin.Ficc.DpsModelMapper");
+        MethodInfo populate = typeof(DpsSalesTradingServices).GetMethod("PopulateBestQuotes", BindingFlags.Static | BindingFlags.NonPublic);
+        var book = new JObject { ["securityId"] = "260004.IB", ["updateTime"] = "2026-10-13T15:00:00+08:00", ["quoteRefs"] = new JObject() };
+        var rows = new List<BoardQuoteRow>();
+        // 与 BEST 协议相同：每侧同价报价按时间倒序；用不同身份验证不会混用旧报价字段。
+        foreach (string side in new[] { "0", "1" })
+        {
+            foreach (string age in new[] { "new", "old" })
+            {
+                string id = side + age;
+                book["quoteRefs"][id] = new JObject { ["quoteId"] = id, ["quoteRevision"] = "1" };
+                var entry = new JObject
+                {
+                    ["MDEntryID"] = id, ["MDEntryType"] = side, ["MDEntryPx"] = "2.0",
+                    ["MDEntrySize"] = age == "new" ? "2000" : "1000", ["SettlType"] = "2",
+                    ["MDEntryDate"] = "20261013", ["MDEntryTime"] = age == "new" ? "09:07:02.200" : "09:07:01.100",
+                    ["InstitutionName"] = "机构-" + id, ["TraderName"] = "对手-" + id, ["UserID"] = id
+                };
+                var quote = (JObject)mapper.GetMethod("MarketQuote").Invoke(null, new object[] { book, entry });
+                mapper.GetMethod("ApplyOwnerDisplay").Invoke(null, new object[]
+                {
+                    quote, new Dictionary<string, string> { [id] = "本方-" + id }, id
+                });
+                var display = (JObject)mapper.GetMethod("Display").Invoke(null, new object[] { quote });
+                rows.Add(display.ToObject<BoardQuoteRow>());
+            }
+        }
+        var best = new BoardBestRow { Code = "260004.IB", Name = "最优报价测试" };
+        populate.Invoke(null, new object[] { best, rows.ToArray() });
+        Check(best.InstBid == "机构-0new" && best.TraderBid == "本方-0new", "latest Bid supplies institution and STC owner");
+        Check(best.InstOfr == "机构-1new" && best.TraderOfr == "本方-1new", "latest Ofr supplies its own institution and STC owner");
+        Check(best.VolBid == 3000m && best.VolOfr == 3000m && best.BidBestCount == 2 && best.OfrBestCount == 2,
+            "equal-price quantities and counts remain aggregated");
+        Check(best.BidBestQuotes[0].Trader == "对手-0new" && best.OfrBestQuotes[0].Trader == "对手-1new",
+            "popup retains counterparty trader separately from owner");
+        Check(best.BidBestQuotes[0].Time == "09:07:02" && best.BidBestQuotes[1].Time == "09:07:01",
+            "popup uses each quote timestamp, not book update time");
+        Check(rows[0].QuoteTime.Value.Millisecond == 200 && best.SourceQuoteIds.Length == 4,
+            "individual milliseconds and all source IDs survive projection");
+
+        var view = new BoardBestView { DataContext = new { LoadState = STC.SalesTrading.Plugin.Abstractions.Queries.QueryLoadState.Loaded } };
+        view.Measure(new Size(1550, 300));
+        view.Arrange(new Rect(0, 0, 1550, 300));
+        view.UpdateLayout();
+        var grid = Descendants(view).OfType<DataGrid>().First();
+        grid.ItemsSource = new[] { best };
+        foreach (var expected in new Dictionary<string, string>
+        {
+            ["报价机构.Bid"] = "机构-0new", ["长城交易员.Bid"] = "本方-0new",
+            ["报价机构.Ofr"] = "机构-1new", ["长城交易员.ofr"] = "本方-1new"
+        })
+        {
+            var column = grid.Columns.OfType<DataGridTextColumn>().Single(item => (string)item.Header == expected.Key);
+            grid.ScrollIntoView(best, column);
+            grid.UpdateLayout();
+            Pump();
+            var cell = column.GetCellContent(best) as TextBlock;
+            Check(cell != null && cell.Text == expected.Value, "rendered best-price column: " + expected.Key);
+        }
+        var bitmap = new RenderTargetBitmap(1550, 300, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(view);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using (var file = System.IO.File.Create(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "best-price-participants.png")))
+        {
+            encoder.Save(file);
+        }
+
+        rows[0].Institution = null;
+        rows[0].Trader = null;
+        populate.Invoke(null, new object[] { best, rows.ToArray() });
+        Check(best.InstBid == null && best.BidBestQuotes[0].Trader == null && best.TraderBid == "本方-0new",
+            "missing latest counterparty never borrows older quote identity");
+        populate.Invoke(null, new object[] { best, new[] { rows[1] } });
+        Check(best.InstBid == "机构-0old" && best.TraderBid == "本方-0old" && best.VolBid == 1000m,
+            "removing newest quote promotes remaining quote");
+        Check(best.InstOfr == null && best.TraderOfr == null && best.Ofr == null && best.OfrBestCount == 0,
+            "empty side clears stale representative");
+        populate.Invoke(null, new object[] { best, Array.Empty<BoardQuoteRow>() });
+        Check(best.InstBid == null && best.TraderBid == null && best.Bid == null && best.SourceQuoteIds.Length == 0,
+            "empty book clears both sides");
     }
 
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)

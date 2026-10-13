@@ -81,18 +81,8 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 BoardBestRow row = DpsModelMapper.Display(WithReference(book)).ToObject<BoardBestRow>();
                 BoardQuoteRow[] entries = BookRows(book, query.Market).ToArray();
-                BoardQuoteRow[] bids = entries.Where(entry => entry.Direction == QuoteDirection.Bid).ToArray();
-                BoardQuoteRow[] offers = entries.Where(entry => entry.Direction == QuoteDirection.Ofr).ToArray();
                 row.Market = query.Market;
-                row.Bid = bids.FirstOrDefault()?.Price;
-                row.Ofr = offers.FirstOrDefault()?.Price;
-                row.VolBid = bids.Length == 0 ? (decimal?)null : bids.Sum(entry => entry.Volume);
-                row.VolOfr = offers.Length == 0 ? (decimal?)null : offers.Sum(entry => entry.Volume);
-                row.BidBestCount = bids.Length;
-                row.OfrBestCount = offers.Length;
-                row.SourceQuoteIds = entries.Select(entry => entry.QuoteId).Where(id => id != null).ToArray();
-                row.BidBestQuotes = bids.Select(BestDetail).ToArray();
-                row.OfrBestQuotes = offers.Select(BestDetail).ToArray();
+                PopulateBestQuotes(row, entries);
                 return row;
             }).ToArray();
             return new PagedResult<BoardBestRow>
@@ -101,6 +91,29 @@ namespace STC.SalesTrading.Plugin.Ficc
                 IsPartial = page.TotalCount > page.Rows.Count || PriceCalculationWarning(page.Rows) != null,
                 WarningMessage = PriceCalculationWarning(page.Rows)
             };
+        }
+
+        internal static void PopulateBestQuotes(BoardBestRow row, BoardQuoteRow[] entries)
+        {
+            // QuoteSvr 的 BEST 结果已按方向、最优价格、更新时间降序排列；同一时间按 quoteId 稳定排序。
+            // 保留服务端顺序，避免重复排序。每侧展示第一笔的完整身份，不从旧报价补齐空字段。
+            BoardQuoteRow[] bids = entries.Where(entry => entry.Direction == QuoteDirection.Bid).ToArray();
+            BoardQuoteRow[] offers = entries.Where(entry => entry.Direction == QuoteDirection.Ofr).ToArray();
+            BoardQuoteRow latestBid = bids.FirstOrDefault();
+            BoardQuoteRow latestOffer = offers.FirstOrDefault();
+            row.Bid = latestBid?.Price;
+            row.InstBid = latestBid?.Institution;
+            row.TraderBid = latestBid?.WallTrader;
+            row.Ofr = latestOffer?.Price;
+            row.InstOfr = latestOffer?.Institution;
+            row.TraderOfr = latestOffer?.WallTrader;
+            row.VolBid = bids.Length == 0 ? (decimal?)null : bids.Sum(entry => entry.Volume);
+            row.VolOfr = offers.Length == 0 ? (decimal?)null : offers.Sum(entry => entry.Volume);
+            row.BidBestCount = bids.Length;
+            row.OfrBestCount = offers.Length;
+            row.SourceQuoteIds = entries.Select(entry => entry.QuoteId).Where(id => id != null).ToArray();
+            row.BidBestQuotes = bids.Select(BestDetail).ToArray();
+            row.OfrBestQuotes = offers.Select(BestDetail).ToArray();
         }
 
         internal static string PriceCalculationWarning(IEnumerable<JObject> books)

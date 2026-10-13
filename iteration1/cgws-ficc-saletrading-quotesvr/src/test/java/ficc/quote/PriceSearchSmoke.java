@@ -234,9 +234,38 @@ public final class PriceSearchSmoke {
                 "Conversion never changes original quote input");
     }
 
+    private void checkBestTimePriority() {
+        quotes.clear();
+        for (String side : Arrays.asList("1", "2")) {
+            quote(side + "old", "A", "QT", side, "2.00");
+            QuoteRecord latest = quote(side + "new", "A", "QT", side, "2.000");
+            latest.updateTime = "2026-10-09T08:00:00.001+08:00";
+            latest.institutionName = "latest-" + side;
+        }
+        QuoteMatcher matcher = new QuoteMatcher(references, new LinkedHashMap<>());
+        AccessPolicy access = new AccessPolicy(new Properties());
+        books = new PriceBookService(references, matcher, access, quotes.values());
+        PriceBook best = books.book("A", "250001.IB", null, "BEST", 0);
+        check(ids(best).equals(Arrays.asList("FICC:1new", "FICC:1old", "FICC:2new", "FICC:2old")),
+                "Both BEST sides prioritize latest update, including millisecond differences");
+        check("latest-1".equals(best.marketData.NoMDEntries.get(0).InstitutionName)
+                        && "latest-2".equals(best.marketData.NoMDEntries.get(2).InstitutionName),
+                "First entry on each side carries latest quote identity");
+        QuoteRecord updated = ProtocolCodec.decode(quotes.get("1old").toJson(), QuoteRecord.class);
+        updated.updateTime = "2026-10-09T08:01:00.000+08:00";
+        books.changed(updated, null);
+        check("FICC:1old".equals(ids(books.book("A", "250001.IB", null, "BEST", 0)).get(0)),
+                "Updating an older quote moves it ahead at equal price");
+        updated.status = "DELETED";
+        books.changed(updated, null);
+        check("FICC:1new".equals(ids(books.book("A", "250001.IB", null, "BEST", 0)).get(0)),
+                "Deleting representative promotes next latest quote");
+    }
+
     public static void main(String[] args) {
         PriceSearchSmoke test = new PriceSearchSmoke();
         test.run();
+        test.checkBestTimePriority();
         System.out.println("PASS PriceSearchSmoke: " + test.checks + " functional checks; no load or transport test");
     }
 }

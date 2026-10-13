@@ -50,13 +50,25 @@ namespace STC.SalesTrading.Plugin.Ficc
                 ["price"] = entry["MDEntryPx"]?.DeepClone(),
                 ["quantity"] = entry["MDEntrySize"]?.DeepClone(),
                 ["settlType"] = entry["SettlType"]?.DeepClone(),
-                ["updateTime"] = book["updateTime"]?.DeepClone(),
+                ["updateTime"] = MarketEntryTime(entry),
                 ["ownerUserId"] = entry["UserID"]?.DeepClone(),
                 ["institutionId"] = entry["InstitutionID"]?.DeepClone(),
                 ["institutionName"] = entry["InstitutionName"]?.DeepClone(),
                 ["contactId"] = entry["TraderID"]?.DeepClone(),
                 ["contactName"] = entry["TraderName"]?.DeepClone()
             };
+        }
+
+        private static JToken MarketEntryTime(JObject entry)
+        {
+            // 档位时间属于单笔报价，不能使用整个债券行情的最后更新时间。
+            string value = (string)entry["MDEntryDate"] + " " + (string)entry["MDEntryTime"];
+            if (DateTime.TryParseExact(value, new[] { "yyyyMMdd HH:mm:ss.FFFFFFF", "yyyyMMdd HH:mm:ss" },
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime time))
+            {
+                return new JValue(time);
+            }
+            return JValue.CreateNull();
         }
 
         public static void ApplyOwnerDisplay(JObject quote, IDictionary<string, string> names, string currentUserId)
