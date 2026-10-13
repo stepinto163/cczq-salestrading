@@ -41,6 +41,7 @@ namespace SalesTrading.UiTests
         private string quoteId;
         private int stepNumber;
         private bool cleaning;
+        private Exception noticeAutomationFailure;
         private readonly Stopwatch elapsed = Stopwatch.StartNew();
 
         [STAThread]
@@ -54,6 +55,24 @@ namespace SalesTrading.UiTests
             application.InitializeComponent();
             application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             UiScenarioWorker worker = new UiScenarioWorker();
+            DispatcherTimer noticeTimer = new DispatcherTimer(DispatcherPriority.Normal)
+            {
+                Interval = TimeSpan.FromMilliseconds(200)
+            };
+            noticeTimer.Tick += (sender, eventArgs) =>
+            {
+                try
+                {
+                    UserNoticeAutomation.DismissVisible(detail => Emit("用户使用须知", "DISMISSED", detail));
+                }
+                catch (Exception error)
+                {
+                    noticeTimer.Stop();
+                    worker.noticeAutomationFailure = error;
+                    Emit("用户使用须知", "FAILED", error.ToString());
+                }
+            };
+            noticeTimer.Start();
             application.DispatcherUnhandledException += (sender, error) =>
             {
                 // Unhandled UI exceptions fail the case; never turn them into a passing result.
@@ -62,6 +81,7 @@ namespace SalesTrading.UiTests
             application.Dispatcher.BeginInvoke(new Action(async () =>
             {
                 int result = await worker.RunAsync();
+                noticeTimer.Stop();
                 application.Shutdown(result);
                 Environment.Exit(result);
             }), DispatcherPriority.ApplicationIdle);
@@ -459,6 +479,10 @@ namespace SalesTrading.UiTests
 
         private void ThrowIfCancelled()
         {
+            if (!cleaning && noticeAutomationFailure != null)
+            {
+                throw new InvalidOperationException("自动处理用户使用须知失败。", noticeAutomationFailure);
+            }
             if (!cleaning && File.Exists(Path.Combine(reportDirectory, "cancel"))) throw new OperationCanceledException();
         }
 

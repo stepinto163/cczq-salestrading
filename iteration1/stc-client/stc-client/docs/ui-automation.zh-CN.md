@@ -176,3 +176,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-ui-operation-interval.ps1
 ```
+
+## 自动处理用户使用须知
+
+自动化工作进程每 200ms 检查自身 WPF 窗口，只处理 `STC.Frame.CustomeUI.UserNoticeView`：点击「已完成阅读，并确认接受用户使用须知(条款)」后点击「确定」，在事件报告记录 `用户使用须知 / DISMISSED`。直接点 X 会触发 STC 主窗口退出，因此测试使用正常确认流程。普通客户端未修改；其他确认、错误提示及同标题窗口不自动关闭。控件缺失或确认失败会记录 FAILED 并让用例失败。
+
+处理器在登录前启动，覆盖迟到弹窗和测试期间再次出现的须知。它不受操作间隔影响。二进制替换只对随后启动的工作进程生效，已经运行的用例仍使用加载时版本。
+
+可运行 `scripts/test-ui-user-notice.ps1` 检查真实 WPF 须知弹窗：连续两次模态弹窗均确认关闭、同标题的普通窗口保留；独立进程有 15 秒看门狗。此检查不登录或提交业务报价，不等于整套业务 E2E 回归。
