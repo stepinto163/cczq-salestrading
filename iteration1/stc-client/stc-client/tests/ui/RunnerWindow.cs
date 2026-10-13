@@ -24,6 +24,7 @@ namespace SalesTrading.UiTests
             DecimalPlaces = 1, Increment = 0.1m, Value = 0
         };
         private readonly Label status = new Label { AutoSize = true, Text = "就绪；请使用专用测试账号。" };
+        private readonly Label selectionCount = new Label { AutoSize = true, Margin = new Padding(8, 8, 0, 0) };
         private readonly List<Button> lockedButtons = new List<Button>();
         private SuiteRunner runner;
         private bool running;
@@ -76,9 +77,10 @@ namespace SalesTrading.UiTests
             Height = 900;
             Font = new Font("Microsoft YaHei UI", 10);
             StartPosition = FormStartPosition.CenterScreen;
-            TableLayoutPanel root = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 5, ColumnCount = 1, Padding = new Padding(10) };
+            TableLayoutPanel root = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 6, ColumnCount = 1, Padding = new Padding(10) };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 45));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 58));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
@@ -119,37 +121,56 @@ namespace SalesTrading.UiTests
                 }
             };
             root.Controls.Add(settings, 0, 0);
-            FlowLayoutPanel commands = new FlowLayoutPanel { Dock = DockStyle.Fill };
+            FlowLayoutPanel commands = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
             AddButton(commands, "新增用例", () => Edit(false));
             AddButton(commands, "编辑用例", () => Edit(true));
             AddButton(commands, "复制用例", Duplicate);
             AddButton(commands, "删除用例", Delete);
             AddButton(commands, "刷新", LoadCases);
-            AddButton(commands, "全选", () => { foreach (DataGridViewRow row in cases.Rows) row.Cells[0].Value = true; });
-            AddButton(commands, "运行选中", async () => await RunAsync());
+            AddButton(commands, "全选", () => SetAllCasesChecked(true));
+            AddButton(commands, "取消全选", () => SetAllCasesChecked(false));
+            AddButton(commands, "运行勾选", async () => await RunAsync());
             AddButton(commands, "停止并清理", () => runner?.Stop(), false);
             AddButton(commands, "打开本轮报告", () => OpenDirectory(report), false);
             AddButton(commands, "历史报告", () => OpenDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui-test-reports")), false);
             root.Controls.Add(commands, 0, 1);
+            root.Controls.Add(selectionCount, 0, 2);
             cases.Columns.Add(new DataGridViewCheckBoxColumn { Name = "run", HeaderText = "运行", FillWeight = 30 });
             cases.Columns.Add("id", "用例 ID");
             cases.Columns.Add("name", "用例名称");
             cases.Columns.Add("steps", "步骤数");
             cases.Columns.Add("state", "状态");
             cases.Columns.Add("description", "说明 / 前置条件");
+            cases.MultiSelect = true;
+            cases.CurrentCellDirtyStateChanged += (sender, args) =>
+            {
+                if (cases.IsCurrentCellDirty && cases.CurrentCell is DataGridViewCheckBoxCell)
+                    cases.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            };
+            cases.CellValueChanged += (sender, args) => { if (args.ColumnIndex == 0) UpdateSelectionCount(); };
+            cases.KeyDown += (sender, args) =>
+            {
+                if (running || args.KeyCode != Keys.Space || cases.SelectedRows.Count == 0) return;
+                cases.EndEdit();
+                DataGridViewRow[] selectedRows = cases.SelectedRows.Cast<DataGridViewRow>().ToArray();
+                bool check = selectedRows.Any(row => !IsCaseChecked(row));
+                foreach (DataGridViewRow row in selectedRows) row.Cells[0].Value = check;
+                args.Handled = true;
+                args.SuppressKeyPress = true;
+            };
             for (int i = 1; i < cases.Columns.Count; i++) cases.Columns[i].ReadOnly = true;
             cases.Columns[3].FillWeight = 35;
-            root.Controls.Add(cases, 0, 2);
+            root.Controls.Add(cases, 0, 3);
             SplitContainer bottom = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterDistance = 220 };
             foreach (string column in new[] { "用例", "步骤", "状态", "详情" }) progress.Columns.Add(column, column);
             progress.ReadOnly = true;
             bottom.Panel1.Controls.Add(progress);
             bottom.Panel2.Controls.Add(details);
-            root.Controls.Add(bottom, 0, 3);
-            root.Controls.Add(status, 0, 4);
+            root.Controls.Add(bottom, 0, 4);
+            root.Controls.Add(status, 0, 5);
             Controls.Add(root);
             progress.SelectionChanged += (sender, args) => details.Text = Convert.ToString(progress.CurrentRow?.Cells[3].Value);
-            cases.CellDoubleClick += (sender, args) => { if (!running && args.RowIndex >= 0) Edit(true); };
+            cases.CellDoubleClick += (sender, args) => { if (!running && args.RowIndex >= 0 && args.ColumnIndex > 0) Edit(true); };
             FormClosing += (sender, args) =>
             {
                 if (!running) return;
@@ -200,6 +221,28 @@ namespace SalesTrading.UiTests
                     cases.Rows[index].Tag = path;
                 }
             }
+            UpdateSelectionCount();
+        }
+
+        private static bool IsCaseChecked(DataGridViewRow row)
+        {
+            return (bool?)row.Cells[0].Value == true;
+        }
+
+        private void SetAllCasesChecked(bool check)
+        {
+            // 先提交当前复选框编辑，避免离开单元格时覆盖全选结果。
+            cases.EndEdit();
+            foreach (DataGridViewRow row in cases.Rows) row.Cells[0].Value = check;
+            if (check) cases.SelectAll();
+            else cases.ClearSelection();
+            UpdateSelectionCount();
+        }
+
+        private void UpdateSelectionCount()
+        {
+            selectionCount.Text = "已勾选 " + cases.Rows.Cast<DataGridViewRow>().Count(IsCaseChecked)
+                + " / " + cases.Rows.Count + "；Ctrl/Shift 多选，空格勾选/取消";
         }
 
         private string SelectedPath()
@@ -254,7 +297,12 @@ namespace SalesTrading.UiTests
             if (running) return;
             cases.EndEdit();
             List<CaseDefinition> selected = cases.Rows.Cast<DataGridViewRow>()
-                .Where(row => (bool?)row.Cells[0].Value == true).Select(row => CaseDefinition.Read((string)row.Tag)).ToList();
+                .Where(IsCaseChecked).Select(row => CaseDefinition.Read((string)row.Tag)).ToList();
+            if (selected.Count == 0)
+            {
+                status.Text = "请先勾选要运行的用例；Ctrl/Shift 多选后按空格可批量勾选。";
+                return;
+            }
             runner = new SuiteRunner { OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000) };
             report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui-test-reports", DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
             progress.Rows.Clear();
