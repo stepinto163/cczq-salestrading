@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using System;
@@ -200,7 +200,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         [ObservableProperty]
         private RecommendationScope _selectedRecScope = RecommendationScope.Combined;
 
-        /// <summary>时间窗口（7d/30d/90d；Mock 阶段不影响数据）。</summary>
+        /// <summary>时间窗口（7d/30d/90d）；变化时重新请求真实证据。</summary>
         [ObservableProperty]
         private string _selectedRecWindow = "30d";
 
@@ -276,6 +276,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             }
             RecCurrentPage = 1;
             RefreshRec();
+            ScheduleRecommendations();
         }
 
         partial void OnRecStartDateChanged(DateTime? value)
@@ -283,6 +284,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             if (!_resettingRecDates && (value.HasValue || RecEndDate.HasValue)) SelectedRecWindow = "custom";
             RecCurrentPage = 1;
             RefreshRec();
+            ScheduleRecommendations();
         }
 
         partial void OnRecEndDateChanged(DateTime? value)
@@ -290,6 +292,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             if (!_resettingRecDates && (value.HasValue || RecStartDate.HasValue)) SelectedRecWindow = "custom";
             RecCurrentPage = 1;
             RefreshRec();
+            ScheduleRecommendations();
         }
 
         partial void OnRecCurrentPageChanged(int value)

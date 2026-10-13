@@ -1552,3 +1552,25 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `biztype` | `String` |
 | `biztypeid` | `String` |
 | `inf3` | `String` |
+
+
+## 智能推荐模型
+
+Java 类型位于 common 的 `ficc.api`，C# 对应类型位于插件 `Ficc/Protocol`，通过两侧 `SalesTradingApi` 绑定 topic。
+
+| 模型 | 字段 | 含义 |
+| --- | --- | --- |
+| RecommendationQueryRequest | requestId, securityId, startDate, endDate | 债券及1–365天自然日窗口 |
+| RecommendationQueryData | securityId, startDate, endDate, scoringVersion, recommendations | 查询范围、算法版本与结果 |
+| RecommendationRecord | recommendationId, securityId, securityName, side | 稳定条目标识、债券、方向（1 Bid/2 Ofr） |
+| RecommendationRecord | score, quoteCount | 衰减评分、窗口内不同正式报价数 |
+| RecommendationRecord | institutionName, contactName, ownerUserId | 本人可见的对手姓名字段及可见的内部归属 |
+| RecommendationRecord | latestPrice, quoteType, yieldType, latestQuantity, latestTime | 最新证据的原价格/价格类型/收益率类型/报量（万）/时间 |
+| RecommendationRecord | feedback, evidence | 当前查看者的反馈状态、脱敏证据列表 |
+| RecommendationEvidence | quoteId, ownerUserId, securityId, securityName, side | 证据来源报价及内部归属 |
+| RecommendationEvidence | price, quoteType, yieldType, quantity, updateTime | 历史正式快照的报价要素 |
+| RecommendationEvidence | institutionName, contactName | 按该证据归属逐条脱敏，无原始payload、备注或渠道账户透传 |
+| RecommendationFeedbackRequest | 查询字段 + recommendationId, feedback | 只允许三种反馈；不能传反馈归属用户 |
+| RecommendationFeedbackData | recommendationId, feedback | 已持久化的首次反馈结果 |
+
+验证入口：Java `RecommendationSmoke` 使用独立 PostgreSQL schema（运行完清理），输出跨语言协议样本；客户端 `scripts/test-recommendations.ps1` 验证真实 XAML、证据展开、反馈按钮、日期校验与迟到应答隔离。`-Live` 额外通过本地 GW/QuoteSvr 读取历史证据，账户从测试进程 `FICC_TEST_USER`、`FICC_TEST_PASSWORD` 读取；不向 QT 外发消息。脚本使用30秒独立进程看门狗，不是性能测试。

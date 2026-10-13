@@ -204,6 +204,11 @@ final class QuoteService {
         handlers.put("ficc.quote.dictionary.query", c -> dictionary(false, c.request));
         handlers.put("ficc.price.dictionary.query", c -> dictionary(true, c.request));
         handlers.put("ficc.price.query", this::priceQuery);
+        RecommendationService recommendations = new RecommendationService(store, refs);
+        handlers.put("ficc.recommendation.query", c -> unchecked(() -> recommendations.query(c.user,
+                ProtocolCodec.decode(c.request, RecommendationQueryRequest.class)).toJson()));
+        handlers.put("ficc.recommendation.feedback", c -> unchecked(() -> recommendations.feedback(c.user,
+                ProtocolCodec.decode(c.request, RecommendationFeedbackRequest.class)).toJson()));
         for (String d : Arrays.asList("quote", "price")) {
             handlers.put("ficc." + d + ".stream.open", c -> views.openStream(c, d));
             handlers.put("ficc." + d + ".view.open", c -> views.openView(c, d));

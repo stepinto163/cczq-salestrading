@@ -416,6 +416,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         private void UpdateDetailAsync(object row)
         {
+            Detail?.StopRecommendations();
             if (row == null)
             {
                 Detail = BondDetailViewModel.Empty;
@@ -448,6 +449,16 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
             detail.HasDetail = true;
             Detail = detail;
+            var dps = _marketCenterService as STC.SalesTrading.Plugin.Ficc.DpsSalesTradingServices;
+            if (dps != null)
+            {
+                var names = STC.SalesTrading.Plugin.Ficc.DpsModelMapper.UserNames(
+                    STC.Common.Handler.Admin.AdminHandler.Instance.GetCachestcUserQuery()?.Datas,
+                    STC.Common.Utils.LocalEnv.UserInfo.UserId, STC.Common.Utils.LocalEnv.UserInfo.FullName,
+                    STC.Common.Utils.LocalEnv.UserInfo.UserName);
+                detail.AttachRecommendations(new STC.SalesTrading.Plugin.Ficc.DpsRecommendationService(dps.Api,
+                    id => id != null && names.TryGetValue(id, out string name) ? name : id));
+            }
             // 行情区块（多档/最优/最新成交/估值）由宿主订阅通道（_quoteFeed）真实数据灌入，不再走 Mock 回填；
             // 无行情债券保持行内已有字段 + 空档表
             if (_quoteFeed != null && _quoteFeed.IsLive) _quoteFeed.Switch(detail.Code);
@@ -470,6 +481,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         public void Dispose()
         {
+            Detail?.StopRecommendations();
             EventAggregator.Unsubscribe(this);
             CreditAll.PropertyChanged -= OnBoardPropertyChanged;
             CreditBest.PropertyChanged -= OnBoardPropertyChanged;

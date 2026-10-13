@@ -24,6 +24,49 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "recommendation.assert":
+                    var market = model.MarketCenterPage;
+                    var target = market.RateAll.Rows.Single(row => row.QuoteId == quoteId);
+                    var marketGrid = Descendants<DataGrid>(view).First(grid => grid.IsVisible && grid.Items.Contains(target));
+                    marketGrid.SelectedItem = target;
+                    marketGrid.ScrollIntoView(target);
+                    await Until(() => market.Detail.Code == target.Code && !market.Detail.RecommendationLoading
+                        && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)),
+                        "选中行情行自动加载真实推荐证据");
+                    var recommendation = market.Detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
+                    Require(!recommendation.IsMock && recommendation.QuoteCount > 0 && recommendation.Score > 0,
+                        "推荐未采用真实正式报价证据");
+                    Require(!string.IsNullOrWhiteSpace(recommendation.OwnerTrader), "内部归属交易员未显示");
+                    var recommendationGrid = Descendants<DataGrid>(view).Single(grid => grid.Name == "RecommendationGrid");
+                    recommendationGrid.ScrollIntoView(recommendation);
+                    recommendationGrid.UpdateLayout();
+                    var recommendationContainer = (DataGridRow)recommendationGrid.ItemContainerGenerator.ContainerFromItem(recommendation);
+                    Click(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "展开"));
+                    await Until(() => recommendationContainer.DetailsVisibility == Visibility.Visible, "展开真实证据");
+                    market.Detail.SelectedRecSide = STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr;
+                    Require(market.Detail.RecPageItems.All(row => row.Side == STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr), "Ofr过滤错误");
+                    market.Detail.SelectedRecSide = STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Bid;
+                    market.Detail.SelectedRecWindow = "7d";
+                    await Until(() => !market.Detail.RecommendationLoading && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)), "日期切换后重新计算推荐");
+                    recommendation = market.Detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
+                    recommendationGrid.ScrollIntoView(recommendation, recommendationGrid.Columns.Last());
+                    recommendationGrid.UpdateLayout();
+                    recommendationContainer = (DataGridRow)recommendationGrid.ItemContainerGenerator.ContainerFromItem(recommendation);
+                    if (recommendation.CanFeedback)
+                    {
+                        Click(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "不适用"));
+                        await Until(() => !recommendation.CanFeedback, "真实反馈保存并锁定按钮");
+                    }
+                    string savedFeedback = recommendation.Feedback;
+                    await market.Detail.ReloadRecommendationsAsync();
+                    Require(market.Detail.Recommendations.Single(row => row.RecommendationId == recommendation.RecommendationId).Feedback == savedFeedback,
+                        "刷新后反馈状态丢失");
+                    File.WriteAllText(Path.Combine(reportDirectory, "recommendation.json"), JObject.FromObject(new
+                    {
+                        quoteId, recommendation.RecommendationId, recommendation.QuoteCount, recommendation.Score,
+                        recommendation.OwnerTrader, market.Detail.Code, savedFeedback
+                    }).ToString());
+                    break;
                 case "management.select":
                     await OpenSidebarAsync("mgmt");
                     await Until(() => !model.QuoteMgmtPage.Today.IsLoading, "管理页查询完成");

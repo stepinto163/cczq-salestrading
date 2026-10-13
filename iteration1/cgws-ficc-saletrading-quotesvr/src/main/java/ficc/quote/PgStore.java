@@ -38,6 +38,9 @@ final class PgStore extends JdbcStore {
     }
 
     private void initializeTables() throws SQLException {
+        exec("CREATE TABLE IF NOT EXISTS recommendation_feedback (owner_id text NOT NULL,"
+                + " recommendation_id text NOT NULL, feedback text NOT NULL,"
+                + " created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(owner_id,recommendation_id))");
         exec(
                 "CREATE TABLE IF NOT EXISTS quotes (id text primary key,owner_id text not"
                     + " null,client_id text,security_id text,status text not null,revision bigint"
@@ -47,6 +50,9 @@ final class PgStore extends JdbcStore {
                 "CREATE TABLE IF NOT EXISTS history (event_id text primary key,quote_id text not"
                     + " null,revision bigint not null,operation_time timestamptz not null,payload"
                     + " jsonb not null,unique(quote_id,revision))");
+        exec("CREATE INDEX IF NOT EXISTS history_recommendation_idx ON history"
+                + " ((payload->'after'->>'securityId'), operation_time DESC)"
+                + " WHERE payload->'after'->>'status'='ACTIVE'");
         exec(
                 "CREATE TABLE IF NOT EXISTS sources (id text primary key,source_type text not"
                         + " null,external_id text not null,payload jsonb not"
@@ -54,6 +60,16 @@ final class PgStore extends JdbcStore {
         exec(
                 "CREATE INDEX IF NOT EXISTS quotes_search_idx ON"
                         + " quotes(status,security_id,update_time DESC)");
+    }
+
+    List<QuoteRecord> recommendationEvidence(String security, String start, String end) throws SQLException {
+        // 每条正式报价在窗口内只保留最新有效快照；撤销、过期后仍可使用此前正式报价证据。
+        return rows("SELECT snapshot FROM (SELECT DISTINCT ON (quote_id) quote_id, payload->'after' AS snapshot"
+                + " FROM history WHERE payload->'after'->>'securityId'=?"
+                + " AND payload->'after'->>'status'='ACTIVE'"
+                + " AND operation_time>=?::date AND operation_time<(?::date + INTERVAL '1 day')"
+                + " ORDER BY quote_id, operation_time DESC, revision DESC) evidence", security, start, end)
+                .stream().map(row -> ProtocolCodec.decode(row, QuoteRecord.class)).collect(Collectors.toList());
     }
 
     List<QuoteRecord> quotes() throws SQLException {

@@ -6,6 +6,10 @@ import java.util.*;
 public final class SalesTradingApi {
     private SalesTradingApi() {}
     private static final Map<String, Endpoint<?, ?>> ENDPOINTS = new LinkedHashMap<>();
+    public static final Endpoint<RecommendationQueryRequest, RecommendationQueryData> RecommendationQuery =
+            register(new Endpoint<>("ficc.recommendation.query", RecommendationQueryRequest.class, RecommendationQueryData.class));
+    public static final Endpoint<RecommendationFeedbackRequest, RecommendationFeedbackData> RecommendationFeedback =
+            register(new Endpoint<>("ficc.recommendation.feedback", RecommendationFeedbackRequest.class, RecommendationFeedbackData.class));
     public static final Endpoint<QuoteCreateRequest, QuoteWriteData> QuoteCreate =
             register(new Endpoint<>("ficc.quote.create", QuoteCreateRequest.class, QuoteWriteData.class));
     public static final Endpoint<QuoteChangeRequest, QuoteWriteData> QuoteConfirm =

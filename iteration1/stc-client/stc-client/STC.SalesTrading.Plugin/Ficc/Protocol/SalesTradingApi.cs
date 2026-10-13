@@ -3,6 +3,10 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
     /// <summary>Topic 与请求、Data 类型的编译期关联。</summary>
     public static class SalesTradingApi
     {
+        public static readonly Endpoint<RecommendationQueryRequest, RecommendationQueryData> RecommendationQuery =
+            new Endpoint<RecommendationQueryRequest, RecommendationQueryData>("ficc.recommendation.query");
+        public static readonly Endpoint<RecommendationFeedbackRequest, RecommendationFeedbackData> RecommendationFeedback =
+            new Endpoint<RecommendationFeedbackRequest, RecommendationFeedbackData>("ficc.recommendation.feedback");
         public static readonly Endpoint<QuoteCreateRequest, QuoteWriteData> QuoteCreate =
             new Endpoint<QuoteCreateRequest, QuoteWriteData>("ficc.quote.create");
         public static readonly Endpoint<QuoteChangeRequest, QuoteWriteData> QuoteConfirm =

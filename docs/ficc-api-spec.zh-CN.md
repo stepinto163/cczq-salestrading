@@ -1541,3 +1541,45 @@ inst/contact 支持请求及 image；account 当前仅 image，普通 request �
 - [解析结果映射](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/StcQuoteParserClient.cs)、[精确报价提交](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/ParsedQuoteSubmitter.cs)、[客户端分页和推送](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/LivePage.cs)。
 
 本次验证范围：静态核对服务目录、处理器、客户端调用和模型；校验文档接口覆盖、JSON 语法、模型字段覆盖和本地链接。现有 `python iteration1/scripts/check-app-protocol.py` 在 MarketEntry 双端字段不一致处失败；进一步逐项比较还发现 ParserReply.Warnings 只在 C# 声明。Java/C# topic 目录均为 56 项；不能据此声称模型一致性检查通过。未因文档更新启动服务、发送写入请求或重跑桌面 E2E；本文不作 QA 部署版本已经同步的保证。
+
+
+## 智能推荐（产品需求 4.9.2）
+
+`ficc.recommendation.query` 与 `ficc.recommendation.feedback` 均由 QuoteSvr 处理，使用网关登录会话确定查看者，客户端不能传入或替换用户身份。
+
+查询请求示例：
+
+```json
+{"requestId":"REC-QUERY-1","securityId":"2600004.IB","startDate":"2026-07-16","endDate":"2026-10-13"}
+```
+
+成功应答 `Data` 为 `RecommendationQueryData`：`securityId`、`startDate`、`endDate`、`scoringVersion`、`recommendations`。空证据返回空数组，不生成兜底候选。日期为业务时区 Asia/Shanghai 的自然日，首尾均包含，最多365天；无效窗口返回1001。
+
+当前已确认的第一版规则 `quote-evidence-v1`：
+
+- 只取所选债券的正式报价历史快照；包括所有用户、所有正式报价来源及已撤销/已过期报价此前的正式证据。待确认记录和从未确认便删除的报价不参与。
+- 每个 quoteId 在所选窗口内取最新 ACTIVE 快照，更新不重复增加次数。
+- 按债券、Bid/Ofr、本方归属用户、对手机构及联系人分组。相同对手但不同内部归属人不合并，以免混淆证据权限。
+- 每条证据权重为 `0.5^(距当前时间的天数/30)`；未来时间的年龄按0计。得分 `100 × (1 - exp(-权重合计/5))`，保留2位小数，按得分降序、稳定条目标识排序。方向分别展示，不混算。
+- 最新价格保留原价格类型，不把净价当成收益率。无真实用户归属成交存储，因此不使用成交数据。
+- 本人证据返回机构/联系人姓名，其他用户的这两个字段为空；列表与展开证据执行相同规则。内部归属 userid 正常返回，客户端通过 STC 用户目录显示姓名。
+- 推荐条目标识按分组稳定生成；反馈按“查看用户 + 推荐条目”唯一，切换日期窗口不会重置反馈。
+
+反馈请求在查询字段基础上增加 `recommendationId` 和 `feedback`（`USEFUL`、`NOT_USEFUL`、`NOT_APPLICABLE`）。返回 `RecommendationFeedbackData`：`recommendationId`、`feedback`。重复提交返回第一次保存的结果，不覆盖、不改变推荐排序；不存在的候选返回1002。反馈写入 `recommendation_feedback`，表和历史查询索引由 QuoteSvr 启动自动创建，Jenkins 包无需手工补配置。
+
+客户端选中债券后自动加载，默认 Bid；支持近7/30/90天、自定义日期、刷新、逐行展开证据和一次性反馈。切换日期或债券时取消旧请求的展示，迟到应答不能覆盖新选择。该模块不提供外发动作。产品4.9.2未定义相似券/相似机构算法，旧占位控件已移除。
+
+### 本次交付与验证（2026-10-13）
+
+本次新增2个 topic，Java/C# 接口目录共58项；上文56项为此前文档整理时的记录。部署需同步 common、QuoteSvr（含资源注册配置）和 STC 插件，不能只替换客户端。
+
+- Java 构建通过；独立 PostgreSQL schema 的 `RecommendationSmoke` 通过27项检查，覆盖历史证据去重、待确认排除、撤销历史、跨用户脱敏、衰减、日期边界及反馈持久化。
+- 客户端推荐检查通过19项（含真实 GW/QuoteSvr 查询与 WPF 控件），行情详情回归通过48项，推荐协议样本检查通过72项。
+- 管理式桌面用例 `20-smart-recommendation` 通过：真实 STC 登录 → 新建并确认报价 → 行情选券 → 推荐与证据展开 → Bid/Ofr及日期切换 → 保存反馈 → 刷新后核对反馈。清理本例报价成功；正式历史和该测试用户反馈按业务规则保留。
+- 本地 QuoteSvr 已部署启动；本次未部署 QA，未做负载或延迟基准测试，也未向 QT 外发消息。
+
+桌面用例可在测试管理器中选择运行，也可从仓库根目录执行（使用已有测试账户配置）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/run-ui-tests.ps1 -Cases 20-smart-recommendation
+```
