@@ -74,6 +74,17 @@ namespace SalesTrading.UiTests
 
         public RunnerWindow(string source, string configFile = null)
         {
+            // 与命令行执行使用相同的登录配置；普通启动仍默认 test2。
+            string configuredUser = Environment.GetEnvironmentVariable("STC_UI_USER");
+            string configuredPassword = Environment.GetEnvironmentVariable("STC_UI_PASSWORD");
+            if (!string.IsNullOrWhiteSpace(configuredUser))
+            {
+                user.Text = configuredUser;
+            }
+            if (!string.IsNullOrEmpty(configuredPassword))
+            {
+                password.Text = configuredPassword;
+            }
             caseDirectory = source;
             Directory.CreateDirectory(source);
             Text = "STC 销售交易 · UI 端到端测试管理";
