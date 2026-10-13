@@ -69,6 +69,9 @@ internal static class RecommendationChecks
             grid.UpdateLayout();
             Pump();
             var feedback = Children(rowContainer).OfType<Button>().First(button => (string)button.Content == "有用");
+            Check(feedback.FontSize == 11, "Feedback uses compact detail-panel font size");
+            Check(Children(rowContainer).OfType<TextBlock>().Where(text => text.Text == "内部-A").All(text => text.FontSize == 11),
+                "Owner cells use explicit compact font instead of shared style size");
             feedback.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             WaitUntil(() => !own.CanFeedback);
             Check(own.Feedback == "USEFUL" && own.FeedbackText.Contains("有用"), "UI feedback button uses typed API and displays persisted result");
@@ -78,6 +81,15 @@ internal static class RecommendationChecks
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             using (var output = File.Create("recommendation-panel.png")) encoder.Save(output);
+            panel.Measure(new Size(384, 1150));
+            panel.Arrange(new Rect(0, 0, 384, 1150));
+            panel.UpdateLayout();
+            Pump();
+            var narrowBitmap = new RenderTargetBitmap(384, 1150, 96, 96, PixelFormats.Pbgra32);
+            narrowBitmap.Render(panel);
+            var narrowEncoder = new PngBitmapEncoder();
+            narrowEncoder.Frames.Add(BitmapFrame.Create(narrowBitmap));
+            using (var output = File.Create("recommendation-panel-narrow.png")) narrowEncoder.Save(output);
             int requests = transport.Queries;
             model.SelectedRecWindow = "7d";
             WaitUntil(() => !model.RecommendationLoading);

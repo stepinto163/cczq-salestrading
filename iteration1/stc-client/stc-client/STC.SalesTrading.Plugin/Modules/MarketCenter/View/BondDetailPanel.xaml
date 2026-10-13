@@ -127,6 +127,10 @@
                 <Setter Property="MinHeight" Value="22" />
                 <Setter Property="MinWidth" Value="0" />
             </Style>
+            <!-- 推荐表格单元格必须显式指定字号；共享文字样式会覆盖 DataGrid 的继承值。 -->
+            <Style x:Key="RecommendationCellText" TargetType="TextBlock" BasedOn="{StaticResource StcTrimText}">
+                <Setter Property="FontSize" Value="11" />
+            </Style>
             <Style x:Key="DetailTableHeader" TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource StcColumnHeader}">
                 <Setter Property="FontSize" Value="10" />
                 <Setter Property="Padding" Value="4,0" />
@@ -489,8 +493,8 @@
                         <DockPanel Grid.Row="0">
                             <Button DockPanel.Dock="Right" Content="说明" Style="{DynamicResource StcButtonGhost}"
                                     FontSize="11" Padding="6,2" Margin="8,0,0,0" Click="OnExplainClick" />
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding Code}" Style="{DynamicResource StcTextMuted}" Margin="8,0" />
-                            <TextBlock Text="智能推荐" Style="{DynamicResource StcText}" FontWeight="SemiBold"
+                            <TextBlock FontSize="10" DockPanel.Dock="Right" Text="{Binding Code}" Style="{DynamicResource StcTextMuted}" Margin="8,0" />
+                            <TextBlock FontSize="12" Text="智能推荐" Style="{DynamicResource StcText}" FontWeight="SemiBold"
                                        VerticalAlignment="Center" />
                         </DockPanel>
 
@@ -503,23 +507,23 @@
                             <ToggleButton Grid.Column="0" Style="{StaticResource RecSideBidTab}"
                                           IsChecked="{Binding SelectedRecSide, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=Bid}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Bid" />
-                                    <TextBlock Text="{Binding RecBidCount, Mode=OneWay}" Margin="6,0,0,0" />
+                                    <TextBlock FontSize="10" Text="Bid" />
+                                    <TextBlock FontSize="10" Text="{Binding RecBidCount, Mode=OneWay}" Margin="6,0,0,0" />
                                 </StackPanel>
                             </ToggleButton>
                             <ToggleButton Grid.Column="1" Style="{StaticResource RecSideOfrTab}"
                                           IsChecked="{Binding SelectedRecSide, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.EnumEquals}, ConverterParameter=Ofr}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Ofr" />
-                                    <TextBlock Text="{Binding RecOfrCount, Mode=OneWay}" Margin="6,0,0,0" />
+                                    <TextBlock FontSize="10" Text="Ofr" />
+                                    <TextBlock FontSize="10" Text="{Binding RecOfrCount, Mode=OneWay}" Margin="6,0,0,0" />
                                 </StackPanel>
                             </ToggleButton>
                         </Grid>
 
                         <DockPanel Grid.Row="2" Margin="0,8,0,0">
-                            <Button DockPanel.Dock="Right" Content="刷新" Command="{Binding ReloadRecommendationsCommand}"
+                            <Button FontSize="11" DockPanel.Dock="Right" Content="刷新" Command="{Binding ReloadRecommendationsCommand}"
                                     Style="{DynamicResource StcButtonGhost}" />
-                            <TextBlock Text="{Binding RecommendationStatus}" TextWrapping="Wrap"
+                            <TextBlock FontSize="10" Text="{Binding RecommendationStatus}" TextWrapping="Wrap"
                                        Style="{DynamicResource StcTextMuted}" />
                         </DockPanel>
 
@@ -531,11 +535,11 @@
                                           IsChecked="{Binding SelectedRecWindow, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=30d}" />
                             <ToggleButton Content="近90日" Style="{StaticResource RecWindowTab}" Margin="0,0,5,0"
                                           IsChecked="{Binding SelectedRecWindow, Mode=TwoWay, Converter={x:Static conv:ConverterLocator.StringEquals}, ConverterParameter=90d}" />
-                            <DatePicker Width="92" Height="22" Padding="2" SelectedDate="{Binding RecStartDate, Mode=TwoWay}"
+                            <DatePicker FontSize="10" Width="92" Height="22" Padding="2" SelectedDate="{Binding RecStartDate, Mode=TwoWay}"
                                         Style="{DynamicResource DefaultDatePickerStyle}" ToolTip="开始日期" />
                             <TextBlock Text="至" Style="{DynamicResource StcTextFaint}" FontSize="10"
                                        VerticalAlignment="Center" Margin="4,0" />
-                            <DatePicker Width="92" Height="22" Padding="2" SelectedDate="{Binding RecEndDate, Mode=TwoWay}"
+                            <DatePicker FontSize="10" Width="92" Height="22" Padding="2" SelectedDate="{Binding RecEndDate, Mode=TwoWay}"
                                         Style="{DynamicResource DefaultDatePickerStyle}" ToolTip="结束日期" />
                         </WrapPanel>
 
@@ -554,15 +558,15 @@
                                     <DataTemplate>
                                         <DataGrid ItemsSource="{Binding Evidence}" AutoGenerateColumns="False" IsReadOnly="True"
                                                   CanUserAddRows="False" CanUserDeleteRows="False" Height="160"
-                                                  Style="{DynamicResource StcDataGrid}" EnableRowVirtualization="True">
+                                                  Style="{DynamicResource StcDataGrid}" FontSize="11" ColumnHeaderStyle="{StaticResource DetailTableHeader}" EnableRowVirtualization="True">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn Header="报价时间" Binding="{Binding Time}" Width="180" />
-                                                <DataGridTextColumn Header="价格" Binding="{Binding Price}" Width="70" />
-                                                <DataGridTextColumn Header="价格类型" Binding="{Binding PriceTypeName}" Width="95" />
-                                                <DataGridTextColumn Header="报量(万)" Binding="{Binding Quantity}" Width="75" />
-                                                <DataGridTextColumn Header="机构" Binding="{Binding Institution}" Width="150" />
-                                                <DataGridTextColumn Header="交易员" Binding="{Binding Trader}" Width="90" />
-                                                <DataGridTextColumn Header="长城交易员" Binding="{Binding OwnerTrader}" Width="100" />
+                                                <DataGridTextColumn Header="报价时间" Binding="{Binding Time}" Width="180" ElementStyle="{StaticResource RecommendationCellText}" />
+                                                <DataGridTextColumn Header="价格" Binding="{Binding Price}" Width="70" ElementStyle="{StaticResource RecommendationCellText}" />
+                                                <DataGridTextColumn Header="价格类型" Binding="{Binding PriceTypeName}" Width="95" ElementStyle="{StaticResource RecommendationCellText}" />
+                                                <DataGridTextColumn Header="报量(万)" Binding="{Binding Quantity}" Width="75" ElementStyle="{StaticResource RecommendationCellText}" />
+                                                <DataGridTextColumn Header="机构" Binding="{Binding Institution}" Width="150" ElementStyle="{StaticResource RecommendationCellText}" />
+                                                <DataGridTextColumn Header="交易员" Binding="{Binding Trader}" Width="90" ElementStyle="{StaticResource RecommendationCellText}" />
+                                                <DataGridTextColumn Header="长城交易员" Binding="{Binding OwnerTrader}" Width="100" ElementStyle="{StaticResource RecommendationCellText}" />
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </DataTemplate>
@@ -612,7 +616,7 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="报价次数" Binding="{Binding QuoteCount}" Width="62" />
+                                    <DataGridTextColumn Header="报价次数" Binding="{Binding QuoteCount}" Width="62" ElementStyle="{StaticResource RecommendationCellText}" />
                                     <DataGridTemplateColumn Header="最近报价/报量(万)" Width="104">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
@@ -627,17 +631,17 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="长城交易员" Binding="{Binding OwnerTrader}" Width="80" ElementStyle="{StaticResource StcTrimText}" />
+                                    <DataGridTextColumn Header="长城交易员" Binding="{Binding OwnerTrader}" Width="80" ElementStyle="{StaticResource RecommendationCellText}" />
                                     <DataGridTemplateColumn Header="反馈" Width="210">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel>
                                                     <StackPanel Orientation="Horizontal" IsEnabled="{Binding CanFeedback}">
-                                                        <Button Content="有用" Tag="USEFUL" Click="OnFeedbackClick" Style="{DynamicResource StcButtonGhost}" />
-                                                        <Button Content="无用" Tag="NOT_USEFUL" Click="OnFeedbackClick" Style="{DynamicResource StcButtonGhost}" />
-                                                        <Button Content="不适用" Tag="NOT_APPLICABLE" Click="OnFeedbackClick" Style="{DynamicResource StcButtonGhost}" />
+                                                        <Button FontSize="11" Content="有用" Tag="USEFUL" Click="OnFeedbackClick" Style="{DynamicResource StcButtonGhost}" />
+                                                        <Button FontSize="11" Content="无用" Tag="NOT_USEFUL" Click="OnFeedbackClick" Style="{DynamicResource StcButtonGhost}" />
+                                                        <Button FontSize="11" Content="不适用" Tag="NOT_APPLICABLE" Click="OnFeedbackClick" Style="{DynamicResource StcButtonGhost}" />
                                                     </StackPanel>
-                                                    <TextBlock Text="{Binding FeedbackText}" Style="{DynamicResource StcTextMuted}" />
+                                                    <TextBlock FontSize="10" Text="{Binding FeedbackText}" Style="{DynamicResource StcTextMuted}" />
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -654,14 +658,13 @@
 
                         <!-- 分页（0918：左侧页数信息，右侧 上一页/[页码]/下一页） -->
                         <Grid Grid.Row="5" Margin="0,6,0,0">
-                            <TextBlock Text="{Binding RecPageSummary, Mode=OneWay}" Style="{DynamicResource StcTextFaint}"
+                            <TextBlock FontSize="10" Text="{Binding RecPageSummary, Mode=OneWay}" Style="{DynamicResource StcTextFaint}"
                                        HorizontalAlignment="Left" VerticalAlignment="Center" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <TextBlock Text="上一页" Style="{DynamicResource StcTextFaint}" Margin="0,0,6,0" />
                                 <Button Height="22" MinWidth="22" Padding="4,0" Style="{DynamicResource StcButtonGhost}"
                                         ToolTip="上一页" FontSize="11"
                                         IsEnabled="{Binding CanPreviousRecPage}" Command="{Binding PreviousRecPageCommand}">
-                                    <TextBlock Text="上一页" />
+                                    <TextBlock FontSize="10" Text="上一页" />
                                 </Button>
                                 <Border Background="{DynamicResource HoverStrongBgBrush}" CornerRadius="3" Padding="6,2"
                                         Margin="4,0" VerticalAlignment="Center" ToolTip="当前页">
@@ -671,7 +674,7 @@
                                 <Button Height="22" MinWidth="22" Padding="4,0" Style="{DynamicResource StcButtonGhost}"
                                         ToolTip="下一页" FontSize="11"
                                         IsEnabled="{Binding CanNextRecPage}" Command="{Binding NextRecPageCommand}">
-                                    <TextBlock Text="下一页" />
+                                    <TextBlock FontSize="10" Text="下一页" />
                                 </Button>
                             </StackPanel>
                         </Grid>
