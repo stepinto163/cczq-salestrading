@@ -84,6 +84,7 @@ namespace SalesTrading.UiTests
             { "manual.click", new[] { "button" } },
             { "quote.assert", new[] { "status", "price" } },
             { "pending.assert", new string[0] },
+            { "pending.toolbar", new string[0] },
             { "market.assert", new string[0] },
             { "recommendation.assert", new string[0] },
             { "recommendation.typography", new string[0] },
@@ -112,6 +113,7 @@ namespace SalesTrading.UiTests
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
         {
+            { "pending.toolbar", "验证报价确认工具栏全部编辑控件、持久化与删除" },
             { "management.select", "选中本例管理报价，验证筛选刷新清除选择" },
             { "filter.latency", "组合筛选延迟（需显式授权，最多500报价）" },
             { "manual.open", "点击手工报价" }, { "manual.fill", "填写手工报价" },

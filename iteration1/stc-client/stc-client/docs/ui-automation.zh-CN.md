@@ -143,3 +143,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 ## 组合筛选延迟测量
 
 独立性能用例、执行命令及 500 报价首轮测量结果见[报价组合筛选端到端延迟](filter-latency.zh-CN.md)。不在默认功能套件中执行；每次需用户明确授权。
+
+
+## 报价确认工具栏回归
+
+管理器用例 `21-pending-toolbar` 创建两条独立待确认报价，依次验证删除、Bid/Ofr、价格调整、价格类型、清算速度、报量、机构/交易员搜索及五个旗标。通过真实控件操作、服务端读回和未选报价完整对比，核对编辑范围与确认后的持久化；失败同样清理本例报价。`pending-toolbar-checks.json` 保存逐项检查结果，CRM失败额外保存搜索状态。
+
+报价确认工具栏的数值语义与产品原型一致：按钮每次调整 ±1BP / ±1000万；输入框可输入有符号增量，按 Enter 应用。收益率按百分数展示，1BP对应0.01；净价/全价按原型使用价格单位增量。换一组勾选行后可重新应用同一个下拉选项；混合旗标统一开启，再次点击统一关闭；OCO与打包互斥。只对勾选报价生效。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/run-ui-tests.ps1 -Cases 21-pending-toolbar
+```
+
+2026-10-13 已在本地真实 STC/GW/QuoteSvr/CRM 链路验证；本轮范围为报价确认工具栏，不代表所有页面或 QA 环境已完成回归。

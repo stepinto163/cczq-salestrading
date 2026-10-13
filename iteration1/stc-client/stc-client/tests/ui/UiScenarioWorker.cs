@@ -231,7 +231,12 @@ namespace SalesTrading.UiTests
                     CloseEditor();
                     await NavigateAsync("entry");
                     await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.RecognitionId == quoteId), "报价确认页接收本例报价");
-                    Require(Descendants<DataGrid>(view).Any(grid => grid.Items.OfType<QuoteConfirmRowViewModel>().Any(row => row.RecognitionId == quoteId)), "报价确认表未显示本例报价");
+                    var pendingPage = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
+                    var pendingRow = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == quoteId);
+                    // 分组表保持虚拟化；先滚动并展开本例行，再判断实际控件是否呈现。
+                    await SelectPendingRowAsync(pendingPage, pendingRow, false);
+                    await Until(() => Descendants<DataGrid>(view).Any(grid => grid.Items.OfType<QuoteConfirmRowViewModel>()
+                        .Any(row => row.RecognitionId == quoteId)), "报价确认表呈现本例报价");
                     break;
                 case "management.assert":
                     CloseEditor();

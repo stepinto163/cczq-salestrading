@@ -252,6 +252,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 foreach (var row in batch.Rows) row.IsSelected = batch.IsGroupChecked.Value;
             }
             finally { _isUpdatingSelectionState = false; }
+            ResetToolbarSelection();
             RecomputeStats();
         }
 
@@ -273,7 +274,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            RefreshToolbarFlags();
             if (_isUpdatingSelectionState || e.PropertyName != nameof(QuoteConfirmRowViewModel.IsSelected)) return;
+            ResetToolbarSelection();
 
             // 行选择变化 → 刷新所属批次的组级三态与整体统计
             foreach (var batch in Batches)
@@ -321,6 +324,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             _status.Set("sync", SyncState);
             var allSelected = rows.Count > 0 && rows.All(r => r.IsSelected);
             IsSelectAllChecked = allSelected ? (bool?)true : (rows.Any(r => r.IsSelected) ? null : false);
+            RefreshToolbarFlags();
         }
 
         private void PublishPendingBadge()
@@ -431,13 +435,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [RelayCommand]
         private void SetDirectionBid()
         {
-            foreach (var row in SelectedRows) row.Direction = "Bid";
+            foreach (var row in RowsForBatchEdit()) row.Direction = "Bid";
         }
 
         [RelayCommand]
         private void SetDirectionOfr()
         {
-            foreach (var row in SelectedRows) row.Direction = "Ofr";
+            foreach (var row in RowsForBatchEdit()) row.Direction = "Ofr";
         }
 
         [ObservableProperty]
@@ -448,136 +452,218 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
 
 
-        [RelayCommand]
-        private void AdjustBpUp() { ApplyBp(1); }
+        private int lastBpSign;
+        private int lastAmountSign;
+        private bool updatingAdjustmentInput;
+
+        partial void OnBpInputChanged(string value)
+        {
+            if (!updatingAdjustmentInput) lastBpSign = 0;
+        }
+
+        partial void OnAmountInputChanged(string value)
+        {
+            if (!updatingAdjustmentInput) lastAmountSign = 0;
+        }
 
         [RelayCommand]
-        private void AdjustBpDown() { ApplyBp(-1); }
+        private void AdjustBpUp()
+        {
+            ApplyAdjustment(true, 1);
+        }
 
-        private void ApplyBp(int sign)
+        [RelayCommand]
+        private void AdjustBpDown()
+        {
+            ApplyAdjustment(true, -1);
+        }
+
+        [RelayCommand]
+        private void AdjustAmountUp()
+        {
+            ApplyAdjustment(false, 1);
+        }
+
+        [RelayCommand]
+        private void AdjustAmountDown()
+        {
+            ApplyAdjustment(false, -1);
+        }
+
+        [RelayCommand]
+        private void ApplyBpInput()
+        {
+            ApplyAdjustment(true, 0);
+        }
+
+        [RelayCommand]
+        private void ApplyAmountInput()
+        {
+            ApplyAdjustment(false, 0);
+        }
+
+        private List<QuoteConfirmRowViewModel> RowsForBatchEdit()
         {
             var selected = SelectedRows.ToList();
             if (selected.Count == 0)
             {
-                ToastService.Show("请先勾选要调整的报价", ToastKind.Warning);
-                return;
+                ToastService.Show("请先勾选要批量修改的报价", ToastKind.Warning);
             }
+            return selected;
+        }
 
-            decimal bp;
-            if (!TryParseNonNegative(BpInput, out bp))
+        /// <summary>按钮固定调整1BP/1000万；输入框按 Enter 应用有符号增量，与产品原型一致。</summary>
+        private void ApplyAdjustment(bool priceAdjustment, int buttonSign)
+        {
+            var selected = RowsForBatchEdit();
+            if (selected.Count == 0) return;
+            string input = priceAdjustment ? BpInput : AmountInput;
+            decimal delta;
+            decimal step = priceAdjustment ? 1m : 1000m;
+            if (buttonSign == 0)
             {
-                ToastService.Show("BP 调整值必须是非负数字", ToastKind.Warning);
-                return;
+                if (!decimal.TryParse(input, NumberStyles.Number, CultureInfo.InvariantCulture, out delta) || delta == 0)
+                {
+                    ToastService.Show("请输入非零数字调整值，然后按 Enter", ToastKind.Warning);
+                    return;
+                }
             }
-
-            var delta = bp * sign;
-            var skipped = 0;
-
+            else
+            {
+                delta = step * buttonSign;
+                int lastSign = priceAdjustment ? lastBpSign : lastAmountSign;
+                decimal previous;
+                decimal display = lastSign == buttonSign && decimal.TryParse(input, NumberStyles.Number,
+                    CultureInfo.InvariantCulture, out previous) ? Math.Abs(previous) + step : step;
+                updatingAdjustmentInput = true;
+                try
+                {
+                    if (priceAdjustment)
+                    {
+                        BpInput = (display * buttonSign).ToString(CultureInfo.InvariantCulture);
+                        lastBpSign = buttonSign;
+                    }
+                    else
+                    {
+                        AmountInput = (display * buttonSign).ToString(CultureInfo.InvariantCulture);
+                        lastAmountSign = buttonSign;
+                    }
+                }
+                finally
+                {
+                    updatingAdjustmentInput = false;
+                }
+            }
+            int skipped = 0;
             foreach (var row in selected)
             {
-                decimal price;
-                if (!decimal.TryParse(row.Price, out price))
+                decimal current;
+                if (!decimal.TryParse(priceAdjustment ? row.Price : row.Volume, NumberStyles.Number,
+                    CultureInfo.InvariantCulture, out current))
                 {
                     skipped++;
                     continue;
                 }
-
-                // 收益率口径 1BP=0.0001；净价/全价口径 1BP=0.01（原型 adjustBP 语义）
-                var step = row.PriceType == "净价" || row.PriceType == "全价" ? 0.01m : 0.0001m;
-                row.Price = (price + delta * step).ToString("0.####", CultureInfo.InvariantCulture);
+                // 收益率以百分数展示，1BP=0.01；净价/全价按原型使用价格单位增量。
+                decimal unit = priceAdjustment && row.PriceType != "净价" && row.PriceType != "全价" ? 0.01m : 1m;
+                string adjusted = Math.Max(0, current + delta * unit).ToString("0.####", CultureInfo.InvariantCulture);
+                if (priceAdjustment) row.Price = adjusted;
+                else row.Volume = adjusted;
             }
-
             if (skipped > 0)
             {
-                ToastService.Show(string.Format("有 {0} 条报价价格无效，已跳过", skipped), ToastKind.Warning);
+                ToastService.Show(string.Format("有 {0} 条报价数值无效，已跳过", skipped), ToastKind.Warning);
             }
         }
 
-        [RelayCommand]
-        private void AdjustAmountUp() { ApplyAmount(1); }
-
-        [RelayCommand]
-        private void AdjustAmountDown() { ApplyAmount(-1); }
-
-        private void ApplyAmount(int sign)
+        private void ResetToolbarSelection()
         {
-            var selected = SelectedRows.ToList();
-            if (selected.Count == 0)
-            {
-                ToastService.Show("请先勾选要调整的报价", ToastKind.Warning);
-                return;
-            }
-
-            decimal amount;
-            if (!TryParseNonNegative(AmountInput, out amount))
-            {
-                ToastService.Show("报量调整值必须是非负数字", ToastKind.Warning);
-                return;
-            }
-
-            var delta = amount * sign * 1000m;   // 原型 +1k = 加 1000 万
-            var skipped = 0;
-
-            foreach (var row in selected)
-            {
-                decimal vol;
-                if (!decimal.TryParse(row.Volume, out vol))
-                {
-                    skipped++;
-                    continue;
-                }
-
-                row.Volume = Math.Max(0, vol + delta).ToString("0.#", CultureInfo.InvariantCulture);
-            }
-
-            if (skipped > 0)
-            {
-                ToastService.Show(string.Format("有 {0} 条报价报量无效，已跳过", skipped), ToastKind.Warning);
-            }
-        }
-
-        private static bool TryParseNonNegative(string input, out decimal value)
-        {
-            return decimal.TryParse(input, out value) && value >= 0;
+            // 新一组勾选行仍能应用上次选择的类型/清算，避免默认值无 SelectionChanged 事件。
+            ToolbarPriceType = null;
+            ToolbarSettlement = null;
+            RefreshToolbarFlags();
         }
 
         /// <summary>工具栏价格类型下拉（变化即批量应用到选中行，原型 batchSetPriceType）。</summary>
         [ObservableProperty]
-        private string _toolbarPriceType = "到期收益率";
+        private string _toolbarPriceType;
 
         partial void OnToolbarPriceTypeChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in SelectedRows) row.PriceType = value;
+            foreach (var row in RowsForBatchEdit()) row.PriceType = value;
         }
 
         /// <summary>工具栏清算速度下拉（变化即批量应用，原型 batchSetSettlement）。</summary>
         [ObservableProperty]
-        private string _toolbarSettlement = "T+1";
+        private string _toolbarSettlement;
 
         partial void OnToolbarSettlementChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in SelectedRows) row.Settlement = value;
+            foreach (var row in RowsForBatchEdit()) row.Settlement = value;
         }
 
 
 
-        /// <summary>批量旗标切换（oco/packing/urgent/rec/whole）。</summary>
+        public bool ToolbarUrgent => AllSelectedFlag("urgent");
+        public bool ToolbarRecommended => AllSelectedFlag("rec");
+        public bool ToolbarWhole => AllSelectedFlag("whole");
+        public bool ToolbarOco => AllSelectedFlag("oco");
+        public bool ToolbarPacking => AllSelectedFlag("packing");
+
+        private bool AllSelectedFlag(string flag)
+        {
+            var selected = SelectedRows.ToList();
+            return selected.Count > 0 && selected.All(row => FlagValue(row, flag));
+        }
+
+        private static bool FlagValue(QuoteConfirmRowViewModel row, string flag)
+        {
+            switch (flag)
+            {
+                case "urgent": return row.IsUrgent;
+                case "rec": return row.IsRec;
+                case "whole": return row.IsWhole;
+                case "oco": return row.IsOco;
+                case "packing": return row.IsPacking;
+                default: throw new ArgumentException("Unknown quote flag: " + flag);
+            }
+        }
+
+        private void RefreshToolbarFlags()
+        {
+            OnPropertyChanged(nameof(ToolbarUrgent));
+            OnPropertyChanged(nameof(ToolbarRecommended));
+            OnPropertyChanged(nameof(ToolbarWhole));
+            OnPropertyChanged(nameof(ToolbarOco));
+            OnPropertyChanged(nameof(ToolbarPacking));
+        }
+
+        /// <summary>混合状态统一打开；全选中时统一关闭；OCO与打包互斥。</summary>
         [RelayCommand]
         private void ToggleFlag(string flag)
         {
-            foreach (var row in SelectedRows)
+            var selected = RowsForBatchEdit();
+            bool enabled = selected.Any(row => !FlagValue(row, flag));
+            foreach (var row in selected)
             {
                 switch (flag)
                 {
-                    case "oco": row.IsOco = !row.IsOco; break;
-                    case "packing": row.IsPacking = !row.IsPacking; break;
-                    case "urgent": row.IsUrgent = !row.IsUrgent; break;
-                    case "rec": row.IsRec = !row.IsRec; break;
-                    case "whole": row.IsWhole = !row.IsWhole; break;
+                    case "oco":
+                        row.IsOco = enabled;
+                        if (enabled) row.IsPacking = false;
+                        break;
+                    case "packing":
+                        row.IsPacking = enabled;
+                        if (enabled) row.IsOco = false;
+                        break;
+                    case "urgent": row.IsUrgent = enabled; break;
+                    case "rec": row.IsRec = enabled; break;
+                    case "whole": row.IsWhole = enabled; break;
                 }
             }
+            RefreshToolbarFlags();
         }
 
         #endregion

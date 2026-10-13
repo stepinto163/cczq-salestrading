@@ -22,7 +22,7 @@
         </Grid.RowDefinitions>
 
         <!-- ===== 批量工具栏（原型：确认/删除/Bid/Ofr/±BP/价格类型/清算/±报量/机构/交易员/5旗标/已选N） ===== -->
-        <Border Grid.Row="0" Style="{DynamicResource StcToolbar}">
+        <Border x:Name="BatchToolbar" Grid.Row="0" Style="{DynamicResource StcToolbar}" ToolTip="仅修改勾选报价；数值框按 Enter 应用增量">
             <WrapPanel>
                 <Button Content="补全 / CRM" Style="{DynamicResource StcButton}" Command="{Binding CompleteQuoteCommand}" Margin="0,0,6,6" />
                 <Button Content="确认报价" Style="{DynamicResource StcButtonDanger}"
@@ -37,7 +37,7 @@
                         Command="{Binding AdjustBpUpCommand}" FontSize="14" FontWeight="Bold"
                         Foreground="{DynamicResource SuccessBrush}" Margin="0,0,6,6" />
                 <Grid Margin="0,0,6,6" Width="86">
-                    <TextBox Text="{Binding BpInput, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox PreviewKeyDown="AdjustmentInput_OnPreviewKeyDown" Tag="price" ToolTip="输入有符号BP增量，按 Enter 应用；按钮每次±1BP" Text="{Binding BpInput, UpdateSourceTrigger=PropertyChanged}"
                              Style="{DynamicResource StcTextBox}" TextAlignment="Right"
                              FontFamily="{DynamicResource MonoFont}" Padding="0,5,20,5" />
                     <TextBlock Text="BP" Style="{DynamicResource StcTextFaint}" IsHitTestVisible="False"
@@ -55,7 +55,7 @@
                 <Button Content="+1k" Style="{DynamicResource StcButtonGreen}" FontSize="11"
                         Command="{Binding AdjustAmountUpCommand}" Margin="0,0,6,6" />
                 <Grid Margin="0,0,6,6" Width="86">
-                    <TextBox Text="{Binding AmountInput, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox PreviewKeyDown="AdjustmentInput_OnPreviewKeyDown" Tag="amount" ToolTip="输入有符号报量增量（万），按 Enter 应用；按钮每次±1000万" Text="{Binding AmountInput, UpdateSourceTrigger=PropertyChanged}"
                              Style="{DynamicResource StcTextBox}" TextAlignment="Right"
                              FontFamily="{DynamicResource MonoFont}" Padding="0,5,20,5" />
                     <TextBlock Text="万" Style="{DynamicResource StcTextFaint}" IsHitTestVisible="False"
@@ -73,15 +73,15 @@
                          Width="110" Style="{DynamicResource StcTextBox}"
                          ToolTip="输入搜索并选择报价交易员" Tag="报价交易员" Margin="0,0,6,6" />
                 <ToggleButton Content="急" Style="{DynamicResource StcToolbarFlagUrgent}" Margin="0,0,6,6"
-                              Command="{Binding ToggleFlagCommand}" CommandParameter="urgent" />
+                              Command="{Binding ToggleFlagCommand}" CommandParameter="urgent" IsChecked="{Binding ToolbarUrgent, Mode=OneWay}" />
                 <ToggleButton Content="荐" Style="{DynamicResource StcToolbarFlagRecommend}" Margin="0,0,6,6"
-                              Command="{Binding ToggleFlagCommand}" CommandParameter="rec" />
+                              Command="{Binding ToggleFlagCommand}" CommandParameter="rec" IsChecked="{Binding ToolbarRecommended, Mode=OneWay}" />
                 <ToggleButton Content="整" Style="{DynamicResource StcToolbarFlagWhole}" Margin="0,0,6,6"
-                              Command="{Binding ToggleFlagCommand}" CommandParameter="whole" />
+                              Command="{Binding ToggleFlagCommand}" CommandParameter="whole" IsChecked="{Binding ToolbarWhole, Mode=OneWay}" />
                 <ToggleButton Content="OCO" Style="{DynamicResource StcToolbarFlagOco}" Margin="0,0,6,6"
-                              Command="{Binding ToggleFlagCommand}" CommandParameter="oco" />
+                              Command="{Binding ToggleFlagCommand}" CommandParameter="oco" IsChecked="{Binding ToolbarOco, Mode=OneWay}" />
                 <ToggleButton Content="打包" Style="{DynamicResource StcToolbarFlagPacking}" Margin="0,0,6,6"
-                              Command="{Binding ToggleFlagCommand}" CommandParameter="packing" />
+                              Command="{Binding ToggleFlagCommand}" CommandParameter="packing" IsChecked="{Binding ToolbarPacking, Mode=OneWay}" />
                 <TextBlock Style="{DynamicResource StcTextMuted}" VerticalAlignment="Center" Margin="12,0,0,6">
                     <Run Text="已选 " />
                     <Run Text="{Binding SelectedCount, Mode=OneWay}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" />

@@ -59,6 +59,9 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "pending.toolbar":
+                    await CheckPendingToolbarAsync();
+                    break;
                 case "recommendation.typography":
                     await CheckRecommendationTypographyAsync();
                     break;
