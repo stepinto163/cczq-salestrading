@@ -1,4 +1,4 @@
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -194,15 +194,24 @@ namespace STC.SalesTrading.Plugin.Ficc
         public async Task<BondLookupEntry> LookupBondAsync(string code, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            JObject result = await Api.RequestProjectionAsync(SalesTradingApi.BaseQuery, ProtocolCodec.Decode<BaseQueryRequest>(new JObject { ["kind"] = "SECURITY", ["text"] = code, ["limit"] = 30 }));
+            code = (code ?? string.Empty).Trim().ToUpperInvariant();
+            var identifiers = code.Contains(".") ? new[] { code } : new[] { code + ".IB", code + ".SH", code + ".SZ" };
+            // 关注识别接收代码，按 ID 获取，避免为单只债券扫描和物化整个基础资料库。
+            JObject result = await Api.RequestProjectionAsync(SalesTradingApi.BaseGet,
+                new BaseGetRequest { Kind = "SECURITY", Ids = identifiers.ToList() });
             ct.ThrowIfCancellationRequested();
-            JObject security = ((JArray)result["records"]).OfType<JObject>().FirstOrDefault(row =>
-                string.Equals((string)row["securityId"], code, StringComparison.OrdinalIgnoreCase));
+            var matches = ((JArray)result["records"]).OfType<JObject>().Where(row =>
+                string.Equals((string)row["securityId"], code, StringComparison.OrdinalIgnoreCase)
+                || (code.IndexOf('.') < 0 && string.Equals(((string)row["securityId"])?.Split('.')[0], code, StringComparison.OrdinalIgnoreCase))).ToArray();
+            JObject security = matches.FirstOrDefault(row => string.Equals((string)row["securityId"], code, StringComparison.OrdinalIgnoreCase));
+            if (security == null && matches.Length == 1) security = matches[0];
+            if (security == null && matches.Length > 1) throw new InvalidOperationException("债券代码对应多个市场，请输入完整代码：" + code);
             return new BondLookupEntry
             {
-                Code = code, Found = security != null, Name = (string)security?["securityName"],
+                Code = (string)security?["securityId"] ?? code, Found = security != null, Name = (string)security?["securityName"],
                 Tenor = security?["remainingYears"]?.ToString(), BondLibrary = (string)security?["bondSubtype"],
-                Valuation = security?["valuationYield"]?.ToString()
+                Valuation = security?["valuationYield"]?.ToString(),
+                Market = security == null ? (BondMarket?)null : (string)security["market"] == "RATE" ? BondMarket.Rate : BondMarket.Credit
             };
         }
     }

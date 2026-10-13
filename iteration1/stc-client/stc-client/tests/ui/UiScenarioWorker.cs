@@ -1,4 +1,4 @@
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -399,6 +399,14 @@ namespace SalesTrading.UiTests
             {
                 failures.Add(error.ToString());
             }
+            try
+            {
+                await CleanupGroupFixturesAsync();
+            }
+            catch (Exception error)
+            {
+                failures.Add(error.ToString());
+            }
             Require(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
 
@@ -425,6 +433,14 @@ namespace SalesTrading.UiTests
                     Require((string)(await model.Backend.Api.GetQuoteAsync(id))["status"] == "DELETED", "清理后仍未删除");
                 }
                 catch (Exception error) { failures.Add(id + ": " + error.Message); }
+            }
+            try
+            {
+                await CleanupGroupFixturesAsync();
+            }
+            catch (Exception error)
+            {
+                failures.Add(error.ToString());
             }
             Require(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
@@ -485,11 +501,11 @@ namespace SalesTrading.UiTests
             }
         }
 
-        private void Capture(string name)
+        private void Capture(string name, Window target = null)
         {
             try
             {
-                Window window = editor ?? shell;
+                Window window = target ?? editor ?? shell;
                 if (window == null || window.ActualWidth <= 0) return;
                 window.UpdateLayout();
                 RenderTargetBitmap bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);

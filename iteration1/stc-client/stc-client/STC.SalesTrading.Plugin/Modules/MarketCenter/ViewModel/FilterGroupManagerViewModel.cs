@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -12,15 +12,17 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     /// 左列 = 分组列表（双击重命名/删除/+新建）+ 已选区（子分组卡片：条件 chip 可删、卡片 hover 删除、
     /// 底部「+ 新增分组」虚线按钮）；右侧 = 粘贴条件文本识别 + 条件目录（按分区展开、多选 toggle、
     /// 文本/下拉/区间「添加」行、不可用项置灰）。
-    /// 保存整体替换回 <see cref="FilterProfileService"/>；侧栏 chip 与表格数据联动待后端契约。
+    /// 通过 <see cref="FilterProfileService"/> 保存到账户；服务端在分页前执行激活分组。
     /// </summary>
     public class FilterGroupManagerViewModel : INotifyPropertyChanged
     {
         private readonly FilterProfileService.MarketKind _market;
+        private readonly List<FilterNamedGroup> originalGroups;
 
         public FilterGroupManagerViewModel(FilterProfileService.MarketKind market)
         {
             _market = market;
+            originalGroups = FilterProfileService.GetFilterGroups(market).ToList();
             foreach (var g in FilterProfileService.GetFilterGroups(market))
             {
                 Groups.Add(CloneGroup(g));
@@ -193,7 +195,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             {
                 return false;
             }
-            if (SelectedGroup == null)
+            if (SelectedGroup == null || group.Items.Any(item => item.Label == value && !item.Enabled))
             {
                 return false;
             }
@@ -302,13 +304,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 return null;
             }
             decimal value;
-            return decimal.TryParse(text, out value) ? value : (decimal?)null;
+            return decimal.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out value) ? value : (decimal?)null;
         }
 
         /// <summary>数值格式化：整数不带小数点，小数去尾零（1 → "1"，0.5 → "0.5"）。</summary>
         private static string FormatRangeValue(decimal? value)
         {
-            return value.HasValue ? value.Value.ToString("0.####") : string.Empty;
+            return value.HasValue ? value.Value.ToString("0.############################", System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
         }
 
         // ---- 文本识别（原型 _fgmMatch：MVP 用「与目录项 label 全等」匹配） ----
@@ -359,8 +361,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                             {
                                 matched.Add(token);
                             }
-                            // 原型 _fgmMatch：匹配到的条件直接进激活子分组（Toggle 自带 identity 去重）
-                            if (ToggleCatalogCondition(cg, token))
+                            // 原型 _fgmMatch：匹配到的条件直接进激活子分组（已存在条件保持不变）
+                            if (!IsConditionActive(cg, token) && ToggleCatalogCondition(cg, token))
                             {
                                 added++;
                             }
@@ -384,20 +386,20 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         }
 
         /// <summary>保存：整体替换回服务存储。</summary>
-        public void Save()
+        public async System.Threading.Tasks.Task SaveAsync()
         {
-            FilterProfileService.SaveFilterGroups(_market, Groups);
+            await FilterProfileService.SaveFilterGroupsAsync(_market, Groups, originalGroups);
         }
 
         private static FilterNamedGroup CloneGroup(FilterNamedGroup src)
         {
-            var copy = new FilterNamedGroup { Name = src.Name, Id = src.Id };
+            var copy = new FilterNamedGroup { Name = src.Name, Id = src.Id, Revision = src.Revision };
             foreach (var sg in src.Subgroups)
             {
                 var sgCopy = new FilterSubgroup();
                 foreach (var c in sg.Conditions)
                 {
-                    sgCopy.Conditions.Add(new FilterCondition(c.Key, c.Label, c.Value));
+                    sgCopy.Conditions.Add(new FilterCondition(c.Key, c.Label, c.Value) { Protocol = c.Protocol });
                 }
                 copy.Subgroups.Add(sgCopy);
             }

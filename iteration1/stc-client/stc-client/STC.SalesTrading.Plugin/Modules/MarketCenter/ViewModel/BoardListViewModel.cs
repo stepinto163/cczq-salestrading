@@ -222,7 +222,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 foreach (var row in result.Items)
                 {
                     // 侧栏分组 chip 激活时的客户端过滤（原型 include_security_ids 行过滤的本地近似）
-                    if (MarketGroupSelectionService.Matches(row)) Rows.Add(row);
+                    Rows.Add(row);
                 }
                 TotalCount = result.TotalCount;
                 QueryId = result.QueryId;

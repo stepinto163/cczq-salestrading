@@ -36,13 +36,25 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             EmptySkeleton.ItemsSource = rows;
             UpdateSkeleton();
             Loaded += OnLoaded;
+            Closing += (sender, args) => { if (!IsEnabled) args.Cancel = true; };
         }
 
         /// <summary>弹窗入口：对齐宿主尺寸 → 模态显示。lookupService 用于识别回填（可空，空则不回填）。</summary>
-        public static void Show(Window owner, FilterProfileService.MarketKind market,
+        public static async void Show(Window owner, FilterProfileService.MarketKind market,
             IMarketCenterService lookupService = null)
         {
-            var dlg = new FavBondManagerWindow(market, lookupService);
+            try
+            {
+                await FilterProfileService.ReloadAsync();
+                await FilterProfileService.RefreshBondDetailsAsync(market);
+            }
+            catch (System.Exception error)
+            {
+                com.gateway.log.LogHelper.Error(error);
+                ToastService.Show("分组加载失败：" + error.Message, ToastKind.Error);
+                return;
+            }
+            var dlg = new FavBondManagerWindow(market, lookupService ?? FilterProfileService.LookupService);
             dlg.Owner = owner;
             // ShowDialog 前先对齐，避免窗口先出现在默认位置再跳动
             OverlayBackdrop.CoverOwner(dlg);
@@ -99,14 +111,24 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             Close();
         }
 
-        private void OnSaveClick(object sender, RoutedEventArgs e)
+        private async void OnSaveClick(object sender, RoutedEventArgs e)
         {
             // 新建行未确认的内容一并提交
             CommitNewGroup();
-            _vm.Save();
-            // 落库待后端契约；当前为会话内存储
-            ToastService.Show("关注债券分组已保存（会话内生效，后端同步待接）");
-            Close();
+            IsEnabled = false;
+            try
+            {
+                await _vm.SaveAsync();
+                ToastService.Show("关注债券分组已保存到账户", ToastKind.Success);
+                IsEnabled = true;
+                Close();
+            }
+            catch (System.Exception error)
+            {
+                com.gateway.log.LogHelper.Error(error);
+                ToastService.Show("保存未完成：" + error.Message + "。请保留编辑内容并重试；如版本冲突请重新打开。", ToastKind.Error);
+            }
+            finally { IsEnabled = true; }
         }
 
         // ---- 分组列表 ----

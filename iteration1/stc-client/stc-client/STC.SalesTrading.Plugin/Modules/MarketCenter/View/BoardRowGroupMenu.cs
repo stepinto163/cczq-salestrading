@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,112 +13,120 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
     /// 分隔线、「+ 新建分组」（弹名称输入框，重名报「同名分组已存在」，建组并把当前行债券放入）。
     /// 在各看板的 ContextMenuOpening 里调用（此时行 DataContext 已注入）。
     /// </summary>
-public static class BoardRowGroupMenu
-{
-    private static Style _ctxItemStyle;
-    private static Style _ctxSeparatorStyle;
-    private static readonly System.Windows.Media.Brush _ctxAccentBrush =
-        CreateFrozenBrush(0x79, 0xC0, 0xFF);   // 原型内联 color:#79c0ff
-    private static readonly System.Windows.Media.Brush _ctxMutedBrush =
-        CreateFrozenBrush(0x7D, 0x85, 0x90);   // 原型内联 color:#7d8590
-
-    private static System.Windows.Media.SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b)
+    public static class BoardRowGroupMenu
     {
-        var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
-        brush.Freeze();
-        return brush;
-    }
+        private static Style _ctxItemStyle;
+        private static Style _ctxSeparatorStyle;
+        private static readonly System.Windows.Media.Brush _ctxAccentBrush =
+            CreateFrozenBrush(0x79, 0xC0, 0xFF);   // 原型内联 color:#79c0ff
+        private static readonly System.Windows.Media.Brush _ctxMutedBrush =
+            CreateFrozenBrush(0x7D, 0x85, 0x90);   // 原型内联 color:#7d8590
 
-    /// <summary>
-    /// 从主题字典实例直取右键菜单资源。ContextMenu 是独立视觉树，
-    /// menu.TryFindResource 只查自身 Resources → Application → 系统主题，
-    /// 走不到视图级合并的 DarkTheme（宿主 App 级也没有插件的 Stc* 键），
-    /// 动态子菜单项曾因此全部落到系统默认样式（黑字），深色弹层上文字不可见。
-    /// </summary>
-    private static void EnsureCtxResources()
-    {
-        if (_ctxItemStyle != null) return;
-        var rd = new ResourceDictionary
+        private static System.Windows.Media.SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b)
         {
-            Source = new Uri("/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml", UriKind.Relative)
-        };
-        _ctxItemStyle = (Style)rd["StcMenuItem"];
-        _ctxSeparatorStyle = (Style)rd["StcCtxSeparator"];
-        // 前景色不取字典画刷：AccentBrush 等的 Color 是嵌套 DynamicResource，独立视觉树下解析不稳
-    }
-
-    /// <summary>
-    /// 重建「添加到分组」子菜单。markets = 行所属市场集合（普通看板 1 个；
-    /// 提醒看板行没有市场字段，传两个市场合并列出，与原型 merged 侧栏口径一致）。
-    /// </summary>
-    public static void Populate(ContextMenu menu, string code, string name, Window owner, params FilterProfileService.MarketKind[] markets)
-    {
-        if (menu == null) return;
-        EnsureCtxResources();
-        MenuItem root = null;
-        foreach (var item in menu.Items)
-        {
-            var candidate = item as MenuItem;
-            if (candidate != null && (candidate.Header as string) == "添加到分组")
-            {
-                root = candidate;
-                break;
-            }
-        }
-        if (root == null) return;
-
-        root.Items.Clear();
-
-        var groups = new List<FavBondGroup>();
-        foreach (var market in markets)
-        {
-            foreach (var g in FilterProfileService.GetFavGroups(market))
-            {
-                // 原型过滤「默认」空分组（name==='默认' 且无债券）
-                if (g.Name == "默认" && g.Bonds.Count == 0) continue;
-                groups.Add(g);
-            }
+            var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+            brush.Freeze();
+            return brush;
         }
 
-        if (groups.Count == 0)
+        /// <summary>
+        /// 从主题字典实例直取右键菜单资源。ContextMenu 是独立视觉树，
+        /// menu.TryFindResource 只查自身 Resources → Application → 系统主题，
+        /// 走不到视图级合并的 DarkTheme（宿主 App 级也没有插件的 Stc* 键），
+        /// 动态子菜单项曾因此全部落到系统默认样式（黑字），深色弹层上文字不可见。
+        /// </summary>
+        private static void EnsureCtxResources()
         {
-            root.Items.Add(new MenuItem
+            if (_ctxItemStyle != null) return;
+            var rd = new ResourceDictionary
             {
-                Header = "暂无关注分组",
-                Style = _ctxItemStyle,
-                Foreground = _ctxMutedBrush,
-                IsEnabled = false,
-            });
+                Source = new Uri("/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml", UriKind.Relative)
+            };
+            _ctxItemStyle = (Style)rd["StcMenuItem"];
+            _ctxSeparatorStyle = (Style)rd["StcCtxSeparator"];
+            // 前景色不取字典画刷：AccentBrush 等的 Color 是嵌套 DynamicResource，独立视觉树下解析不稳
         }
-        else
+
+        /// <summary>
+        /// 重建「添加到分组」子菜单。markets = 行所属市场集合（普通看板 1 个；
+        /// 提醒看板行没有市场字段，传两个市场合并列出，与原型 merged 侧栏口径一致）。
+        /// </summary>
+        public static void Populate(ContextMenu menu, string code, string name, Window owner, params FilterProfileService.MarketKind[] markets)
         {
-            foreach (var group in groups)
+            if (menu == null) return;
+            EnsureCtxResources();
+            MenuItem root = null;
+            foreach (var item in menu.Items)
             {
-                var captured = group;
-                var item = new MenuItem
+                var candidate = item as MenuItem;
+                if (candidate != null && (candidate.Header as string) == "添加到分组")
                 {
-                    Header = captured.Name,
+                    root = candidate;
+                    break;
+                }
+            }
+            if (root == null) return;
+
+            root.Items.Clear();
+
+            var groups = new List<FavBondGroup>();
+            foreach (var market in markets)
+            {
+                foreach (var g in FilterProfileService.GetFavGroups(market))
+                {
+                    // 原型过滤「默认」空分组（name==='默认' 且无债券）
+                    if (g.Name == "默认" && g.Bonds.Count == 0) continue;
+                    groups.Add(g);
+                }
+            }
+
+            if (groups.Count == 0)
+            {
+                root.Items.Add(new MenuItem
+                {
+                    Header = "暂无关注分组",
                     Style = _ctxItemStyle,
-                };
-                item.Click += (s, e) =>
-                {
-                    if (MarketGroupSelectionService.AddBondToFavoriteGroup(captured, code, name))
-                    {
-                        ToastService.Show("已加入分组 " + captured.Name, ToastKind.Success);
-                    }
-                };
-                root.Items.Add(item);
+                    Foreground = _ctxMutedBrush,
+                    IsEnabled = false,
+                });
             }
-        }
+            else
+            {
+                foreach (var group in groups)
+                {
+                    var captured = group;
+                    var item = new MenuItem
+                    {
+                        Header = captured.Name,
+                        Style = _ctxItemStyle,
+                    };
+                    item.Click += async (s, e) =>
+                    {
+                        try
+                        {
+                            if (await MarketGroupSelectionService.AddBondToFavoriteGroupAsync(captured, code, name))
+                            {
+                                ToastService.Show("已加入分组 " + captured.Name, ToastKind.Success);
+                            }
+                        }
+                        catch (System.Exception error)
+                        {
+                            com.gateway.log.LogHelper.Error(error);
+                            ToastService.Show("加入分组失败：" + error.Message, ToastKind.Error);
+                        }
+                    };
+                    root.Items.Add(item);
+                }
+            }
 
-        root.Items.Add(new Separator { Style = _ctxSeparatorStyle });
+            root.Items.Add(new Separator { Style = _ctxSeparatorStyle });
 
-        var createItem = new MenuItem
-        {
-            Header = "+ 新建分组",
-            Style = _ctxItemStyle,
-            Foreground = _ctxAccentBrush,
-        };
+            var createItem = new MenuItem
+            {
+                Header = "+ 新建分组",
+                Style = _ctxItemStyle,
+                Foreground = _ctxAccentBrush,
+            };
             createItem.Click += (s, e) =>
             {
                 var market = markets != null && markets.Length > 0 ? markets[0] : FilterProfileService.MarketKind.Credit;
@@ -128,7 +136,7 @@ public static class BoardRowGroupMenu
         }
 
         /// <summary>原型 confirmNewGroup：重名报错，成功建组并把债券塞进去。</summary>
-        private static void NewGroupWithBond(Window owner, FilterProfileService.MarketKind market, string code, string name)
+        private static async void NewGroupWithBond(Window owner, FilterProfileService.MarketKind market, string code, string name)
         {
             var input = Shared.Components.PromptDialog.Show(owner, "新建分组");
             if (string.IsNullOrEmpty(input)) return;
@@ -148,9 +156,18 @@ public static class BoardRowGroupMenu
             {
                 group.Bonds.Add(new FavBondEntry { Code = code.Trim(), Name = name ?? string.Empty });
             }
-            groups.Add(group);
-            FilterProfileService.RaiseDataChanged();
-            ToastService.Show("已创建分组 " + input, ToastKind.Success);
+            try
+            {
+                var editor = new ViewModel.FavBondManagerViewModel(market);
+                editor.Groups.Add(group);
+                await editor.SaveAsync();
+                ToastService.Show("已创建分组 " + input, ToastKind.Success);
+            }
+            catch (System.Exception error)
+            {
+                com.gateway.log.LogHelper.Error(error);
+                ToastService.Show("新建分组失败：" + error.Message, ToastKind.Error);
+            }
         }
     }
 }

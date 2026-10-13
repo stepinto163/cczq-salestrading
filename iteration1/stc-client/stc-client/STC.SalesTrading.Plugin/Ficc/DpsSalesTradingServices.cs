@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -65,6 +65,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 transport = new StcFiccTransport(hostApi, SynchronizationContext.Current
                     ?? new DispatcherSynchronizationContext(System.Windows.Application.Current.Dispatcher));
                 Api = new FiccApiClient(transport);
+                Shared.Services.FilterProfileService.Attach(Api, this, GetFilterDictionaryAsync);
                 LogComponent("INITIALIZED", stopwatch.ElapsedMilliseconds);
             }
             catch (Exception error)
@@ -101,6 +102,11 @@ namespace STC.SalesTrading.Plugin.Ficc
             int pageNumber = 1, int pageSize = 100, string mode = "BEST", string market = null, JArray statuses = null)
         {
             cancellation.ThrowIfCancellationRequested();
+            if (key != "pending" && domain != "notification")
+            {
+                await Shared.Services.FilterProfileService.EnsureLoadedAsync();
+                filter = Shared.Services.MarketGroupSelectionService.ApplyTo(filter, market);
+            }
             if (disposed)
             {
                 throw new ObjectDisposedException(nameof(DpsSalesTradingServices));
@@ -243,6 +249,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 session.Page.Dispose();
             }
+            Shared.Services.FilterProfileService.Detach(Api);
             transport.Dispose();
             sessions.Clear();
             displayedQuotes.Clear();

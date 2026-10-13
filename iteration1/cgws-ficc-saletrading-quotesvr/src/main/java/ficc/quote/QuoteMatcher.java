@@ -68,6 +68,7 @@ final class QuoteMatcher {
         List<Filter> groupFilters = new ArrayList<>();
         for (SettingRecord group : filterGroups) {
             Filter combined = new Filter();
+            combined.market = group.market;
             combined.conditions = new ArrayList<>();
             if (group.subgroups != null) {
                 for (FilterSubgroup subgroup : group.subgroups) {

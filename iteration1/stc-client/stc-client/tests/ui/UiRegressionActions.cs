@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -59,6 +59,9 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "groups.manage":
+                    await CheckGroupManagementAsync();
+                    break;
                 case "pending.toolbar":
                     await CheckPendingToolbarAsync();
                     break;

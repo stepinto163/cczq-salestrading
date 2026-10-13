@@ -46,11 +46,22 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             ModalTitle = _vm.MarketTitle; // 头部由 ModalWindowBase 渲染
             BuildCatalog();
             Loaded += OnLoaded;
+            Closing += (sender, args) => { if (!IsEnabled) args.Cancel = true; };
         }
 
-        /// <summary>弹窗入口。merged（提醒合并页）原型无独立存储，暂按信用口径（待确认）。</summary>
-        public static void Show(Window owner, FilterProfileService.MarketKind market)
+        /// <summary>弹窗入口：先读取当前账户分组，再创建独立工作副本；合并页由用户选择市场。</summary>
+        public static async void Show(Window owner, FilterProfileService.MarketKind market)
         {
+            try
+            {
+                await FilterProfileService.ReloadAsync();
+            }
+            catch (System.Exception error)
+            {
+                com.gateway.log.LogHelper.Error(error);
+                ToastService.Show("分组加载失败：" + error.Message, ToastKind.Error);
+                return;
+            }
             var dlg = new FilterGroupManagerWindow(market);
             dlg.Owner = owner;
             OverlayBackdrop.CoverOwner(dlg);
@@ -511,12 +522,23 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             Close();
         }
 
-        private void OnSaveClick(object sender, RoutedEventArgs e)
+        private async void OnSaveClick(object sender, RoutedEventArgs e)
         {
             CommitNewGroup();
-            _vm.Save();
-            ToastService.Show("筛选分组已保存（会话内生效，后端同步待接）");
-            Close();
+            IsEnabled = false;
+            try
+            {
+                await _vm.SaveAsync();
+                ToastService.Show("筛选分组已保存到账户", ToastKind.Success);
+                IsEnabled = true;
+                Close();
+            }
+            catch (System.Exception error)
+            {
+                com.gateway.log.LogHelper.Error(error);
+                ToastService.Show("保存未完成：" + error.Message + "。请保留编辑内容并重试；如版本冲突请重新打开。", ToastKind.Error);
+            }
+            finally { IsEnabled = true; }
         }
 
         private void OnGroupListDoubleClick(object sender, MouseButtonEventArgs e)

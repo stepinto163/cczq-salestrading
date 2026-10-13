@@ -170,6 +170,7 @@ final class QuoteService {
         }
         for (JSONObject group : store.rows("SELECT payload FROM settings")) {
             FilterDictionaries.migrateSavedFilters(group);
+            FilterGroupRules.normalize(group);
             settings.put(settingId(group), ProtocolCodec.decode(group, SettingRecord.class));
         }
         matcher = new QuoteMatcher(refs, settings);
@@ -1012,6 +1013,7 @@ final class QuoteService {
                     x.putIfAbsent("displayOrder", seen.size() - 1);
                 }
             } else {
+                FilterGroupRules.normalize(g);
                 JSONArray subs = g.getJSONArray("subgroups");
                 if (subs == null)
                     throw ApiException.forField(

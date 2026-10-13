@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using STC.SalesTrading.Plugin.Shared.Components;
 
@@ -19,6 +19,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
             {
                 viewModel.FilterSearchText = string.Empty;
             }
+            Shared.Services.MarketGroupSelectionService.ClearActive();
             SidebarFilter.Reset(CombinedHost);
         }
     }

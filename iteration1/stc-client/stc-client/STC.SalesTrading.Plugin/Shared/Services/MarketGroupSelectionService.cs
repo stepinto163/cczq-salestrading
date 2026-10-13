@@ -1,4 +1,6 @@
-using System;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
@@ -68,7 +70,7 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             RaiseChanged();
         }
 
-        /// <summary>是否有激活分组（看板查询后过滤的短路条件）。</summary>
+        /// <summary>是否有激活分组；数据变更时用于触发服务端重查。</summary>
         public static bool HasActiveGroups
         {
             get { return _activeFavoriteIds.Count > 0 || _activeFilterIds.Count > 0; }
@@ -115,62 +117,20 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             return changed;
         }
 
-        /// <summary>「全部」看板行过滤（原型 rowMatchesActiveMarketGroups）。</summary>
-        public static bool Matches(BoardQuoteRow row)
+        /// <summary>组内 OR、两类分组与临时条件 AND；服务端在分页之前执行。</summary>
+        public static Newtonsoft.Json.Linq.JObject ApplyTo(Newtonsoft.Json.Linq.JObject filter, string market)
         {
-            if (!HasActiveGroups || row == null) return true;
-            return Matches(row.Market, row.Code, row.Maturity);
+            var result = filter == null ? new Newtonsoft.Json.Linq.JObject() : (Newtonsoft.Json.Linq.JObject)filter.DeepClone();
+            var markets = market == "RATE" ? new[] { FilterProfileService.MarketKind.Rate }
+                : market == "CREDIT" ? new[] { FilterProfileService.MarketKind.Credit }
+                : new[] { FilterProfileService.MarketKind.Credit, FilterProfileService.MarketKind.Rate };
+            result["watchlistIds"] = new Newtonsoft.Json.Linq.JArray(markets.SelectMany(FilterProfileService.GetFavGroups)
+                .Where(group => _activeFavoriteIds.Contains(group.Id)).Select(group => group.Id));
+            result["filterGroupIds"] = new Newtonsoft.Json.Linq.JArray(markets.SelectMany(FilterProfileService.GetFilterGroups)
+                .Where(group => _activeFilterIds.Contains(group.Id)).Select(group => group.Id));
+            return result;
         }
 
-        /// <summary>「最优」看板行过滤（BoardBestRow 与 BoardQuoteRow 字段同构，按 VM 的市场求值）。</summary>
-        public static bool MatchesBest(BoardBestRow row, BondMarket market)
-        {
-            if (!HasActiveGroups || row == null) return true;
-            return Matches(market, row.Code, row.Maturity);
-        }
-
-        private static bool Matches(BondMarket market, string code, string maturity)
-        {
-            var kind = market == BondMarket.Rate ? FilterProfileService.MarketKind.Rate : FilterProfileService.MarketKind.Credit;
-            var normalizedCode = NormalizeCode(code);
-            var rawCode = (code ?? string.Empty).Trim();
-
-            // 关注组：该市场有激活组时，代码必须命中其中任一（激活组都在另一市场时本项跳过）
-            var anyFavoriteActive = false;
-            var favoriteHit = false;
-            foreach (var g in FilterProfileService.GetFavGroups(kind))
-            {
-                if (!_activeFavoriteIds.Contains(g.Id)) continue;
-                anyFavoriteActive = true;
-                foreach (var bond in g.Bonds)
-                {
-                    if (NormalizeCode(bond.Code) == normalizedCode)
-                    {
-                        favoriteHit = true;
-                        break;
-                    }
-                }
-                if (favoriteHit) break;
-            }
-            if (anyFavoriteActive && !favoriteHit) return false;
-
-            // 筛选组：该市场有激活组时，条件必须命中其中任一
-            var anyFilterActive = false;
-            var filterHit = false;
-            foreach (var g in FilterProfileService.GetFilterGroups(kind))
-            {
-                if (!_activeFilterIds.Contains(g.Id)) continue;
-                anyFilterActive = true;
-                if (MarketGroupRowMatcher.Matches(rawCode, maturity, g))
-                {
-                    filterHit = true;
-                    break;
-                }
-            }
-            return !anyFilterActive || filterHit;
-        }
-
-        /// <summary>原型 normalizeBondCode：去空白、大写、去掉交易所后缀。</summary>
         public static string NormalizeCode(string code)
         {
             var value = (code ?? string.Empty).Trim().ToUpperInvariant();
@@ -184,16 +144,15 @@ namespace STC.SalesTrading.Plugin.Shared.Services
         // ============ 右键「添加到分组」（原型 addToContextFavorite / confirmNewGroup） ============
 
         /// <summary>把债券加入关注分组；已在组里返回 false（原型静默跳过）。</summary>
-        public static bool AddBondToFavoriteGroup(FavBondGroup group, string code, string name)
+        public static async Task<bool> AddBondToFavoriteGroupAsync(FavBondGroup group, string code, string name)
         {
             if (group == null || string.IsNullOrWhiteSpace(code)) return false;
-            var normalized = NormalizeCode(code);
-            foreach (var bond in group.Bonds)
-            {
-                if (NormalizeCode(bond.Code) == normalized) return false;
-            }
-            group.Bonds.Add(new FavBondEntry { Code = code.Trim(), Name = name ?? string.Empty });
-            FilterProfileService.RaiseDataChanged();
+            if (group.Bonds.Any(bond => NormalizeCode(bond.Code) == NormalizeCode(code))) return false;
+            var market = FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Contains(group)
+                ? FilterProfileService.MarketKind.Rate : FilterProfileService.MarketKind.Credit;
+            var editor = new Modules.MarketCenter.ViewModel.FavBondManagerViewModel(market);
+            editor.Groups.Single(item => item.Id == group.Id).Bonds.Add(new FavBondEntry { Code = code.Trim(), Name = name });
+            await editor.SaveAsync();
             return true;
         }
 
@@ -215,7 +174,7 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             var changed = false;
             changed |= _activeFavoriteIds.RemoveWhere(id => FindFavoriteGroup(id) == null) > 0;
             changed |= _activeFilterIds.RemoveWhere(id => FindFilterGroup(id) == null) > 0;
-            if (changed) RaiseChanged();
+            if (changed || HasActiveGroups) RaiseChanged();
         }
 
         private static FilterNamedGroup FindFilterGroup(string groupId)

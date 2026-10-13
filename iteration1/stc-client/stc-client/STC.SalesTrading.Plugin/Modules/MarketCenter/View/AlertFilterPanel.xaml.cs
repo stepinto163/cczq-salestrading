@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using STC.SalesTrading.Plugin.Shared.Services;
 
@@ -12,13 +12,28 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             InitializeComponent();
         }
 
-        // 顶部「关注债券 / 筛选分组」区：管理弹窗已按原型实现（数据会话内保存，后端同步待接）。
-        // 提醒合并页（filters-merged）在原型中无独立存储字段，暂按信用口径（待确认）
-        private void OnFavBondAddClick(object sender, RoutedEventArgs e)
-            => FavBondManagerWindow.Show(Window.GetWindow(this), FilterProfileService.MarketKind.Credit,
-                (DataContext as ViewModel.MarketCenterViewModel)?.MarketCenterService);
-
-        private void OnFilterGroupAddClick(object sender, RoutedEventArgs e)
-            => FilterGroupManagerWindow.Show(Window.GetWindow(this), FilterProfileService.MarketKind.Credit);
+        // 合并侧栏同时管理信用、利率分组，入口显式选择市场。
+        private void OnFavBondAddClick(object sender, RoutedEventArgs e) => ShowMarketMenu((Button)sender, true);
+        private void OnFilterGroupAddClick(object sender, RoutedEventArgs e) => ShowMarketMenu((Button)sender, false);
+        private void ShowMarketMenu(Button button, bool favorites)
+        {
+            var menu = new ContextMenu { PlacementTarget = button };
+            foreach (var market in new[] { FilterProfileService.MarketKind.Credit, FilterProfileService.MarketKind.Rate })
+            {
+                var selected = market;
+                var item = new MenuItem
+                {
+                    Header = market == FilterProfileService.MarketKind.Credit ? "信用分组" : "利率分组",
+                    Style = TryFindResource("StcMenuItem") as Style
+                };
+                item.Click += (sender, args) =>
+                {
+                    if (favorites) FavBondManagerWindow.Show(Window.GetWindow(this), selected, FilterProfileService.LookupService);
+                    else FilterGroupManagerWindow.Show(Window.GetWindow(this), selected);
+                };
+                menu.Items.Add(item);
+            }
+            menu.IsOpen = true;
+        }
     }
 }

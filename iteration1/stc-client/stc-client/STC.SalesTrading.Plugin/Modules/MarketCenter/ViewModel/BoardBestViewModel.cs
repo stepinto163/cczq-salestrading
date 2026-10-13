@@ -184,7 +184,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 foreach (var row in result.Items)
                 {
                     // 侧栏分组 chip 激活时的客户端过滤（BoardBestRow 按本看板市场求值）
-                    if (MarketGroupSelectionService.MatchesBest(row, Market)) Rows.Add(row);
+                    Rows.Add(row);
                 }
                 TotalCount = result.TotalCount;
                 QueryId = result.QueryId;

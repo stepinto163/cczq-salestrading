@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -156,12 +156,13 @@ namespace STC.SalesTrading.Plugin.Ficc
         public async Task<PagedResult<MgmtQuoteRow>> QueryHistoryRowsAsync(QuoteMgmtQuery query, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+            await Shared.Services.FilterProfileService.EnsureLoadedAsync();
             QuoteHistorySearchData result = await Api.RequestAsync(SalesTradingApi.QuoteHistorySearch, new QuoteHistorySearchRequest
             {
                 FromDate = (query.StartDate ?? DateTime.Today.AddDays(-7)).ToString("yyyy-MM-dd"),
                 ToDate = (query.EndDate ?? DateTime.Today).ToString("yyyy-MM-dd"),
                 Limit = Math.Max(1, Math.Min(query.PageSize, 100)),
-                Filter = ProtocolCodec.Decode<Filter>(ManagementFilter(query))
+                Filter = ProtocolCodec.Decode<Filter>(Shared.Services.MarketGroupSelectionService.ApplyTo(ManagementFilter(query), null))
             });
             ct.ThrowIfCancellationRequested();
             long mappingStarted = ClientPerformanceTrace.Start();
