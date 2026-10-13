@@ -20,10 +20,48 @@ namespace SalesTrading.UiTests
         private JObject originalNotificationPreference;
         private JObject testWatchlist;
 
+        // 在正式 STC 宿主中检查最终字号，捕获共享样式覆盖局部字号的回归。
+        private async Task CheckRecommendationTypographyAsync()
+        {
+            var detail = model.MarketCenterPage.Detail;
+            var recommendation = detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
+            var grid = Descendants<DataGrid>(view).Single(item => item.Name == "RecommendationGrid");
+            grid.ScrollIntoView(recommendation, grid.Columns.Last());
+            grid.UpdateLayout();
+            await Until(() => grid.ItemContainerGenerator.ContainerFromItem(recommendation) is DataGridRow,
+                "推荐行渲染完成");
+            var container = (DataGridRow)grid.ItemContainerGenerator.ContainerFromItem(recommendation);
+            var feedbackButtons = Descendants<Button>(container)
+                .Where(button => new[] { "有用", "无用", "不适用" }.Contains(Convert.ToString(button.Content))).ToArray();
+            Require(feedbackButtons.Length == 3, "反馈按钮未完整渲染");
+            Require(feedbackButtons.All(button => button.FontSize == 11), "反馈按钮字号应为11");
+            var ownerTexts = Descendants<TextBlock>(container).Where(text => text.Text == recommendation.OwnerTrader).ToArray();
+            Require(ownerTexts.Length > 0 && ownerTexts.All(text => text.FontSize == 11), "长城交易员字号应为11");
+            var feedbackTexts = Descendants<TextBlock>(container).Where(text => text.Text == recommendation.FeedbackText).ToArray();
+            Require(feedbackTexts.Length > 0 && feedbackTexts.All(text => text.FontSize == 10), "反馈状态字号应为10");
+            var panel = Descendants<BondDetailPanel>(view).Single(item => Descendants<DataGrid>(item).Contains(grid));
+            var refresh = Descendants<Button>(panel).Single(button => Convert.ToString(button.Content) == "刷新");
+            Require(refresh.FontSize == 11, "刷新按钮字号应为11");
+            var title = Descendants<TextBlock>(panel).Single(text => text.Text == "智能推荐");
+            Require(title.FontSize == 12, "推荐标题字号应为12");
+            File.WriteAllText(Path.Combine(reportDirectory, "recommendation-typography.json"), JObject.FromObject(new
+            {
+                panelWidth = panel.ActualWidth,
+                titleFont = title.FontSize,
+                refreshFont = refresh.FontSize,
+                ownerFont = ownerTexts[0].FontSize,
+                feedbackFont = feedbackButtons[0].FontSize,
+                feedbackStatusFont = feedbackTexts[0].FontSize
+            }).ToString());
+        }
+
         private async Task ExecuteRegressionAsync(TestStep step)
         {
             switch (step.Action)
             {
+                case "recommendation.typography":
+                    await CheckRecommendationTypographyAsync();
+                    break;
                 case "recommendation.assert":
                     var market = model.MarketCenterPage;
                     var target = market.RateAll.Rows.Single(row => row.QuoteId == quoteId);

@@ -86,6 +86,7 @@ namespace SalesTrading.UiTests
             { "pending.assert", new string[0] },
             { "market.assert", new string[0] },
             { "recommendation.assert", new string[0] },
+            { "recommendation.typography", new string[0] },
             { "management.assert", new string[0] },
             { "history.assert", new[] { "minimumCount" } },
             { "parse.keyboard", new[] { "text", "expectedRows" } },
