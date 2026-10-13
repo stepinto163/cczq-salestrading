@@ -117,6 +117,7 @@ namespace SalesTrading.UiTests
                 {
                     stepNumber++;
                     ThrowIfCancelled();
+                    PrepareManualEditorForStep(step);
                     string upcoming = stepNumber < definition.Steps.Count ? definition.Steps[stepNumber].Name : "清理本例数据";
                     if (step.Action == "filter.latency")
                     {
@@ -411,6 +412,8 @@ namespace SalesTrading.UiTests
 
         private async Task NavigateAsync(string key)
         {
+            // 页面操作不能隔着模态报价窗口执行，复合动作也遵守同一规则。
+            CloseEditor();
             // Select the actual ListBox item so navigation bindings execute normally.
             object item = model.NavItems.FirstOrDefault(candidate => candidate.Key == key)
                 ?? (key == "entry" ? model.NavItems.First() : null);
@@ -506,10 +509,29 @@ namespace SalesTrading.UiTests
             Require(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
 
+        private void PrepareManualEditorForStep(TestStep step)
+        {
+            if (editor == null) return;
+            string nextUiAction = step.Action;
+            int nextIndex = stepNumber;
+            // 服务端只读核对不结束手工编辑序列；后续仍要操作该窗口时保留它。
+            while (nextUiAction == "quote.assert" || nextUiAction == "quote.fields" || nextUiAction == "history.assert")
+            {
+                nextUiAction = nextIndex < definition.Steps.Count ? definition.Steps[nextIndex++].Action : null;
+            }
+            if (nextUiAction == "manual.fill" || nextUiAction == "manual.click" || nextUiAction == "manual.reject") return;
+            CloseEditor();
+        }
+
         private void CloseEditor()
         {
-            editor?.Close();
+            if (editor == null) return;
+            // 先登记已落库报价，关闭窗口后仍能清理本例数据。
+            if (editor.CurrentQuote != null) Track((string)editor.CurrentQuote["quoteId"]);
+            editor.Close();
+            Require(!editor.IsVisible, "报价操作窗口未关闭，不能继续操作其他页面");
             editor = null;
+            Emit("手工报价窗口", "CLOSED", "已关闭，本例后续步骤继续执行");
         }
 
         private void ThrowIfCancelled()
