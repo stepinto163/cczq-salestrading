@@ -49,12 +49,27 @@ internal static class MarketDetailChecks
         var book = JObject.Parse("{\"securityId\":\"240210.IB\",\"quoteRefs\":{\"FICC:Q\":{\"quoteId\":\"Q\",\"quoteRevision\":\"1\"}}}");
         var entry = JObject.Parse("{\"MDEntryID\":\"FICC:Q\",\"MDEntryType\":\"0\",\"MDEntryPx\":\"2.5\",\"MDEntrySize\":\"1000\",\"SettlType\":\"2\",\"UserID\":\"A\",\"InstitutionName\":\"对手机构\",\"TraderName\":\"对手交易员\"}");
         var quote = (JObject)mapper.GetMethod("MarketQuote").Invoke(null, new object[] { book, entry });
+        quote["csiValuationYield"] = "1.7050";
+        quote["csiValuationCleanPrice"] = "104.6547";
+        quote["csiValuationFullPrice"] = "105.1698";
+        quote["csiValuationDate"] = "2026-07-24";
+        quote["csiValuationStatus"] = "READY";
+        quote["csiRecommendedBasis"] = "EXERCISE";
+        quote["csiExerciseYield"] = "2.1000";
         mapper.GetMethod("ApplyOwnerDisplay").Invoke(null, new object[]
         {
             quote, new Dictionary<string, string> { ["A"] = "本方归属人" }, "A"
         });
         var display = (JObject)mapper.GetMethod("Display").Invoke(null, new object[] { quote });
         var row = display.ToObject<BoardQuoteRow>();
+        Check(row.CsYtm == 1.7050m && row.CsNetPrice == 104.6547m
+            && row.CsFullPrice == 105.1698m, "CSI maturity values preserve source units");
+        Check(display.ToObject<QuoteConfirmRow>().CsPriceBasis == "行权", "CSI recommended basis is separate from maturity yield");
+        Check(display.ToObject<BoardBestRow>().CsYtm == 1.7050m
+            && display.ToObject<MgmtQuoteRow>().CsYtm == 1.7050m
+            && display.ToObject<BoardAlertRow>().CsYtm == 1.7050m, "CSI fields map across all board models");
+        var empty = (JObject)mapper.GetMethod("Display").Invoke(null, new object[] { new JObject() });
+        Check(empty.ToObject<BoardQuoteRow>().CsYtm == null, "Missing CSI yield stays empty, not zero");
         var view = new BoardListView
         {
             DataContext = new
@@ -74,12 +89,20 @@ internal static class MarketDetailChecks
         Pump();
         foreach (var expected in new Dictionary<string, string>
         {
-            ["报价机构"] = "对手机构", ["报价交易员"] = "对手交易员", ["长城交易员"] = "本方归属人"
+            ["报价机构"] = "对手机构", ["报价交易员"] = "对手交易员", ["长城交易员"] = "本方归属人",
+            ["中证净价"] = "104.6547", ["中证全价"] = "105.1698", ["中证YTM(%)"] = "1.7050"
         })
         {
             var column = grid.Columns.OfType<DataGridTextColumn>().Single(item => (string)item.Header == expected.Key);
+            grid.ScrollIntoView(row, column);
+            grid.UpdateLayout();
+            Pump();
             var cell = column.GetCellContent(row) as TextBlock;
             Check(cell != null && cell.Text == expected.Value, "rendered market column: " + expected.Key);
+            if (expected.Key.StartsWith("中证"))
+            {
+                Check(((string)cell.ToolTip).Contains("2026-07-24"), "CSI rendered tooltip preserves valuation date");
+            }
         }
         var bitmap = new RenderTargetBitmap(1550, 400, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(view);

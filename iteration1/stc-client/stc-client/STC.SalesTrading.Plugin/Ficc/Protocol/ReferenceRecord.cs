@@ -129,6 +129,31 @@ namespace STC.SalesTrading.Plugin.Ficc.Protocol
         [JsonProperty("csiValuationYield")]
         public string CsiValuationYield { get; set; }
 
+        [JsonProperty("csiValuationCleanPrice") ]
+        public string CsiValuationCleanPrice { get; set; }
+
+        [JsonProperty("csiValuationFullPrice") ]
+        public string CsiValuationFullPrice { get; set; }
+
+        [JsonProperty("csiValuationDate") ]
+        public string CsiValuationDate { get; set; }
+
+        [JsonProperty("csiExerciseYield") ]
+        public string CsiExerciseYield { get; set; }
+
+        [JsonProperty("csiExerciseCleanPrice") ]
+        public string CsiExerciseCleanPrice { get; set; }
+
+        [JsonProperty("csiExerciseFullPrice") ]
+        public string CsiExerciseFullPrice { get; set; }
+
+        [JsonProperty("csiRecommendedBasis") ]
+        public string CsiRecommendedBasis { get; set; }
+
+        [JsonProperty("csiValuationStatus") ]
+        public string CsiValuationStatus { get; set; }
+
+
         [JsonProperty("liquidityGrade")]
         public string LiquidityGrade { get; set; }
 

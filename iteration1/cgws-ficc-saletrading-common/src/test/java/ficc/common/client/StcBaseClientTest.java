@@ -122,7 +122,38 @@ final class StcBaseClientTest {
                 assertThrows(ApiException.class, () -> references.require("240210.IB")).code);
     }
 
+    @Test
+    void csiRefreshInvalidatesMappedMemoAndReferenceVersion() {
+        FakeSource source = new FakeSource();
+        Properties configuration = new Properties();
+        configuration.setProperty("base.securityCacheTtlMillis", "600000");
+        StcBaseDataClient adapter = new StcBaseDataClient(source, configuration);
+        assertEquals("LOADING", adapter.security("240210.IB").getString("csiValuationStatus"));
+        String before = adapter.version();
+        source.csi = JsonUtils.object("csiValuationStatus", "READY", "csiValuationYield", "1.7050",
+                "csiValuationCleanPrice", "104.6547", "csiValuationDate", "2026-07-24");
+        source.csiRevision++;
+        assertNotEquals(before, adapter.version());
+        JSONObject record = adapter.security("240210.IB");
+        assertEquals("1.7050", record.getString("csiValuationYield"));
+        assertEquals("MATURITY", record.getString("csiRecommendedBasis"));
+        assertEquals("2.4500", record.getString("valuationYield"));
+        assertEquals("2026-07-24", record.getString("csiValuationDate"));
+        assertEquals("104.6547", ficc.api.ProtocolCodec.decode(record,
+                ficc.api.ReferenceRecord.class).csiValuationCleanPrice);
+    }
+
     private static final class FakeSource implements StcBaseDataClient.Source {
+        long csiRevision;
+        JSONObject csi = JsonUtils.object("csiValuationStatus", "LOADING");
+
+        public long csiRevision() {
+            return csiRevision;
+        }
+
+        public JSONObject csiValuation(String id) {
+            return csi;
+        }
         final Map<String, Integer> requests = new HashMap<>();
         boolean online = true;
         boolean missing;

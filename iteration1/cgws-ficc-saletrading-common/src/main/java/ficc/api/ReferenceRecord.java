@@ -45,7 +45,17 @@ public class ReferenceRecord extends ProtocolModel {
     public String ncdType;
     public String listingStatus;
     public String issueMethod;
+    /** 中证到期估值，收益率单位为百分数；行权估值独立返回。 */
     public String csiValuationYield;
+    public String csiValuationCleanPrice;
+    public String csiValuationFullPrice;
+    public String csiValuationDate;
+    public String csiExerciseYield;
+    public String csiExerciseCleanPrice;
+    public String csiExerciseFullPrice;
+    public String csiRecommendedBasis;
+    public String csiValuationStatus;
+
     public String liquidityGrade;
     public List<String> marketMakerTags;
     public String listedMarket;

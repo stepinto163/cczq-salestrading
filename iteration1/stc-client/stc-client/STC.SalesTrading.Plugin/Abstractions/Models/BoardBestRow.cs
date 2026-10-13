@@ -81,6 +81,11 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         /// <summary>中证 YTM（csYTM，%）。</summary>
         public decimal? CsYtm { get; set; }
 
+        public string CsiValuationDate { get; set; }
+        public string CsiValuationStatus { get; set; }
+        public string CsiValuationDescription => "中证到期估值；日期：" + (CsiValuationDate ?? "未知")
+            + "；状态：" + (CsiValuationStatus ?? "未提供");
+
         /// <summary>报价时间（t）。</summary>
         public DateTime? QuoteTime { get; set; }
 

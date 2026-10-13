@@ -33,6 +33,16 @@ public final class StcBaseDataClient implements BaseDataClient {
         JSONObject valuation(String securityId);
 
         JSONObject searchPage(int page, int pageSize);
+
+        default JSONObject csiValuation(String securityId) {
+            return null;
+        }
+
+        default long csiRevision() {
+            return 0;
+        }
+
+        default void close() { }
     }
 
     private static final Logger LOGGER = Logger.getLogger(StcBaseDataClient.class);
@@ -45,6 +55,7 @@ public final class StcBaseDataClient implements BaseDataClient {
     private final Map<String, JSONObject> mappedIssuers = new ConcurrentHashMap<>();
     private final Map<String, JSONObject> mappedValuations = new ConcurrentHashMap<>();
     private volatile String cachedVersion;
+    private long securityCsiRevision = -1;
 
     public StcBaseDataClient(NetClientWrapper network, Properties configuration) {
         this(new StcBaseSvrClientBridge(network, configuration), configuration);
@@ -91,6 +102,7 @@ public final class StcBaseDataClient implements BaseDataClient {
     @Override
     public JSONObject security(String securityId) {
         ensureOnline();
+        invalidateCsiMemo();
         // STC already memoises the three underlying lookups, but re-deriving the mapped
         // record costs a full JSON round trip plus the record hash on every call. A single
         // client request fans out over every active quote, so the same security is resolved
@@ -99,6 +111,7 @@ public final class StcBaseDataClient implements BaseDataClient {
         if (securityCacheTtlNanos == 0) {
             return loadSecurity(securityId);
         }
+        long csiRevision = source.csiRevision();
         long now = System.nanoTime();
         CachedSecurity cached = securityCache.get(securityId);
         if (cached != null && cached.expiresAtNanos - now > 0) {
@@ -107,7 +120,7 @@ public final class StcBaseDataClient implements BaseDataClient {
         JSONObject loaded = loadSecurity(securityId);
         if (loaded == null) {
             securityCache.remove(securityId);
-        } else {
+        } else if (csiRevision == source.csiRevision()) {
             securityCache.put(
                     securityId,
                     new CachedSecurity(now + securityCacheTtlNanos, JsonUtils.deepCopy(loaded)));
@@ -132,13 +145,14 @@ public final class StcBaseDataClient implements BaseDataClient {
         String issuerId = StcBaseMapper.text(bond, "Issuer_Code");
         JSONObject issuer = issuerId == null ? null : source.issuer(issuerId);
         JSONObject valuation = source.valuation(securityId);
+        JSONObject csi = source.csiValuation(securityId);
         ensureOnline();
         String recordVersion =
                 "STC-"
                         + JsonUtils.canonicalHash(
                                 JsonUtils.object(
-                                        "bond", bond, "issuer", issuer, "valuation", valuation));
-        JSONObject result = mapper.security(securityId, bond, issuer, valuation, recordVersion);
+                                        "bond", bond, "issuer", issuer, "valuation", valuation, "csi", csi));
+        JSONObject result = mapper.security(securityId, bond, issuer, valuation, csi, recordVersion);
         mappedSecurities.put(securityId, result);
         if (issuerId != null) {
             mappedIssuers.put(issuerId, mapper.issuer(result, issuer));
@@ -287,7 +301,20 @@ public final class StcBaseDataClient implements BaseDataClient {
             cached = "STC-" + JsonUtils.canonicalHash(mappedSecurities);
             cachedVersion = cached;
         }
-        return cached;
+        return cached + "-CSI-" + source.csiRevision();
+    }
+
+    private synchronized void invalidateCsiMemo() {
+        long revision = source.csiRevision();
+        if (securityCsiRevision != revision) {
+            securityCache.clear();
+            securityCsiRevision = revision;
+        }
+    }
+
+    @Override
+    public void close() {
+        source.close();
     }
 
     /** Memo of a mapped record; never handed out directly so callers cannot mutate it. */

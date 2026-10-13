@@ -52,6 +52,13 @@ namespace STC.SalesTrading.Plugin.Shared.Components
                     derived.Setters.Add(new Setter(TextBlock.FontSizeProperty, fontSize.Value));
                     style = derived;
                 }
+                if (i >= 3)
+                {
+                    var valuationStyle = new Style(typeof(TextBlock), style);
+                    valuationStyle.Setters.Add(new Setter(FrameworkElement.ToolTipProperty,
+                        new System.Windows.Data.Binding("CsiValuationDescription")));
+                    style = valuationStyle;
+                }
                 var column = new DataGridTextColumn
                 {
                     Header = headers[i].Item1,

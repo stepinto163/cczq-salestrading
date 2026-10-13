@@ -39,6 +39,7 @@ namespace STC.SalesTrading.Plugin.Ficc
         private readonly StcFiccTransport transport;
         private readonly Dictionary<string, QuerySession> sessions = new Dictionary<string, QuerySession>();
         private readonly Dictionary<string, JObject> securities = new Dictionary<string, JObject>();
+        private readonly Dictionary<string, DateTime> securityLoadedAt = new Dictionary<string, DateTime>();
         private readonly Dictionary<string, JObject> displayedQuotes = new Dictionary<string, JObject>();
         private Dictionary<string, string> ownerNames = new Dictionary<string, string>();
         private event Action<QuoteEvent> priceChanged;
@@ -183,7 +184,14 @@ namespace STC.SalesTrading.Plugin.Ficc
 
         private async Task LoadSecuritiesAsync(IEnumerable<string> ids, CancellationToken cancellation)
         {
-            string[] missing = ids.Where(id => !string.IsNullOrEmpty(id) && !securities.ContainsKey(id)).Distinct().Take(100).ToArray();
+            DateTime now = DateTime.UtcNow;
+            string[] missing = ids.Where(id => !string.IsNullOrEmpty(id)
+                && (!securities.TryGetValue(id, out JObject record)
+                    || (string)record["csiValuationStatus"] == "LOADING"
+                    || (string)record["csiValuationStatus"] == "FAILED"
+                    || !securityLoadedAt.TryGetValue(id, out DateTime loadedAt)
+                    || now - loadedAt >= TimeSpan.FromMinutes(1)))
+                .Distinct().Take(100).ToArray();
             if (missing.Length == 0)
             {
                 return;
@@ -197,6 +205,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             foreach (ReferenceRecord security in result.Records)
             {
                 securities[security.SecurityId] = security.ToJson();
+                securityLoadedAt[security.SecurityId] = now;
             }
         }
 
@@ -208,7 +217,7 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 foreach (JProperty property in security.Properties())
                 {
-                    if (result[property.Name] == null)
+                    if (result[property.Name] == null || result[property.Name].Type == JTokenType.Null)
                     {
                         result[property.Name] = property.Value.DeepClone();
                     }

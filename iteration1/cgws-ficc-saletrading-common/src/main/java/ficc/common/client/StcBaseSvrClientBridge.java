@@ -34,9 +34,12 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
     private final long searchTimeoutMillis;
     private final long emptyInfoTableTtlNanos;
     private StcTransport searchTransport;
+    private final Properties configuration;
+    private StcCsiValuationCache csiValuations;
 
     StcBaseSvrClientBridge(NetClientWrapper network, Properties configuration) {
         this.network = network;
+        this.configuration = configuration;
         serverKey = configuration.getProperty("base.serverKey", "SERVER.BaseSvr");
         searchTimeoutMillis =
                 Long.parseLong(configuration.getProperty("base.requestTimeoutMillis", "3000"));
@@ -73,6 +76,11 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
             facade.getMethod("initialize", NetClientWrapper.class, IMessage.class)
                     .invoke(null, network, callback);
             searchTransport = new NetClientTransport(network, serverKey, searchTimeoutMillis);
+            csiValuations = new StcCsiValuationCache(searchTransport, configuration);
+            searchTransport.connectionChanged(csiValuations::refresh);
+            // 清库推送是 STC 的原始文本通知，不要求它具有 JSON 对象结构。
+            network.subscribe(serverKey, "stc.base.clear", (topic, content) -> csiValuations.refresh());
+            csiValuations.refresh();
             LOGGER.info(
                     "STC BaseSvr2Client loaded from "
                             + requestClient.getProtectionDomain().getCodeSource().getLocation());
@@ -164,6 +172,23 @@ final class StcBaseSvrClientBridge implements StcBaseDataClient.Source {
     @Override
     public JSONObject valuation(String securityId) {
         return invoke(getValuation, securityId);
+    }
+
+    @Override
+    public JSONObject csiValuation(String securityId) {
+        return csiValuations.get(securityId);
+    }
+
+    @Override
+    public long csiRevision() {
+        return csiValuations == null ? 0 : csiValuations.revision();
+    }
+
+    @Override
+    public void close() {
+        if (csiValuations != null) {
+            csiValuations.close();
+        }
     }
 
     @Override

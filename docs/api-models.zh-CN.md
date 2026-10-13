@@ -850,7 +850,13 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `ncdType` | `String` | 同业存单类型 |
 | `listingStatus` | `String` | 上市状态 |
 | `issueMethod` | `String` | 发行方式 |
-| `csiValuationYield` | `String` | 中证估值收益率 |
+| `csiValuationYield` | `String` | 中证到期收益率，百分数（1.7050 表示 1.7050%） |
+| `csiValuationCleanPrice` / `csiValuationFullPrice` | `String` | 中证到期净价／全价 |
+| `csiExerciseYield` | `String` | 中证行权收益率，百分数；不替代到期收益率 |
+| `csiExerciseCleanPrice` / `csiExerciseFullPrice` | `String` | 中证行权净价／全价 |
+| `csiValuationDate` | `String` | 来源估值日期 YYYY-MM-DD；可能不是当日 |
+| `csiRecommendedBasis` | `String` | recommendation：1→EXERCISE，2→MATURITY；非含权债且有到期收益率时为 MATURITY，其余未提供则空 |
+| `csiValuationStatus` | `String` | LOADING／READY／MISSING／FAILED；只在完整加载成功且该券无记录时返回 MISSING |
 | `liquidityGrade` | `String` | 流动性等级 |
 | `marketMakerTags` | `List<String>` | 做市商标签 |
 | `listedMarket` | `String` | 上市市场 |

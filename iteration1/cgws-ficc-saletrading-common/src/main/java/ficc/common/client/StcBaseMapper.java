@@ -50,6 +50,11 @@ public final class StcBaseMapper {
             JSONObject issuer,
             JSONObject valuation,
             String version) {
+        return security(securityId, bond, issuer, valuation, null, version);
+    }
+
+    public JSONObject security(String securityId, JSONObject bond, JSONObject issuer,
+            JSONObject valuation, JSONObject csi, String version) {
         if (!securityId.equals(securityId(bond))) {
             throw new IllegalArgumentException("BaseSvr security ID mismatch: " + securityId);
         }
@@ -158,6 +163,14 @@ public final class StcBaseMapper {
                         flag(text(bond, "Is_Mortgage")),
                         "isCrossMarket",
                         flag(text(bond, "Is_Cross_Mkt"))));
+        if (csi != null) {
+            result.putAll(csi);
+            // 非含权债的 recommendation 按 STC 定义为空，此时估值口径为到期。
+            if ("NON".equals(option) && result.get("csiRecommendedBasis") == null
+                    && result.get("csiValuationYield") != null) {
+                result.put("csiRecommendedBasis", "MATURITY");
+            }
+        }
         // Explicit vendor mappings allow additional fields without changing business filtering.
         // Example: base.filter.liquidityGrade=bond.<verified vendor column>
         for (String field : ficc.common.FilterFields.DEFINITIONS.keySet()) {
@@ -181,6 +194,27 @@ public final class StcBaseMapper {
         if (Boolean.parseBoolean(
                 configuration.getProperty("base.filter.simulateMissing", "false"))) {
             ficc.common.FilterSampleData.fillMissing(result);
+        }
+        return result;
+    }
+
+    /** 中证到期和行权数据分别映射，收益率保留百分数单位；空值不能转换为零。 */
+    static JSONObject csiValuation(JSONObject raw) {
+        JSONObject result = JsonUtils.object(
+                "csiValuationDate", date(text(raw, "valuate_date")),
+                "csiRecommendedBasis", valuationBasis(String.valueOf(text(raw, "recommendation"))),
+                "csiRating", text(raw, "implied_rating"));
+        String[][] fields = {
+            {"csiValuationYield", "yld_to_maturity"},
+            {"csiValuationCleanPrice", "clean_price_maturity"},
+            {"csiValuationFullPrice", "full_price_maturity"},
+            {"csiExerciseYield", "yld_to_exercise"},
+            {"csiExerciseCleanPrice", "clean_price_exercise"},
+            {"csiExerciseFullPrice", "full_price_exercise"}
+        };
+        for (String[] field : fields) {
+            String value = text(raw, field[1]);
+            result.put(field[0], value == null ? null : new java.math.BigDecimal(value.trim()).toPlainString());
         }
         return result;
     }

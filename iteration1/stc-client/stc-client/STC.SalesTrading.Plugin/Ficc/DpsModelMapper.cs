@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
@@ -82,6 +82,7 @@ namespace STC.SalesTrading.Plugin.Ficc
                 "WallTrader|ownerUserName", "OwnerAccountId|ownerUserId", "IsMine|isMine",
                 "LastPrice|lastTradePrice", "BondLibrary|bondSubtype", "IssuerRating|issuerRating",
                 "BondRating|bondRating", "NzNetPrice|valuationCleanPrice", "NzYtm|valuationYield", "CsNetPrice|csiValuationCleanPrice",
+                "CsiValuationDate|csiValuationDate", "CsiValuationStatus|csiValuationStatus",
                 "CsFullPrice|csiValuationFullPrice", "CsYtm|csiValuationYield", "QuoteTime|updateTime", "TradeDate|tradeDate"
             };
             foreach (string mapping in mappings)
@@ -92,6 +93,9 @@ namespace STC.SalesTrading.Plugin.Ficc
                     row[names[0]] = source[names[1]].DeepClone();
                 }
             }
+            string csiBasis = (string)source["csiRecommendedBasis"];
+            row["CsPriceBasis"] = csiBasis == "EXERCISE" ? "行权"
+                : csiBasis == "MATURITY" ? "到期" : null;
             string sourceType = (string)source["source"]?["type"];
             row["Mode"] = (int)(sourceType == "QT" ? QuoteMode.Qt : sourceType == "IDEAL" ? QuoteMode.Ideal : QuoteMode.Manual);
             row["Status"] = (int)((string)source["status"] == "REFERRED" ? QuoteStatus.Revoked : QuoteStatus.Active);
