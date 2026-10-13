@@ -261,7 +261,7 @@ namespace SalesTrading.UiTests
             CaseDefinition original = existing ? CaseDefinition.Read(path) : new CaseDefinition
             {
                 Id = "case-" + DateTime.Now.ToString("HHmmss"), Name = "新测试用例",
-                Steps = new List<TestStep> { new TestStep { Name = "打开手工报价", Action = "manual.open" } }
+                Steps = new List<TestStep> { new TestStep { Name = "在报价管理选择本例报价", Action = "management.select" } }
             };
             using (CaseEditor editor = new CaseEditor(original, existing))
             {

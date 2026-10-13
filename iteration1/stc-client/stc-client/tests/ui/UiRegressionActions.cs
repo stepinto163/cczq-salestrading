@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -59,6 +59,13 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "fixture.pending":
+                case "management.edit":
+                case "management.save":
+                case "management.reject":
+                case "management.operate":
+                    await ExecuteQuoteWorkflowAsync(step);
+                    break;
                 case "groups.manage":
                     await CheckGroupManagementAsync();
                     break;
@@ -133,19 +140,6 @@ namespace SalesTrading.UiTests
                     }
                     Require((decimal)stored["quantity"] == decimal.Parse(Parameter(step, "quantity"), CultureInfo.InvariantCulture), "数量不匹配");
                     File.WriteAllText(Path.Combine(reportDirectory, stepNumber.ToString("D2") + "-fields.json"), stored.ToString());
-                    break;
-                case "manual.reject":
-                    Require(editor != null && editor.IsReady, "请先打开手工报价");
-                    JObject before = editor.CurrentQuote == null ? null : (JObject)editor.CurrentQuote.DeepClone();
-                    Click(Button(editor, Parameter(step, "button")));
-                    await Until(() => editor.IsReady && Descendants<TextBlock>(editor)
-                        .Any(text => text.Text.Contains(Parameter(step, "message"))), "明确的拒绝提示：" + Parameter(step, "message"));
-                    Require(JToken.DeepEquals(before, editor.CurrentQuote), "拒绝操作改变了报价");
-                    if (before != null)
-                    {
-                        JObject after = await model.Backend.Api.GetQuoteAsync((string)before["quoteId"]);
-                        Require(JToken.DeepEquals(before["revision"], after["revision"]), "拒绝操作改变了服务端版本");
-                    }
                     break;
                 case "sidebar.range":
                     FrameworkElement rangePanel = await OpenSidebarAsync(Parameter(step, "page"));

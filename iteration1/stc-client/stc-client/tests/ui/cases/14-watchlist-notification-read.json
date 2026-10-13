@@ -4,11 +4,41 @@
   "Name": "关注报价提醒到达并标记已读",
   "Description": "P1：API 仅准备独立关注分组及偏好；报价创建确认和提醒已读通过正式 UI，结束恢复偏好并删除分组。",
   "Steps": [
-    { "Name": "准备独立关注夹具", "Action": "notification.prepare", "Parameters": { "securityId": "${securityId}" } },
-    { "Name": "打开手工报价", "Action": "manual.open", "Parameters": {} },
-    { "Name": "填写报价", "Action": "manual.fill", "Parameters": { "securityId": "${securityId}", "side": "1", "price": "2.5", "quantity": "1", "settlType": "2" } },
-    { "Name": "保存待确认", "Action": "manual.click", "Parameters": { "button": "保存待确认" } },
-    { "Name": "确认报价", "Action": "manual.click", "Parameters": { "button": "确认" } },
-    { "Name": "核对本例提醒并点击已读", "Action": "notification.read", "Parameters": {} }
+    {
+      "Name": "准备独立关注夹具",
+      "Action": "notification.prepare",
+      "Parameters": {
+        "securityId": "${securityId}"
+      }
+    },
+    {
+      "Name": "精确报价输入并识别",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} 2.5 1 bid +1",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "勾选识别预览",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "确认精确报价",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "核对本例提醒并点击已读",
+      "Action": "notification.read",
+      "Parameters": {}
+    }
   ]
 }

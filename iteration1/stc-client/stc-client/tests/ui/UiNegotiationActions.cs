@@ -16,7 +16,7 @@ namespace SalesTrading.UiTests
         // or QTrade publication is simulated as a successful delivery. Confirmations use UI controls.
         private async Task CheckQTradeNegotiationAsync()
         {
-            Require(quoteId != null, "先通过手工报价创建本例所属用户的待确认夹具");
+            Require(quoteId != null, "先通过精确报价确认本例归属报价");
             string token = Environment.GetEnvironmentVariable("STC_UI_INTAKE_TOKEN");
             Require(!string.IsNullOrEmpty(token), "设置本机测试环境 STC_UI_INTAKE_TOKEN");
             JObject manual = await model.Backend.Api.GetQuoteAsync(quoteId);

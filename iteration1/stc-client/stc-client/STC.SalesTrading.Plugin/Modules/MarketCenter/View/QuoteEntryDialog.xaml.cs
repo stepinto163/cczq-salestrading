@@ -18,7 +18,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
     /// 遮罩说明：原型遮罩是覆盖整个应用视口的固定层（WPF 独立 Window 无法给宿主叠加半透明层），
     /// 因此本窗口在 OnLoaded 时铺满宿主窗口（<see cref="OverlayBackdrop"/>），内部用半透明黑 Border 做遮罩。
     ///
-    /// 从看板行预填，提交走 Mock（toast）；真实提交待网关接入。
+    /// 真实报价编辑走 QuoteSvr，新增报价走精确报价识别确认；模拟数据模式仅用于原型展示。
     /// </summary>
     public partial class QuoteEntryDialog : Window
     {
@@ -309,6 +309,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         /// <summary>遮罩空白处点击关闭（原型 onclick="if(event.target===this)closeModal()"）。</summary>
         private void OnBackdropMouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (busy) return;
             Close();
         }
 
@@ -321,12 +322,14 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 
         private void OnCloseClick(object sender, RoutedEventArgs e)
         {
+            if (busy) return;
             Close();
         }
 
         /// <summary>原型 kbd 提示：Enter 保存修改、Esc 取消（备注多行输入不拦截 Enter）。</summary>
         private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (busy) return;
             if (e.Key == Key.Escape)
             {
                 Close();
@@ -347,12 +350,18 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 
         private void OnCancel(object sender, RoutedEventArgs e)
         {
+            if (busy) return;
             Close();
         }
 
         /// <summary>校验后提交（原型 validateQuoteForm：价格/报量非空须为不小于 0 的有效数字）。</summary>
-        private void OnSubmit(object sender, RoutedEventArgs e)
+        private async void OnSubmit(object sender, RoutedEventArgs e)
         {
+            if (liveApi != null)
+            {
+                await SaveLiveQuoteAsync();
+                return;
+            }
             ClearValidation();
 
             decimal price;

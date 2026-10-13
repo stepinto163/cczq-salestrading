@@ -1,25 +1,123 @@
 {
   "Version": 1,
   "Id": "01-quote-lifecycle",
-  "Name": "手工报价完整生命周期",
+  "Name": "报价完整生命周期",
   "Description": "真实登录、UI 创建/确认/修改/Refer/Unrefer/删除；核对持久化状态与连续历史。每次创建新报价。",
   "Steps": [
-    { "Name": "打开手工报价", "Action": "manual.open", "Parameters": {} },
-    { "Name": "填写报价", "Action": "manual.fill", "Parameters": { "securityId": "${securityId}", "price": "2.5000", "quantity": "1", "side": "1", "settlType": "2" } },
-    { "Name": "保存待确认", "Action": "manual.click", "Parameters": { "button": "保存待确认" } },
-    { "Name": "核对待确认入库", "Action": "quote.assert", "Parameters": { "status": "PENDING_CONFIRM", "price": "2.5" } },
-    { "Name": "确认报价", "Action": "manual.click", "Parameters": { "button": "确认" } },
-    { "Name": "核对有效状态", "Action": "quote.assert", "Parameters": { "status": "ACTIVE", "price": "2.5" } },
-    { "Name": "修改收益率", "Action": "manual.fill", "Parameters": { "securityId": "${securityId}", "price": "2.5100", "quantity": "1", "side": "1", "settlType": "2" } },
-    { "Name": "保存修改", "Action": "manual.click", "Parameters": { "button": "保存修改" } },
-    { "Name": "核对修改入库", "Action": "quote.assert", "Parameters": { "status": "ACTIVE", "price": "2.51" } },
-    { "Name": "撤销报价", "Action": "manual.click", "Parameters": { "button": "Refer" } },
-    { "Name": "核对撤销", "Action": "quote.assert", "Parameters": { "status": "REFERRED", "price": "2.51" } },
-    { "Name": "恢复报价", "Action": "manual.click", "Parameters": { "button": "Unrefer" } },
-    { "Name": "核对恢复", "Action": "quote.assert", "Parameters": { "status": "ACTIVE", "price": "2.51" } },
-    { "Name": "再次撤销", "Action": "manual.click", "Parameters": { "button": "Refer" } },
-    { "Name": "删除报价", "Action": "manual.click", "Parameters": { "button": "删除" } },
-    { "Name": "核对删除", "Action": "quote.assert", "Parameters": { "status": "DELETED", "price": "2.51" } },
-    { "Name": "核对连续变更历史", "Action": "history.assert", "Parameters": { "minimumCount": "7" } }
+    {
+      "Name": "精确报价输入并识别",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} 2.5000 1 bid +1",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "勾选识别预览",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "确认精确报价",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "核对有效状态",
+      "Action": "quote.assert",
+      "Parameters": {
+        "status": "ACTIVE",
+        "price": "2.5"
+      }
+    },
+    {
+      "Name": "打开报价管理修改表单并填写",
+      "Action": "management.edit",
+      "Parameters": {
+        "securityId": "${securityId}",
+        "price": "2.5100",
+        "quantity": "1",
+        "side": "1",
+        "settlType": "2"
+      }
+    },
+    {
+      "Name": "保存报价修改",
+      "Action": "management.save",
+      "Parameters": {}
+    },
+    {
+      "Name": "核对修改入库",
+      "Action": "quote.assert",
+      "Parameters": {
+        "status": "ACTIVE",
+        "price": "2.51"
+      }
+    },
+    {
+      "Name": "报价管理：Refer",
+      "Action": "management.operate",
+      "Parameters": {
+        "button": "Refer"
+      }
+    },
+    {
+      "Name": "核对撤销",
+      "Action": "quote.assert",
+      "Parameters": {
+        "status": "REFERRED",
+        "price": "2.51"
+      }
+    },
+    {
+      "Name": "报价管理：Unrefer",
+      "Action": "management.operate",
+      "Parameters": {
+        "button": "Unrefer"
+      }
+    },
+    {
+      "Name": "核对恢复",
+      "Action": "quote.assert",
+      "Parameters": {
+        "status": "ACTIVE",
+        "price": "2.51"
+      }
+    },
+    {
+      "Name": "报价管理：Refer",
+      "Action": "management.operate",
+      "Parameters": {
+        "button": "Refer"
+      }
+    },
+    {
+      "Name": "报价管理：删除",
+      "Action": "management.operate",
+      "Parameters": {
+        "button": "删除"
+      }
+    },
+    {
+      "Name": "核对删除",
+      "Action": "quote.assert",
+      "Parameters": {
+        "status": "DELETED",
+        "price": "2.51"
+      }
+    },
+    {
+      "Name": "核对连续变更历史",
+      "Action": "history.assert",
+      "Parameters": {
+        "minimumCount": "6"
+      }
+    }
   ]
 }

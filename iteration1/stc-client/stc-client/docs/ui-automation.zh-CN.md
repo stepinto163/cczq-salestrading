@@ -36,7 +36,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 - 新增、编辑、复制、删除用例；用例 ID 保存后固定。
 - 编辑器中增加、删除、上下移动步骤，从动作下拉框选择操作，在参数表中填写值，无需编辑 JSON。
-- 勾选一个或多个用例后点击“运行选中”；按列表顺序串行执行。
+- 勾选一个或多个用例后点击“运行勾选”；按列表顺序串行执行。
 - 下方实时显示登录、业务步骤、清理及最终结果；选中记录查看完整错误。
 - “停止并清理”请求停止当前用例，再执行清理；不会结束用户自己打开的 STC。
 - 用例保存在 [`tests/ui/cases`](../tests/ui/cases)，可随 Git 同步、评审；删除用例不删除历史报告。
@@ -48,9 +48,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 | 用例 | 实际操作及断言 |
 | --- | --- |
-| 手工报价完整生命周期 | 登录、打开手工报价、填写控件、保存待确认、确认、修改、Refer、Unrefer、删除，核对后端状态/价格及连续历史 |
+| 报价完整生命周期 | 精确报价输入并识别、勾选确认；报价管理修改/保存、Refer、Unrefer、删除，核对后端状态/价格及连续历史 |
 | 识别机构交易员、勾选及确认报价 | 输入真实 CRM 文本、ParserSvr 识别、核对机构/联系人 ID、勾选/取消/重新勾选、确认，核对服务端有效报价及报价/行情页面推送 |
-| 待确认报价实时展示 | 手工创建待确认报价，核对报价确认页面收到并显示该报价 |
+| 待确认报价实时展示 | API准备待确认夹具（非UI录入），核对报价确认页面收到并显示该报价 |
 | `04-offer-t0` 卖出 T+0 | 补齐方向和清算分支，核对服务端数量/方向/清算及管理页 |
 | `05-settlement-update` 修改清算 | T+0 改 T+1，同时修改数量和价格，核对实际保存值 |
 | `06-invalid-price-recovery` 输入校验 | 非法价格有明确错误，原报价版本不变；修正后保存成功 |
@@ -193,9 +193,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 ## 演示字幕
 
-手工报价窗口在步骤切换时统一管理：后续仍有手工填写、点击或拒绝校验时，中间的 `quote.assert` / `quote.fields` / `history.assert` 服务端只读核对保留窗口；转入其他动作或结束该编辑序列时，在展示下一步字幕和等待操作间隔之前关闭。所有页面导航也先关闭报价窗口，避免对被模态窗口遮挡的页面执行测试。关闭前保留已落库报价 ID 用于清理，并记录 `手工报价窗口 / CLOSED`。
+2026-10-13 移除客户端顶栏「手工报价」及临时 `QuoteOperationWindow`。自动化不再提供 `manual.*` 动作。新增报价统一通过精确报价的文本识别、预览勾选及「确认报价」，识别阶段不落入待确认池；修改从报价管理「修改 / 历史」打开产品编辑表单，保存成功关闭；Refer、Unrefer、删除通过报价管理工具栏。
 
-可运行 `scripts/test-ui-manual-dialog.ps1` 验证真实报价窗口在继续编辑时保留、转入行情/管理/筛选/识别及结束时关闭，并验证清理账本；该检查不连接业务服务，带 15 秒看门狗。
+`fixture.pending` 只用于准备待确认推送/工具栏测试数据，字幕和报告标记「API准备待确认夹具（非UI录入）」，不声称完成 FIX 接入或UI创建。编辑表单之外的后续操作先关闭编辑表单；正常等待、截图、业务核对与清理机制保留。管理器新增 `management.edit/save/reject/operate` 动作，可按正常工作流组合用例。旧 `test-local-integration.ps1 -Merged/-SalesTrading` 和 `test-parser-live.ps1` 已改为调用管理套件，要求 STC 模式配置；结果改用套件 JSON/JUnit 报告，独立旧检查源码不再保留。旧解析检查的双边价格、分号、方向标题和中文报量迁入 `23-complex-parser`。
 
 自动化工作进程在窗口下方显示中文字幕：用例名称、步骤序号、当前动作和下一动作。操作间隔内显示「下一步」，动作开始时显示「正在执行」，登录和清理也有提示。字幕不接收鼠标、不抢键盘焦点，随普通测试窗口移动；仅自动化工作进程启用，正式客户端不变。
 
@@ -204,3 +204,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 字幕在动作计时开始前完成渲染。`filter.latency` 测量动作期间隐藏字幕并停止位置跟踪定时器，避免增加测量期间的渲染工作；普通用例截图只捕获 STC 窗口，不包含独立字幕窗口。
 
 可运行 `scripts/test-ui-demo-caption.ps1`：使用独立 WPF 窗口验证字幕内容、焦点保留、鼠标穿透窗口样式、跟随移动及隐藏恢复，并生成 `runtime/demo-caption-check/demo-caption.png`。检查带 15 秒看门狗，不登录业务服务，不代表完整业务 E2E 已通过。更新工作进程后，随后启动的用例使用新字幕，已运行的用例保持旧版本。
+
+## 2026-10-13 产品工作流迁移验证
+
+本机真实 STC/GW/ParserSvr/QuoteSvr/CRM/NotificationSvr 链路共验证 12 个不同用例：01、03–08、14、20–23，全部通过并确认清理；21 额外复跑，验证产品编辑表单保留 CRM ID/报价旗标、OCO互斥拒绝以及变更历史。管理器默认值/多选专项检查通过。没有执行性能测试；18 双边议价用例本轮未运行（进程未提供 intake 测试 token），不据此声明 QA 环境或完整 FIX 链路通过。
+
+报告位于 `runtime/ui-test-normal-workflow/ui-test-reports/`：`20261013-183849`（生命周期）、`20261013-184004`（10例）、`20261013-184430`（编辑表单扩展核对）、`20261013-184650`（复杂解析）。

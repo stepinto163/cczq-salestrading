@@ -19,7 +19,7 @@ namespace SalesTrading.UiTests
                 for (int index = 1; index <= 3; index++)
                 {
                     var item = new CaseDefinition { Id = "selection-" + index, Name = "选择检查 " + index };
-                    item.Steps.Add(new TestStep { Name = "仅检查管理器，不执行业务", Action = "manual.open" });
+                    item.Steps.Add(new TestStep { Name = "仅检查管理器，不执行业务", Action = "management.select" });
                     item.Save(Path.Combine(source, item.Id + ".json"));
                 }
                 Type type = typeof(CaseDefinition).Assembly.GetType("SalesTrading.UiTests.RunnerWindow", true);

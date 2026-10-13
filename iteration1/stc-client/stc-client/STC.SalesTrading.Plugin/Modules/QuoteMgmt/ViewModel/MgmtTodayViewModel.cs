@@ -252,10 +252,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                 ToastService.Show("请选择一条报价。", ToastKind.Warning);
                 return;
             }
-            new STC.SalesTrading.Plugin.View.QuoteOperationWindow(services.Api, SelectedRow.First().QuoteId)
-            {
-                Owner = System.Windows.Application.Current.MainWindow
-            }.ShowDialog();
+            STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog.ShowForQuote(
+                System.Windows.Application.Current.MainWindow, services.Api, SelectedRow.First().QuoteId);
         }
 
         [RelayCommand]

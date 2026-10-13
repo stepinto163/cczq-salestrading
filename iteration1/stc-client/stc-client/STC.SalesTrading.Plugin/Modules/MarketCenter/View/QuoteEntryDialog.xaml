@@ -1,6 +1,7 @@
-﻿<Window x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog"
+<Window x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
         Title="编辑报价" Width="880" Height="620"
         WindowStartupLocation="Manual" ShowInTaskbar="False"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
@@ -453,13 +454,13 @@
                                 <!-- 报价机构 span-4 -->
                                 <StackPanel Grid.Row="1" Grid.Column="5" Grid.ColumnSpan="4" Margin="6,0,6,0">
                                     <TextBlock Text="报价机构" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
-                                    <TextBox x:Name="InstitutionBox" Style="{StaticResource QuoteControl}" Text="" Tag="机构简称" />
+                                    <components:CrmLookup x:Name="InstitutionBox" Style="{StaticResource QuoteControl}" Kind="INSTITUTION" Text="{Binding Institution, UpdateSourceTrigger=PropertyChanged}" InstitutionId="{Binding InstitutionId}" SelectionCommand="{Binding SelectInstitutionCommand}" Tag="机构简称" />
                                 </StackPanel>
 
                                 <!-- 报价交易员 span-3 -->
                                 <StackPanel Grid.Row="1" Grid.Column="9" Grid.ColumnSpan="3" Margin="6,0,0,0">
                                     <TextBlock Text="报价交易员" Style="{StaticResource QuoteLabel}" Margin="0,0,0,4" />
-                                    <TextBox x:Name="TraderBox" Style="{StaticResource QuoteControl}" Text="" Tag="交易员姓名" />
+                                    <components:CrmLookup x:Name="TraderBox" Style="{StaticResource QuoteControl}" Kind="CONTACT" Text="{Binding Trader, UpdateSourceTrigger=PropertyChanged}" InstitutionId="{Binding InstitutionId}" SelectionCommand="{Binding SelectContactCommand}" Tag="交易员姓名" />
                                 </StackPanel>
 
                                 <!-- 标签 + 备注：原型 .quote-tags-note-row{grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:end} -->
@@ -475,6 +476,8 @@
                                                       Margin="0,0,14,0" VerticalAlignment="Center" />
                                             <CheckBox x:Name="FlagRec" Content="荐" Style="{StaticResource QuoteTagCheck}"
                                                       Margin="0,0,14,0" VerticalAlignment="Center" />
+                                            <CheckBox x:Name="FlagOco" Content="OCO" Style="{StaticResource QuoteTagCheck}" Margin="0,0,14,0" />
+                                            <CheckBox x:Name="FlagPacking" Content="打包" Style="{StaticResource QuoteTagCheck}" Margin="0,0,14,0" />
                                             <CheckBox x:Name="FlagWhole" Content="整" Style="{StaticResource QuoteTagCheck}"
                                                       VerticalAlignment="Center" />
                                         </StackPanel>
@@ -500,6 +503,7 @@
                         </Grid.ColumnDefinitions>
                         <!-- .quote-footer-note{gap:6px;font-size:10px;color:#7d8590} -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="SubmitError" TextWrapping="Wrap" MaxWidth="280" Foreground="{DynamicResource DangerBrush}" />
                             <Border Style="{StaticResource QuoteKbd}">
                                 <TextBlock Text="Enter" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
                             </Border>
@@ -513,6 +517,7 @@
                         </StackPanel>
                         <!-- 原型 .tb-btn：26px 高、14px、文字按钮（取消 = tb-btn-default，保存修改 = tb-btn-primary 红底） -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="变更历史" x:Name="HistoryButton" Visibility="Collapsed" Style="{DynamicResource StcButton}" Click="OnHistory" Margin="0,0,8,0" />
                             <Button Content="取消" Style="{DynamicResource StcButton}" Height="26"
                                     FontSize="14" Padding="10,0" Click="OnCancel" Margin="0,0,8,0" />
                             <Button Content="保存修改" Style="{DynamicResource StcButtonDanger}" Height="26"

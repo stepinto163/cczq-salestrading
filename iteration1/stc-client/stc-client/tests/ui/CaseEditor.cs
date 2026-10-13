@@ -56,7 +56,7 @@ namespace SalesTrading.UiTests
             AddButton(stepButtons, "新增步骤", () =>
             {
                 StoreStep();
-                items.Add(new TestStep { Name = "新步骤", Action = "manual.open" });
+                items.Add(new TestStep { Name = "新步骤", Action = "management.select" });
                 RefreshSteps(items.Count - 1);
             });
             AddButton(stepButtons, "删除步骤", () =>

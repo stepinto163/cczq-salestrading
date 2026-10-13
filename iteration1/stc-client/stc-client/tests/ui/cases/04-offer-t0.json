@@ -5,33 +5,27 @@
   "Description": "P0：补齐 Ofr/T+0 分支，核对数量、方向、清算及管理页。",
   "Steps": [
     {
-      "Name": "1. 打开手工报价",
-      "Action": "manual.open",
-      "Parameters": {}
-    },
-    {
-      "Name": "2. 填写报价",
-      "Action": "manual.fill",
+      "Name": "精确报价输入并识别",
+      "Action": "parse",
       "Parameters": {
-        "securityId": "${securityId}",
-        "price": "2.5",
-        "quantity": "1",
-        "side": "2",
-        "settlType": "1"
+        "text": "${securityId} 2.5 1 ofr +0",
+        "expectedRows": "1"
       }
     },
     {
-      "Name": "3. 操作报价",
-      "Action": "manual.click",
+      "Name": "勾选识别预览",
+      "Action": "parse.select",
       "Parameters": {
-        "button": "保存待确认"
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
       }
     },
     {
-      "Name": "4. 操作报价",
-      "Action": "manual.click",
+      "Name": "确认精确报价",
+      "Action": "parse.confirm",
       "Parameters": {
-        "button": "确认"
+        "expectedCount": "1"
       }
     },
     {

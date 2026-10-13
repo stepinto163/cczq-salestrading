@@ -19,7 +19,18 @@ namespace STC.SalesTrading.Plugin.Ficc
             {
                 return false;
             }
-            new QuoteOperationWindow(model.Backend.Api, quoteId, securityId) { Owner = owner ?? shell }.ShowDialog();
+            if (string.IsNullOrEmpty(quoteId))
+            {
+                model.SelectedNavItem = model.NavItems.First(item => item.Key == "quote");
+                model.QuotePage.SelectedSubTab = model.QuotePage.SubTabs.First(item => item.Key == "quote-precise");
+                // 保留已有草稿，债券仅作为新一行的录入起点。
+                if (!string.IsNullOrWhiteSpace(securityId))
+                    model.QuotePage.Precise.InputText += (string.IsNullOrWhiteSpace(model.QuotePage.Precise.InputText) ? "" : Environment.NewLine) + securityId + " ";
+            }
+            else
+            {
+                Modules.MarketCenter.View.QuoteEntryDialog.ShowForQuote(owner ?? shell, model.Backend.Api, quoteId);
+            }
             return true;
         }
     }

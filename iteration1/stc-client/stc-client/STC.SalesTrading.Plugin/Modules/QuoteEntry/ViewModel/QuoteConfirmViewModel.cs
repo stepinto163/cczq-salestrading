@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -351,10 +351,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 ToastService.Show("请勾选一条报价，以补全CRM机构、联系人并确认。", ToastKind.Warning);
                 return;
             }
-            new STC.SalesTrading.Plugin.View.QuoteOperationWindow(services.Api, selected[0].RecognitionId)
-            {
-                Owner = System.Windows.Application.Current.MainWindow
-            }.ShowDialog();
+            STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog.ShowForQuote(
+                System.Windows.Application.Current.MainWindow, services.Api, selected[0].RecognitionId);
             _ = InitializeAsync();
         }
 

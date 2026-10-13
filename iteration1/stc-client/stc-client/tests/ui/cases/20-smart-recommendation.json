@@ -5,33 +5,27 @@
   "Description": "P0：创建并确认一条报价，在真实STC行情表选中它，验证推荐加载、依据展开、方向/日期切换及反馈持久化及正式STC宿主中的字号；仅清理本例报价，历史证据与测试用户反馈按产品规则保留。",
   "Steps": [
     {
-      "Name": "1. 打开手工报价",
-      "Action": "manual.open",
-      "Parameters": {}
-    },
-    {
-      "Name": "2. 填写报价",
-      "Action": "manual.fill",
+      "Name": "精确报价输入并识别",
+      "Action": "parse",
       "Parameters": {
-        "securityId": "${securityId}",
-        "price": "2.5",
-        "quantity": "1",
-        "side": "1",
-        "settlType": "2"
+        "text": "${securityId} 2.5 1 bid +1",
+        "expectedRows": "1"
       }
     },
     {
-      "Name": "3. 操作报价",
-      "Action": "manual.click",
+      "Name": "勾选识别预览",
+      "Action": "parse.select",
       "Parameters": {
-        "button": "保存待确认"
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
       }
     },
     {
-      "Name": "4. 操作报价",
-      "Action": "manual.click",
+      "Name": "确认精确报价",
+      "Action": "parse.confirm",
       "Parameters": {
-        "button": "确认"
+        "expectedCount": "1"
       }
     },
     {

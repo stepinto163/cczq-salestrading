@@ -1,0 +1,146 @@
+{
+  "Version": 1,
+  "Id": "23-complex-parser",
+  "Name": "双边价格、分号、方向标题与中文报量",
+  "Description": "从旧独立ParserLiveEndToEndCheck迁移；产品页面识别/确认，修复2.4与1000连写误判，核对方向继承和中文报量。",
+  "Steps": [
+    {
+      "Name": "解析双边价格与分号报价",
+      "Action": "parse",
+      "Parameters": {
+        "text": "长城证券 田老哥\n240210 2.5/2.4 1000;240215 2.3 2000 bid",
+        "expectedRows": "3"
+      }
+    },
+    {
+      "Name": "核对双边报价第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "240210.IB",
+        "side": "Bid",
+        "price": "2.5",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "勾选第1行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "核对双边报价第2行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "2",
+        "securityId": "240210.IB",
+        "side": "Ofr",
+        "price": "2.4",
+        "quantity": "1000"
+      }
+    },
+    {
+      "Name": "勾选第2行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "2",
+        "selected": "true",
+        "expectedCount": "2"
+      }
+    },
+    {
+      "Name": "核对双边报价第3行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "3",
+        "securityId": "240215.IB",
+        "side": "Bid",
+        "price": "2.3",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "勾选第3行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "3",
+        "selected": "true",
+        "expectedCount": "3"
+      }
+    },
+    {
+      "Name": "确认三条识别报价",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "3"
+      }
+    },
+    {
+      "Name": "识别方向标题与中文数量",
+      "Action": "parse",
+      "Parameters": {
+        "text": "bid\n240210 2.55 三千万 T+0\n240215 2.45 2000",
+        "expectedRows": "2"
+      }
+    },
+    {
+      "Name": "核对标题方向第1行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "1",
+        "securityId": "240210.IB",
+        "side": "Bid",
+        "price": "2.55",
+        "quantity": "3000"
+      }
+    },
+    {
+      "Name": "勾选待删除预览第1行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "核对标题方向第2行",
+      "Action": "parse.row",
+      "Parameters": {
+        "row": "2",
+        "securityId": "240215.IB",
+        "side": "Bid",
+        "price": "2.45",
+        "quantity": "2000"
+      }
+    },
+    {
+      "Name": "勾选待删除预览第2行",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "2",
+        "selected": "true",
+        "expectedCount": "2"
+      }
+    },
+    {
+      "Name": "删除未提交预览",
+      "Action": "parse.click",
+      "Parameters": {
+        "button": "删除"
+      }
+    },
+    {
+      "Name": "预览已清空",
+      "Action": "parse.count",
+      "Parameters": {
+        "rows": "0",
+        "selected": "0"
+      }
+    }
+  ]
+}

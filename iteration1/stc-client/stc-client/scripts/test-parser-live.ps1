@@ -2,30 +2,15 @@ param([string]$OutputRoot)
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
 if (!$OutputRoot) { $OutputRoot = Join-Path $clientRoot 'runtime/native-client' }
-if (!$env:PARSER_TEST_USER -or !$env:PARSER_TEST_PASSWORD) {
-    throw 'Set PARSER_TEST_USER and PARSER_TEST_PASSWORD to a dedicated local test account.'
+# 复用可管理、带清理和看门狗的产品工作流，保留旧账号环境变量兼容性。
+$previousUser = $env:STC_UI_USER
+$previousPassword = $env:STC_UI_PASSWORD
+try {
+    if ($env:PARSER_TEST_USER) { $env:STC_UI_USER = $env:PARSER_TEST_USER }
+    if ($env:PARSER_TEST_PASSWORD) { $env:STC_UI_PASSWORD = $env:PARSER_TEST_PASSWORD }
+    & (Join-Path $PSScriptRoot 'run-ui-tests.ps1') -StcConfig (Join-Path $OutputRoot 'STC.exe.config') -Cases '01-quote-lifecycle,02-precise-crm,09-multiline-partial-confirm,10-semicolon-quotes,14-watchlist-notification-read,16-enter-multiline,23-complex-parser'
+} finally {
+    $env:STC_UI_USER = $previousUser
+    $env:STC_UI_PASSWORD = $previousPassword
 }
-$testName = 'ParserLiveEndToEndCheck'
-if (Get-Process -Name $testName -ErrorAction SilentlyContinue) { throw 'Test already running.' }
-$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
-$compiler = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\Roslyn\csc.exe' | Select-Object -First 1
-$framework = Join-Path ${env:ProgramFiles(x86)} 'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2'
-$references = @('/r:System.dll','/r:System.Core.dll','/r:System.Configuration.dll',"/r:$framework/Facades/netstandard.dll", "/r:$OutputRoot/STC.exe")
-foreach ($dll in @('common.netapi','gateway-api','STC.Frame','STC.Common','STC.SalesTrading.Plugin','CommunityToolkit.Mvvm')) {
-    $references += "/r:$OutputRoot/bin/$dll.dll"
-}
-foreach ($dll in @('WindowsBase','PresentationFramework','PresentationCore','System.Xaml')) { $references += "/r:$framework/$dll.dll" }
-& $compiler /nologo /target:exe "/out:$OutputRoot/$testName.exe" $references "$clientRoot/tests/$testName.cs"
-if ($LASTEXITCODE -ne 0) { throw 'Live parser test compilation failed.' }
-Copy-Item -LiteralPath "$OutputRoot/STC.exe.config" -Destination "$OutputRoot/$testName.exe.config" -Force
-$process = Start-Process -FilePath "$OutputRoot/$testName.exe" -WorkingDirectory $OutputRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput "$OutputRoot/$testName.stdout.log" -RedirectStandardError "$OutputRoot/$testName.stderr.log"
-$null = $process.Handle
-$deadline = [DateTime]::UtcNow.AddSeconds(150)
-while (!$process.WaitForExit(1000)) {
-    if ([DateTime]::UtcNow -gt $deadline) {
-        Stop-Process -Id $process.Id -Force
-        throw 'Live parser test exceeded 150 seconds. Inspect logs and cleanup any test quotes before retrying.'
-    }
-}
-Get-Content "$OutputRoot/parser-e2e-result.txt" -Encoding UTF8 -ErrorAction SilentlyContinue
-if ($process.ExitCode -ne 0) { throw "Live parser test failed: exit $($process.ExitCode). See client logs." }
+exit $LASTEXITCODE

@@ -1,4 +1,4 @@
-﻿param([switch]$NativeUi, [switch]$SalesTrading, [switch]$Merged)
+param([switch]$NativeUi, [switch]$SalesTrading, [switch]$Merged)
 if ($SalesTrading) { $Merged = $true }
 if ($Merged) {
     $NativeUi = $true
@@ -9,6 +9,10 @@ if ($SalesTrading) {
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
 $outputRoot = Join-Path $clientRoot 'runtime/native-client'
+if ($Merged) {
+    & (Join-Path $PSScriptRoot 'run-ui-tests.ps1') -StcConfig (Join-Path $outputRoot 'STC.exe.config') -Cases '01-quote-lifecycle,03-pending-push,05-settlement-update,06-invalid-price-recovery,07-management-filters,08-market-filters,14-watchlist-notification-read'
+    exit $LASTEXITCODE
+}
 if (Get-Process -Name 'NativeStartupCheck', 'NativeSalesTradingCheck', 'MergedSalesTradingCheck', 'LocalIntegrationChecks', 'STC' -ErrorAction SilentlyContinue) {
     throw 'Close the native STC client or existing integration test before running this check.'
 }
@@ -22,7 +26,7 @@ if (!$compiler) {
     throw 'Roslyn C# compiler was not found.'
 }
 & (Join-Path $PSScriptRoot 'start-native-client.ps1') -Mode Local -PrepareOnly
-$testName = if ($Merged) { 'MergedSalesTradingCheck' } elseif ($SalesTrading) { 'NativeSalesTradingCheck' } elseif ($NativeUi) { 'NativeStartupCheck' } else { 'LocalIntegrationChecks' }
+$testName = if ($NativeUi) { 'NativeStartupCheck' } else { 'LocalIntegrationChecks' }
 $resultFile = if ($Merged) { 'merged-salestrading-result.txt' } elseif ($SalesTrading) { 'native-salestrading-result.txt' } else { 'native-startup-result.txt' }
 $resultPath = Join-Path $outputRoot $resultFile
 if ($NativeUi -and (Test-Path -LiteralPath $resultPath)) {

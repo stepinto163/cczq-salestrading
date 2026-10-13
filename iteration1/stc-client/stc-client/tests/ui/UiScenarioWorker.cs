@@ -1,4 +1,4 @@
-﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
+using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,7 +37,7 @@ namespace SalesTrading.UiTests
         private MainView view;
         private MainViewModel model;
         private Window shell;
-        private QuoteOperationWindow editor;
+        private STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog editDialog;
         private string quoteId;
         private int stepNumber;
         private bool cleaning;
@@ -117,7 +117,8 @@ namespace SalesTrading.UiTests
                 {
                     stepNumber++;
                     ThrowIfCancelled();
-                    PrepareManualEditorForStep(step);
+                    if (editDialog != null && step.Action != "management.edit" && step.Action != "management.save"
+                        && step.Action != "management.reject" && step.Action != "quote.assert") CloseEditor();
                     string upcoming = stepNumber < definition.Steps.Count ? definition.Steps[stepNumber].Name : "清理本例数据";
                     if (step.Action == "filter.latency")
                     {
@@ -241,7 +242,7 @@ namespace SalesTrading.UiTests
             shell.Height = 950;
             frame.Panel.SelectedItem = frame.Panel.Items.OfType<TabItem>().Single(item => ReferenceEquals(item.Content, view));
             shell.UpdateLayout();
-            await Until(() => view.IsLoaded && view.IsVisible && Descendants<Button>(view).Any(button => (string)(button.Content as string) == "手工报价"), "销售交易界面完成渲染");
+            await Until(() => view.IsLoaded && view.IsVisible && model.NavItems.Count > 0, "销售交易界面完成渲染");
             await Until(() => !model.QuoteMgmtPage.Today.IsLoading && !model.MarketCenterPage.RateAll.IsLoading
                 && !model.MarketCenterPage.Alert.IsLoading, "报价、行情及提醒初始化", 45);
             Require(string.IsNullOrEmpty(model.QuoteMgmtPage.Today.ErrorMessage), model.QuoteMgmtPage.Today.ErrorMessage);
@@ -258,30 +259,6 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
-                case "manual.open":
-                    // ShowDialog runs a nested dispatcher loop; queue the click so the test can
-                    // continue driving the dialog while the product handler waits for it to close.
-                    _ = Application.Current.Dispatcher.BeginInvoke(new Action(() => Click(Button(view, "手工报价"))));
-                    await Until(() => (editor = Application.Current.Windows.OfType<QuoteOperationWindow>().FirstOrDefault()) != null && editor.IsReady, "手工报价初始化");
-                    break;
-                case "manual.fill":
-                    Require(editor != null && editor.IsReady, "请先打开手工报价");
-                    foreach (string field in Actions.Fields[step.Action])
-                    {
-                        FrameworkElement input = Descendants<FrameworkElement>(editor.Editor)
-                            .Single(control => System.Windows.Automation.AutomationProperties.GetAutomationId(control) == "QuoteEditor." + field);
-                        if (input is TextBox text) text.Text = Parameter(step, field);
-                        else if (input is ComboBox choice) choice.SelectedValue = Parameter(step, field);
-                    }
-                    break;
-                case "manual.click":
-                    Require(editor != null && editor.IsReady, "报价操作窗口未就绪");
-                    long revision = (long?)editor.CurrentQuote?["revision"] ?? 0;
-                    Click(Button(editor, Parameter(step, "button")));
-                    await Until(() => editor.IsReady && (long?)editor.CurrentQuote?["revision"] > revision,
-                        "报价操作成功；检查操作窗口错误及 DPS 日志");
-                    Track((string)editor.CurrentQuote["quoteId"]);
-                    break;
                 case "quote.assert":
                     Require(quoteId != null, "本例尚未创建报价");
                     JObject quote = await model.Backend.Api.GetQuoteAsync(quoteId);
@@ -440,7 +417,6 @@ namespace SalesTrading.UiTests
 
         private void CollectCreatedQuotes()
         {
-            if (editor?.CurrentQuote != null) Track((string)editor.CurrentQuote["quoteId"]);
             foreach (QuoteConfirmRowViewModel row in submittedPreview.Where(row => row.Row.Revision > 0)) Track(row.RecognitionId);
         }
 
@@ -509,29 +485,10 @@ namespace SalesTrading.UiTests
             Require(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
 
-        private void PrepareManualEditorForStep(TestStep step)
-        {
-            if (editor == null) return;
-            string nextUiAction = step.Action;
-            int nextIndex = stepNumber;
-            // 服务端只读核对不结束手工编辑序列；后续仍要操作该窗口时保留它。
-            while (nextUiAction == "quote.assert" || nextUiAction == "quote.fields" || nextUiAction == "history.assert")
-            {
-                nextUiAction = nextIndex < definition.Steps.Count ? definition.Steps[nextIndex++].Action : null;
-            }
-            if (nextUiAction == "manual.fill" || nextUiAction == "manual.click" || nextUiAction == "manual.reject") return;
-            CloseEditor();
-        }
-
         private void CloseEditor()
         {
-            if (editor == null) return;
-            // 先登记已落库报价，关闭窗口后仍能清理本例数据。
-            if (editor.CurrentQuote != null) Track((string)editor.CurrentQuote["quoteId"]);
-            editor.Close();
-            Require(!editor.IsVisible, "报价操作窗口未关闭，不能继续操作其他页面");
-            editor = null;
-            Emit("手工报价窗口", "CLOSED", "已关闭，本例后续步骤继续执行");
+            editDialog?.Close();
+            editDialog = null;
         }
 
         private void ThrowIfCancelled()
@@ -592,7 +549,7 @@ namespace SalesTrading.UiTests
         {
             try
             {
-                Window window = target ?? editor ?? shell;
+                Window window = target ?? editDialog ?? shell;
                 if (window == null || window.ActualWidth <= 0) return;
                 window.UpdateLayout();
                 RenderTargetBitmap bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);

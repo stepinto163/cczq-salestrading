@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -77,11 +77,13 @@ namespace SalesTrading.UiTests
     {
         public static readonly Dictionary<string, string[]> Fields = new Dictionary<string, string[]>
         {
+            { "fixture.pending", new[] { "securityId", "price", "quantity", "side", "settlType" } },
+            { "management.edit", new[] { "securityId", "price", "quantity", "side", "settlType" } },
+            { "management.save", new string[0] },
+            { "management.reject", new[] { "button", "message" } },
+            { "management.operate", new[] { "button" } },
             { "management.select", new string[0] },
             { "filter.latency", new[] { "quotes", "samples", "securityId" } },
-            { "manual.open", new string[0] },
-            { "manual.fill", new[] { "securityId", "price", "quantity", "side", "settlType" } },
-            { "manual.click", new[] { "button" } },
             { "quote.assert", new[] { "status", "price" } },
             { "pending.assert", new string[0] },
             { "pending.toolbar", new string[0] },
@@ -98,7 +100,6 @@ namespace SalesTrading.UiTests
             { "parse.confirm", new[] { "expectedCount" } },
             { "parse.assert", new[] { "securityId", "institution", "trader", "price" } },
             { "quote.fields", new[] { "side", "quantity", "settlType" } },
-            { "manual.reject", new[] { "button", "message" } },
             { "sidebar.range", new[] { "page", "field", "min", "max", "visible" } },
             { "sidebar.reset", new[] { "page" } },
             { "sidebar.search", new[] { "page", "text", "visible" } },
@@ -114,12 +115,17 @@ namespace SalesTrading.UiTests
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
         {
+            { "fixture.pending", "API准备待确认夹具（非UI录入）" },
+            { "management.edit", "报价管理打开修改表单并填写" },
+            { "management.save", "保存报价修改" },
+            { "management.reject", "核对修改拒绝且版本不变" },
+            { "management.operate", "报价管理Refer/Unrefer/删除" },
+            { "quote.assert", "核对服务端报价状态及价格" },
+
             { "groups.manage", "关注债券与筛选分组：保存、重读、激活和取消" },
             { "pending.toolbar", "验证报价确认工具栏全部编辑控件、持久化与删除" },
             { "management.select", "选中本例管理报价，验证筛选刷新清除选择" },
             { "filter.latency", "组合筛选延迟（需显式授权，最多500报价）" },
-            { "manual.open", "点击手工报价" }, { "manual.fill", "填写手工报价" },
-            { "manual.click", "点击报价操作按钮" }, { "quote.assert", "核对服务端报价状态及价格" },
             { "pending.assert", "核对报价确认页推送" }, { "market.assert", "核对行情中心推送" },
             { "management.assert", "核对报价管理推送" }, { "history.assert", "核对报价变更历史" },
             { "parse.keyboard", "通过 Enter 换行后识别" },
@@ -127,7 +133,6 @@ namespace SalesTrading.UiTests
             { "parse", "输入文本并点击识别报价" }, { "parse.select", "勾选/取消识别结果" },
             { "parse.confirm", "点击确认报价并核对入库" }, { "parse.assert", "核对识别债券、机构、交易员" },
             { "quote.fields", "核对持久化方向、数量及清算" },
-            { "manual.reject", "核对手工操作拒绝及版本不变" },
             { "sidebar.range", "通过侧栏输入价格区间并核对本例报价" },
             { "sidebar.reset", "点击清除过滤并核对报价恢复" },
             { "sidebar.search", "通过侧栏文本搜索并核对本例报价" },
@@ -142,7 +147,7 @@ namespace SalesTrading.UiTests
         };
 
         public static string Hint = "每例自动登录、收集截图及日志并清理本例报价。参数值支持 ${securityId}。" +
-            "\r\nbutton：保存待确认/确认/保存修改/Refer/Unrefer/删除；row 从 1 开始；selected：true/false。" +
+            "\r\nmanagement.operate 的 button：Refer/Unrefer/删除；management.reject 的 button：保存修改；row 从 1 开始；selected：true/false。" +
             "\r\nside：1=Bid，2=Ofr；settlType：1=T+0，2=T+1；机构和交易员填写 CRM 真实名称。" +
             "\r\n侧栏 page：mgmt/market；visible：true/false；range 的 min/max 均必填；parse.row 的 side：Bid/Ofr。";
     }

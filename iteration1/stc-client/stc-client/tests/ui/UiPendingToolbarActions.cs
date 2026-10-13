@@ -168,6 +168,9 @@ namespace SalesTrading.UiTests
             check((string)deleted["status"] == "DELETED", "删除按钮仅删除勾选的测试报价");
             check(confirm.SelectedCount == 0 && !confirm.ToolbarUrgent && !confirm.ToolbarPacking,
                 "移除选择后工具栏清除已选数量和旗标状态");
+            Track(selected.RecognitionId);
+            await VerifyManagementEditorAsync(saved);
+            check(true, "产品编辑表单保留CRM身份与报价旗标，变更历史可查看");
         }
 
         private static void SetPendingPrice(QuoteConfirmView page, QuoteConfirmRowViewModel row, string value)

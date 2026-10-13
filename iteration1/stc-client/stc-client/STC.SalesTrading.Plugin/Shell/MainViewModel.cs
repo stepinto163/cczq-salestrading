@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using STC.Common.Utils.Events;
@@ -119,20 +119,6 @@ namespace STC.SalesTrading.Plugin.Shell
         #endregion
 
         #region 用户区
-
-        [RelayCommand]
-        private void ManualQuote()
-        {
-            if (Backend == null)
-            {
-                ToastService.Show("当前数据源不支持真实报价操作。", ToastKind.Warning);
-                return;
-            }
-            new STC.SalesTrading.Plugin.View.QuoteOperationWindow(Backend.Api)
-            {
-                Owner = System.Windows.Application.Current.MainWindow
-            }.ShowDialog();
-        }
 
         /// <summary>顶栏显示的当前用户名。</summary>
         [ObservableProperty]

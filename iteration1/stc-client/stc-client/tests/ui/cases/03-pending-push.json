@@ -2,11 +2,23 @@
   "Version": 1,
   "Id": "03-pending-push",
   "Name": "待确认报价实时展示",
-  "Description": "通过手工报价窗口创建，核对报价确认页的真实推送；结束后删除本例报价。",
+  "Description": "通过API创建明确标记的待确认夹具，核对报价确认页的真实推送；结束后删除本例报价。",
   "Steps": [
-    { "Name": "打开手工报价", "Action": "manual.open", "Parameters": {} },
-    { "Name": "填写待确认报价", "Action": "manual.fill", "Parameters": { "securityId": "${securityId}", "price": "2.6000", "quantity": "1", "side": "2", "settlType": "2" } },
-    { "Name": "保存待确认", "Action": "manual.click", "Parameters": { "button": "保存待确认" } },
-    { "Name": "核对确认页显示本例报价", "Action": "pending.assert", "Parameters": {} }
+    {
+      "Name": "通过API准备待确认夹具（非UI录入）",
+      "Action": "fixture.pending",
+      "Parameters": {
+        "securityId": "${securityId}",
+        "price": "2.6000",
+        "quantity": "1",
+        "side": "2",
+        "settlType": "2"
+      }
+    },
+    {
+      "Name": "核对确认页显示本例报价",
+      "Action": "pending.assert",
+      "Parameters": {}
+    }
   ]
 }
