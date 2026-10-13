@@ -42,6 +42,7 @@ namespace SalesTrading.UiTests
         private int stepNumber;
         private bool cleaning;
         private Exception noticeAutomationFailure;
+        private DemoCaptionWindow captions;
         private readonly Stopwatch elapsed = Stopwatch.StartNew();
 
         [STAThread]
@@ -107,6 +108,8 @@ namespace SalesTrading.UiTests
             bool cleanupPassed = true;
             try
             {
+                captions = new DemoCaptionWindow();
+                await ShowCaptionAsync("准备", "登录 STC 并打开销售交易", definition.Steps[0].Name);
                 Emit("登录", "RUNNING", "启动正式 STC 登录窗口，连接真实服务");
                 await LoginAsync();
                 Emit("登录", "PASSED", "已登录并加载报价、行情及提醒页面");
@@ -114,11 +117,24 @@ namespace SalesTrading.UiTests
                 {
                     stepNumber++;
                     ThrowIfCancelled();
+                    string upcoming = stepNumber < definition.Steps.Count ? definition.Steps[stepNumber].Name : "清理本例数据";
+                    if (step.Action == "filter.latency")
+                    {
+                        captions.Suspend();
+                    }
+                    else
+                    {
+                        await ShowCaptionAsync("下一步", step.Name, upcoming);
+                    }
                     if (stepNumber > 1)
                     {
                         await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
                             Emit(step.Name, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE",
                                 waiting ? "操作间隔等待中；可在管理窗口实时调整" : "操作间隔等待 " + milliseconds + " ms", milliseconds));
+                    }
+                    if (step.Action != "filter.latency")
+                    {
+                        await ShowCaptionAsync("正在执行", step.Name, upcoming);
                     }
                     Emit(step.Name, "RUNNING", step.Action);
                     Stopwatch duration = Stopwatch.StartNew();
@@ -144,6 +160,17 @@ namespace SalesTrading.UiTests
                 cleaning = true;
                 try
                 {
+                    await ShowCaptionAsync(outcome == "PASSED" ? "收尾" : outcome == "CANCELLED" ? "已停止" : "测试失败",
+                        "清理本例测试数据", null);
+                }
+                catch (Exception captionError)
+                {
+                    // 字幕故障不能阻断测试数据清理，但仍须如实标记本例失败。
+                    outcome = "FAILED";
+                    Emit("演示字幕", "FAILED", captionError.ToString());
+                }
+                try
+                {
                     await CleanupAsync();
                     Emit("清理", "PASSED", "本例报价已删除；提醒夹具及偏好已恢复（如使用）；没有清空数据库或其他用户数据");
                 }
@@ -161,8 +188,16 @@ namespace SalesTrading.UiTests
                 };
                 File.WriteAllText(Path.Combine(reportDirectory, "result.json"), result.ToString());
                 Emit("结果", outcome, "耗时 " + elapsed.ElapsedMilliseconds + " ms");
+                captions?.Close();
             }
             return outcome == "PASSED" ? 0 : 1;
+        }
+
+        private async Task ShowCaptionAsync(string phase, string action, string upcoming)
+        {
+            captions?.Present(shell, definition.Name, stepNumber, definition.Steps.Count, phase, action, upcoming);
+            // 在操作计时前完成字幕渲染；不占用输入焦点，不附加固定睡眠。
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
         }
 
         private async Task LoginAsync()
