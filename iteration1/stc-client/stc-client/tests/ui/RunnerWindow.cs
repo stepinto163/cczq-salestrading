@@ -10,18 +10,20 @@ namespace SalesTrading.UiTests
 {
     internal sealed class RunnerWindow : Form
     {
+        private const string DefaultUser = "test2";
+        private const string DefaultPassword = "123456";
         private readonly string caseDirectory;
         private readonly DataGridView cases = Grid();
         private readonly DataGridView progress = Grid();
         private readonly TextBox details = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both };
         private readonly TextBox config = new TextBox { Width = 600 };
-        private readonly TextBox user = new TextBox { Width = 130, Text = "localqa" };
-        private readonly TextBox password = new TextBox { Width = 130, UseSystemPasswordChar = true };
+        private readonly TextBox user = new TextBox { Width = 130, Text = DefaultUser };
+        private readonly TextBox password = new TextBox { Width = 130, Text = DefaultPassword, UseSystemPasswordChar = true };
         private readonly TextBox security = new TextBox { Width = 120, Text = "240210.IB" };
         private readonly NumericUpDown operationInterval = new NumericUpDown
         {
             Name = "OperationIntervalSeconds", Width = 95, Minimum = 0, Maximum = 60,
-            DecimalPlaces = 1, Increment = 0.1m, Value = 0
+            DecimalPlaces = 1, Increment = 0.1m, Value = 2
         };
         private readonly Label status = new Label { AutoSize = true, Text = "就绪；请使用专用测试账号。" };
         private readonly Label selectionCount = new Label { AutoSize = true, Margin = new Padding(8, 8, 0, 0) };
@@ -48,8 +50,10 @@ namespace SalesTrading.UiTests
                     {
                         cli.OperationIntervalMilliseconds = int.Parse(options["--interval-ms"], System.Globalization.CultureInfo.InvariantCulture);
                     }
-                    return cli.RunAsync(selected, options["--config"], Environment.GetEnvironmentVariable("STC_UI_USER"),
-                        Environment.GetEnvironmentVariable("STC_UI_PASSWORD"), Environment.GetEnvironmentVariable("STC_UI_SECURITY") ?? "240210.IB",
+                    string cliUser = Environment.GetEnvironmentVariable("STC_UI_USER");
+                    string cliPassword = Environment.GetEnvironmentVariable("STC_UI_PASSWORD");
+                    return cli.RunAsync(selected, options["--config"], string.IsNullOrEmpty(cliUser) ? DefaultUser : cliUser,
+                        string.IsNullOrEmpty(cliPassword) ? DefaultPassword : cliPassword, Environment.GetEnvironmentVariable("STC_UI_SECURITY") ?? "240210.IB",
                         options["--report"]).GetAwaiter().GetResult() ? 0 : 1;
                 }
                 catch (Exception error)

@@ -19,7 +19,7 @@ namespace SalesTrading.UiTests
         public bool StopRequested { get; private set; }
         public event Action<JObject> Progress;
 
-        private int operationIntervalMilliseconds;
+        private int operationIntervalMilliseconds = 2000;
         private OperationWaitBudget operationWaitBudget;
 
         public int OperationIntervalMilliseconds

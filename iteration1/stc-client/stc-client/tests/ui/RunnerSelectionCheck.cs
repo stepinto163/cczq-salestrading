@@ -28,6 +28,11 @@ namespace SalesTrading.UiTests
                     form.Show();
                     Application.DoEvents();
                     BindingFlags fields = BindingFlags.Instance | BindingFlags.NonPublic;
+                    Require(((TextBox)type.GetField("user", fields).GetValue(form)).Text == "test2", "默认账号错误");
+                    var password = (TextBox)type.GetField("password", fields).GetValue(form);
+                    Require(password.Text == "123456" && password.UseSystemPasswordChar, "默认密码或掩码错误");
+                    Require(((NumericUpDown)type.GetField("operationInterval", fields).GetValue(form)).Value == 2,
+                        "默认操作间隔应为2秒");
                     var grid = (DataGridView)type.GetField("cases", fields).GetValue(form);
                     var count = (Label)type.GetField("selectionCount", fields).GetValue(form);
                     Require(grid.MultiSelect && grid.Rows.Count == 3, "用例列表未启用多选");
@@ -65,7 +70,7 @@ namespace SalesTrading.UiTests
                     Require(type.GetField("runner", fields).GetValue(form) == null, "空选择不应启动业务测试");
                     form.Close();
                 }
-                Console.WriteLine("PASS: select all/none, multiple rows, Space batch toggle, checkbox click commit, empty-run guard.");
+                Console.WriteLine("PASS: account/interval defaults, select all/none, multiple rows, Space batch toggle, checkbox click commit, empty-run guard.");
                 return 0;
             }
             catch (Exception error)
