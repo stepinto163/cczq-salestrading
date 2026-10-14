@@ -24,7 +24,7 @@ namespace SalesTrading.UiTests
             string security = (string)manual["securityId"];
             string intention = "UI-INTENTION-" + Guid.NewGuid().ToString("N");
             string account = "UI-QT-" + owner;
-            CloseEditor();
+            await CloseEditorAsync();
 
             Func<string, string, Task<string>> receive = async (conversation, price) =>
             {
@@ -94,7 +94,7 @@ namespace SalesTrading.UiTests
         private async Task ConfirmNegotiationOnUiAsync(string id)
         {
             await NavigateAsync("entry");
-            SelectTab("quote-confirm");
+            await SelectTabAsync("quote-confirm");
             await Until(() => Descendants<QuoteConfirmView>(view).Any(control => control.IsVisible), "报价确认页显示");
             var rows = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).ToList();
             var confirmation = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
@@ -102,7 +102,7 @@ namespace SalesTrading.UiTests
             {
                 await SelectPendingRowAsync(confirmation, row, row.RecognitionId == id);
             }
-            Click(Button(confirmation, "确认报价"));
+            await ClickAsync(Button(confirmation, "确认报价"));
             await AwaitCommand(model.QuotePage.Confirm.ConfirmSelectedCommand.ExecutionTask);
             JObject stored = await model.Backend.Api.GetQuoteAsync(id);
             Require((string)stored["status"] == "ACTIVE", "界面确认未生效：" + id);
@@ -115,7 +115,7 @@ namespace SalesTrading.UiTests
         {
             await NavigateAsync("market");
             object rateTab = model.MarketCenterPage.SubTabs.Single(tab => tab.Key == "rateAll");
-            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)), rateTab);
+            await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)), rateTab);
             view.UpdateLayout();
             await Until(() => model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == id && row.Price == price),
                 "行情推送显示已确认价格 " + price);

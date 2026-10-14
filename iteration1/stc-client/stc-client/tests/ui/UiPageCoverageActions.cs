@@ -38,7 +38,7 @@ namespace SalesTrading.UiTests
                 target = tabKey == "today" ? (object)model.QuoteMgmtPage.Today : model.QuoteMgmtPage.History;
                 tab = model.QuoteMgmtPage.SubTabs.Single(item => ReferenceEquals(item.Target, target));
             }
-            SelectItem(Descendants<ListBox>(view).Single(list => list.IsVisible && list.Items.Contains(tab)), tab);
+            await SelectItemAsync(Descendants<ListBox>(view).Single(list => list.IsVisible && list.Items.Contains(tab)), tab);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
             view.UpdateLayout();
             UserControl pageView = null;
@@ -67,17 +67,17 @@ namespace SalesTrading.UiTests
         private async Task CheckFuzzyPreviewAsync()
         {
             await NavigateAsync("entry");
-            SelectTab("quote-fuzzy");
+            await SelectTabAsync("quote-fuzzy");
             await Until(() => Descendants<FuzzyQuoteView>(view).Any(control => control.IsVisible), "模糊报价页面");
             var fuzzyView = Descendants<FuzzyQuoteView>(view).Single(control => control.IsVisible);
             var fuzzy = model.QuotePage.Fuzzy;
             TextBox input = BoundTextBox(fuzzyView, "InputText");
             CheckBox keep = Descendants<CheckBox>(fuzzyView).Single(control =>
                 BindingOperations.GetBinding(control, CheckBox.IsCheckedProperty)?.Path?.Path == "KeepTextAfterParse");
-            if (keep.IsChecked != true) Click(keep);
+            if (keep.IsChecked != true) await ClickAsync(keep);
             const string original = "收 城投 AAA 3到5Y\n出 银行二级 5Y";
-            SetText(input, original);
-            Click(Button(fuzzyView, "识别报价"));
+            await SetTextAsync(input, original);
+            await ClickAsync(Button(fuzzyView, "识别报价"));
             Require(fuzzy.Rows.Count == 2 && fuzzy.Rows[0].Content == original.Split('\n')[0], "模糊原文拆行错误");
             Require(input.Text == original && fuzzy.SelectedCount == 0, "保留原文或默认未勾选错误");
             var first = fuzzy.Rows[0];
@@ -86,7 +86,7 @@ namespace SalesTrading.UiTests
             grid.ScrollIntoView(first);
             grid.UpdateLayout();
             CheckBox rowCheck = Descendants<CheckBox>(grid).Single(control => ReferenceEquals(control.DataContext, first));
-            Click(rowCheck);
+            await ClickAsync(rowCheck);
             try
             {
                 await Until(() => first.IsSelected && fuzzy.SelectedCount == 1, "模糊报价勾选后已选计数更新");
@@ -102,20 +102,20 @@ namespace SalesTrading.UiTests
                     ["bindingStatus"] = Convert.ToString(rowCheck.GetBindingExpression(CheckBox.IsCheckedProperty)?.Status)
                 }.ToString());
             }
-            SetText(BoundTextBox(fuzzyView, "BatchInstitution"), "UI-预览机构");
+            await SetTextAsync(BoundTextBox(fuzzyView, "BatchInstitution"), "UI-预览机构");
             // 工具栏约定失焦提交；通过焦点移动触发正式绑定，不直接写ViewModel。
             input.Focus();
             await Until(() => first.Institution == "UI-预览机构", "批量机构失焦后应用");
             Require(first.Institution == "UI-预览机构" && second.Institution == "", "批量机构应只修改勾选行");
-            Click(Button(fuzzyView, "删除"));
+            await ClickAsync(Button(fuzzyView, "删除"));
             Require(fuzzy.Rows.Count == 1 && ReferenceEquals(fuzzy.Rows[0], second) && fuzzy.SelectedCount == 0,
                 "删除范围或选择计数错误");
             Require(fuzzy.ActiveRow == null || fuzzy.Rows.Contains(fuzzy.ActiveRow), "活动候选仍引用已删除的模糊报价");
-            Click(Button(fuzzyView, "清空"));
+            await ClickAsync(Button(fuzzyView, "清空"));
             Require(input.Text == "" && fuzzy.Rows.Count == 1, "清空原文不应删除已有预览");
-            Click(keep);
-            SetText(input, "收 AAA 城投");
-            Click(Button(fuzzyView, "识别报价"));
+            await ClickAsync(keep);
+            await SetTextAsync(input, "收 AAA 城投");
+            await ClickAsync(Button(fuzzyView, "识别报价"));
             Require(input.Text == "" && fuzzy.Rows.Count == 1 && !ReferenceEquals(fuzzy.Rows[0], second),
                 "新识别应替换旧预览并按设置清空原文");
             // 本例只检查客户端预览，不调用尚未完整落地的模糊报价提交接口。
@@ -124,22 +124,22 @@ namespace SalesTrading.UiTests
         private async Task CheckPreciseInputAsync()
         {
             await NavigateAsync("entry");
-            SelectTab("quote-precise");
+            await SelectTabAsync("quote-precise");
             await Until(() => Descendants<PreciseQuoteView>(view).Any(control => control.IsVisible), "精确报价页面");
             var preciseView = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
             var input = (TextBox)preciseView.FindName("InputBox");
-            Click(Button(preciseView, "示例"));
+            await ClickAsync(Button(preciseView, "示例"));
             highlight?.Show(input);
             Require(!string.IsNullOrWhiteSpace(input.Text), "示例按钮未填入原文");
-            Click(Button(preciseView, "清空"));
+            await ClickAsync(Button(preciseView, "清空"));
             highlight?.Show(input);
             Require(input.Text == "", "清空原文失败");
             var keep = Descendants<CheckBox>(preciseView).Single(control =>
                 BindingOperations.GetBinding(control, CheckBox.IsCheckedProperty)?.Path?.Path == "KeepTextAfterParse");
-            if (keep.IsChecked != true) Click(keep);
+            if (keep.IsChecked != true) await ClickAsync(keep);
             string text = Environment.GetEnvironmentVariable("STC_UI_SECURITY") + " 2.5 1 bid +1";
-            SetText(input, text);
-            Click(Button(preciseView, "识别报价"));
+            await SetTextAsync(input, text);
+            await ClickAsync(Button(preciseView, "识别报价"));
             await AwaitCommand(model.QuotePage.Precise.IdentifyCommand.ExecutionTask);
             highlight?.Show(Descendants<DataGrid>(preciseView).FirstOrDefault(grid => grid.IsVisible));
             Require(model.QuotePage.Precise.Rows.Count == 1 && input.Text == text, "识别失败或保留原文失效");
@@ -147,9 +147,9 @@ namespace SalesTrading.UiTests
             HighlightRow(originalRow);
             await NavigateAsync("market");
             await NavigateAsync("entry");
-            SelectTab("quote-precise");
+            await SelectTabAsync("quote-precise");
             Require(model.QuotePage.Precise.Rows.Contains(originalRow) && input.Text == text, "切页丢失未确认预览或原文");
-            Click(Button(preciseView, "清空"));
+            await ClickAsync(Button(preciseView, "清空"));
             highlight?.Show(input);
             Require(input.Text == "" && model.QuotePage.Precise.Rows.Contains(originalRow), "清空应只影响输入框");
             Require(originalRow.Row.Revision == 0, "输入检查不得持久化未确认预览");

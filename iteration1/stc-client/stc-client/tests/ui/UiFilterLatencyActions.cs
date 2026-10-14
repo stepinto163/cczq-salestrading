@@ -176,7 +176,7 @@ namespace SalesTrading.UiTests
                         SetLatencyRange(panel, "bidQuantity", "400", "");
                         if (!automatic) {
                             timer.Start();
-                            Click(Button(panel, "筛选"));
+                            ClickImmediately(Button(panel, "筛选"));
                         }
                         if (await Task.WhenAny(completion.Task, Task.Delay(5000)) != completion.Task)
                             throw new TimeoutException("组合筛选结果未在 5 秒内就绪；不计为成功样本");
@@ -257,8 +257,8 @@ namespace SalesTrading.UiTests
         {
             FilterRangeRow control = Descendants<FilterRangeRow>(panel).Single(item => SidebarFilter.GetField(item) == field);
             TextBox[] inputs = Descendants<TextBox>(control).ToArray();
-            SetText(inputs[0], min);
-            if (control.ShowMax) SetText(inputs[1], max);
+            SetTextImmediately(inputs[0], min);
+            if (control.ShowMax) SetTextImmediately(inputs[1], max);
         }
 
         private static async Task WaitForLatencyRenderAsync(DataGrid grid)

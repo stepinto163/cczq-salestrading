@@ -134,7 +134,7 @@ namespace SalesTrading.UiTests
             settings.SetFlowBreak(settings.Controls[settings.Controls.Count - 1], true);
             settings.Controls.Add(new Label { Text = "操作间隔（秒）", AutoSize = true });
             settings.Controls.Add(operationInterval);
-            settings.Controls.Add(new Label { Text = "0 = 不额外等待；运行中修改立即影响当前等待；按用例动作间隔。", AutoSize = true });
+            settings.Controls.Add(new Label { Text = "每次点击、输入、选择前等待；0 = 不等待；运行中修改立即生效。", AutoSize = true });
             operationInterval.ValueChanged += (sender, args) =>
             {
                 try

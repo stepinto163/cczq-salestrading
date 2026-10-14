@@ -21,7 +21,7 @@ namespace SalesTrading.UiTests
     {
         private async Task CheckPendingToolbarAsync()
         {
-            CloseEditor();
+            await CloseEditorAsync();
             await NavigateAsync("entry");
             var confirm = model.QuotePage.Confirm;
             Require(ownedQuotes.Count == 2, "工具栏用例必须创建且仅创建两条报价");
@@ -43,88 +43,88 @@ namespace SalesTrading.UiTests
             {
                 await SelectPendingRowAsync(page, row, false);
             }
-            Click(Button(toolbar, "Ofr"));
+            await ClickAsync(Button(toolbar, "Ofr"));
             check(selected.Direction == "Bid", "未勾选时方向按钮不修改报价");
             await SelectPendingRowAsync(page, selected, true);
             check(confirm.SelectedCount == 1, "实际行复选框同步已选数量");
-            Click(Button(toolbar, "Ofr"));
+            await ClickAsync(Button(toolbar, "Ofr"));
             check(selected.Direction == "Ofr" && untouched.Direction == "Bid", "Ofr仅应用勾选行");
-            Click(Button(toolbar, "Bid"));
+            await ClickAsync(Button(toolbar, "Bid"));
             check(selected.Direction == "Bid", "Bid按钮有效");
 
             TextBox bp = ToolbarInput(toolbar, "BpInput");
-            Click(Button(toolbar, "+"));
+            await ClickAsync(Button(toolbar, "+"));
             check(Number(selected.Price) == 2.51m, "空BP输入按加号增加1BP");
-            Click(Button(toolbar, "+"));
+            await ClickAsync(Button(toolbar, "+"));
             check(Number(selected.Price) == 2.52m && bp.Text == "2", "重复加号仍只增加1BP并显示累计调整");
-            Click(Button(toolbar, "−"));
+            await ClickAsync(Button(toolbar, "−"));
             check(Number(selected.Price) == 2.51m, "减号减少1BP");
-            EnterAdjustment(bp, "5");
+            await EnterAdjustmentAsync(bp, "5");
             check(Number(selected.Price) == 2.56m, "Enter应用输入的5BP增量");
-            EnterAdjustment(bp, "-5");
+            await EnterAdjustmentAsync(bp, "-5");
             check(Number(selected.Price) == 2.51m, "Enter支持负BP调整");
-            EnterAdjustment(bp, "invalid");
+            await EnterAdjustmentAsync(bp, "invalid");
             check(Number(selected.Price) == 2.51m, "无效BP不修改报价");
 
             var priceType = ToolbarChoice(toolbar, "ToolbarPriceType");
             foreach (string value in new[] { "到期收益率", "行权收益率", "净价", "全价" })
             {
-                SelectItem(priceType, value);
+                await SelectItemAsync(priceType, value);
                 check(selected.PriceType == value, "价格类型可选：" + value);
             }
-            SetPendingPrice(page, selected, "100");
-            Click(Button(toolbar, "+"));
+            await SetPendingPriceAsync(page, selected, "100");
+            await ClickAsync(Button(toolbar, "+"));
             check(Number(selected.Price) == 101m, "全价使用价格单位调整，符合产品原型");
-            SelectItem(priceType, "到期收益率");
-            SetPendingPrice(page, selected, "2.5");
+            await SelectItemAsync(priceType, "到期收益率");
+            await SetPendingPriceAsync(page, selected, "2.5");
             var settlement = ToolbarChoice(toolbar, "ToolbarSettlement");
             foreach (string value in new[] { "T+1", "T+0", "T+2", "T+3", "远期" })
             {
-                SelectItem(settlement, value);
+                await SelectItemAsync(settlement, value);
                 check(selected.Settlement == value, "清算类型可选：" + value);
             }
             // 换勾选目标后，刚才使用过的选项也必须能再次应用。
             await SelectPendingRowAsync(page, selected, false);
             await SelectPendingRowAsync(page, untouched, true);
-            SelectItem(settlement, "远期");
+            await SelectItemAsync(settlement, "远期");
             check(untouched.Settlement == "远期", "更换勾选行后可重复选择相同清算类型");
-            SelectItem(settlement, "T+1");
+            await SelectItemAsync(settlement, "T+1");
             await SelectPendingRowAsync(page, untouched, false);
             await SelectPendingRowAsync(page, selected, true);
-            SelectItem(settlement, "T+1");
+            await SelectItemAsync(settlement, "T+1");
             check(selected.Settlement == "T+1", "远期可通过默认T+1选项改回");
 
             TextBox amount = ToolbarInput(toolbar, "AmountInput");
-            Click(Button(toolbar, "+1k"));
+            await ClickAsync(Button(toolbar, "+1k"));
             check(Number(selected.Volume) == 2000m, "空报量输入的+1k增加1000万");
-            Click(Button(toolbar, "-1k"));
+            await ClickAsync(Button(toolbar, "-1k"));
             check(Number(selected.Volume) == 1000m, "-1k减少1000万");
-            EnterAdjustment(amount, "250");
+            await EnterAdjustmentAsync(amount, "250");
             check(Number(selected.Volume) == 1250m, "报量框Enter应用250万增量");
-            EnterAdjustment(amount, "-2000");
+            await EnterAdjustmentAsync(amount, "-2000");
             check(Number(selected.Volume) == 0m, "报量扣减不会变为负数");
-            Click(Button(toolbar, "+1k"));
+            await ClickAsync(Button(toolbar, "+1k"));
             check(Number(selected.Volume) == 1000m, "扣减后+1k恢复1000万");
 
             foreach (string caption in new[] { "急", "荐", "整", "OCO", "打包" })
             {
                 var toggle = Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == caption);
-                Click(toggle);
+                await ClickAsync(toggle);
                 check(toggle.IsChecked == true, "旗标可开启：" + caption);
             }
             check(selected.IsPacking && !selected.IsOco, "打包开启后清除OCO");
-            Click(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "OCO"));
+            await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "OCO"));
             check(selected.IsOco && !selected.IsPacking, "OCO开启后清除打包");
-            Click(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "OCO"));
+            await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "OCO"));
             check(!selected.IsOco, "OCO再次点击可关闭");
             await SelectPendingRowAsync(page, untouched, true);
-            Click(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
+            await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
             check(selected.IsUrgent && untouched.IsUrgent, "混合旗标统一开启，不逐行反转");
-            Click(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
+            await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
             check(!selected.IsUrgent && !untouched.IsUrgent, "全开旗标统一关闭");
             await SelectPendingRowAsync(page, untouched, false);
-            Click(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
-            Click(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "打包"));
+            await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
+            await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "打包"));
 
             var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
             var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
@@ -140,7 +140,7 @@ namespace SalesTrading.UiTests
             {
                 check(string.IsNullOrEmpty(selected.Row.ContactId) && string.IsNullOrEmpty(selected.Trader), "更换机构清除不相容交易员");
             }
-            SetText(institution, "");
+            await SetTextAsync(institution, "");
             await SelectToolbarCrmAsync(contact, choice.ContactName);
             check(Number(untouched.Price) == 2.5m && Number(untouched.Volume) == 1000m
                 && !untouched.IsRec && !untouched.IsWhole && !untouched.IsOco && !untouched.IsPacking,
@@ -148,7 +148,7 @@ namespace SalesTrading.UiTests
 
             string expectedContact = selected.Row.ContactId;
             string expectedInstitution = selected.Row.InstitutionId;
-            Click(Button(toolbar, "确认报价"));
+            await ClickAsync(Button(toolbar, "确认报价"));
             await AwaitCommand(confirm.ConfirmSelectedCommand.ExecutionTask);
             var saved = await model.Backend.Api.GetQuoteAsync(selected.RecognitionId);
             check((string)saved["status"] == "ACTIVE" && (string)saved["side"] == "1"
@@ -162,7 +162,7 @@ namespace SalesTrading.UiTests
             await Until(() => !confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.RecognitionId == selected.RecognitionId), "已确认行退出待确认列表");
             untouched = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == untouched.RecognitionId);
             await SelectPendingRowAsync(page, untouched, true);
-            Click(Button(toolbar, "删除"));
+            await ClickAsync(Button(toolbar, "删除"));
             await AwaitCommand(confirm.DeleteSelectedCommand.ExecutionTask);
             var deleted = await model.Backend.Api.GetQuoteAsync(untouched.RecognitionId);
             check((string)deleted["status"] == "DELETED", "删除按钮仅删除勾选的测试报价");
@@ -173,11 +173,11 @@ namespace SalesTrading.UiTests
             check(true, "产品编辑表单保留CRM身份与报价旗标，变更历史可查看");
         }
 
-        private static void SetPendingPrice(QuoteConfirmView page, QuoteConfirmRowViewModel row, string value)
+        private async Task SetPendingPriceAsync(QuoteConfirmView page, QuoteConfirmRowViewModel row, string value)
         {
             var input = Descendants<TextBox>(page).Single(control => ReferenceEquals(control.DataContext, row)
                 && BindingOperations.GetBinding(control, TextBox.TextProperty)?.Path?.Path == "Price");
-            SetText(input, value);
+            await SetTextAsync(input, value);
             input.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
         }
 
@@ -193,10 +193,11 @@ namespace SalesTrading.UiTests
             return Descendants<ComboBox>(toolbar).Single(input => BindingOperations.GetBinding(input, ComboBox.SelectedItemProperty)?.Path?.Path == name);
         }
 
-        private static void EnterAdjustment(TextBox input, string value)
+        private async Task EnterAdjustmentAsync(TextBox input, string value)
         {
             input.Focus();
-            SetText(input, value);
+            await SetTextAsync(input, value);
+            await BeforeUiActionAsync(input, "键盘/鼠标输入");
             input.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(input), Environment.TickCount, Key.Enter)
                 { RoutedEvent = Keyboard.PreviewKeyDownEvent });
         }
@@ -218,7 +219,7 @@ namespace SalesTrading.UiTests
             await Until(() => Descendants<CheckBox>(details).Any(control => ReferenceEquals(control.DataContext, row)), "呈现报价行复选框");
             var checkbox = Descendants<CheckBox>(details).First(control => ReferenceEquals(control.DataContext, row));
             checkbox.BringIntoView();
-            if (checkbox.IsChecked != selected) Click(checkbox);
+            if (checkbox.IsChecked != selected) await ClickAsync(checkbox);
         }
 
         private async Task<CrmChoice> SelectToolbarCrmAsync(CrmLookup input, string text)
@@ -228,9 +229,10 @@ namespace SalesTrading.UiTests
             input.Focus();
             Keyboard.Focus(input);
             await Task.Delay(100);
-            SetText(input, text);
+            await SetTextAsync(input, text);
             input.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
             // 已选文字未变化时，按下箭头重新打开候选（与控件的用户操作一致）。
+            await BeforeUiActionAsync(input, "键盘/鼠标输入");
             input.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(input), Environment.TickCount, Key.Down)
                 { RoutedEvent = Keyboard.PreviewKeyDownEvent });
             var suggestions = (ListBox)typeof(CrmLookup).GetField("suggestions", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(input);
@@ -247,7 +249,8 @@ namespace SalesTrading.UiTests
             }
             var selected = (CrmChoice)suggestions.Items[0];
             Require(!string.IsNullOrWhiteSpace(selected.InstitutionName) && selected.DisplayName.Contains(selected.InstitutionName), "CRM候选缺少机构信息");
-            suggestions.SelectedIndex = 0;
+            await SelectItemAsync(suggestions, selected);
+            await BeforeUiActionAsync(input, "键盘/鼠标输入");
             input.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(input), Environment.TickCount, Key.Enter)
                 { RoutedEvent = Keyboard.PreviewKeyDownEvent });
             return selected;

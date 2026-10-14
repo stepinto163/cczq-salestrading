@@ -118,13 +118,6 @@ namespace SalesTrading.UiTests
                 foreach (TestStep step in definition.Steps)
                 {
                     ThrowIfCancelled();
-                    // 间隔内保留刚完成步骤的字幕与红框，不提前切换到尚未执行的步骤。
-                    if (stepNumber > 0)
-                    {
-                        await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
-                            Emit(step.Name, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE",
-                                waiting ? "操作间隔等待中；可在管理窗口实时调整" : "操作间隔等待 " + milliseconds + " ms", milliseconds));
-                    }
                     stepNumber++;
                     highlight.SetSuspended(step.Action == "filter.latency");
                     if (step.Action == "filter.latency")
@@ -136,7 +129,7 @@ namespace SalesTrading.UiTests
                         await ShowCaptionAsync("正在执行", step.Name);
                     }
                     if (editDialog != null && step.Action != "management.edit" && step.Action != "management.save"
-                        && step.Action != "management.reject" && step.Action != "quote.assert") CloseEditor();
+                        && step.Action != "management.reject" && step.Action != "quote.assert") await CloseEditorAsync();
                     Emit(step.Name, "RUNNING", step.Action);
                     Stopwatch duration = Stopwatch.StartNew();
                     await ExecuteAsync(step);
@@ -144,7 +137,7 @@ namespace SalesTrading.UiTests
                     Capture(stepNumber.ToString("D2") + "-passed");
                     duration.Stop();
                     Emit(step.Name, "PASSED", duration.ElapsedMilliseconds + " ms");
-                    await ShowCaptionAsync(stepNumber < definition.Steps.Count ? "已完成（间隔等待）" : "已完成", step.Name);
+                    await ShowCaptionAsync("已完成", step.Name);
                 }
             }
             catch (OperationCanceledException)
@@ -212,10 +205,11 @@ namespace SalesTrading.UiTests
             Require(!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(password), "请填写测试账号和密码");
             STC.Frame.UI.LoginGUI login = null;
             await Until(() => (login = Application.Current.Windows.OfType<STC.Frame.UI.LoginGUI>().FirstOrDefault()) != null && login.IsLoaded, "登录窗口", 45);
-            SetText((TextBox)login.FindName("tbUsername"), user);
-            highlight.Show((PasswordBox)login.FindName("pbPwd"));
-            ((PasswordBox)login.FindName("pbPwd")).Password = password;
-            Click((Button)login.FindName("btnLogin"));
+            await SetTextAsync((TextBox)login.FindName("tbUsername"), user);
+            var passwordBox = (PasswordBox)login.FindName("pbPwd");
+            await BeforeUiActionAsync(passwordBox, "输入密码");
+            passwordBox.Password = password;
+            await ClickAsync((Button)login.FindName("btnLogin"));
             STC.Frame.Window1 frame = null;
             await Until(() => (frame = Application.Current.Windows.OfType<STC.Frame.Window1>().FirstOrDefault()) != null
                 && frame.IsVisible && frame.PluginManager != null, "STC 主窗口", 60);
@@ -223,12 +217,13 @@ namespace SalesTrading.UiTests
             if (!frame.Panel.Items.OfType<TabItem>().Any(item => item.Content is MainView))
             {
                 FrameworkElement logo = (FrameworkElement)frame.FindName("btnLogo");
-                Click((Button)logo.FindName("btnMenu"));
+                await ClickAsync((Button)logo.FindName("btnMenu"));
                 DataGrid menu = (DataGrid)logo.FindName("dgMenu");
                 await Until(() => menu.Items.Cast<object>().Any(item => Convert.ToString(item.GetType().GetProperty("PluginKey")?.GetValue(item)) == "230"), "销售交易菜单");
                 object salesTrading = menu.Items.Cast<object>().Single(item => Convert.ToString(item.GetType().GetProperty("PluginKey")?.GetValue(item)) == "230");
-                SelectItem(menu, salesTrading);
+                await SelectItemAsync(menu, salesTrading);
                 menu.CurrentItem = salesTrading;
+                await BeforeUiActionAsync(menu, "打开销售交易");
                 menu.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
                 {
                     RoutedEvent = System.Windows.Input.Mouse.MouseUpEvent
@@ -244,7 +239,7 @@ namespace SalesTrading.UiTests
             shell.WindowState = WindowState.Normal;
             shell.Width = 1440;
             shell.Height = 950;
-            SelectItem(frame.Panel, frame.Panel.Items.OfType<TabItem>().Single(item => ReferenceEquals(item.Content, view)));
+            await SelectItemAsync(frame.Panel, frame.Panel.Items.OfType<TabItem>().Single(item => ReferenceEquals(item.Content, view)));
             shell.UpdateLayout();
             await Until(() => view.IsLoaded && view.IsVisible && model.NavItems.Count > 0, "销售交易界面完成渲染");
             await Until(() => !model.QuoteMgmtPage.Today.IsLoading && !model.MarketCenterPage.RateAll.IsLoading
@@ -271,7 +266,7 @@ namespace SalesTrading.UiTests
                     File.WriteAllText(Path.Combine(reportDirectory, stepNumber.ToString("D2") + "-quote.json"), quote.ToString());
                     break;
                 case "pending.assert":
-                    CloseEditor();
+                    await CloseEditorAsync();
                     await NavigateAsync("entry");
                     await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.RecognitionId == quoteId), "报价确认页接收本例报价");
                     var pendingPage = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
@@ -283,17 +278,17 @@ namespace SalesTrading.UiTests
                         .Any(row => row.RecognitionId == quoteId)), "报价确认表呈现本例报价");
                     break;
                 case "management.assert":
-                    CloseEditor();
+                    await CloseEditorAsync();
                     await NavigateAsync("mgmt");
                     await Until(() => model.QuoteMgmtPage.Today.Rows.Any(row => row.QuoteId == quoteId), "报价管理接收本例报价");
                     HighlightRow(model.QuoteMgmtPage.Today.Rows.First(row => row.QuoteId == quoteId));
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "报价管理表未显示本例报价");
                     break;
                 case "market.assert":
-                    CloseEditor();
+                    await CloseEditorAsync();
                     await NavigateAsync("market");
                     object rateTab = model.MarketCenterPage.SubTabs.Single(tab => tab.Key == "rateAll");
-                    SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)), rateTab);
+                    await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)), rateTab);
                     await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                     view.UpdateLayout();
                     await Until(() => model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == quoteId), "行情中心接收本例报价");
@@ -307,9 +302,9 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.keyboard":
                 case "parse":
-                    CloseEditor();
+                    await CloseEditorAsync();
                     await NavigateAsync("entry");
-                    SelectTab("quote-precise");
+                    await SelectTabAsync("quote-precise");
                     await Until(() => Descendants<PreciseQuoteView>(view).Any(control => control.IsVisible), "精确报价页面");
                     PreciseQuoteView precise = Descendants<PreciseQuoteView>(view).First(control => control.IsVisible);
                     TextBox inputBox = (TextBox)precise.FindName("InputBox");
@@ -318,26 +313,28 @@ namespace SalesTrading.UiTests
                         string[] lines = Parameter(step, "text").Split('\n');
                         Require(lines.Length == 2, "键盘用例要求两行输入");
                         inputBox.Focus();
-                        inputBox.Text = lines[0];
+                        await SetTextAsync(inputBox, lines[0]);
                         inputBox.CaretIndex = inputBox.Text.Length;
                         var keyboard = System.Windows.Input.Keyboard.PrimaryDevice;
                         var previewKey = new System.Windows.Input.KeyEventArgs(keyboard, PresentationSource.FromVisual(inputBox),
                             Environment.TickCount, System.Windows.Input.Key.Return)
                             { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
+                        await BeforeUiActionAsync(inputBox, "按 Enter 换行");
                         inputBox.RaiseEvent(previewKey);
                         Require(!previewKey.Handled && !model.QuotePage.Precise.IsParsing, "Enter 被识别命令拦截");
                         inputBox.RaiseEvent(new System.Windows.Input.KeyEventArgs(keyboard, PresentationSource.FromVisual(inputBox),
                             Environment.TickCount, System.Windows.Input.Key.Return)
                             { RoutedEvent = System.Windows.Input.Keyboard.KeyDownEvent });
                         Require(inputBox.Text.Contains("\n"), "Enter 没有插入换行");
+                        await BeforeUiActionAsync(inputBox, "输入第二行文本");
                         inputBox.SelectedText = lines[1];
                         Require(inputBox.Text.Replace("\r\n", "\n") == Parameter(step, "text"), "键盘输入未保留两行原文");
                     }
                     else
                     {
-                        SetText(inputBox, Parameter(step, "text"));
+                        await SetTextAsync(inputBox, Parameter(step, "text"));
                     }
-                    Click(Button(precise, "识别报价"));
+                    await ClickAsync(Button(precise, "识别报价"));
                     await AwaitCommand(model.QuotePage.Precise.IdentifyCommand.ExecutionTask);
                     File.WriteAllText(Path.Combine(reportDirectory, stepNumber.ToString("D2") + "-parse.json"), new JObject
                     {
@@ -369,14 +366,14 @@ namespace SalesTrading.UiTests
                     preview.UpdateLayout();
                     CheckBox checkbox = Descendants<CheckBox>(preview).First(control => ReferenceEquals(control.DataContext, selected));
                     bool expected = bool.Parse(Parameter(step, "selected"));
-                    if (checkbox.IsChecked != expected) Click(checkbox);
+                    if (checkbox.IsChecked != expected) await ClickAsync(checkbox);
                     Require(selected.IsSelected == expected && model.QuotePage.Precise.SelectedCount == int.Parse(Parameter(step, "expectedCount")), "勾选状态与已选数量不一致");
                     break;
                 case "parse.confirm":
                     var selectedPreview = model.QuotePage.Precise.Rows.Where(row => row.IsSelected).ToArray();
                     submittedPreview.AddRange(selectedPreview);
                     Require(selectedPreview.Length == int.Parse(Parameter(step, "expectedCount")), "确认前已选数量不匹配");
-                    Click(Button(Descendants<PreciseQuoteView>(view).First(control => control.IsVisible), "确认报价"));
+                    await ClickAsync(Button(Descendants<PreciseQuoteView>(view).First(control => control.IsVisible), "确认报价"));
                     await AwaitCommand(model.QuotePage.Precise.ConfirmSelectedCommand.ExecutionTask);
                     CollectCreatedQuotes();
                     foreach (QuoteConfirmRowViewModel submitted in selectedPreview)
@@ -398,21 +395,27 @@ namespace SalesTrading.UiTests
         private async Task NavigateAsync(string key)
         {
             // 页面操作不能隔着模态报价窗口执行，复合动作也遵守同一规则。
-            CloseEditor();
+            await CloseEditorAsync();
             // Select the actual ListBox item so navigation bindings execute normally.
             object item = model.NavItems.FirstOrDefault(candidate => candidate.Key == key)
                 ?? (key == "entry" ? model.NavItems.First() : null);
             Require(item != null, "页面不存在：" + key);
             ListBox navigation = Descendants<ListBox>(view).First(list => list.Items.Contains(item));
-            SelectItem(navigation, item);
+            await SelectItemAsync(navigation, item);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
             view.UpdateLayout();
         }
 
-        private void SelectTab(string key)
+        private async Task SelectTabAsync(string key)
         {
             object item = model.QuotePage.SubTabs.Single(tab => tab.Key == key);
-            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(item)), item);
+            await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(item)), item);
+        }
+
+        private async Task SelectMarketTabAsync(string key)
+        {
+            object item = model.MarketCenterPage.SubTabs.Single(tab => tab.Key == key);
+            await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(item)), item);
         }
 
         private void Track(string id)
@@ -461,7 +464,7 @@ namespace SalesTrading.UiTests
         private async Task CleanupQuotesAsync()
         {
             CollectCreatedQuotes();
-            CloseEditor();
+            await CloseEditorAsync();
             await CleanupLatencyQuotesAsync();
             if (ownedQuotes.Count == 0) return;
             Require(model?.Backend != null, "无法连接服务执行清理");
@@ -493,9 +496,12 @@ namespace SalesTrading.UiTests
             Require(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
 
-        private void CloseEditor()
+        private async Task CloseEditorAsync()
         {
-            editDialog?.Close();
+            if (editDialog != null && editDialog.IsVisible)
+            {
+                await CloseWindowAsync(editDialog);
+            }
             editDialog = null;
         }
 
@@ -536,9 +542,51 @@ namespace SalesTrading.UiTests
             return Descendants<Button>(root).First(button => button.IsVisible && (string)(button.Content as string) == caption);
         }
 
-        private static void Click(ButtonBase control)
+        // 每次真实输入前等待，而不是在包含多个输入的业务步骤之间等待。
+        // 等待期间显示当前目标红框，保持消息循环、取消和实时调速可用。
+        private async Task BeforeUiActionAsync(FrameworkElement target, string action)
         {
-            highlight?.Show(control);
+            if (cleaning || (stepNumber > 0 && definition.Steps[stepNumber - 1].Action == "filter.latency"))
+            {
+                return;
+            }
+            ThrowIfCancelled();
+            string step = stepNumber == 0 ? "登录" : definition.Steps[stepNumber - 1].Name;
+            string label = (target as ContentControl)?.Content as string;
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = string.IsNullOrWhiteSpace(target.Name) ? target.GetType().Name : target.Name;
+            }
+            string detail = action + "：" + label;
+            target.BringIntoView();
+            highlight?.Show(target);
+            await ShowCaptionAsync("正在执行", step + " · " + detail);
+            await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
+                Emit(step, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds));
+            ThrowIfCancelled();
+            Emit(step, "UI_ACTION", detail);
+        }
+
+        private async Task OpenModalAsync(Button control)
+        {
+            await BeforeUiActionAsync(control, "打开窗口");
+            _ = Application.Current.Dispatcher.BeginInvoke(new Action(() => ClickImmediately(control)));
+        }
+
+        private async Task CloseWindowAsync(Window window)
+        {
+            await BeforeUiActionAsync(window, "关闭窗口");
+            window.Close();
+        }
+
+        private async Task ClickAsync(ButtonBase control)
+        {
+            await BeforeUiActionAsync(control, "点击");
+            ClickImmediately(control);
+        }
+
+        private static void ClickImmediately(ButtonBase control)
+        {
             Require(control.IsEnabled && control.IsVisible, "按钮不可用：" + control.Content);
             control.Focus();
             highlight?.Show(control);
@@ -558,9 +606,9 @@ namespace SalesTrading.UiTests
             highlight?.Show(grid.ItemContainerGenerator.ContainerFromItem(row) as FrameworkElement ?? grid);
         }
 
-        private static void SelectItem(Selector control, object item)
+        private async Task SelectItemAsync(Selector control, object item)
         {
-            highlight?.Show(control);
+            await BeforeUiActionAsync(control, "选择");
             control.SelectedItem = item;
             control.UpdateLayout();
             // 折叠下拉框标记整个输入控件；页签和表格标记实际已呈现的条目。

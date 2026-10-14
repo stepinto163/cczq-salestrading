@@ -40,9 +40,9 @@ namespace SalesTrading.UiTests
                     Require(caption.OperationText == "正在执行：输入报价文本并点击识别报价", "Current action caption incorrect");
                     StackPanel lines = (StackPanel)((Border)caption.Content).Child;
                     Require(lines.Children.Count == 2, "Caption must show only heading and current operation");
-                    caption.Present(window, "精确报价识别与确认", 2, 8, "已完成（间隔等待）", "输入报价文本并点击识别报价");
+                    caption.Present(window, "精确报价识别与确认", 2, 8, "已完成", "输入报价文本并点击识别报价");
                     await Task.Delay(100);
-                    Require(caption.OperationText == "已完成（间隔等待）：输入报价文本并点击识别报价", "Interval must retain the completed action");
+                    Require(caption.OperationText == "已完成：输入报价文本并点击识别报价", "Completion must retain the completed step");
                     Require(((TextBlock)lines.Children[0]).Text.EndsWith("2 / 8"), "Interval changed step number too early");
                     caption.Present(window, "精确报价识别与确认", 3, 8, "正在执行", "核对债券、机构与交易员");
                     caption.UpdateLayout();
@@ -61,7 +61,7 @@ namespace SalesTrading.UiTests
                     Require(!caption.IsVisible, "Performance-action suspension failed");
                     caption.Present(window, "精确报价识别与确认", 8, 8, "收尾", "清理本例测试数据");
                     Require(caption.IsVisible && caption.OperationText == "收尾：清理本例测试数据", "Caption did not resume for cleanup");
-                    Console.WriteLine("PASS: current-only captions, completed-step interval, step numbering, input focus, click-through styles, host tracking, suspend/resume; screenshot demo-caption.png");
+                    Console.WriteLine("PASS: current-only captions, completed-step caption, step numbering, input focus, click-through styles, host tracking, suspend/resume; screenshot demo-caption.png");
                     caption.Close();
                     window.Close();
                     application.Shutdown(0);

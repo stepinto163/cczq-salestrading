@@ -298,9 +298,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 管理窗口顶部新增「操作间隔（秒）」，范围 0–60，精度 0.1 秒，默认 2 秒（可改为 0 取消额外等待）。运行中仍可调整；调小或调大都会影响当前等待，约 100ms 内读取新值，已经等待的时间不会清零。点击「停止并清理」会中断等待并进入原有清理流程。
 
-间隔应用于每个用例中相邻的 JSON `steps` 动作之间；首步、登录和清理不额外等待。`groups.manage`、`pending.toolbar` 等复合动作内部的多个点击仍作为一个动作执行，不逐次插入间隔。网络超时、页面就绪轮询不随此设置改变；性能计时在动作开始后启动，不包含动作前的人工间隔。
+间隔应用于每次真实界面操作之前：点击、文本输入（整次输入，不逐字）、下拉/页签/行选择、按键及打开/关闭编辑窗口。首个操作和登录操作同样等待，`groups.manage`、`pending.toolbar` 内的多次操作分别等待；JSON步骤之间不再额外等待。等待前显示目标红框和当前动作字幕，等待结束后才修改控件。后台夹具/结果核对、须知自动关闭、失败清理不加人工延迟；网络超时和页面就绪轮询保持不变。显式 `filter.latency` 测量期间跳过演示等待，避免污染延迟样本。
 
-执行日志会记录 `INTERVAL_WAIT` / `INTERVAL_DONE` 和实际 `waitMillis`；每例报告目录的 `operation-interval-ms.txt` 是窗口与工作进程之间的实时控制文件。看门狗只扣除这段有界的人工间隔，业务执行超时和停止后 30 秒清理宽限期保持不变。关闭并重新打开管理窗口时恢复默认 2 秒。
+执行日志依次记录 `INTERVAL_WAIT` / `INTERVAL_DONE`（含实际 `waitMillis`）以及即将执行的 `UI_ACTION`；每例报告目录的 `operation-interval-ms.txt` 是窗口与工作进程之间的实时控制文件。看门狗只扣除这段有界的人工间隔，业务执行超时和停止后 30 秒清理宽限期保持不变。关闭并重新打开管理窗口时恢复默认 2 秒。
 
 命令行可指定初始间隔，例如：
 
@@ -308,10 +308,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/run-ui-tests.ps1 -Cases 22-account-groups -OperationIntervalMilliseconds 1000
 ```
 
-单动作复合用例没有相邻步骤，因此不会增加等待；观察逐步流程时应选择多步骤用例。无业务写入的间隔控制回归检查：
+单步骤复合用例内部也会逐操作等待。无业务写入的间隔控制和真实 WPF 操作时序回归检查：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-ui-operation-interval.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-ui-action-interval.ps1
 ```
 
 ## 自动处理用户使用须知
@@ -322,6 +323,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 可运行 `scripts/test-ui-user-notice.ps1` 检查真实 WPF 须知弹窗：连续两次模态弹窗均确认关闭、同标题的普通窗口保留；独立进程有 15 秒看门狗。此检查不登录或提交业务报价，不等于整套业务 E2E 回归。
 
+### 2026-10-14 逐操作等待验证
+
+真实本机服务串行执行16（Enter多行）、21（待确认工具栏及修改表单）、22（关注/筛选分组），三例通过且清理成功。报告：`runtime/ui-test-action-interval/ui-test-reports/before-each-action`。按日志核对13、96、57次操作，共166次，每次 `UI_ACTION` 前都有独立的 `INTERVAL_DONE`，最短等待2000ms；没有仅在JSON步骤间等待。
+
+`test-ui-action-interval.ps1` 调用真实工作进程的点击、文本和选择方法，验证等待期间控件尚未变化、等待后才生效、WPF消息循环持续响应、实时改为0解除等待、取消阻止输入。操作间隔跨进程检查、字幕检查和管理器多选检查均通过。未执行性能压测或全38例重跑。
+
 ## 演示字幕
 
 ### 当前操作与核对目标红框
@@ -330,7 +337,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 红框使用 WPF 装饰层，不抢焦点、不遮挡鼠标、不改变布局，随控件缩放和布局移动，并按滚动视口裁剪。切换目标、控件隐藏或卸载、用例清理时移除旧框。正式客户端不启用此功能；未提供装饰层的原生窗口/弹出内容不绘制红框。正常步骤截图包含红框；`filter.latency` 动作暂停红框，避免干扰测量。
 
-红框保留到下一次目标变化，步骤间沿用管理器可实时调整的操作间隔（默认 2 秒）。复合动作内部没有新增固定等待，因此连续同步点击仍可能较快。输入框/按钮红框表示当前操作目标，核对行/表格红框表示验证目标；通过与否仍以字幕及测试报告为准。
+红框在每次操作前定位到当前目标，等待管理器指定的间隔（默认 2 秒）后才执行。复合动作内的点击、输入和选择也逐次等待。输入框/按钮红框表示当前操作目标，核对行/表格红框表示验证目标；通过与否仍以字幕及测试报告为准。
 
 `scripts/test-ui-control-highlight.ps1` 在独立进程验证焦点、点击命中、缩放/尺寸变化后的红框实际像素位置、隐藏/卸载清理及暂停恢复，带 15 秒看门狗，生成 `runtime/control-highlight-check/control-highlight.png`。2026-10-14 本机实际 STC 已通过 15（逐行字段及清算核对）、17（批量工具栏）、28（输入流程）、31（页面就绪）四例；核对截图确认红框落在目标报价行。不据此声称全部业务回归通过。
 
@@ -338,13 +345,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 `fixture.pending` 只用于准备待确认推送/工具栏测试数据，字幕和报告标记「API准备待确认夹具（非UI录入）」，不声称完成 FIX 接入或UI创建。编辑表单之外的后续操作先关闭编辑表单；正常等待、截图、业务核对与清理机制保留。管理器新增 `management.edit/save/reject/operate` 动作，可按正常工作流组合用例。旧 `test-local-integration.ps1 -Merged/-SalesTrading` 和 `test-parser-live.ps1` 已改为调用管理套件，要求 STC 模式配置；结果改用套件 JSON/JUnit 报告，独立旧检查源码不再保留。旧解析检查的双边价格、分号、方向标题和中文报量迁入 `23-complex-parser`。
 
-自动化工作进程在窗口下方显示中文字幕：用例名称、步骤序号和当前动作，不预告下一步。执行前渲染「正在执行：当前步骤」；通过后显示「已完成（间隔等待）：当前步骤」，在间隔内保留该步骤序号和红框，直到下一动作真正开始才更新。末步显示「已完成」，登录和清理也只描述当下操作。字幕不接收鼠标、不抢键盘焦点，随普通测试窗口移动；仅自动化工作进程启用，正式客户端不变。
+自动化工作进程在窗口下方显示中文字幕：用例名称、步骤序号和当前动作，不预告下一步。执行前渲染「正在执行：当前步骤 · 当前操作」，在操作前等待期间标明正在处理的控件；步骤通过后显示「已完成：当前步骤」。登录和清理也只描述当下操作。字幕不接收鼠标、不抢键盘焦点，随普通测试窗口移动；仅自动化工作进程启用，正式客户端不变。
 
-字幕取自用例 JSON `steps[].name`，可在管理器的用例编辑功能中修改。每个配置步骤对应一条字幕；`pending.toolbar`、`groups.manage` 等复合动作内部的点击目前共用该步骤字幕。演示时建议把「操作间隔（秒）」设为 1–2 秒，运行中可调整；默认为 2 秒。
+字幕取自用例 JSON `steps[].name`，可在管理器的用例编辑功能中修改。步骤名称作为上下文；`pending.toolbar`、`groups.manage` 等复合动作内部每次操作都会补充当前点击、输入或选择目标。演示时建议把「操作间隔（秒）」设为 1–2 秒，运行中可调整；默认为 2 秒。
 
 字幕在动作计时开始前完成渲染。`filter.latency` 测量动作期间隐藏字幕并停止位置跟踪定时器，避免增加测量期间的渲染工作；普通用例截图只捕获 STC 窗口，不包含独立字幕窗口。
 
-可运行 `scripts/test-ui-demo-caption.ps1`：使用独立 WPF 窗口验证当前步骤字幕、完成后的间隔状态及序号、焦点保留、鼠标穿透窗口样式、跟随移动及隐藏恢复，并生成 `runtime/demo-caption-check/demo-caption.png`。检查带 15 秒看门狗，不登录业务服务，不代表完整业务 E2E 已通过。更新工作进程后，随后启动的用例使用新字幕，已运行的用例保持旧版本。
+可运行 `scripts/test-ui-demo-caption.ps1`：使用独立 WPF 窗口验证当前步骤字幕、完成状态及序号、焦点保留、鼠标穿透窗口样式、跟随移动及隐藏恢复，并生成 `runtime/demo-caption-check/demo-caption.png`。检查带 15 秒看门狗，不登录业务服务，不代表完整业务 E2E 已通过。更新工作进程后，随后启动的用例使用新字幕，已运行的用例保持旧版本。
 
 ## 2026-10-13 产品工作流迁移验证
 

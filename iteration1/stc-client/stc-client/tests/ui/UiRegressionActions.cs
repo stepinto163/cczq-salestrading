@@ -93,7 +93,7 @@ namespace SalesTrading.UiTests
                     var market = model.MarketCenterPage;
                     var target = market.RateAll.Rows.Single(row => row.QuoteId == quoteId);
                     var marketGrid = Descendants<DataGrid>(view).First(grid => grid.IsVisible && grid.Items.Contains(target));
-                    SelectItem(marketGrid, target);
+                    await SelectItemAsync(marketGrid, target);
                     marketGrid.ScrollIntoView(target);
                     await Until(() => market.Detail.Code == target.Code && !market.Detail.RecommendationLoading
                         && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)),
@@ -104,7 +104,7 @@ namespace SalesTrading.UiTests
                     Require(!string.IsNullOrWhiteSpace(recommendation.OwnerTrader), "内部归属交易员未显示");
                     var recommendationGrid = Descendants<DataGrid>(view).Single(grid => grid.Name == "RecommendationGrid");
                     var recommendationContainer = await ShowRecommendationRowAsync(false);
-                    Click(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "展开"));
+                    await ClickAsync(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "展开"));
                     await Until(() => recommendationContainer.DetailsVisibility == Visibility.Visible, "展开真实证据");
                     market.Detail.SelectedRecSide = STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr;
                     Require(market.Detail.RecPageItems.All(row => row.Side == STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr), "Ofr过滤错误");
@@ -115,7 +115,7 @@ namespace SalesTrading.UiTests
                     recommendationContainer = await ShowRecommendationRowAsync(true);
                     if (recommendation.CanFeedback)
                     {
-                        Click(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "不适用"));
+                        await ClickAsync(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "不适用"));
                         await Until(() => !recommendation.CanFeedback, "真实反馈保存并锁定按钮");
                     }
                     string savedFeedback = recommendation.Feedback;
@@ -133,7 +133,7 @@ namespace SalesTrading.UiTests
                     await Until(() => !model.QuoteMgmtPage.Today.IsLoading, "管理页查询完成");
                     DataGrid managementGrid = Descendants<DataGrid>(view)
                         .Single(grid => grid.IsVisible && grid.Name == "TodayGrid");
-                    SelectItem(managementGrid, model.QuoteMgmtPage.Today.Rows.Single(row => row.QuoteId == quoteId));
+                    await SelectItemAsync(managementGrid, model.QuoteMgmtPage.Today.Rows.Single(row => row.QuoteId == quoteId));
                     Require(model.QuoteMgmtPage.Today.SelectedRow.Count == 1, "实际表格选中报价未同步到操作目标");
                     break;
                 case "filter.latency":
@@ -156,20 +156,20 @@ namespace SalesTrading.UiTests
                     FilterRangeRow range = Descendants<FilterRangeRow>(rangePanel)
                         .Single(row => row.IsVisible && SidebarFilter.GetField(row) == Parameter(step, "field"));
                     TextBox[] inputs = Descendants<TextBox>(range).ToArray();
-                    SetText(inputs[0], Parameter(step, "min"));
-                    SetText(inputs[1], Parameter(step, "max"));
+                    await SetTextAsync(inputs[0], Parameter(step, "min"));
+                    await SetTextAsync(inputs[1], Parameter(step, "max"));
                     await AssertSidebarResultAsync(Parameter(step, "page"), bool.Parse(Parameter(step, "visible")));
                     break;
                 case "sidebar.search":
                     FrameworkElement searchPanel = await OpenSidebarAsync(Parameter(step, "page"));
                     TextBox search = Descendants<TextBox>(searchPanel).Single(input =>
                         BindingOperations.GetBinding(input, TextBox.TextProperty)?.Path?.Path == "FilterSearchText");
-                    SetText(search, Parameter(step, "text"));
+                    await SetTextAsync(search, Parameter(step, "text"));
                     await AssertSidebarResultAsync(Parameter(step, "page"), bool.Parse(Parameter(step, "visible")));
                     break;
                 case "sidebar.reset":
                     FrameworkElement resetPanel = await OpenSidebarAsync(Parameter(step, "page"));
-                    Click(Button(resetPanel, "清除过滤"));
+                    await ClickAsync(Button(resetPanel, "清除过滤"));
                     await AssertSidebarResultAsync(Parameter(step, "page"), true);
                     Require(Descendants<FilterRangeRow>(resetPanel).Where(row => row.IsVisible)
                         .All(row => string.IsNullOrEmpty(row.MinText) && string.IsNullOrEmpty(row.MaxText)), "清除过滤后区间控件仍有值");
@@ -197,13 +197,13 @@ namespace SalesTrading.UiTests
                     {
                         ComboBox choice = Descendants<ComboBox>(toolbarView).Single(control =>
                             BindingOperations.GetBinding(control, ComboBox.SelectedItemProperty)?.Path?.Path == binding);
-                        SelectItem(choice, Parameter(step, "value"));
+                        await SelectItemAsync(choice, Parameter(step, "value"));
                     }
                     else
                     {
                         TextBox input = Descendants<TextBox>(toolbarView).Single(control =>
                             BindingOperations.GetBinding(control, TextBox.TextProperty)?.Path?.Path == binding);
-                        SetText(input, Parameter(step, "value"));
+                        await SetTextAsync(input, Parameter(step, "value"));
                     }
                     break;
                 case "parse.warning":
@@ -223,7 +223,7 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.click":
                     var precise = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
-                    Click(Button(precise, Parameter(step, "button")));
+                    await ClickAsync(Button(precise, Parameter(step, "button")));
                     if (Parameter(step, "button") == "确认报价")
                     {
                         await AwaitCommand(model.QuotePage.Precise.ConfirmSelectedCommand.ExecutionTask);
@@ -241,7 +241,13 @@ namespace SalesTrading.UiTests
             }
         }
 
-        private static void SetText(TextBox input, string value)
+        private async Task SetTextAsync(TextBox input, string value)
+        {
+            await BeforeUiActionAsync(input, "输入文本");
+            SetTextImmediately(input, value);
+        }
+
+        private static void SetTextImmediately(TextBox input, string value)
         {
             input.BringIntoView();
             Require(input.IsVisible && input.IsEnabled, "输入框不可操作");
@@ -258,13 +264,13 @@ namespace SalesTrading.UiTests
             // 历史证据增加后目标可能不在首页；按用户可见分页导航，不关闭虚拟化或改写分页模型。
             while (detail.CanPreviousRecPage)
             {
-                Click(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.PreviousRecPageCommand)));
+                await ClickAsync(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.PreviousRecPageCommand)));
             }
             int pageBudget = detail.RecTotalPages;
             while (!detail.RecPageItems.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)))
             {
                 Require(--pageBudget > 0 && detail.CanNextRecPage, "推荐分页中没有本例报价证据");
-                Click(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.NextRecPageCommand)));
+                await ClickAsync(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.NextRecPageCommand)));
             }
             var recommendation = detail.RecPageItems.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
             grid.BringIntoView();
@@ -283,14 +289,14 @@ namespace SalesTrading.UiTests
         private async Task<FrameworkElement> OpenSidebarAsync(string page)
         {
             Require(page == "mgmt" || page == "market", "侧栏 page 必须为 mgmt/market");
-            CloseEditor();
+            await CloseEditorAsync();
             await NavigateAsync(page);
             if (page == "mgmt")
             {
                 return Descendants<MgmtFilterPanel>(view).Single(panel => panel.IsVisible);
             }
             object tab = model.MarketCenterPage.SubTabs.Single(item => item.Key == "rateAll");
-            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(tab)), tab);
+            await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(tab)), tab);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             view.UpdateLayout();
             return Descendants<MarketFilterPanel>(view).Single(panel => panel.IsVisible);
@@ -371,10 +377,10 @@ namespace SalesTrading.UiTests
         private async Task ReadNotificationThroughUiAsync()
         {
             Require(quoteId != null, "请先创建并确认本例报价");
-            CloseEditor();
+            await CloseEditorAsync();
             await NavigateAsync("market");
             object tab = model.MarketCenterPage.SubTabs.Single(item => item.Key == "alert");
-            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(tab)), tab);
+            await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(tab)), tab);
             view.UpdateLayout();
             JObject notification = null;
             DateTime deadline = DateTime.UtcNow.AddSeconds(20);
@@ -397,8 +403,8 @@ namespace SalesTrading.UiTests
             DataGrid grid = (DataGrid)alert.FindName("Grid");
             object target = grid.Items.Cast<object>().First(item => (string)item.GetType().GetProperty("AlertKey")?.GetValue(item) == notificationId);
             grid.ScrollIntoView(target);
-            SelectItem(grid, target);
-            Click(Button(alert, "标记已读"));
+            await SelectItemAsync(grid, target);
+            await ClickAsync(Button(alert, "标记已读"));
             await AwaitCommand(model.MarketCenterPage.Alert.MarkReadCommand.ExecutionTask);
             await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.AlertKey == notificationId && row.IsRead), "界面已读状态更新");
             JObject persisted = (await QueryNotificationsAsync()).OfType<JObject>().Single(item => (string)item["notificationId"] == notificationId);

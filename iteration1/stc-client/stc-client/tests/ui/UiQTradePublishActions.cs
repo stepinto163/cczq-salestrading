@@ -163,7 +163,7 @@ namespace SalesTrading.UiTests
             var toolbar = (Border)page.FindName("BatchToolbar");
             var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
             var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
-            SetText(institution, "");
+            await SetTextAsync(institution, "");
             string contactName = Parameter(step, "contactName");
             Require(!string.IsNullOrWhiteSpace(contactName), "请配置发送人的真实 CRM 联系人名称");
             var selected = await SelectToolbarCrmAsync(contact, contactName);
@@ -174,7 +174,7 @@ namespace SalesTrading.UiTests
                 "CRM 工具栏没有更新本例报价的联系人和机构 ID");
             Capture("qtrade-counterparty-selected");
             // 一次确认本批，避免逐条确认后服务端刷新覆盖其他行尚未提交的 CRM 编辑。
-            Click(Button(page, "确认报价"));
+            await ClickAsync(Button(page, "确认报价"));
             await AwaitCommand(model.QuotePage.Confirm.ConfirmSelectedCommand.ExecutionTask);
             foreach (string id in publishedQuoteIds)
             {

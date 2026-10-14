@@ -37,22 +37,24 @@ namespace SalesTrading.UiTests
                 {
                     await SelectManagementQuoteAsync();
                     var page = Descendants<MgmtTodayView>(view).Single(control => control.IsVisible);
-                    _ = Application.Current.Dispatcher.BeginInvoke(new Action(() => Click(Button(page, "修改 / 历史"))));
+                    await OpenModalAsync(Button(page, "修改 / 历史"));
                     await Until(() => (editDialog = Application.Current.Windows.OfType<QuoteEntryDialog>().FirstOrDefault()) != null
                         && editDialog.IsReady, "产品报价修改表单加载");
                 }
                 Require(((TextBlock)editDialog.FindName("BondCode")).Text == Parameter(step, "securityId"), "编辑债券不匹配");
-                ((TextBox)editDialog.FindName("PriceBox")).Text = Parameter(step, "price");
-                ((TextBox)editDialog.FindName("VolumeBox")).Text = Parameter(step, "quantity");
-                ((RadioButton)editDialog.FindName(Parameter(step, "side") == "1" ? "DirBid" : "DirOfr")).IsChecked = true;
-                ((ComboBox)editDialog.FindName("SettlementBox")).SelectedValue = Parameter(step, "settlType");
+                await SetTextAsync((TextBox)editDialog.FindName("PriceBox"), Parameter(step, "price"));
+                await SetTextAsync((TextBox)editDialog.FindName("VolumeBox"), Parameter(step, "quantity"));
+                await ClickAsync((RadioButton)editDialog.FindName(Parameter(step, "side") == "1" ? "DirBid" : "DirOfr"));
+                var settlement = (ComboBox)editDialog.FindName("SettlementBox");
+                await BeforeUiActionAsync(settlement, "选择清算速度");
+                settlement.SelectedValue = Parameter(step, "settlType");
                 return;
             }
             if (step.Action == "management.save" || step.Action == "management.reject")
             {
                 Require(editDialog != null && editDialog.IsReady, "先打开报价管理修改表单");
                 JObject before = await model.Backend.Api.GetQuoteAsync(quoteId);
-                Click(Button(editDialog, "保存修改"));
+                await ClickAsync(Button(editDialog, "保存修改"));
                 if (step.Action == "management.reject")
                 {
                     await Until(() => editDialog.IsReady && editDialog.ErrorMessage.Contains(Parameter(step, "message")), "修改拒绝提示");
@@ -72,7 +74,7 @@ namespace SalesTrading.UiTests
             string button = Parameter(step, "button");
             Require(new[] { "Refer", "Unrefer", "删除" }.Contains(button), "不支持的报价管理操作");
             var management = model.QuoteMgmtPage.Today;
-            Click(Button(Descendants<MgmtTodayView>(view).Single(control => control.IsVisible), button));
+            await ClickAsync(Button(Descendants<MgmtTodayView>(view).Single(control => control.IsVisible), button));
             await AwaitCommand(button == "Refer" ? management.ReferCommand.ExecutionTask
                 : button == "Unrefer" ? management.UnreferCommand.ExecutionTask : management.DeleteCommand.ExecutionTask);
             string status = (string)(await model.Backend.Api.GetQuoteAsync(quoteId))["status"];
@@ -92,16 +94,16 @@ namespace SalesTrading.UiTests
             });
             Require(((TextBox)editDialog.FindName("InstitutionBox")).Text == (string)saved["institutionName"], "编辑表单机构未回填");
             Require(((TextBox)editDialog.FindName("TraderBox")).Text == (string)saved["contactName"], "编辑表单交易员未回填");
-            ((CheckBox)editDialog.FindName("FlagOco")).IsChecked = true;
-            Click(Button(editDialog, "保存修改"));
+            await ClickAsync((CheckBox)editDialog.FindName("FlagOco"));
+            await ClickAsync(Button(editDialog, "保存修改"));
             await Until(() => editDialog.ErrorMessage.Contains("OCO与打包"), "编辑表单OCO互斥提示");
             Require(JToken.DeepEquals((await model.Backend.Api.GetQuoteAsync(quoteId))["revision"], saved["revision"]), "OCO互斥拒绝不应保存");
-            ((CheckBox)editDialog.FindName("FlagOco")).IsChecked = false;
-            _ = Application.Current.Dispatcher.BeginInvoke(new Action(() => Click(Button(editDialog, "变更历史"))));
+            await ClickAsync((CheckBox)editDialog.FindName("FlagOco"));
+            await OpenModalAsync(Button(editDialog, "变更历史"));
             Window history = null;
             await Until(() => (history = Application.Current.Windows.Cast<Window>().FirstOrDefault(window => window.Title == "报价变更历史")) != null, "真实报价历史窗口");
             Require(((TextBox)history.Content).Text.Contains(quoteId), "历史窗口未读取本例报价");
-            history.Close();
+            await CloseWindowAsync(history);
             await ExecuteQuoteWorkflowAsync(new TestStep { Action = "management.save" });
             JObject after = await model.Backend.Api.GetQuoteAsync(quoteId);
             foreach (string field in new[] { "institutionId", "institutionName", "contactId", "contactName", "urgent", "recommended", "whole", "oco", "packing", "quantityUnit", "currency", "ownerUserId", "source" })
