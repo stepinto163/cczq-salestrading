@@ -94,9 +94,14 @@ namespace SalesTrading.UiTests
         private async Task ConfirmNegotiationOnUiAsync(string id)
         {
             await NavigateAsync("entry");
+            SelectTab("quote-confirm");
+            await Until(() => Descendants<QuoteConfirmView>(view).Any(control => control.IsVisible), "报价确认页显示");
             var rows = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).ToList();
-            foreach (var row in rows) row.IsSelected = row.RecognitionId == id;
             var confirmation = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
+            foreach (var row in rows.Where(row => row.IsSelected || row.RecognitionId == id))
+            {
+                await SelectPendingRowAsync(confirmation, row, row.RecognitionId == id);
+            }
             Click(Button(confirmation, "确认报价"));
             await AwaitCommand(model.QuotePage.Confirm.ConfirmSelectedCommand.ExecutionTask);
             JObject stored = await model.Backend.Api.GetQuoteAsync(id);

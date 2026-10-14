@@ -26,8 +26,7 @@ namespace SalesTrading.UiTests
             var detail = model.MarketCenterPage.Detail;
             var recommendation = detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
             var grid = Descendants<DataGrid>(view).Single(item => item.Name == "RecommendationGrid");
-            grid.ScrollIntoView(recommendation, grid.Columns.Last());
-            grid.UpdateLayout();
+            await ShowRecommendationRowAsync(true);
             await Until(() => grid.ItemContainerGenerator.ContainerFromItem(recommendation) is DataGridRow,
                 "推荐行渲染完成");
             var container = (DataGridRow)grid.ItemContainerGenerator.ContainerFromItem(recommendation);
@@ -104,9 +103,7 @@ namespace SalesTrading.UiTests
                         "推荐未采用真实正式报价证据");
                     Require(!string.IsNullOrWhiteSpace(recommendation.OwnerTrader), "内部归属交易员未显示");
                     var recommendationGrid = Descendants<DataGrid>(view).Single(grid => grid.Name == "RecommendationGrid");
-                    recommendationGrid.ScrollIntoView(recommendation);
-                    recommendationGrid.UpdateLayout();
-                    var recommendationContainer = (DataGridRow)recommendationGrid.ItemContainerGenerator.ContainerFromItem(recommendation);
+                    var recommendationContainer = await ShowRecommendationRowAsync(false);
                     Click(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "展开"));
                     await Until(() => recommendationContainer.DetailsVisibility == Visibility.Visible, "展开真实证据");
                     market.Detail.SelectedRecSide = STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr;
@@ -115,9 +112,7 @@ namespace SalesTrading.UiTests
                     market.Detail.SelectedRecWindow = "7d";
                     await Until(() => !market.Detail.RecommendationLoading && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)), "日期切换后重新计算推荐");
                     recommendation = market.Detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
-                    recommendationGrid.ScrollIntoView(recommendation, recommendationGrid.Columns.Last());
-                    recommendationGrid.UpdateLayout();
-                    recommendationContainer = (DataGridRow)recommendationGrid.ItemContainerGenerator.ContainerFromItem(recommendation);
+                    recommendationContainer = await ShowRecommendationRowAsync(true);
                     if (recommendation.CanFeedback)
                     {
                         Click(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "不适用"));
@@ -253,6 +248,36 @@ namespace SalesTrading.UiTests
             input.Focus();
             highlight?.Show(input);
             input.Text = value;
+        }
+
+        private async Task<DataGridRow> ShowRecommendationRowAsync(bool feedbackColumn)
+        {
+            var detail = model.MarketCenterPage.Detail;
+            var grid = Descendants<DataGrid>(view).Single(control => control.Name == "RecommendationGrid");
+            var panel = Descendants<BondDetailPanel>(view).Single(control => control.IsVisible);
+            // 历史证据增加后目标可能不在首页；按用户可见分页导航，不关闭虚拟化或改写分页模型。
+            while (detail.CanPreviousRecPage)
+            {
+                Click(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.PreviousRecPageCommand)));
+            }
+            int pageBudget = detail.RecTotalPages;
+            while (!detail.RecPageItems.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)))
+            {
+                Require(--pageBudget > 0 && detail.CanNextRecPage, "推荐分页中没有本例报价证据");
+                Click(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.NextRecPageCommand)));
+            }
+            var recommendation = detail.RecPageItems.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
+            grid.BringIntoView();
+            grid.ScrollIntoView(recommendation, feedbackColumn ? grid.Columns.Last() : grid.Columns.First());
+            DataGridRow container = null;
+            await Until(() =>
+            {
+                grid.UpdateLayout();
+                container = grid.ItemContainerGenerator.ContainerFromItem(recommendation) as DataGridRow;
+                return container != null && container.IsVisible;
+            }, "推荐目标行完成渲染");
+            highlight?.Show(container);
+            return container;
         }
 
         private async Task<FrameworkElement> OpenSidebarAsync(string page)

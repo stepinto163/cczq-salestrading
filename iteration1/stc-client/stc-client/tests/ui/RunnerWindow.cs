@@ -126,7 +126,13 @@ namespace SalesTrading.UiTests
                 settings.Controls.Add(new Label { Text = setting.Item1, AutoSize = true });
                 settings.Controls.Add(setting.Item2);
             }
-            settings.Controls.Add(new Label { Text = "连接真实服务；每例独立登录；小批量串行执行。", AutoSize = true });
+            bool qtradeEnabled = Environment.GetEnvironmentVariable("STC_UI_QTRADE_PUBLISH") == "1";
+            settings.Controls.Add(new Label
+            {
+                Text = qtradeEnabled ? "QT模式：发布用例会真实发送；每例独立登录，串行执行。"
+                    : "普通模式：未启用QT发布；每例独立登录，串行执行。",
+                AutoSize = true
+            });
             settings.SetFlowBreak(settings.Controls[settings.Controls.Count - 1], true);
             settings.Controls.Add(new Label { Text = "操作间隔（秒）", AutoSize = true });
             settings.Controls.Add(operationInterval);
