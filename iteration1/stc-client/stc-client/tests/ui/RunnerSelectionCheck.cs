@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace SalesTrading.UiTests
@@ -76,6 +78,7 @@ namespace SalesTrading.UiTests
                     Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == 8000, "慢速应为8秒");
                     speed.Value = 5;
                     Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == 0, "最快应取消额外等待");
+                    CheckSpeedPointerInput(speed, playback, playbackType);
                     speed.Value = 2;
                     playbackType.GetMethod("SetRunning").Invoke(playback, new object[] { true });
                     FindButton(playback, "暂停").PerformClick();
@@ -164,7 +167,7 @@ namespace SalesTrading.UiTests
                     }
                     form.Close();
                 }
-                Console.WriteLine("PASS: account/speed defaults, floating playback window, pause/resume controls, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard, advanced mode visibility and observer settings.");
+                Console.WriteLine("PASS: account/speed defaults, floating playback window, native mouse clicks at all six speeds, drag/keyboard, pause/resume controls, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard, advanced mode visibility and observer settings.");
                 return 0;
             }
             catch (Exception error)
@@ -172,6 +175,53 @@ namespace SalesTrading.UiTests
                 Console.Error.WriteLine(error);
                 return 1;
             }
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr parameter, IntPtr position);
+
+        private static void Pointer(TrackBar slider, int message, int x, bool pressed)
+        {
+            int point = (slider.ClientSize.Height / 2 << 16) | (x & 0xffff);
+            SendMessage(slider.Handle, message, pressed ? new IntPtr(1) : IntPtr.Zero, new IntPtr(point));
+            Application.DoEvents();
+        }
+
+        private static void CheckSpeedPointerInput(TrackBar slider, Form playback, Type playbackType)
+        {
+            int[] delays = { 8000, 4000, 2000, 1000, 500, 0 };
+            var changes = new List<int>();
+            slider.ValueChanged += (sender, args) => changes.Add(slider.Value);
+            foreach (int width in new[] { 430, 560 })
+            {
+                playback.ClientSize = new System.Drawing.Size(width, 140);
+                playback.PerformLayout();
+                Application.DoEvents();
+                foreach (int target in new[] { 2, 3, 1, 4, 0, 5 })
+                {
+                    slider.Value = target == 0 ? 5 : 0;
+                    changes.Clear();
+                    int x = target == 0 ? 0 : target == 5 ? slider.ClientSize.Width - 1
+                        : SendMessage(slider.Handle, 0x040f, new IntPtr(target - 1), IntPtr.Zero).ToInt32();
+                    Require(x >= 0, "无法获取原生滑条刻度位置");
+                    Pointer(slider, 0x0201, x, true);
+                    Pointer(slider, 0x0202, x, false);
+                    Require(slider.Value == target && changes.SequenceEqual(new[] { target }),
+                        "点击刻度应直接选择目标速度且不产生中间跳变：target=" + target + ", actual=" + slider.Value);
+                    Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == delays[target],
+                        "点击速度后实际等待未同步");
+                }
+                Pointer(slider, 0x0201, 0, true);
+                int end = SendMessage(slider.Handle, 0x040f, new IntPtr(3), IntPtr.Zero).ToInt32();
+                Pointer(slider, 0x0200, end, true);
+                Pointer(slider, 0x0202, end, false);
+                Require(slider.Value == 4 && !slider.Capture, "拖动应更新速度并释放鼠标捕获");
+                SendMessage(slider.Handle, 0x0100, new IntPtr(0x25), IntPtr.Zero);
+                SendMessage(slider.Handle, 0x0101, new IntPtr(0x25), IntPtr.Zero);
+                Application.DoEvents();
+                Require(slider.Value == 3, "方向键调整速度失效");
+            }
+            playback.ClientSize = new System.Drawing.Size(430, 140);
         }
 
         private static int CheckedCount(DataGridView grid)
