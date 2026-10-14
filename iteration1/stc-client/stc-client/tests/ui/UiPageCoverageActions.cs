@@ -38,7 +38,7 @@ namespace SalesTrading.UiTests
                 target = tabKey == "today" ? (object)model.QuoteMgmtPage.Today : model.QuoteMgmtPage.History;
                 tab = model.QuoteMgmtPage.SubTabs.Single(item => ReferenceEquals(item.Target, target));
             }
-            Descendants<ListBox>(view).Single(list => list.IsVisible && list.Items.Contains(tab)).SelectedItem = tab;
+            SelectItem(Descendants<ListBox>(view).Single(list => list.IsVisible && list.Items.Contains(tab)), tab);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
             view.UpdateLayout();
             UserControl pageView = null;
@@ -46,6 +46,7 @@ namespace SalesTrading.UiTests
                 && control.GetType().Name == Parameter(step, "view") && ReferenceEquals(control.DataContext, target))) != null,
                 "页签呈现 " + page + "/" + tabKey);
             var loadingProperty = target.GetType().GetProperty("IsLoading");
+            highlight?.Show(Descendants<DataGrid>(pageView).FirstOrDefault(grid => grid.IsVisible) ?? (FrameworkElement)pageView);
             if (loadingProperty != null)
             {
                 await Until(() => !(bool)loadingProperty.GetValue(target), "页面查询结束 " + tabKey);
@@ -128,8 +129,10 @@ namespace SalesTrading.UiTests
             var preciseView = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
             var input = (TextBox)preciseView.FindName("InputBox");
             Click(Button(preciseView, "示例"));
+            highlight?.Show(input);
             Require(!string.IsNullOrWhiteSpace(input.Text), "示例按钮未填入原文");
             Click(Button(preciseView, "清空"));
+            highlight?.Show(input);
             Require(input.Text == "", "清空原文失败");
             var keep = Descendants<CheckBox>(preciseView).Single(control =>
                 BindingOperations.GetBinding(control, CheckBox.IsCheckedProperty)?.Path?.Path == "KeepTextAfterParse");
@@ -138,13 +141,16 @@ namespace SalesTrading.UiTests
             SetText(input, text);
             Click(Button(preciseView, "识别报价"));
             await AwaitCommand(model.QuotePage.Precise.IdentifyCommand.ExecutionTask);
+            highlight?.Show(Descendants<DataGrid>(preciseView).FirstOrDefault(grid => grid.IsVisible));
             Require(model.QuotePage.Precise.Rows.Count == 1 && input.Text == text, "识别失败或保留原文失效");
             var originalRow = model.QuotePage.Precise.Rows[0];
+            HighlightRow(originalRow);
             await NavigateAsync("market");
             await NavigateAsync("entry");
             SelectTab("quote-precise");
             Require(model.QuotePage.Precise.Rows.Contains(originalRow) && input.Text == text, "切页丢失未确认预览或原文");
             Click(Button(preciseView, "清空"));
+            highlight?.Show(input);
             Require(input.Text == "" && model.QuotePage.Precise.Rows.Contains(originalRow), "清空应只影响输入框");
             Require(originalRow.Row.Revision == 0, "输入检查不得持久化未确认预览");
         }

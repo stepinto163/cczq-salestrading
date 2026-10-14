@@ -69,29 +69,29 @@ namespace SalesTrading.UiTests
             var priceType = ToolbarChoice(toolbar, "ToolbarPriceType");
             foreach (string value in new[] { "到期收益率", "行权收益率", "净价", "全价" })
             {
-                priceType.SelectedItem = value;
+                SelectItem(priceType, value);
                 check(selected.PriceType == value, "价格类型可选：" + value);
             }
             SetPendingPrice(page, selected, "100");
             Click(Button(toolbar, "+"));
             check(Number(selected.Price) == 101m, "全价使用价格单位调整，符合产品原型");
-            priceType.SelectedItem = "到期收益率";
+            SelectItem(priceType, "到期收益率");
             SetPendingPrice(page, selected, "2.5");
             var settlement = ToolbarChoice(toolbar, "ToolbarSettlement");
             foreach (string value in new[] { "T+1", "T+0", "T+2", "T+3", "远期" })
             {
-                settlement.SelectedItem = value;
+                SelectItem(settlement, value);
                 check(selected.Settlement == value, "清算类型可选：" + value);
             }
             // 换勾选目标后，刚才使用过的选项也必须能再次应用。
             await SelectPendingRowAsync(page, selected, false);
             await SelectPendingRowAsync(page, untouched, true);
-            settlement.SelectedItem = "远期";
+            SelectItem(settlement, "远期");
             check(untouched.Settlement == "远期", "更换勾选行后可重复选择相同清算类型");
-            settlement.SelectedItem = "T+1";
+            SelectItem(settlement, "T+1");
             await SelectPendingRowAsync(page, untouched, false);
             await SelectPendingRowAsync(page, selected, true);
-            settlement.SelectedItem = "T+1";
+            SelectItem(settlement, "T+1");
             check(selected.Settlement == "T+1", "远期可通过默认T+1选项改回");
 
             TextBox amount = ToolbarInput(toolbar, "AmountInput");

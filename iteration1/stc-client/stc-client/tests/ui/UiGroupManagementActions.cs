@@ -124,7 +124,7 @@ namespace SalesTrading.UiTests
             favorites = Application.Current.Windows.OfType<FavBondManagerWindow>().Single();
             favoriteModel = (FavBondManagerViewModel)favorites.DataContext;
             var groupList = (ListBox)favorites.FindName("GroupList");
-            groupList.SelectedItem = favoriteModel.Groups.Single(group => group.Id == watchlist.Id);
+            SelectItem(groupList, favoriteModel.Groups.Single(group => group.Id == watchlist.Id));
             groupList.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
                 { RoutedEvent = Control.MouseDoubleClickEvent });
             favorites.UpdateLayout();

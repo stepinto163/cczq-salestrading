@@ -94,7 +94,7 @@ namespace SalesTrading.UiTests
                     var market = model.MarketCenterPage;
                     var target = market.RateAll.Rows.Single(row => row.QuoteId == quoteId);
                     var marketGrid = Descendants<DataGrid>(view).First(grid => grid.IsVisible && grid.Items.Contains(target));
-                    marketGrid.SelectedItem = target;
+                    SelectItem(marketGrid, target);
                     marketGrid.ScrollIntoView(target);
                     await Until(() => market.Detail.Code == target.Code && !market.Detail.RecommendationLoading
                         && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)),
@@ -138,7 +138,7 @@ namespace SalesTrading.UiTests
                     await Until(() => !model.QuoteMgmtPage.Today.IsLoading, "管理页查询完成");
                     DataGrid managementGrid = Descendants<DataGrid>(view)
                         .Single(grid => grid.IsVisible && grid.Name == "TodayGrid");
-                    managementGrid.SelectedItem = model.QuoteMgmtPage.Today.Rows.Single(row => row.QuoteId == quoteId);
+                    SelectItem(managementGrid, model.QuoteMgmtPage.Today.Rows.Single(row => row.QuoteId == quoteId));
                     Require(model.QuoteMgmtPage.Today.SelectedRow.Count == 1, "实际表格选中报价未同步到操作目标");
                     break;
                 case "filter.latency":
@@ -181,12 +181,15 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.row":
                     var row = model.QuotePage.Precise.Rows[int.Parse(Parameter(step, "row")) - 1];
+                    HighlightRow(row);
                     Require(row.Code == Parameter(step, "securityId"), "识别债券不匹配：" + row.Code);
                     Require(row.Direction == Parameter(step, "side"), "识别方向不匹配：" + row.Direction);
                     Require(decimal.Parse(row.Price, CultureInfo.InvariantCulture) == decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture), "识别价格不匹配：" + row.Price);
                     Require(decimal.Parse(row.Volume, CultureInfo.InvariantCulture) == decimal.Parse(Parameter(step, "quantity"), CultureInfo.InvariantCulture), "识别数量不匹配：" + row.Volume);
                     break;
                 case "parse.count":
+                    highlight?.Show(Descendants<DataGrid>(view).FirstOrDefault(grid => grid.IsVisible
+                        && grid.ItemsSource == model.QuotePage.Precise.Rows));
                     Require(model.QuotePage.Precise.Rows.Count == int.Parse(Parameter(step, "rows")), "剩余预览条数不匹配");
                     Require(model.QuotePage.Precise.SelectedCount == int.Parse(Parameter(step, "selected")), "预览选中数量不匹配");
                     Require(model.QuotePage.Precise.Rows.All(preview => preview.Row.Revision == 0), "未确认预览不应已持久化");
@@ -199,7 +202,7 @@ namespace SalesTrading.UiTests
                     {
                         ComboBox choice = Descendants<ComboBox>(toolbarView).Single(control =>
                             BindingOperations.GetBinding(control, ComboBox.SelectedItemProperty)?.Path?.Path == binding);
-                        choice.SelectedItem = Parameter(step, "value");
+                        SelectItem(choice, Parameter(step, "value"));
                     }
                     else
                     {
@@ -209,6 +212,8 @@ namespace SalesTrading.UiTests
                     }
                     break;
                 case "parse.warning":
+                    highlight?.Show(Descendants<TextBlock>(view).FirstOrDefault(text => text.IsVisible
+                        && text.Text.Contains(Parameter(step, "message"))));
                     Require(model.QuotePage.Precise.StatusMessage.Contains(Parameter(step, "message")),
                         "缺少识别警告：" + model.QuotePage.Precise.StatusMessage);
                     Require(Descendants<TextBlock>(view).Any(text => text.IsVisible && text.Text.Contains(Parameter(step, "message"))),
@@ -216,6 +221,7 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.settlement":
                     var datedRow = model.QuotePage.Precise.Rows[int.Parse(Parameter(step, "row")) - 1];
+                    HighlightRow(datedRow);
                     Require(datedRow.Settlement == Parameter(step, "settlement"), "清算速度不匹配：" + datedRow.Settlement);
                     Require(datedRow.Row.TradeDate?.Date == DateTime.Today.AddDays(int.Parse(Parameter(step, "dayOffset"))), "交易日期不匹配：" + datedRow.Row.TradeDate);
                     Require(datedRow.PriceType == Parameter(step, "priceType"), "计价方式不匹配：" + datedRow.PriceType);
@@ -245,6 +251,7 @@ namespace SalesTrading.UiTests
             input.BringIntoView();
             Require(input.IsVisible && input.IsEnabled, "输入框不可操作");
             input.Focus();
+            highlight?.Show(input);
             input.Text = value;
         }
 
@@ -258,7 +265,7 @@ namespace SalesTrading.UiTests
                 return Descendants<MgmtFilterPanel>(view).Single(panel => panel.IsVisible);
             }
             object tab = model.MarketCenterPage.SubTabs.Single(item => item.Key == "rateAll");
-            Descendants<ListBox>(view).First(list => list.Items.Contains(tab)).SelectedItem = tab;
+            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(tab)), tab);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             view.UpdateLayout();
             return Descendants<MarketFilterPanel>(view).Single(panel => panel.IsVisible);
@@ -342,7 +349,7 @@ namespace SalesTrading.UiTests
             CloseEditor();
             await NavigateAsync("market");
             object tab = model.MarketCenterPage.SubTabs.Single(item => item.Key == "alert");
-            Descendants<ListBox>(view).First(list => list.Items.Contains(tab)).SelectedItem = tab;
+            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(tab)), tab);
             view.UpdateLayout();
             JObject notification = null;
             DateTime deadline = DateTime.UtcNow.AddSeconds(20);
@@ -365,7 +372,7 @@ namespace SalesTrading.UiTests
             DataGrid grid = (DataGrid)alert.FindName("Grid");
             object target = grid.Items.Cast<object>().First(item => (string)item.GetType().GetProperty("AlertKey")?.GetValue(item) == notificationId);
             grid.ScrollIntoView(target);
-            grid.SelectedItem = target;
+            SelectItem(grid, target);
             Click(Button(alert, "标记已读"));
             await AwaitCommand(model.MarketCenterPage.Alert.MarkReadCommand.ExecutionTask);
             await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.AlertKey == notificationId && row.IsRead), "界面已读状态更新");

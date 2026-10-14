@@ -43,6 +43,7 @@ namespace SalesTrading.UiTests
         private bool cleaning;
         private Exception noticeAutomationFailure;
         private DemoCaptionWindow captions;
+        private static ControlHighlight highlight;
         private readonly Stopwatch elapsed = Stopwatch.StartNew();
 
         [STAThread]
@@ -109,6 +110,7 @@ namespace SalesTrading.UiTests
             try
             {
                 captions = new DemoCaptionWindow();
+                highlight = new ControlHighlight();
                 await ShowCaptionAsync("准备", "登录 STC 并打开销售交易", definition.Steps[0].Name);
                 Emit("登录", "RUNNING", "启动正式 STC 登录窗口，连接真实服务");
                 await LoginAsync();
@@ -139,6 +141,7 @@ namespace SalesTrading.UiTests
                         await ShowCaptionAsync("正在执行", step.Name, upcoming);
                     }
                     Emit(step.Name, "RUNNING", step.Action);
+                    highlight.SetSuspended(step.Action == "filter.latency");
                     Stopwatch duration = Stopwatch.StartNew();
                     await ExecuteAsync(step);
                     await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
@@ -160,6 +163,7 @@ namespace SalesTrading.UiTests
             finally
             {
                 cleaning = true;
+                highlight?.SetSuspended(true);
                 try
                 {
                     await ShowCaptionAsync(outcome == "PASSED" ? "收尾" : outcome == "CANCELLED" ? "已停止" : "测试失败",
@@ -191,6 +195,7 @@ namespace SalesTrading.UiTests
                 File.WriteAllText(Path.Combine(reportDirectory, "result.json"), result.ToString());
                 Emit("结果", outcome, "耗时 " + elapsed.ElapsedMilliseconds + " ms");
                 captions?.Close();
+                highlight?.Dispose();
             }
             return outcome == "PASSED" ? 0 : 1;
         }
@@ -209,7 +214,8 @@ namespace SalesTrading.UiTests
             Require(!string.IsNullOrWhiteSpace(user) && !string.IsNullOrWhiteSpace(password), "请填写测试账号和密码");
             STC.Frame.UI.LoginGUI login = null;
             await Until(() => (login = Application.Current.Windows.OfType<STC.Frame.UI.LoginGUI>().FirstOrDefault()) != null && login.IsLoaded, "登录窗口", 45);
-            ((TextBox)login.FindName("tbUsername")).Text = user;
+            SetText((TextBox)login.FindName("tbUsername"), user);
+            highlight.Show((PasswordBox)login.FindName("pbPwd"));
             ((PasswordBox)login.FindName("pbPwd")).Password = password;
             Click((Button)login.FindName("btnLogin"));
             STC.Frame.Window1 frame = null;
@@ -223,7 +229,7 @@ namespace SalesTrading.UiTests
                 DataGrid menu = (DataGrid)logo.FindName("dgMenu");
                 await Until(() => menu.Items.Cast<object>().Any(item => Convert.ToString(item.GetType().GetProperty("PluginKey")?.GetValue(item)) == "230"), "销售交易菜单");
                 object salesTrading = menu.Items.Cast<object>().Single(item => Convert.ToString(item.GetType().GetProperty("PluginKey")?.GetValue(item)) == "230");
-                menu.SelectedItem = salesTrading;
+                SelectItem(menu, salesTrading);
                 menu.CurrentItem = salesTrading;
                 menu.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left)
                 {
@@ -240,7 +246,7 @@ namespace SalesTrading.UiTests
             shell.WindowState = WindowState.Normal;
             shell.Width = 1440;
             shell.Height = 950;
-            frame.Panel.SelectedItem = frame.Panel.Items.OfType<TabItem>().Single(item => ReferenceEquals(item.Content, view));
+            SelectItem(frame.Panel, frame.Panel.Items.OfType<TabItem>().Single(item => ReferenceEquals(item.Content, view)));
             shell.UpdateLayout();
             await Until(() => view.IsLoaded && view.IsVisible && model.NavItems.Count > 0, "销售交易界面完成渲染");
             await Until(() => !model.QuoteMgmtPage.Today.IsLoading && !model.MarketCenterPage.RateAll.IsLoading
@@ -274,6 +280,7 @@ namespace SalesTrading.UiTests
                     var pendingRow = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == quoteId);
                     // 分组表保持虚拟化；先滚动并展开本例行，再判断实际控件是否呈现。
                     await SelectPendingRowAsync(pendingPage, pendingRow, false);
+                    HighlightRow(pendingRow);
                     await Until(() => Descendants<DataGrid>(view).Any(grid => grid.Items.OfType<QuoteConfirmRowViewModel>()
                         .Any(row => row.RecognitionId == quoteId)), "报价确认表呈现本例报价");
                     break;
@@ -281,16 +288,18 @@ namespace SalesTrading.UiTests
                     CloseEditor();
                     await NavigateAsync("mgmt");
                     await Until(() => model.QuoteMgmtPage.Today.Rows.Any(row => row.QuoteId == quoteId), "报价管理接收本例报价");
+                    HighlightRow(model.QuoteMgmtPage.Today.Rows.First(row => row.QuoteId == quoteId));
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "报价管理表未显示本例报价");
                     break;
                 case "market.assert":
                     CloseEditor();
                     await NavigateAsync("market");
                     object rateTab = model.MarketCenterPage.SubTabs.Single(tab => tab.Key == "rateAll");
-                    Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)).SelectedItem = rateTab;
+                    SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)), rateTab);
                     await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                     view.UpdateLayout();
                     await Until(() => model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == quoteId), "行情中心接收本例报价");
+                    HighlightRow(model.MarketCenterPage.RateAll.Rows.First(row => row.QuoteId == quoteId));
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "行情表未显示本例报价");
                     break;
                 case "history.assert":
@@ -328,7 +337,7 @@ namespace SalesTrading.UiTests
                     }
                     else
                     {
-                        inputBox.Text = Parameter(step, "text");
+                        SetText(inputBox, Parameter(step, "text"));
                     }
                     Click(Button(precise, "识别报价"));
                     await AwaitCommand(model.QuotePage.Precise.IdentifyCommand.ExecutionTask);
@@ -350,6 +359,7 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.assert":
                     QuoteConfirmRowViewModel parsed = model.QuotePage.Precise.Rows.Single();
+                    HighlightRow(parsed);
                     Require(parsed.Code == Parameter(step, "securityId") && parsed.Institution == Parameter(step, "institution")
                         && parsed.Trader == Parameter(step, "trader") && decimal.Parse(parsed.Price, CultureInfo.InvariantCulture) == decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture), "识别结果字段不匹配");
                     Require(!string.IsNullOrEmpty(parsed.Row.InstitutionId) && !string.IsNullOrEmpty(parsed.Row.ContactId), "CRM 名称未解析为真实 ID");
@@ -396,7 +406,7 @@ namespace SalesTrading.UiTests
                 ?? (key == "entry" ? model.NavItems.First() : null);
             Require(item != null, "页面不存在：" + key);
             ListBox navigation = Descendants<ListBox>(view).First(list => list.Items.Contains(item));
-            navigation.SelectedItem = item;
+            SelectItem(navigation, item);
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
             view.UpdateLayout();
         }
@@ -404,7 +414,7 @@ namespace SalesTrading.UiTests
         private void SelectTab(string key)
         {
             object item = model.QuotePage.SubTabs.Single(tab => tab.Key == key);
-            Descendants<ListBox>(view).First(list => list.Items.Contains(item)).SelectedItem = item;
+            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(item)), item);
         }
 
         private void Track(string id)
@@ -530,9 +540,35 @@ namespace SalesTrading.UiTests
 
         private static void Click(ButtonBase control)
         {
+            highlight?.Show(control);
             Require(control.IsEnabled && control.IsVisible, "按钮不可用：" + control.Content);
             control.Focus();
+            highlight?.Show(control);
             control.GetType().GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(control, null);
+        }
+
+        private void HighlightRow(object row)
+        {
+            DataGrid grid = Descendants<DataGrid>(view).FirstOrDefault(control => control.IsVisible && control.Items.Contains(row));
+            if (grid == null)
+            {
+                highlight?.Clear();
+                return;
+            }
+            grid.ScrollIntoView(row);
+            grid.UpdateLayout();
+            highlight?.Show(grid.ItemContainerGenerator.ContainerFromItem(row) as FrameworkElement ?? grid);
+        }
+
+        private static void SelectItem(Selector control, object item)
+        {
+            highlight?.Show(control);
+            control.SelectedItem = item;
+            control.UpdateLayout();
+            // 折叠下拉框标记整个输入控件；页签和表格标记实际已呈现的条目。
+            FrameworkElement target = control is ComboBox ? control
+                : control.ItemContainerGenerator.ContainerFromItem(item) as FrameworkElement ?? control;
+            highlight?.Show(target);
         }
 
         private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject

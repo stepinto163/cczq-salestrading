@@ -110,7 +110,7 @@ namespace SalesTrading.UiTests
         {
             await NavigateAsync("market");
             object rateTab = model.MarketCenterPage.SubTabs.Single(tab => tab.Key == "rateAll");
-            Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)).SelectedItem = rateTab;
+            SelectItem(Descendants<ListBox>(view).First(list => list.Items.Contains(rateTab)), rateTab);
             view.UpdateLayout();
             await Until(() => model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == id && row.Price == price),
                 "行情推送显示已确认价格 " + price);
