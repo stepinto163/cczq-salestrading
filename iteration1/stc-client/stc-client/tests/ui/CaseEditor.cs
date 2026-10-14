@@ -12,6 +12,9 @@ namespace SalesTrading.UiTests
         private readonly TextBox id = new TextBox();
         private readonly TextBox name = new TextBox();
         private readonly TextBox description = new TextBox();
+        private readonly TextBox page = new TextBox();
+        private readonly TextBox feature = new TextBox();
+        private readonly TextBox priority = new TextBox();
         private readonly ListBox steps = new ListBox();
         private readonly TextBox stepName = new TextBox();
         private readonly ComboBox action = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
@@ -34,22 +37,28 @@ namespace SalesTrading.UiTests
             Height = 760;
             StartPosition = FormStartPosition.CenterParent;
             Font = new System.Drawing.Font("Microsoft YaHei UI", 10);
-            TableLayoutPanel root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 6, Padding = new Padding(12) };
+            TableLayoutPanel root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 9, Padding = new Padding(12) };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (int i = 0; i < 3; i++) root.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+            for (int i = 0; i < 6; i++) root.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 70));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
             AddField(root, "用例 ID（保存后固定）", id, 0);
             AddField(root, "用例名称", name, 1);
             AddField(root, "说明 / 前置条件", description, 2);
+            AddField(root, "页面路径（/ 分层）", page, 3);
+            AddField(root, "功能", feature, 4);
+            AddField(root, "优先级（P0/P1/P2）", priority, 5);
+            page.Text = Result.Page;
+            feature.Text = Result.Feature;
+            priority.Text = Result.Priority;
             id.Text = Result.Id;
             id.ReadOnly = existing;
             name.Text = Result.Name;
             description.Text = Result.Description;
             Label hint = new Label { Text = Actions.Hint, Dock = DockStyle.Fill };
-            root.Controls.Add(hint, 0, 3);
+            root.Controls.Add(hint, 0, 6);
             root.SetColumnSpan(hint, 2);
             Panel left = new Panel { Dock = DockStyle.Fill };
             FlowLayoutPanel stepButtons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 80 };
@@ -71,7 +80,7 @@ namespace SalesTrading.UiTests
             steps.Dock = DockStyle.Fill;
             left.Controls.Add(steps);
             left.Controls.Add(stepButtons);
-            root.Controls.Add(left, 0, 4);
+            root.Controls.Add(left, 0, 7);
             TableLayoutPanel details = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, ColumnCount = 1, Padding = new Padding(10, 0, 0, 0) };
             details.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
             details.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
@@ -87,7 +96,7 @@ namespace SalesTrading.UiTests
             details.Controls.Add(stepName, 0, 0);
             details.Controls.Add(action, 0, 1);
             details.Controls.Add(parameters, 0, 2);
-            root.Controls.Add(details, 1, 4);
+            root.Controls.Add(details, 1, 7);
             FlowLayoutPanel footer = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
             AddButton(footer, "保存", () =>
             {
@@ -97,6 +106,9 @@ namespace SalesTrading.UiTests
                     Result.Id = id.Text.Trim();
                     Result.Name = name.Text.Trim();
                     Result.Description = description.Text.Trim();
+                    Result.Page = page.Text.Trim();
+                    Result.Feature = feature.Text.Trim();
+                    Result.Priority = priority.Text.Trim().ToUpperInvariant();
                     Result.Validate();
                     DialogResult = DialogResult.OK;
                     Close();
@@ -104,7 +116,7 @@ namespace SalesTrading.UiTests
                 catch (Exception error) { MessageBox.Show(this, error.Message, "无法保存"); }
             });
             AddButton(footer, "取消", () => { DialogResult = DialogResult.Cancel; Close(); });
-            root.Controls.Add(footer, 0, 5);
+            root.Controls.Add(footer, 0, 8);
             root.SetColumnSpan(footer, 2);
             Controls.Add(root);
             steps.SelectedIndexChanged += (sender, args) =>

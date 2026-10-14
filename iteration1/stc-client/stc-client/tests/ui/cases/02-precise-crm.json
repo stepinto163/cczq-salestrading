@@ -4,14 +4,77 @@
   "Name": "识别机构交易员、勾选及确认报价",
   "Description": "要求 CRM 存在长城证券/田老哥；真实 ParserSvr、CRM、QuoteSvr；检查 checkbox 绑定及行情/报价推送。",
   "Steps": [
-    { "Name": "识别真实 CRM 报价文本", "Action": "parse", "Parameters": { "text": "长城证券 田老哥\n240210 bid 2.5000 1000", "expectedRows": "1" } },
-    { "Name": "核对识别字段及 CRM ID", "Action": "parse.assert", "Parameters": { "securityId": "240210.IB", "institution": "长城证券", "trader": "田老哥", "price": "2.5" } },
-    { "Name": "勾选报价", "Action": "parse.select", "Parameters": { "row": "1", "selected": "true", "expectedCount": "1" } },
-    { "Name": "取消勾选", "Action": "parse.select", "Parameters": { "row": "1", "selected": "false", "expectedCount": "0" } },
-    { "Name": "重新勾选", "Action": "parse.select", "Parameters": { "row": "1", "selected": "true", "expectedCount": "1" } },
-    { "Name": "确认并核对有效报价", "Action": "parse.confirm", "Parameters": { "expectedCount": "1" } },
-    { "Name": "报价管理收到推送", "Action": "management.assert", "Parameters": {} },
-    { "Name": "行情中心收到推送", "Action": "market.assert", "Parameters": {} },
-    { "Name": "核对识别报价历史", "Action": "history.assert", "Parameters": { "minimumCount": "2" } }
-  ]
+    {
+      "Name": "识别真实 CRM 报价文本",
+      "Action": "parse",
+      "Parameters": {
+        "text": "长城证券 田老哥\n240210 bid 2.5000 1000",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "核对识别字段及 CRM ID",
+      "Action": "parse.assert",
+      "Parameters": {
+        "securityId": "240210.IB",
+        "institution": "长城证券",
+        "trader": "田老哥",
+        "price": "2.5"
+      }
+    },
+    {
+      "Name": "勾选报价",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "取消勾选",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "false",
+        "expectedCount": "0"
+      }
+    },
+    {
+      "Name": "重新勾选",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "确认并核对有效报价",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "报价管理收到推送",
+      "Action": "management.assert",
+      "Parameters": {}
+    },
+    {
+      "Name": "行情中心收到推送",
+      "Action": "market.assert",
+      "Parameters": {}
+    },
+    {
+      "Name": "核对识别报价历史",
+      "Action": "history.assert",
+      "Parameters": {
+        "minimumCount": "2"
+      }
+    }
+  ],
+  "Page": "01 报价录入/02 精确报价",
+  "Feature": "02 CRM与确认",
+  "Priority": "P0"
 }

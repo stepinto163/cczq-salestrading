@@ -26,6 +26,7 @@
 
 ## 构建、部署与排障
 
+- [UI自动化：按页面/功能组织的用例、覆盖矩阵和待补场景](../iteration1/stc-client/stc-client/docs/ui-automation.zh-CN.md)
 - [本机 build / deploy 命令](../iteration1/docs/local-build-deploy.zh-CN.md)
 - [FICC 销售交易平台开发入口](../iteration1/README.zh-CN.md)
 - [服务部署包](../iteration1/build/distribution/README.zh-CN.md)

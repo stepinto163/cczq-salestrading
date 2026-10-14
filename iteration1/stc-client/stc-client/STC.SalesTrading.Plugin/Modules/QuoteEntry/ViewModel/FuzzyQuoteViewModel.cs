@@ -9,6 +9,8 @@ using STC.SalesTrading.Plugin.Shared.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,11 +35,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private readonly IQuoteService _quoteService;
         private readonly List<FuzzyCandidate> _candidatesAll = new List<FuzzyCandidate>();
+        private readonly HashSet<FuzzyParseRowViewModel> _observedRows = new HashSet<FuzzyParseRowViewModel>();
         private readonly LatestRequestCoordinator _candidateCoordinator = new LatestRequestCoordinator();
 
         public FuzzyQuoteViewModel(IQuoteService quoteService)
         {
             _quoteService = quoteService;
+            Rows.CollectionChanged += OnRowsChanged;
 
             _status.Add("title", "模糊识别结果")
                    .Add("count", "共 0 条");
@@ -68,8 +72,33 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         partial void OnActiveRowChanged(FuzzyParseRowViewModel value)
         {
+            // 换行或删除时立即清除上一行候选；迟到查询不得重新填回旧结果。
+            _candidateCoordinator.CancelCurrent();
+            _candidatesAll.Clear();
+            CurrentPage = 1;
+            RecomputePagination();
             if (value == null) return;
             _ = QueryCandidatesAsync(value.Content);
+        }
+
+        private void OnRowsChanged(object sender, NotifyCollectionChangedEventArgs args)
+        {
+            foreach (var removed in _observedRows.Where(row => !Rows.Contains(row)).ToArray())
+            {
+                removed.PropertyChanged -= OnRowPropertyChanged;
+                _observedRows.Remove(removed);
+            }
+            foreach (var row in Rows)
+            {
+                if (_observedRows.Add(row)) row.PropertyChanged += OnRowPropertyChanged;
+            }
+            if (ActiveRow != null && !Rows.Contains(ActiveRow)) ActiveRow = Rows.FirstOrDefault();
+            RecomputeStats();
+        }
+
+        private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs args)
+        {
+            if (args.PropertyName == nameof(FuzzyParseRowViewModel.IsSelected)) RecomputeStats();
         }
 
         partial void OnStatusMessageChanged(string value)
@@ -338,6 +367,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         public void Dispose()
         {
+            Rows.CollectionChanged -= OnRowsChanged;
+            foreach (var row in _observedRows) row.PropertyChanged -= OnRowPropertyChanged;
+            _observedRows.Clear();
             _candidateCoordinator.Dispose();
             EventAggregator.Unsubscribe(this);
         }

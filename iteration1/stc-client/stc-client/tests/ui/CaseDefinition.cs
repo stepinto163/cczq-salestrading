@@ -22,10 +22,19 @@ namespace SalesTrading.UiTests
         public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        // 页面路径按产品导航排序；旧用例仍可读取，并归入未分类。
+        public string Page { get; set; } = "未分类";
+        public string Feature { get; set; } = "通用";
+        public string Priority { get; set; } = "P1";
         public List<TestStep> Steps { get; set; } = new List<TestStep>();
 
         public void Validate()
         {
+            if (string.IsNullOrWhiteSpace(Page) || Page.Split('/').Any(part => string.IsNullOrWhiteSpace(part))
+                || string.IsNullOrWhiteSpace(Feature) || !new[] { "P0", "P1", "P2" }.Contains(Priority))
+            {
+                throw new InvalidOperationException("请填写页面路径、功能和优先级（P0/P1/P2）。");
+            }
             if (Version != 1 || !Regex.IsMatch(Id ?? "", "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$"))
             {
                 throw new InvalidOperationException("用例 ID 只允许字母、数字、下划线和短横线，最长 64 位；版本必须为 1。");
@@ -77,6 +86,9 @@ namespace SalesTrading.UiTests
     {
         public static readonly Dictionary<string, string[]> Fields = new Dictionary<string, string[]>
         {
+            { "page.open", new[] { "page", "tab", "view" } },
+            { "fuzzy.preview", new string[0] },
+            { "precise.input", new string[0] },
             { "qtrade.publish", new[] { "appId", "senderQtAccount", "receiverQtAccount", "receiverLogin", "routingType", "routingId", "mode", "securityId", "symbol", "price", "expectedRows" } },
             { "qtrade.confirmPublished", new[] { "contactName", "institutionName" } },
             { "fixture.pending", new[] { "securityId", "price", "quantity", "side", "settlType" } },
@@ -117,6 +129,9 @@ namespace SalesTrading.UiTests
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
         {
+            { "page.open", "切换实际页签并核对页面、查询状态及表格" },
+            { "fuzzy.preview", "模糊报价预览：原文、选择计数、批量范围与删除" },
+            { "precise.input", "精确报价输入：示例、清空、保留原文与页面切换" },
             { "qtrade.publish", "发布真实 QTrade 意向并核对 FIX 接收及待确认" },
             { "qtrade.confirmPublished", "确认收到的 QTrade 报价并核对行情" },
             { "fixture.pending", "API准备待确认夹具（非UI录入）" },

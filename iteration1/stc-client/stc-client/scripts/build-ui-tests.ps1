@@ -2,6 +2,7 @@ param([string]$OutputRoot)
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
 if (!$OutputRoot) { $OutputRoot = Join-Path $clientRoot 'runtime/ui-test-client' }
+$OutputRoot = [IO.Path]::GetFullPath($OutputRoot)
 $source = Join-Path $clientRoot 'tests/ui'
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 $compiler = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\Roslyn\csc.exe' | Select-Object -First 1
@@ -21,7 +22,7 @@ $common = @('/r:System.dll', '/r:System.Core.dll', "/r:$OutputRoot/bin/gateway-a
 $worker = $common + @('/r:System.Configuration.dll', "/r:$OutputRoot/STC.exe", "/r:$framework/Facades/netstandard.dll")
 foreach ($name in @('WindowsBase', 'PresentationFramework', 'PresentationCore', 'System.Xaml')) { $worker += "/r:$framework/$name.dll" }
 foreach ($name in @('common.netapi', 'STC.Common', 'STC.Frame', 'STC.SalesTrading.Plugin', 'CommunityToolkit.Mvvm')) { $worker += "/r:$OutputRoot/bin/$name.dll" }
-& $compiler /nologo /debug:full /target:exe "/out:$OutputRoot/UiScenarioWorker.exe" $worker "$source/CaseDefinition.cs" "$source/OperationInterval.cs" "$source/UiScenarioWorker.cs" "$source/UserNoticeAutomation.cs" "$source/DemoCaptionWindow.cs" "$source/UiRegressionActions.cs" "$source/UiQuoteWorkflowActions.cs" "$source/UiNegotiationActions.cs" "$source/UiQTradePublishActions.cs" "$source/UiFilterLatencyActions.cs" "$source/UiPendingToolbarActions.cs" "$source/UiGroupManagementActions.cs"
+& $compiler /nologo /debug:full /target:exe "/out:$OutputRoot/UiScenarioWorker.exe" $worker "$source/CaseDefinition.cs" "$source/OperationInterval.cs" "$source/UiScenarioWorker.cs" "$source/UserNoticeAutomation.cs" "$source/DemoCaptionWindow.cs" "$source/UiRegressionActions.cs" "$source/UiQuoteWorkflowActions.cs" "$source/UiNegotiationActions.cs" "$source/UiQTradePublishActions.cs" "$source/UiFilterLatencyActions.cs" "$source/UiPendingToolbarActions.cs" "$source/UiGroupManagementActions.cs" "$source/UiPageCoverageActions.cs"
 if ($LASTEXITCODE -ne 0) { throw 'UI worker compilation failed.' }
 $runner = $common + @('/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.Xml.dll', '/r:System.Xml.Linq.dll')
 & $compiler /nologo /debug:full /target:winexe "/out:$OutputRoot/SalesTradingUiTests.exe" $runner "$source/CaseDefinition.cs" "$source/OperationInterval.cs" "$source/CaseEditor.cs" "$source/SuiteRunner.cs" "$source/RunnerWindow.cs"

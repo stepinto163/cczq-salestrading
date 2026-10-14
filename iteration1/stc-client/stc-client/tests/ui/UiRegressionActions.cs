@@ -59,6 +59,15 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "page.open":
+                    await CheckPageAsync(step);
+                    break;
+                case "fuzzy.preview":
+                    await CheckFuzzyPreviewAsync();
+                    break;
+                case "precise.input":
+                    await CheckPreciseInputAsync();
+                    break;
                 case "qtrade.publish":
                     await PublishQTradeAsync(step);
                     break;

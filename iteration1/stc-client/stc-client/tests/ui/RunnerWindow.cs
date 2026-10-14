@@ -14,6 +14,7 @@ namespace SalesTrading.UiTests
         private const string DefaultPassword = "123456";
         private readonly string caseDirectory;
         private readonly DataGridView cases = Grid();
+        private readonly TreeView pageTree = new TreeView { Dock = DockStyle.Fill, HideSelection = false };
         private readonly DataGridView progress = Grid();
         private readonly TextBox details = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both };
         private readonly TextBox config = new TextBox { Width = 600 };
@@ -43,8 +44,17 @@ namespace SalesTrading.UiTests
                 try
                 {
                     string[] ids = options["--run"].Split(',');
-                    List<CaseDefinition> selected = Directory.GetFiles(source, "*.json").Select(CaseDefinition.Read)
-                        .Where(item => ids.Contains(item.Id) || ids.Contains("all")).ToList();
+                    List<CaseDefinition> available = Directory.GetFiles(source, "*.json").Select(CaseDefinition.Read).ToList();
+                    if (available.GroupBy(item => item.Id).Any(group => group.Count() > 1))
+                    {
+                        throw new InvalidOperationException("用例 ID 重复，请先修正目录。");
+                    }
+                    string[] unknown = ids.Where(id => id != "all" && !available.Any(item => item.Id == id)).ToArray();
+                    if (unknown.Length > 0) throw new InvalidOperationException("未知用例 ID：" + string.Join(", ", unknown));
+                    List<CaseDefinition> selected = available.Where(item => ids.Contains(item.Id) || ids.Contains("all"))
+                        .OrderBy(item => item.Page, StringComparer.Ordinal).ThenBy(item => item.Feature, StringComparer.Ordinal)
+                        .ThenBy(item => item.Id, StringComparer.Ordinal).ToList();
+                    if (selected.Count == 0) throw new InvalidOperationException("没有可执行用例。");
                     SuiteRunner cli = new SuiteRunner();
                     if (options.ContainsKey("--interval-ms"))
                     {
@@ -156,6 +166,8 @@ namespace SalesTrading.UiTests
             cases.Columns.Add("steps", "步骤数");
             cases.Columns.Add("state", "状态");
             cases.Columns.Add("description", "说明 / 前置条件");
+            cases.Columns.Add("page", "页面 / 功能");
+            cases.Columns.Add("priority", "优先级");
             cases.MultiSelect = true;
             cases.CurrentCellDirtyStateChanged += (sender, args) =>
             {
@@ -167,7 +179,7 @@ namespace SalesTrading.UiTests
             {
                 if (running || args.KeyCode != Keys.Space || cases.SelectedRows.Count == 0) return;
                 cases.EndEdit();
-                DataGridViewRow[] selectedRows = cases.SelectedRows.Cast<DataGridViewRow>().ToArray();
+                DataGridViewRow[] selectedRows = cases.SelectedRows.Cast<DataGridViewRow>().Where(row => row.Visible).ToArray();
                 bool check = selectedRows.Any(row => !IsCaseChecked(row));
                 foreach (DataGridViewRow row in selectedRows) row.Cells[0].Value = check;
                 args.Handled = true;
@@ -175,7 +187,18 @@ namespace SalesTrading.UiTests
             };
             for (int i = 1; i < cases.Columns.Count; i++) cases.Columns[i].ReadOnly = true;
             cases.Columns[3].FillWeight = 35;
-            root.Controls.Add(cases, 0, 3);
+            cases.Columns["name"].FillWeight = 180;
+            cases.Columns["description"].FillWeight = 200;
+            cases.Columns["priority"].FillWeight = 40;
+            SplitContainer catalog = new SplitContainer
+            {
+                Dock = DockStyle.Fill, Size = new Size(1300, 250),
+                FixedPanel = FixedPanel.Panel1, SplitterDistance = 260
+            };
+            catalog.Panel1.Controls.Add(pageTree);
+            catalog.Panel2.Controls.Add(cases);
+            pageTree.AfterSelect += (sender, args) => ApplyPageFilter();
+            root.Controls.Add(catalog, 0, 3);
             SplitContainer bottom = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterDistance = 220 };
             foreach (string column in new[] { "用例", "步骤", "状态", "详情" }) progress.Columns.Add(column, column);
             progress.ReadOnly = true;
@@ -221,20 +244,73 @@ namespace SalesTrading.UiTests
 
         private void LoadCases()
         {
+            string selectedPage = pageTree.SelectedNode?.Tag as string ?? "";
             cases.Rows.Clear();
+            pageTree.Nodes.Clear();
+            TreeNode allPages = pageTree.Nodes.Add("全部页面");
+            allPages.Tag = "";
+            var catalogItems = new List<Tuple<string, CaseDefinition>>();
             foreach (string path in Directory.GetFiles(caseDirectory, "*.json").OrderBy(file => file))
             {
                 try
                 {
                     CaseDefinition item = CaseDefinition.Read(path);
-                    int index = cases.Rows.Add(true, item.Id, item.Name, item.Steps.Count, "待运行", item.Description);
-                    cases.Rows[index].Tag = path;
+                    catalogItems.Add(Tuple.Create(path, item));
                 }
                 catch (Exception error)
                 {
                     int index = cases.Rows.Add(false, Path.GetFileName(path), "无效用例", 0, "错误", error.Message);
                     cases.Rows[index].Tag = path;
                 }
+            }
+            foreach (var entry in catalogItems.OrderBy(item => item.Item2.Page, StringComparer.Ordinal)
+                .ThenBy(item => item.Item2.Feature, StringComparer.Ordinal).ThenBy(item => item.Item2.Id, StringComparer.Ordinal))
+            {
+                CaseDefinition item = entry.Item2;
+                string category = item.Page + "/" + item.Feature;
+                int index = cases.Rows.Add(true, item.Id, item.Name, item.Steps.Count, "待运行", item.Description, category, item.Priority);
+                cases.Rows[index].Tag = entry.Item1;
+                TreeNode parent = allPages;
+                string prefix = "";
+                foreach (string part in category.Split('/'))
+                {
+                    prefix = prefix.Length == 0 ? part : prefix + "/" + part;
+                    TreeNode child = parent.Nodes.Cast<TreeNode>().FirstOrDefault(node => (string)node.Tag == prefix);
+                    if (child == null)
+                    {
+                        child = parent.Nodes.Add(part);
+                        child.Tag = prefix;
+                    }
+                    parent = child;
+                }
+            }
+            allPages.Expand();
+            pageTree.SelectedNode = FindPageNode(allPages, selectedPage) ?? allPages;
+            ApplyPageFilter();
+            UpdateSelectionCount();
+        }
+
+        private static TreeNode FindPageNode(TreeNode root, string path)
+        {
+            if ((string)root.Tag == path) return root;
+            foreach (TreeNode child in root.Nodes)
+            {
+                TreeNode match = FindPageNode(child, path);
+                if (match != null) return match;
+            }
+            return null;
+        }
+
+        private void ApplyPageFilter()
+        {
+            cases.EndEdit();
+            cases.CurrentCell = null;
+            string prefix = pageTree.SelectedNode?.Tag as string ?? "";
+            foreach (DataGridViewRow row in cases.Rows)
+            {
+                string category = Convert.ToString(row.Cells["page"].Value);
+                row.Visible = prefix.Length == 0 || category == prefix || category.StartsWith(prefix + "/", StringComparison.Ordinal);
+                if (!row.Visible) row.Selected = false;
             }
             UpdateSelectionCount();
         }
@@ -248,16 +324,23 @@ namespace SalesTrading.UiTests
         {
             // 先提交当前复选框编辑，避免离开单元格时覆盖全选结果。
             cases.EndEdit();
-            foreach (DataGridViewRow row in cases.Rows) row.Cells[0].Value = check;
-            if (check) cases.SelectAll();
-            else cases.ClearSelection();
+            foreach (DataGridViewRow row in cases.Rows.Cast<DataGridViewRow>().Where(row => row.Visible)) row.Cells[0].Value = check;
+            cases.ClearSelection();
+            if (check)
+            {
+                foreach (DataGridViewRow row in cases.Rows.Cast<DataGridViewRow>().Where(row => row.Visible))
+                {
+                    row.Selected = true;
+                }
+            }
             UpdateSelectionCount();
         }
 
         private void UpdateSelectionCount()
         {
-            selectionCount.Text = "已勾选 " + cases.Rows.Cast<DataGridViewRow>().Count(IsCaseChecked)
-                + " / " + cases.Rows.Count + "；Ctrl/Shift 多选，空格勾选/取消";
+            var visibleRows = cases.Rows.Cast<DataGridViewRow>().Where(row => row.Visible).ToArray();
+            selectionCount.Text = "当前范围已勾选 " + visibleRows.Count(IsCaseChecked)
+                + " / " + visibleRows.Length + "（总计 " + cases.Rows.Count + "）；全选和运行仅作用于当前页面范围";
         }
 
         private string SelectedPath()
@@ -311,8 +394,21 @@ namespace SalesTrading.UiTests
         {
             if (running) return;
             cases.EndEdit();
-            List<CaseDefinition> selected = cases.Rows.Cast<DataGridViewRow>()
-                .Where(IsCaseChecked).Select(row => CaseDefinition.Read((string)row.Tag)).ToList();
+            List<CaseDefinition> selected;
+            try
+            {
+                selected = cases.Rows.Cast<DataGridViewRow>()
+                    .Where(row => row.Visible && IsCaseChecked(row)).Select(row => CaseDefinition.Read((string)row.Tag)).ToList();
+                if (selected.GroupBy(item => item.Id).Any(group => group.Count() > 1))
+                {
+                    throw new InvalidOperationException("选中用例的 ID 重复，请先修正。");
+                }
+            }
+            catch (Exception error)
+            {
+                status.Text = "用例配置错误：" + error.Message;
+                return;
+            }
             if (selected.Count == 0)
             {
                 status.Text = "请先勾选要运行的用例；Ctrl/Shift 多选后按空格可批量勾选。";
@@ -324,6 +420,7 @@ namespace SalesTrading.UiTests
             running = true;
             foreach (Button button in lockedButtons) button.Enabled = false;
             cases.Enabled = false;
+            pageTree.Enabled = false;
             runner.Progress += entry =>
             {
                 string state = (string)entry["state"];
@@ -351,6 +448,7 @@ namespace SalesTrading.UiTests
                 running = false;
                 foreach (Button button in lockedButtons) button.Enabled = true;
                 cases.Enabled = true;
+                pageTree.Enabled = true;
             }
         }
 

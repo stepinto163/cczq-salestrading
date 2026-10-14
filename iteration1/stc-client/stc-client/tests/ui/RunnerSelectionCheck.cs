@@ -14,11 +14,16 @@ namespace SalesTrading.UiTests
             try
             {
                 Application.EnableVisualStyles();
+                // 独立验证普通启动默认值，避免继承外部 QTrade 测试窗口的账户设置。
+                Environment.SetEnvironmentVariable("STC_UI_USER", null);
+                Environment.SetEnvironmentVariable("STC_UI_PASSWORD", null);
                 string source = Path.Combine(Directory.GetCurrentDirectory(), "cases");
                 Directory.CreateDirectory(source);
                 for (int index = 1; index <= 3; index++)
                 {
                     var item = new CaseDefinition { Id = "selection-" + index, Name = "选择检查 " + index };
+                    item.Page = index == 2 ? "02 行情中心/01 利率全部" : "01 报价录入/01 精确报价";
+                    item.Feature = "选择检查";
                     item.Steps.Add(new TestStep { Name = "仅检查管理器，不执行业务", Action = "management.select" });
                     item.Save(Path.Combine(source, item.Id + ".json"));
                 }
@@ -68,9 +73,31 @@ namespace SalesTrading.UiTests
                     FindButton(form, "取消全选").PerformClick();
                     FindButton(form, "运行勾选").PerformClick();
                     Require(type.GetField("runner", fields).GetValue(form) == null, "空选择不应启动业务测试");
+                    var tree = (TreeView)type.GetField("pageTree", fields).GetValue(form);
+                    Require(tree.Width >= 200 && tree.Width < form.ClientSize.Width / 3 && grid.Width > 700,
+                        "页面树挤占用例列表宽度");
+                    TreeNode allPages = tree.Nodes[0];
+                    tree.SelectedNode = allPages.Nodes.Cast<TreeNode>().Single(node => (string)node.Tag == "01 报价录入");
+                    Application.DoEvents();
+                    Require(grid.Rows.Cast<DataGridViewRow>().Count(row => row.Visible) == 2, "页面树未筛选子页面用例");
+                    FindButton(form, "全选").PerformClick();
+                    Require(CheckedCount(grid) == 2, "页面范围全选误勾选其他页面");
+                    tree.SelectedNode = allPages.Nodes.Cast<TreeNode>().Single(node => (string)node.Tag == "02 行情中心");
+                    Application.DoEvents();
+                    Require(grid.Rows.Cast<DataGridViewRow>().Count(row => row.Visible) == 1, "切换页面范围失败");
+                    FindButton(form, "运行勾选").PerformClick();
+                    Require(type.GetField("runner", fields).GetValue(form) == null, "不得运行其他页面隐藏的勾选项");
+                    tree.SelectedNode = allPages;
+                    Require(CheckedCount(grid) == 2, "切换页面丢失已有勾选状态");
+                    tree.ExpandAll();
+                    using (var screenshot = new System.Drawing.Bitmap(form.Width, form.Height))
+                    {
+                        form.DrawToBitmap(screenshot, new System.Drawing.Rectangle(0, 0, form.Width, form.Height));
+                        screenshot.Save(Path.Combine(Directory.GetCurrentDirectory(), "page-tree.png"));
+                    }
                     form.Close();
                 }
-                Console.WriteLine("PASS: account/interval defaults, select all/none, multiple rows, Space batch toggle, checkbox click commit, empty-run guard.");
+                Console.WriteLine("PASS: account/interval defaults, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard.");
                 return 0;
             }
             catch (Exception error)
