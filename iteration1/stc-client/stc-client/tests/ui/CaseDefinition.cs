@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -101,6 +101,8 @@ namespace SalesTrading.UiTests
             { "management.reject", new[] { "button", "message" } },
             { "management.operate", new[] { "button" } },
             { "management.select", new string[0] },
+            { "filter.prepare", new[] { "securityId" } },
+            { "filter.combination", new[] { "page", "tab", "view", "ranges", "tags", "search", "expected", "reset" } },
             { "filter.latency", new[] { "quotes", "samples", "securityId" } },
             { "quote.assert", new[] { "status", "price" } },
             { "pending.assert", new string[0] },
@@ -148,6 +150,8 @@ namespace SalesTrading.UiTests
             { "groups.manage", "关注债券与筛选分组：保存、重读、激活和取消" },
             { "pending.toolbar", "验证报价确认工具栏全部编辑控件、持久化与删除" },
             { "management.select", "选中本例管理报价，验证筛选刷新清除选择" },
+            { "filter.prepare", "通过精确报价准备六笔组合筛选样本" },
+            { "filter.combination", "操作组合筛选并核对精确报价集合（支持最优价格）" },
             { "filter.latency", "组合筛选延迟（需显式授权，最多500报价）" },
             { "pending.assert", "核对报价确认页推送" }, { "market.assert", "核对行情中心推送" },
             { "management.assert", "核对报价管理推送" }, { "history.assert", "核对报价变更历史" },
@@ -172,6 +176,8 @@ namespace SalesTrading.UiTests
         public static string Hint = "每例自动登录、收集截图及日志并清理本例报价。参数值支持 ${securityId}。" +
             "\r\nmanagement.operate 的 button：Refer/Unrefer/删除；management.reject 的 button：保存修改；row 从 1 开始；selected：true/false。" +
             "\r\nside：1=Bid，2=Ofr；settlType：1=T+0，2=T+1；机构和交易员填写 CRM 真实名称。" +
-            "\r\n侧栏 page：mgmt/market；visible：true/false；range 的 min/max 均必填；parse.row 的 side：Bid/Ofr。";
+            "\r\n侧栏 page：mgmt/market；visible：true/false；range 的 min/max 均必填；parse.row 的 side：Bid/Ofr。" +
+            "\r\nfilter.combination：ranges/tags 填 JSON 对象文本；区间为两个字符串，空字符串表示无界；" +
+            "expected 填 B1,B2 等别名或 NONE；reset=false 保留未指定条件；search=<empty> 清空搜索。计价方式单选，清算速度可多选。";
     }
 }

@@ -72,6 +72,12 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "filter.prepare":
+                    await PrepareFilterCombinationAsync(step);
+                    break;
+                case "filter.combination":
+                    await CheckFilterCombinationAsync(step);
+                    break;
                 case "page.open":
                     await CheckPageAsync(step);
                     break;

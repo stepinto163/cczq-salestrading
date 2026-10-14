@@ -1,0 +1,340 @@
+{
+  "Version": 1,
+  "Id": "54-filter-combinations-rateBest",
+  "Name": "利率最优：多条件组合与边界",
+  "Description": "六笔独立 Bid/Ofr 样本经真实识别确认；按显式预期别名核对集合。覆盖价格/数量/清算/计价/文本及 AND、同字段 OR、边界、移除与重置。仅使用已接通字段；跳过缺数据源字段。默认测试券 240210.IB，价格区间6.1–6.7须无已有报价。",
+  "Page": "02 行情中心/04 利率最优",
+  "Feature": "组合筛选",
+  "Priority": "P0",
+  "Steps": [
+    {
+      "Name": "通过精确报价识别确认六笔独立样本",
+      "Action": "filter.prepare",
+      "Parameters": {
+        "securityId": "${securityId}"
+      }
+    },
+    {
+      "Name": "Bid 基线：三档价格",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B1",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Bid 两端闭区间：下界和上界均命中",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.202\", \"6.303\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Bid 精确值：最小值等于最大值",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.202\", \"6.202\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Bid 价格与数量下限 AND",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"], \"bidQuantity\": [\"300\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Bid 价格、数量、T+0 三条件 AND",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"], \"bidQuantity\": [\"300\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"T+0\"]}",
+        "search": "${securityId}",
+        "expected": "B3",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Bid 价格、数量、T+1 三条件 AND",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"], \"bidQuantity\": [\"300\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"T+1\"]}",
+        "search": "${securityId}",
+        "expected": "B2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "清算同字段多选 OR，跨字段仍为 AND",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"], \"bidQuantity\": [\"300\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"T+0\", \"T+1\"]}",
+        "search": "${securityId}",
+        "expected": "B2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "数量边界不命中：501 大于 500",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"], \"bidQuantity\": [\"501\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"T+1\"]}",
+        "search": "${securityId}",
+        "expected": "NONE",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "只移除数量条件：保留价格和 T+1",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidQuantity\": [\"\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B2",
+        "reset": "false"
+      }
+    },
+    {
+      "Name": "清空旧组合后恢复 Bid 三档",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B1",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "非远期枚举展开：包含 T+0 与 T+1",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"非远期\"]}",
+        "search": "${securityId}",
+        "expected": "B1",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "远期与本例非远期报价不匹配",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"远期\"]}",
+        "search": "${securityId}",
+        "expected": "NONE",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "计价方式净价与收益率报价不匹配",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"净价\"]}",
+        "search": "${securityId}",
+        "expected": "NONE",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "计价方式从净价切回收益率：旧选择被替换",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "B1",
+        "reset": "false"
+      }
+    },
+    {
+      "Name": "价格加无匹配文本：空结果",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "FILTER-NO-SUCH-SECURITY-72491",
+        "expected": "NONE",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "文本大小写不敏感：小写市场后缀",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": ".ib",
+        "expected": "B1",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Ofr 基线：三档价格",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"offerPrice\": [\"6.4\", \"6.7\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "O3",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Ofr 闭区间：两档价格",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"offerPrice\": [\"6.404\", \"6.505\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "O2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Ofr 价格、数量、T+1 三条件 AND",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"offerPrice\": [\"6.4\", \"6.7\"], \"offerQuantity\": [\"400\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"T+1\"]}",
+        "search": "${securityId}",
+        "expected": "O3",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Ofr 价格加 T+0",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"offerPrice\": [\"6.4\", \"6.7\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"], \"settlType\": [\"T+0\"]}",
+        "search": "${securityId}",
+        "expected": "O1",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "Ofr 等价边界加等量边界",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"offerPrice\": [\"6.505\", \"6.505\"], \"offerQuantity\": [\"400\", \"\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "O2",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "单笔不能同时满足 Bid 和 Ofr 价格条件",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"bidPrice\": [\"6.1\", \"6.4\"], \"offerPrice\": [\"6.4\", \"6.7\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "NONE",
+        "reset": "true"
+      }
+    },
+    {
+      "Name": "重置矛盾组合后恢复 Ofr",
+      "Action": "filter.combination",
+      "Parameters": {
+        "page": "market",
+        "tab": "rateBest",
+        "view": "BoardBestView",
+        "ranges": "{\"offerPrice\": [\"6.4\", \"6.7\"]}",
+        "tags": "{\"quoteType\": [\"收益率\"]}",
+        "search": "${securityId}",
+        "expected": "O3",
+        "reset": "true"
+      }
+    }
+  ]
+}
