@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -13,6 +13,7 @@ namespace SalesTrading.UiTests
         private AdornerLayer layer;
         private OutlineAdorner outline;
         private bool suspended;
+        public bool VerificationPinned { get; set; }
         private bool disposed;
 
         public FrameworkElement Target { get; private set; }
@@ -25,7 +26,7 @@ namespace SalesTrading.UiTests
         private void OnInput(object sender, ProcessInputEventArgs args)
         {
             var focus = args.StagingItem.Input as KeyboardFocusChangedEventArgs;
-            if (focus != null && focus.RoutedEvent == Keyboard.GotKeyboardFocusEvent)
+            if (!VerificationPinned && focus != null && focus.RoutedEvent == Keyboard.GotKeyboardFocusEvent)
             {
                 Show(focus.NewFocus as FrameworkElement);
             }

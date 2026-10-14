@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -33,16 +33,30 @@ namespace SalesTrading.UiTests
             var feedbackButtons = Descendants<Button>(container)
                 .Where(button => new[] { "有用", "无用", "不适用" }.Contains(Convert.ToString(button.Content))).ToArray();
             Require(feedbackButtons.Length == 3, "反馈按钮未完整渲染");
-            Require(feedbackButtons.All(button => button.FontSize == 11), "反馈按钮字号应为11");
+            foreach (var button in feedbackButtons)
+            {
+                await VerifyAsync(button, "推荐反馈 · " + button.Content + " · 字号预期 11，实际 " + button.FontSize,
+                    () => Require(button.FontSize == 11, "反馈按钮字号应为11"));
+            }
             var ownerTexts = Descendants<TextBlock>(container).Where(text => text.Text == recommendation.OwnerTrader).ToArray();
-            Require(ownerTexts.Length > 0 && ownerTexts.All(text => text.FontSize == 11), "长城交易员字号应为11");
+            Require(ownerTexts.Length > 0, "验证目标缺失：长城交易员");
+            foreach (var text in ownerTexts)
+            {
+                await VerifyAsync(text, "长城交易员 · 字号预期 11，实际 " + text.FontSize,
+                    () => Require(text.FontSize == 11, "长城交易员字号应为11"));
+            }
             var feedbackTexts = Descendants<TextBlock>(container).Where(text => text.Text == recommendation.FeedbackText).ToArray();
-            Require(feedbackTexts.Length > 0 && feedbackTexts.All(text => text.FontSize == 10), "反馈状态字号应为10");
+            Require(feedbackTexts.Length > 0, "验证目标缺失：反馈状态");
+            foreach (var text in feedbackTexts)
+            {
+                await VerifyAsync(text, "反馈状态 · 字号预期 10，实际 " + text.FontSize,
+                    () => Require(text.FontSize == 10, "反馈状态字号应为10"));
+            }
             var panel = Descendants<BondDetailPanel>(view).Single(item => Descendants<DataGrid>(item).Contains(grid));
             var refresh = Descendants<Button>(panel).Single(button => Convert.ToString(button.Content) == "刷新");
-            Require(refresh.FontSize == 11, "刷新按钮字号应为11");
+            await VerifyAsync(refresh, "刷新按钮 · 字号预期 11，实际 " + refresh.FontSize, () => Require(refresh.FontSize == 11, "刷新按钮字号应为11"));
             var title = Descendants<TextBlock>(panel).Single(text => text.Text == "智能推荐");
-            Require(title.FontSize == 12, "推荐标题字号应为12");
+            await VerifyAsync(title, "智能推荐标题 · 字号预期 12，实际 " + title.FontSize, () => Require(title.FontSize == 12, "推荐标题字号应为12"));
             File.WriteAllText(Path.Combine(reportDirectory, "recommendation-typography.json"), JObject.FromObject(new
             {
                 panelWidth = panel.ActualWidth,
@@ -178,18 +192,28 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.row":
                     var row = model.QuotePage.Precise.Rows[int.Parse(Parameter(step, "row")) - 1];
-                    HighlightRow(row);
-                    Require(row.Code == Parameter(step, "securityId"), "识别债券不匹配：" + row.Code);
-                    Require(row.Direction == Parameter(step, "side"), "识别方向不匹配：" + row.Direction);
-                    Require(decimal.Parse(row.Price, CultureInfo.InvariantCulture) == decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture), "识别价格不匹配：" + row.Price);
-                    Require(decimal.Parse(row.Volume, CultureInfo.InvariantCulture) == decimal.Parse(Parameter(step, "quantity"), CultureInfo.InvariantCulture), "识别数量不匹配：" + row.Volume);
+                    await VerifyCellAsync(row, "代码", Parameter(step, "securityId"), () => row.Code);
+                    await VerifyCellAsync(row, "方向", Parameter(step, "side"), () => row.Direction);
+                    await VerifyCellAsync(row, "报价", decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture),
+                        () => decimal.Parse(row.Price, CultureInfo.InvariantCulture));
+                    await VerifyCellAsync(row, "报量(万)", decimal.Parse(Parameter(step, "quantity"), CultureInfo.InvariantCulture),
+                        () => decimal.Parse(row.Volume, CultureInfo.InvariantCulture));
                     break;
                 case "parse.count":
-                    highlight?.Show(Descendants<DataGrid>(view).FirstOrDefault(grid => grid.IsVisible
-                        && grid.ItemsSource == model.QuotePage.Precise.Rows));
-                    Require(model.QuotePage.Precise.Rows.Count == int.Parse(Parameter(step, "rows")), "剩余预览条数不匹配");
-                    Require(model.QuotePage.Precise.SelectedCount == int.Parse(Parameter(step, "selected")), "预览选中数量不匹配");
-                    Require(model.QuotePage.Precise.Rows.All(preview => preview.Row.Revision == 0), "未确认预览不应已持久化");
+                    var countPage = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
+                    var totalCount = Descendants<TextBlock>(countPage).Single(text => text.IsVisible
+                        && text.DataContext is STC.SalesTrading.Plugin.Shared.ViewModel.StatusBarSection
+                        && text.Text.StartsWith("共 "));
+                    await VerifyAsync(totalCount, "预览总条数 · 预期 " + Parameter(step, "rows") + "，实际 " + model.QuotePage.Precise.Rows.Count,
+                        () => Require(model.QuotePage.Precise.Rows.Count == int.Parse(Parameter(step, "rows"))
+                            && totalCount.Text == "共 " + Parameter(step, "rows") + " 条", "剩余预览条数不匹配"));
+                    var selectionCount = Descendants<TextBlock>(Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible))
+                        .Single(text => text.Inlines.OfType<System.Windows.Documents.Run>().Any(run =>
+                            BindingOperations.GetBinding(run, System.Windows.Documents.Run.TextProperty)?.Path?.Path == "SelectedCount"));
+                    await VerifyAsync(selectionCount, "已选条数 · 预期 " + Parameter(step, "selected") + "，实际 " + model.QuotePage.Precise.SelectedCount,
+                        () => Require(model.QuotePage.Precise.SelectedCount == int.Parse(Parameter(step, "selected")), "预览选中数量不匹配"));
+                    await VerifyAsync(null, "模型校验 · 未确认预览的 revision 必须为 0",
+                        () => Require(model.QuotePage.Precise.Rows.All(preview => preview.Row.Revision == 0), "未确认预览不应已持久化"));
                     break;
                 case "parse.toolbar":
                     var toolbarView = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
@@ -209,19 +233,19 @@ namespace SalesTrading.UiTests
                     }
                     break;
                 case "parse.warning":
-                    highlight?.Show(Descendants<TextBlock>(view).FirstOrDefault(text => text.IsVisible
-                        && text.Text.Contains(Parameter(step, "message"))));
-                    Require(model.QuotePage.Precise.StatusMessage.Contains(Parameter(step, "message")),
-                        "缺少识别警告：" + model.QuotePage.Precise.StatusMessage);
-                    Require(Descendants<TextBlock>(view).Any(text => text.IsVisible && text.Text.Contains(Parameter(step, "message"))),
-                        "识别警告未显示在界面");
+                    var warning = Descendants<TextBlock>(view).FirstOrDefault(text => text.IsVisible
+                        && text.Text.Contains(Parameter(step, "message")));
+                    Require(warning != null, "验证目标缺失：识别警告 " + Parameter(step, "message"));
+                    await VerifyAsync(warning, "识别警告 · " + Parameter(step, "message"), () =>
+                        Require(model.QuotePage.Precise.StatusMessage.Contains(Parameter(step, "message"))
+                            && warning.Text.Contains(Parameter(step, "message")), "识别警告未显示在界面"));
                     break;
                 case "parse.settlement":
                     var datedRow = model.QuotePage.Precise.Rows[int.Parse(Parameter(step, "row")) - 1];
-                    HighlightRow(datedRow);
-                    Require(datedRow.Settlement == Parameter(step, "settlement"), "清算速度不匹配：" + datedRow.Settlement);
-                    Require(datedRow.Row.TradeDate?.Date == DateTime.Today.AddDays(int.Parse(Parameter(step, "dayOffset"))), "交易日期不匹配：" + datedRow.Row.TradeDate);
-                    Require(datedRow.PriceType == Parameter(step, "priceType"), "计价方式不匹配：" + datedRow.PriceType);
+                    await VerifyCellAsync(datedRow, "清算速度", Parameter(step, "settlement"), () => datedRow.Settlement);
+                    await VerifyCellAsync(datedRow, "交易日期", (DateTime?)DateTime.Today.AddDays(int.Parse(Parameter(step, "dayOffset"))),
+                        () => datedRow.Row.TradeDate?.Date);
+                    await VerifyCellAsync(datedRow, "价格类型", Parameter(step, "priceType"), () => datedRow.PriceType);
                     break;
                 case "parse.click":
                     var precise = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);

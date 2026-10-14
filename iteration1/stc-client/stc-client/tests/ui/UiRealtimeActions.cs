@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -126,7 +126,7 @@ namespace SalesTrading.UiTests
                 string id = (string)change["quoteId"];
                 string clientId = (string)change["clientQuoteId"];
                 bool active = phase == "active" || phase == "restored";
-                await BeginVerificationAsync("观察账号 · " + definition.Feature + " · " + RealtimePhaseLabel(phase));
+                highlight?.Clear();
                 Func<bool> matches;
                 if (tab == "quote-confirm" || previewInput != null || tab == "history")
                 {
@@ -169,24 +169,33 @@ namespace SalesTrading.UiTests
                 }
                 await Until(matches, "观察账号页面未实时更新：" + tab + "/" + phase, 20);
                 view.UpdateLayout();
-                Require(matches(), "渲染后页面状态不一致");
+
                 DateTime observedAt = DateTime.Now;
                 string expectation = tab == "today"
                     ? (active ? "目标报价已显示为有效报价" : "目标报价未出现在当前可见记录中")
                     : "当前页面已符合本阶段的更新或隔离规则";
-                var grid = Descendants<DataGrid>(view).FirstOrDefault(control => control.IsVisible);
-                FrameworkElement verificationTarget = previewInput ?? (FrameworkElement)grid ?? view;
-                if (grid != null && active)
+                var currentPage = Descendants<FrameworkElement>(view).FirstOrDefault(control => control.IsVisible
+                    && control.GetType().Name == Parameter(step, "view"));
+                Require(currentPage != null, "验证目标缺失：实时观察页面 " + Parameter(step, "view"));
+                var grids = Descendants<DataGrid>(currentPage).Where(control => control.IsVisible).ToArray();
+                FrameworkElement verificationTarget = previewInput ?? (FrameworkElement)grids.FirstOrDefault();
+                Require(verificationTarget != null, "验证目标缺失：当前页面没有可见的结果区域");
+                bool expectsRow = active && previewInput == null && tab != "quote-confirm" && tab != "history";
+                if (expectsRow)
                 {
-                    object matchingRow = grid.Items.Cast<object>().FirstOrDefault(row => RowIncludesQuote(row, id));
-                    if (matchingRow != null)
-                    {
-                        grid.ScrollIntoView(matchingRow);
-                        grid.UpdateLayout();
-                        verificationTarget = grid.ItemContainerGenerator.ContainerFromItem(matchingRow) as FrameworkElement ?? grid;
-                    }
+                    Func<object, bool> matchesRow = row => tab == "alert"
+                        ? observedAlerts.Contains((string)row.GetType().GetProperty("AlertKey")?.GetValue(row))
+                        : RowIncludesQuote(row, id);
+                    var grid = grids.FirstOrDefault(candidate => candidate.Items.Cast<object>().Any(matchesRow));
+                    Require(grid != null, "验证目标缺失：目标报价尚未呈现在当前页面");
+                    object matchingRow = grid.Items.Cast<object>().First(matchesRow);
+                    grid.ScrollIntoView(matchingRow);
+                    grid.UpdateLayout();
+                    verificationTarget = grid.ItemContainerGenerator.ContainerFromItem(matchingRow) as FrameworkElement;
+                    Require(verificationTarget != null, "验证目标缺失：实时更新报价行尚未呈现");
                 }
-                await HoldVerificationAsync(verificationTarget, "观察账号 · " + definition.Feature + " · " + RealtimePhaseLabel(phase) + " · " + expectation);
+                await VerifyAsync(verificationTarget, "观察账号 · " + definition.Feature + " · " + RealtimePhaseLabel(phase)
+                    + " · 报价 " + (id ?? clientId) + " · " + expectation, () => Require(matches(), "渲染后页面状态不一致"));
                 Require(matches(), "展示验证结果期间页面状态发生异常变化");
                 Capture("realtime-" + phase);
                 File.WriteAllText(Path.Combine(reportDirectory, "realtime-" + phase + ".json"), new JObject

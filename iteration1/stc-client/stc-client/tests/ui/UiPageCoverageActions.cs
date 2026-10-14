@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -46,16 +46,20 @@ namespace SalesTrading.UiTests
                 && control.GetType().Name == Parameter(step, "view") && ReferenceEquals(control.DataContext, target))) != null,
                 "页签呈现 " + page + "/" + tabKey);
             var loadingProperty = target.GetType().GetProperty("IsLoading");
-            highlight?.Show(Descendants<DataGrid>(pageView).FirstOrDefault(grid => grid.IsVisible) ?? (FrameworkElement)pageView);
+            var pageGrid = Descendants<DataGrid>(pageView).FirstOrDefault(grid => grid.IsVisible);
+            Require(pageGrid != null, "验证目标缺失：页面没有可见数据表 " + tabKey);
             if (loadingProperty != null)
             {
                 await Until(() => !(bool)loadingProperty.GetValue(target), "页面查询结束 " + tabKey);
             }
             string loadState = Convert.ToString(target.GetType().GetProperty("LoadState")?.GetValue(target));
             string error = Convert.ToString(target.GetType().GetProperty("ErrorMessage")?.GetValue(target));
-            Require(loadState != "Error" && loadState != "Stale", "页面未就绪 " + tabKey + ": " + loadState + " " + error);
-            Require(string.IsNullOrWhiteSpace(error), "页面查询失败 " + tabKey + ": " + error);
-            Require(Descendants<DataGrid>(pageView).Any(grid => grid.IsVisible), "页面没有可见数据表 " + tabKey);
+            await VerifyAsync(pageGrid, "页面就绪 · " + tabKey + " · 查询状态 " + loadState, () =>
+            {
+                Require(loadState != "Error" && loadState != "Stale", "页面未就绪 " + tabKey + ": " + loadState + " " + error);
+                Require(string.IsNullOrWhiteSpace(error), "页面查询失败 " + tabKey + ": " + error);
+                Require(pageGrid.IsVisible, "页面没有可见数据表 " + tabKey);
+            });
             File.WriteAllText(Path.Combine(reportDirectory, stepNumber.ToString("D2") + "-page.json"), new JObject
             {
                 ["page"] = page, ["tab"] = tabKey, ["view"] = pageView.GetType().Name,

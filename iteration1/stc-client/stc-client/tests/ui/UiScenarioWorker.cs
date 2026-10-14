@@ -1,4 +1,4 @@
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -256,17 +256,28 @@ namespace SalesTrading.UiTests
 
         private async Task ExecuteAsync(TestStep step)
         {
-            bool verification = new[] { "quote.assert", "pending.assert", "market.assert", "management.assert",
-                "history.assert", "parse.assert", "quote.fields", "parse.row", "parse.count", "parse.warning",
-                "parse.settlement", "recommendation.typography" }.Contains(step.Action);
-            if (verification)
+            // 每个断言负责定位自己的目标；不得在验证结束后覆盖成整个页面。
+            highlight?.Clear();
+            try
             {
-                await BeginVerificationAsync(step.Name);
+                bool serverOnly = new[] { "quote.assert", "history.assert", "quote.fields" }.Contains(step.Action);
+                if (serverOnly)
+                {
+                    await BeginVerificationAsync("服务端校验（无对应界面控件） · " + step.Name);
+                }
+                await ExecuteActionAsync(step);
+                if (serverOnly)
+                {
+                    await HoldVerificationAsync(null, "服务端校验 · " + step.Name + " · 结果见报告 JSON");
+                }
             }
-            await ExecuteActionAsync(step);
-            if (verification)
+            finally
             {
-                await HoldVerificationAsync(view, step.Name);
+                if (highlight != null)
+                {
+                    highlight.VerificationPinned = false;
+                }
+                verificationStepGranted = false;
             }
         }
 
@@ -289,7 +300,8 @@ namespace SalesTrading.UiTests
                     var pendingRow = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == quoteId);
                     // 分组表保持虚拟化；先滚动并展开本例行，再判断实际控件是否呈现。
                     await SelectPendingRowAsync(pendingPage, pendingRow, false);
-                    HighlightRow(pendingRow);
+                    await VerifyAsync(FindVerificationRow(pendingRow), "报价确认 · 报价 " + quoteId + " 已显示",
+                        () => Require(pendingRow.RecognitionId == quoteId, "待确认报价标识不匹配"));
                     await Until(() => Descendants<DataGrid>(view).Any(grid => grid.Items.OfType<QuoteConfirmRowViewModel>()
                         .Any(row => row.RecognitionId == quoteId)), "报价确认表呈现本例报价");
                     break;
@@ -297,7 +309,8 @@ namespace SalesTrading.UiTests
                     await CloseEditorAsync();
                     await NavigateAsync("mgmt");
                     await Until(() => model.QuoteMgmtPage.Today.Rows.Any(row => row.QuoteId == quoteId), "报价管理接收本例报价");
-                    HighlightRow(model.QuoteMgmtPage.Today.Rows.First(row => row.QuoteId == quoteId));
+                    await VerifyAsync(FindVerificationRow(model.QuoteMgmtPage.Today.Rows.First(row => row.QuoteId == quoteId)),
+                        "报价管理 · 报价 " + quoteId + " 已显示", () => Require(model.QuoteMgmtPage.Today.Rows.Any(row => row.QuoteId == quoteId), "报价已离开当前列表"));
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "报价管理表未显示本例报价");
                     break;
                 case "market.assert":
@@ -308,7 +321,8 @@ namespace SalesTrading.UiTests
                     await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                     view.UpdateLayout();
                     await Until(() => model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == quoteId), "行情中心接收本例报价");
-                    HighlightRow(model.MarketCenterPage.RateAll.Rows.First(row => row.QuoteId == quoteId));
+                    await VerifyAsync(FindVerificationRow(model.MarketCenterPage.RateAll.Rows.First(row => row.QuoteId == quoteId)),
+                        "行情中心 · 报价 " + quoteId + " 已显示", () => Require(model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == quoteId), "报价已离开当前列表"));
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "行情表未显示本例报价");
                     break;
                 case "history.assert":
@@ -370,10 +384,13 @@ namespace SalesTrading.UiTests
                     break;
                 case "parse.assert":
                     QuoteConfirmRowViewModel parsed = model.QuotePage.Precise.Rows.Single();
-                    HighlightRow(parsed);
-                    Require(parsed.Code == Parameter(step, "securityId") && parsed.Institution == Parameter(step, "institution")
-                        && parsed.Trader == Parameter(step, "trader") && decimal.Parse(parsed.Price, CultureInfo.InvariantCulture) == decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture), "识别结果字段不匹配");
-                    Require(!string.IsNullOrEmpty(parsed.Row.InstitutionId) && !string.IsNullOrEmpty(parsed.Row.ContactId), "CRM 名称未解析为真实 ID");
+                    await VerifyCellAsync(parsed, "代码", Parameter(step, "securityId"), () => parsed.Code);
+                    await VerifyCellAsync(parsed, "报价机构", Parameter(step, "institution"), () => parsed.Institution);
+                    await VerifyCellAsync(parsed, "报价交易员", Parameter(step, "trader"), () => parsed.Trader);
+                    await VerifyCellAsync(parsed, "报价", decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture),
+                        () => decimal.Parse(parsed.Price, CultureInfo.InvariantCulture));
+                    await VerifyAsync(null, "模型校验 · CRM 机构与联系人 ID 不为空", () =>
+                        Require(!string.IsNullOrEmpty(parsed.Row.InstitutionId) && !string.IsNullOrEmpty(parsed.Row.ContactId), "CRM 名称未解析为真实 ID"));
                     break;
                 case "parse.select":
                     QuoteConfirmRowViewModel selected = model.QuotePage.Precise.Rows[int.Parse(Parameter(step, "row")) - 1];
@@ -615,6 +632,10 @@ namespace SalesTrading.UiTests
 
         private async Task BeginVerificationAsync(string detail)
         {
+            if (highlight != null)
+            {
+                highlight.VerificationPinned = true;
+            }
             await ShowCaptionAsync("正在验证", detail);
             verificationStepGranted = await new OperationInterval(PlaybackDirectory).WaitAsync(ThrowIfCancelled,
                 (waiting, milliseconds) => { }, paused => ReportPlaybackPause(paused, detail), gateOnly: true);
@@ -624,8 +645,11 @@ namespace SalesTrading.UiTests
         private async Task HoldVerificationAsync(FrameworkElement target, string detail)
         {
             ThrowIfCancelled();
-            target.BringIntoView();
-            Window.GetWindow(target)?.Activate();
+            target?.BringIntoView();
+            if (target != null)
+            {
+                Window.GetWindow(target)?.Activate();
+            }
             highlight?.Show(target);
             await ShowCaptionAsync("验证通过，正在展示", detail);
             string directory = Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT") ?? reportDirectory;
@@ -670,15 +694,76 @@ namespace SalesTrading.UiTests
 
         private void HighlightRow(object row)
         {
-            DataGrid grid = Descendants<DataGrid>(view).FirstOrDefault(control => control.IsVisible && control.Items.Contains(row));
-            if (grid == null)
-            {
-                highlight?.Clear();
-                return;
-            }
+            highlight?.Show(FindVerificationRow(row));
+        }
+
+        private DataGridRow FindVerificationRow(object row)
+        {
+            DataGrid grid = Descendants<DataGrid>(view).SingleOrDefault(control => control.IsVisible && control.Items.Contains(row));
+            Require(grid != null, "验证目标缺失：未找到包含目标报价的可见表格");
             grid.ScrollIntoView(row);
             grid.UpdateLayout();
-            highlight?.Show(grid.ItemContainerGenerator.ContainerFromItem(row) as FrameworkElement ?? grid);
+            var container = grid.ItemContainerGenerator.ContainerFromItem(row) as DataGridRow;
+            Require(container != null, "验证目标缺失：报价行尚未呈现；不回退到整个表格");
+            return container;
+        }
+
+        // 使用列身份定位单元格，允许水平/垂直滚动，保留行列虚拟化。
+        private static DataGridCell FindVerificationCell(DataGrid grid, object row, string header)
+        {
+            var column = grid.Columns.SingleOrDefault(item => Convert.ToString(item.Header) == header);
+            Require(column != null, "验证目标缺失：列 " + header);
+            grid.ScrollIntoView(row, column);
+            grid.UpdateLayout();
+            var container = grid.ItemContainerGenerator.ContainerFromItem(row) as DataGridRow;
+            Require(container != null, "验证目标缺失：报价行尚未呈现");
+            var cell = Descendants<DataGridCell>(container).SingleOrDefault(item => item.Column == column);
+            Require(cell != null && cell.IsVisible, "验证目标缺失：单元格 " + header);
+            return cell;
+        }
+
+        private async Task VerifyCellAsync<T>(object row, string header, T expected, Func<T> actual)
+        {
+            var grid = Descendants<DataGrid>(view).SingleOrDefault(control => control.IsVisible && control.Items.Contains(row));
+            Require(grid != null, "验证目标缺失：未找到报价表格");
+            var cell = FindVerificationCell(grid, row, header);
+            string identity = Convert.ToString(row.GetType().GetProperty("Code")?.GetValue(row));
+            string detail = identity + " · " + header + " · 预期 " + expected + "，实际 " + actual();
+            await VerifyAsync(cell, detail, () =>
+            {
+                Require(ReferenceEquals(cell.DataContext, row), "验证目标已变化：报价单元格被回收或替换");
+                Require(Equals(expected, actual()), identity + " · " + header + " 不匹配：预期 " + expected + "，实际 " + actual());
+            });
+        }
+
+        private async Task VerifyAsync(FrameworkElement target, string detail, Action assertion)
+        {
+            try
+            {
+                if (highlight != null)
+                {
+                    highlight.VerificationPinned = true;
+                }
+                target?.BringIntoView();
+                // 虚拟化刚生成的单元格需先完成 Loaded，再绘制红框和进入暂停点。
+                await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+                highlight?.Show(target);
+                await BeginVerificationAsync(detail);
+                Require(target == null || (target.IsLoaded && target.IsVisible), "验证目标已隐藏或卸载：" + detail);
+                Require(target == null || highlight == null || ReferenceEquals(highlight.Target, target),
+                    "验证目标没有可用的红框装饰层：" + detail);
+                Emit("验证目标", "VERIFICATION_TARGET", (target == null ? "无界面目标" : target.GetType().Name) + " · " + detail);
+                assertion();
+                await HoldVerificationAsync(target, detail);
+            }
+            finally
+            {
+                if (highlight != null)
+                {
+                    highlight.VerificationPinned = false;
+                }
+                verificationStepGranted = false;
+            }
         }
 
         private async Task SelectItemAsync(Selector control, object item)
