@@ -15,22 +15,6 @@ namespace SalesTrading.UiTests
     {
         private async Task ExecuteQuoteWorkflowAsync(TestStep step)
         {
-            if (step.Action == "fixture.pending")
-            {
-                // 仅给待确认推送/工具栏用例准备数据，明确区分夹具与真实UI录入。
-                var draft = new JObject
-                {
-                    ["securityId"] = Parameter(step, "securityId"), ["side"] = Parameter(step, "side"),
-                    ["price"] = Parameter(step, "price"), ["quantity"] = Parameter(step, "quantity"),
-                    ["settlType"] = Parameter(step, "settlType"), ["quoteType"] = "1", ["yieldType"] = "1",
-                    ["quantityUnit"] = "WAN", ["currency"] = "CNY", ["tradeDate"] = DateTime.Today.ToString("yyyy-MM-dd"),
-                    ["clientQuoteId"] = "UI-FIXTURE-" + Guid.NewGuid().ToString("N"), ["remark"] = "自动化待确认夹具"
-                };
-                var results = FiccApiClient.RequireQuoteResults(await model.Backend.Api.CreateAsync(new[] { draft }));
-                Track((string)results.Single()["quoteId"]);
-                Require((string)(await model.Backend.Api.GetQuoteAsync(quoteId))["status"] == "PENDING_CONFIRM", "夹具必须待确认");
-                return;
-            }
             if (step.Action == "management.edit")
             {
                 if (editDialog == null || !editDialog.IsVisible)

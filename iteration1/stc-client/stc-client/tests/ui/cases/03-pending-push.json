@@ -2,17 +2,20 @@
   "Version": 1,
   "Id": "03-pending-push",
   "Name": "待确认报价实时展示",
-  "Description": "通过API创建明确标记的待确认夹具，核对报价确认页的真实推送；结束后删除本例报价。",
+  "Description": "接收人为当前登录用户（须有inf1 QT映射），发送人为用例配置的QT账号。通过真实QT结构化发布、FIX接收形成待确认报价；验证实时推送；结束后清理本例报价。",
   "Steps": [
     {
-      "Name": "通过API准备待确认夹具（非UI录入）",
-      "Action": "fixture.pending",
+      "Name": "通过真实QT发布并接收待确认报价",
+      "Action": "qtrade.publish",
       "Parameters": {
+        "appId": "107090227",
+        "senderQtAccount": "2881631456",
+        "groupId": "",
+        "mode": "STRUCTURED",
         "securityId": "${securityId}",
-        "price": "2.6000",
-        "quantity": "1",
-        "side": "2",
-        "settlType": "2"
+        "symbol": "24国开10",
+        "price": "${uniquePrice}",
+        "expectedRows": "1"
       }
     },
     {

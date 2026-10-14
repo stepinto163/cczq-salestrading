@@ -32,6 +32,8 @@ namespace SalesTrading.UiTests
             var selected = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == quoteId);
             var untouched = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => ownedQuotes.Contains(row.RecognitionId) && row != selected);
             var original = await model.Backend.Api.GetQuoteAsync(untouched.RecognitionId);
+            decimal initialPrice = Number(selected.Price);
+            decimal initialVolume = Number(selected.Volume);
             var checks = new JArray();
             Action<bool, string> check = (ok, message) =>
             {
@@ -54,17 +56,17 @@ namespace SalesTrading.UiTests
 
             TextBox bp = ToolbarInput(toolbar, "BpInput");
             await ClickAsync(Button(toolbar, "+"));
-            check(Number(selected.Price) == 2.51m, "空BP输入按加号增加1BP");
+            check(Number(selected.Price) == initialPrice + 0.01m, "空BP输入按加号增加1BP");
             await ClickAsync(Button(toolbar, "+"));
-            check(Number(selected.Price) == 2.52m && bp.Text == "2", "重复加号仍只增加1BP并显示累计调整");
+            check(Number(selected.Price) == initialPrice + 0.02m && bp.Text == "2", "重复加号仍只增加1BP并显示累计调整");
             await ClickAsync(Button(toolbar, "−"));
-            check(Number(selected.Price) == 2.51m, "减号减少1BP");
+            check(Number(selected.Price) == initialPrice + 0.01m, "减号减少1BP");
             await EnterAdjustmentAsync(bp, "5");
-            check(Number(selected.Price) == 2.56m, "Enter应用输入的5BP增量");
+            check(Number(selected.Price) == initialPrice + 0.06m, "Enter应用输入的5BP增量");
             await EnterAdjustmentAsync(bp, "-5");
-            check(Number(selected.Price) == 2.51m, "Enter支持负BP调整");
+            check(Number(selected.Price) == initialPrice + 0.01m, "Enter支持负BP调整");
             await EnterAdjustmentAsync(bp, "invalid");
-            check(Number(selected.Price) == 2.51m, "无效BP不修改报价");
+            check(Number(selected.Price) == initialPrice + 0.01m, "无效BP不修改报价");
 
             var priceType = ToolbarChoice(toolbar, "ToolbarPriceType");
             foreach (string value in new[] { "到期收益率", "行权收益率", "净价", "全价" })
@@ -96,11 +98,11 @@ namespace SalesTrading.UiTests
 
             TextBox amount = ToolbarInput(toolbar, "AmountInput");
             await ClickAsync(Button(toolbar, "+1k"));
-            check(Number(selected.Volume) == 2000m, "空报量输入的+1k增加1000万");
+            check(Number(selected.Volume) == initialVolume + 1000m, "空报量输入的+1k增加1000万");
             await ClickAsync(Button(toolbar, "-1k"));
-            check(Number(selected.Volume) == 1000m, "-1k减少1000万");
+            check(Number(selected.Volume) == initialVolume, "-1k减少1000万");
             await EnterAdjustmentAsync(amount, "250");
-            check(Number(selected.Volume) == 1250m, "报量框Enter应用250万增量");
+            check(Number(selected.Volume) == initialVolume + 250m, "报量框Enter应用250万增量");
             await EnterAdjustmentAsync(amount, "-2000");
             check(Number(selected.Volume) == 0m, "报量扣减不会变为负数");
             await ClickAsync(Button(toolbar, "+1k"));
@@ -128,10 +130,11 @@ namespace SalesTrading.UiTests
 
             var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
             var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
+            await SetTextAsync(institution, "");
             var choice = await SelectToolbarCrmAsync(contact, "王");
             check(selected.Row.ContactId == choice.ContactId && selected.InstitutionId == choice.InstitutionId
                 && institution.Text == choice.InstitutionName, "跨机构交易员搜索选择后回填机构和两个ID");
-            check(string.IsNullOrEmpty(untouched.Row.ContactId), "CRM工具栏不修改未勾选行");
+            check(untouched.Row.ContactId == (string)original["contactId"], "CRM工具栏不修改未勾选行");
             await SelectToolbarCrmAsync(contact, choice.ContactName);
             check(selected.Row.ContactId != null, "已选机构下交易员搜索可选择");
             var changedInstitution = await SelectToolbarCrmAsync(institution, "长城");
@@ -142,7 +145,7 @@ namespace SalesTrading.UiTests
             }
             await SetTextAsync(institution, "");
             await SelectToolbarCrmAsync(contact, choice.ContactName);
-            check(Number(untouched.Price) == 2.5m && Number(untouched.Volume) == 1000m
+            check(Number(untouched.Price) == (decimal)original["price"] && Number(untouched.Volume) == (decimal)original["quantity"]
                 && !untouched.IsRec && !untouched.IsWhole && !untouched.IsOco && !untouched.IsPacking,
                 "未勾选报价保留原价格、数量和旗标");
 

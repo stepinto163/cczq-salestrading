@@ -11,14 +11,14 @@ using System.Windows.Media;
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 {
     /// <summary>
-    /// 报价表单弹窗（原型 0910「新报价 / 编辑报价」，结构 = 遮罩 rgba(0,0,0,.6) + .modal.modal-wide 880px）：
+    /// 已有报价编辑弹窗（原型 0910「编辑报价」，结构 = 遮罩 rgba(0,0,0,.6) + .modal.modal-wide 880px）：
     /// 债券摘要条（市场最优 Bid｜Ofr + 中债估值）→ 方向分段 → 价格（±1bp）/报量（±1k，含单位下拉）→
     /// 交易日期/清算速度/报价机构/报价交易员 → 标签（急/荐/整）+ 备注 → 页脚 Enter 保存修改 / Esc 取消。
     ///
     /// 遮罩说明：原型遮罩是覆盖整个应用视口的固定层（WPF 独立 Window 无法给宿主叠加半透明层），
     /// 因此本窗口在 OnLoaded 时铺满宿主窗口（<see cref="OverlayBackdrop"/>），内部用半透明黑 Border 做遮罩。
     ///
-    /// 真实报价编辑走 QuoteSvr，新增报价走精确报价识别确认；模拟数据模式仅用于原型展示。
+    /// 真实报价编辑走 QuoteSvr；新增报价统一转到精确报价，禁止回退到手工创建表单。
     /// </summary>
     public partial class QuoteEntryDialog : Window
     {
@@ -31,7 +31,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         /// <summary>弹窗四周与宿主边界的最小留白（原型正文 max-height 70vh + 头尾）。</summary>
         private const double ShellMargin = 40d;
 
-        public QuoteEntryDialog()
+        private QuoteEntryDialog()
         {
             InitializeComponent();
             BestBidText.Text = "--";
@@ -69,7 +69,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             {
                 return;
             }
-            ShowCore(owner, mode, dlg => dlg.Prefill(row, mode));
+            ToastService.Show("报价服务未就绪，无法打开报价操作。", ToastKind.Warning);
         }
 
         public static void ShowForRow(Window owner, BoardBestRow row, QuoteFormMode mode = QuoteFormMode.Edit)
@@ -83,7 +83,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             {
                 return;
             }
-            ShowCore(owner, mode, dlg => dlg.Prefill(row, mode));
+            ToastService.Show("报价服务未就绪，无法打开报价操作。", ToastKind.Warning);
         }
 
         /// <summary>提醒行也能发起报价（提醒页右键菜单与看板共用一套）。</summary>
@@ -98,130 +98,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             {
                 return;
             }
-            ShowCore(owner, mode, dlg => dlg.Prefill(row, mode));
-        }
-
-        private static void ShowCore(Window owner, QuoteFormMode mode, Action<QuoteEntryDialog> prefill)
-        {
-            try
-            {
-                var dlg = new QuoteEntryDialog();
-                var host = owner ?? Application.Current?.MainWindow;
-                if (host != null) dlg.Owner = host;
-                dlg.FormTitle.Text = mode == QuoteFormMode.New ? "新报价" : "编辑报价";
-                dlg.ApplyHostGeometry();
-                prefill(dlg);
-                dlg.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                ToastService.Show("打开报价录入失败：" + ex.Message, ToastKind.Error);
-            }
-        }
-
-        #region 预填
-
-        private void Prefill(BoardQuoteRow row, QuoteFormMode mode)
-        {
-            if (row == null) return;
-
-            SetBondHeader(row.Code, row.Name, row.Maturity, row.BondLibrary, row.IssuerRating, row.BondRating);
-
-            // 单笔行情没有「市场最优」口径，留空显示 --；中债估值取该行的中债 YTM
-            CbValuationText.Text = FormatValuation(row.NzYtm);
-
-            if (row.Direction == QuoteDirection.Bid) DirBid.IsChecked = true;
-            else if (row.Direction == QuoteDirection.Ofr) DirOfr.IsChecked = true;
-
-            PriceBox.Text = row.Price?.ToString("0.0000", CultureInfo.InvariantCulture) ?? string.Empty;
-            VolumeBox.Text = row.Volume?.ToString("0.#", CultureInfo.InvariantCulture) ?? string.Empty;
-            InstitutionBox.Text = row.Institution ?? string.Empty;
-            TraderBox.Text = row.Trader ?? string.Empty;
-            TradeDateBox.Text = FormatDate(row.QuoteTime ?? DateTime.Now);
-            RemarkBox.Text = string.Format("来自看板行 {0} · 原报价 {1} {2}",
-                row.Code, row.Direction, row.Price?.ToString("0.0000", CultureInfo.InvariantCulture));
-
-            SelectPriceType(row.PriceType);
-            SelectSettlement(row.Settlement);
-
-            FlagUrgent.IsChecked = row.Flags.HasFlag(QuoteFlag.Urgent);
-            FlagRec.IsChecked = row.Flags.HasFlag(QuoteFlag.Recommend);
-            FlagWhole.IsChecked = row.Flags.HasFlag(QuoteFlag.Whole);
-
-            ApplyModeDefaults(mode);
-        }
-
-        private void Prefill(BoardBestRow row, QuoteFormMode mode)
-        {
-            if (row == null) return;
-
-            SetBondHeader(row.Code, row.Name, row.Maturity, row.BondLibrary, row.IssuerRating, row.BondRating);
-
-            BestBidText.Text = row.Bid?.ToString("0.0000", CultureInfo.InvariantCulture) ?? "--";
-            BestOfrText.Text = row.Ofr?.ToString("0.0000", CultureInfo.InvariantCulture) ?? "--";
-            CbValuationText.Text = FormatValuation(row.NzYtm);
-
-            PriceBox.Text = row.Ofr?.ToString("0.0000", CultureInfo.InvariantCulture)
-                ?? row.Bid?.ToString("0.0000", CultureInfo.InvariantCulture) ?? string.Empty;
-            VolumeBox.Text = row.VolOfr?.ToString("0.#", CultureInfo.InvariantCulture)
-                ?? row.VolBid?.ToString("0.#", CultureInfo.InvariantCulture) ?? string.Empty;
-            if (row.Ofr.HasValue) DirOfr.IsChecked = true;
-            else if (row.Bid.HasValue) DirBid.IsChecked = true;
-
-            InstitutionBox.Text = row.InstOfr ?? row.InstBid ?? string.Empty;
-            TraderBox.Text = row.TraderOfr ?? row.TraderBid ?? string.Empty;
-            TradeDateBox.Text = FormatDate(row.QuoteTime ?? DateTime.Now);
-            RemarkBox.Text = string.Format("来自最优看板 {0} · Bid {1} / Ofr {2}",
-                row.Code,
-                row.Bid?.ToString("0.0000", CultureInfo.InvariantCulture),
-                row.Ofr?.ToString("0.0000", CultureInfo.InvariantCulture));
-
-            SelectPriceType(row.PriceType);
-            SelectSettlement(row.Settlement);
-
-            ApplyModeDefaults(mode);
-        }
-
-        /// <summary>提醒行的预填：提醒行不含价格类型/清算速度，按默认值（到期收益率 / T+1）处理。</summary>
-        private void Prefill(BoardAlertRow row, QuoteFormMode mode)
-        {
-            if (row == null) return;
-
-            SetBondHeader(row.Code, row.Name, row.Maturity, row.BondLibrary, row.IssuerRating, row.BondRating);
-
-            BestBidText.Text = row.Bid?.ToString("0.0000", CultureInfo.InvariantCulture) ?? "--";
-            BestOfrText.Text = row.Ofr?.ToString("0.0000", CultureInfo.InvariantCulture) ?? "--";
-            CbValuationText.Text = FormatValuation(row.NzYtm);
-
-            PriceBox.Text = row.Ofr?.ToString("0.0000", CultureInfo.InvariantCulture)
-                ?? row.Bid?.ToString("0.0000", CultureInfo.InvariantCulture) ?? string.Empty;
-            VolumeBox.Text = row.VolOfr?.ToString("0.#", CultureInfo.InvariantCulture)
-                ?? row.VolBid?.ToString("0.#", CultureInfo.InvariantCulture) ?? string.Empty;
-            if (row.Ofr.HasValue) DirOfr.IsChecked = true;
-            else if (row.Bid.HasValue) DirBid.IsChecked = true;
-
-            InstitutionBox.Text = row.InstOfr ?? row.InstBid ?? string.Empty;
-            TraderBox.Text = row.TraderOfr ?? row.TraderBid ?? string.Empty;
-            TradeDateBox.Text = FormatDate(row.QuoteTime ?? DateTime.Now);
-
-            SelectPriceType(PriceType.YieldToMaturity);
-            SelectSettlement(SettlementType.T1);
-
-            ApplyModeDefaults(mode);
-        }
-
-        /// <summary>
-        /// 新报价（原型 showNewQuoteModal）：保留债券与价格预填，清掉备注与标签；
-        /// 编辑报价（showEditQuoteModal）则完整保留行上的备注与标签。
-        /// </summary>
-        private void ApplyModeDefaults(QuoteFormMode mode)
-        {
-            if (mode != QuoteFormMode.New) return;
-
-            RemarkBox.Text = string.Empty;
-            FlagUrgent.IsChecked = false;
-            FlagRec.IsChecked = false;
-            FlagWhole.IsChecked = false;
+            ToastService.Show("报价服务未就绪，无法打开报价操作。", ToastKind.Warning);
         }
 
         /// <summary>摘要条：债券名（13px 粗）+ 代码（16px 粗）+ 三项 meta（剩余期限/主体评级/债项评级）。</summary>
@@ -242,39 +119,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         {
             return string.IsNullOrEmpty(value) ? "—" : value;
         }
-
-        private static string FormatValuation(decimal? nzYtm)
-        {
-            return nzYtm.HasValue
-                ? nzYtm.Value.ToString("0.0000", CultureInfo.InvariantCulture) + "%"
-                : "—";
-        }
-
-        private static string FormatDate(DateTime value)
-        {
-            return value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        }
-
-        private void SelectPriceType(PriceType priceType)
-        {
-            PriceTypeBox.SelectedIndex = priceType == PriceType.CleanPrice ? 2
-                : priceType == PriceType.DirtyPrice ? 3
-                : priceType == PriceType.YieldToExercise ? 1
-                : 0;
-        }
-
-        /// <summary>清算速度下拉：请选择 / T+0 / T+1 / T+2 / T+3 / 远期（原型 6 项）。</summary>
-        private void SelectSettlement(SettlementType settlement)
-        {
-            SettlementBox.SelectedIndex = settlement == SettlementType.T0 ? 1
-                : settlement == SettlementType.T1 ? 2
-                : settlement == SettlementType.T2 ? 3
-                : settlement == SettlementType.T3 ? 4
-                : settlement == SettlementType.Forward ? 5
-                : 2;
-        }
-
-        #endregion
 
         #region 价格 / 报量步进
 
@@ -357,40 +201,12 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         /// <summary>校验后提交（原型 validateQuoteForm：价格/报量非空须为不小于 0 的有效数字）。</summary>
         private async void OnSubmit(object sender, RoutedEventArgs e)
         {
-            if (liveApi != null)
+            if (liveApi == null || originalQuote == null)
             {
-                await SaveLiveQuoteAsync();
+                SubmitError.Text = "只能修改已存在的报价；新增请使用精确报价或接入报价。";
                 return;
             }
-            ClearValidation();
-
-            decimal price;
-            if (!string.IsNullOrWhiteSpace(PriceBox.Text)
-                && (!decimal.TryParse(PriceBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out price) || price < 0m))
-            {
-                MarkInvalid(PriceBox, PriceErrorText, "请输入不小于0的有效价格");
-                return;
-            }
-
-            decimal volume;
-            if (!string.IsNullOrWhiteSpace(VolumeBox.Text)
-                && (!decimal.TryParse(VolumeBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out volume) || volume < 0m))
-            {
-                MarkInvalid(VolumeBox, VolumeErrorText, "请输入不小于0的有效报量");
-                return;
-            }
-
-            if (DirBid.IsChecked != true && DirOfr.IsChecked != true)
-            {
-                ToastService.Show("请选择报价方向（Bid / Ofr）", ToastKind.Warning);
-                return;
-            }
-
-            var direction = DirBid.IsChecked == true ? "Bid" : "Ofr";
-            var unit = (VolumeUnitBox.SelectedItem as ComboBoxItem)?.Content as string ?? "万";
-            ToastService.Show(string.Format("已提交 {0} {1} @ {2} · {3}{4}（Mock 提交，网关接入后生效）",
-                BondCode.Text, direction, PriceBox.Text, VolumeBox.Text, unit), ToastKind.Success);
-            Close();
+            await SaveLiveQuoteAsync();
         }
 
         #region 校验态（原型 .quote-control.invalid{border-color:#f85149}）

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Data;
 
 namespace SalesTrading.UiTests
 {
@@ -46,7 +47,20 @@ namespace SalesTrading.UiTests
                     button.Click += (source, click) => clicks++;
                     interval.Save(200);
                     await CheckDelay(() => Invoke(worker, "ClickAsync", button), () => clicks == 1);
+                    var boundSource = new TextBox { Text = "original" };
+                    text.SetBinding(TextBox.TextProperty, new Binding("Text")
+                    {
+                        Source = boundSource, Mode = BindingMode.TwoWay,
+                        UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                    });
                     await CheckDelay(() => Invoke(worker, "SetTextAsync", text, "changed"), () => text.Text == "changed");
+                    Assert(BindingOperations.IsDataBound(text, TextBox.TextProperty) && boundSource.Text == "changed",
+                        "自动输入必须保留双向绑定");
+                    boundSource.Text = "server-update";
+                    text.GetBindingExpression(TextBox.TextProperty).UpdateTarget();
+                    Assert(text.Text == "server-update", "后续模型更新必须回填输入框");
+                    boundSource.Text = "changed";
+                    text.GetBindingExpression(TextBox.TextProperty).UpdateTarget();
                     await CheckDelay(() => Invoke(worker, "SelectItemAsync", selection, "second"), () => Equals(selection.SelectedItem, "second"));
                     Assert(heartbeat >= 10, "等待不能阻塞 WPF 消息循环");
 

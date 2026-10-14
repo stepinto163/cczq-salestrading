@@ -356,7 +356,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 2026-10-13 移除客户端顶栏「手工报价」及临时 `QuoteOperationWindow`。自动化不再提供 `manual.*` 动作。新增报价统一通过精确报价的文本识别、预览勾选及「确认报价」，识别阶段不落入待确认池；修改从报价管理「修改 / 历史」打开产品编辑表单，保存成功关闭；Refer、Unrefer、删除通过报价管理工具栏。
 
-`fixture.pending` 只用于准备待确认推送/工具栏测试数据，字幕和报告标记「API准备待确认夹具（非UI录入）」，不声称完成 FIX 接入或UI创建。编辑表单之外的后续操作先关闭编辑表单；正常等待、截图、业务核对与清理机制保留。管理器新增 `management.edit/save/reject/operate` 动作，可按正常工作流组合用例。旧 `test-local-integration.ps1 -Merged/-SalesTrading` 和 `test-parser-live.ps1` 已改为调用管理套件，要求 STC 模式配置；结果改用套件 JSON/JUnit 报告，独立旧检查源码不再保留。旧解析检查的双边价格、分号、方向标题和中文报量迁入 `23-complex-parser`。
+待确认推送（03）和工具栏（21）用例通过 `qtrade.publish` 真实发布、FIX 接收准备报价，移除直接调用 quote.create 生成手工待确认记录的动作。收件人为当前登录用户（必须有 inf1 映射），发送人为用例配置的 QT 账号；未映射时明确失败，不回退到手工夹具。精确报价用例只通过页面输入、识别和确认，识别后检查候选未进入报价确认池。编辑表单之外的后续操作先关闭编辑表单；正常等待、截图、业务核对与清理机制保留。管理器新增 `management.edit/save/reject/operate` 动作，可按正常工作流组合用例。旧 `test-local-integration.ps1 -Merged/-SalesTrading` 和 `test-parser-live.ps1` 已改为调用管理套件，要求 STC 模式配置；结果改用套件 JSON/JUnit 报告，独立旧检查源码不再保留。旧解析检查的双边价格、分号、方向标题和中文报量迁入 `23-complex-parser`。
 
 自动化工作进程在窗口下方显示中文字幕：用例名称、步骤序号和当前动作，不预告下一步。执行前渲染「正在执行：当前步骤 · 当前操作」，在操作前等待期间标明正在处理的控件；步骤通过后显示「已完成：当前步骤」。登录和清理也只描述当下操作。字幕不接收鼠标、不抢键盘焦点，随普通测试窗口移动；仅自动化工作进程启用，正式客户端不变。
 

@@ -36,6 +36,7 @@ namespace SalesTrading.UiTests
             File.Delete(auth);
             Reject(() => QTradeTestConfiguration.LoadToken(config, null), "missing deployment config");
 
+            Assert(!Actions.Fields.ContainsKey("fixture.pending"), "manual pending shortcut removed");
             int count = 0;
             var publishingCombinations = new HashSet<string>();
             foreach (string file in Directory.GetFiles(args[0], "*.json"))
@@ -56,6 +57,7 @@ namespace SalesTrading.UiTests
                     definition.Validate();
                     step.Parameters["receiverLogin"] = "obsolete";
                     Reject(definition.Validate, "obsolete receiver config");
+                    step.Parameters.Remove("receiverLogin");
                 }
                 count++;
             }

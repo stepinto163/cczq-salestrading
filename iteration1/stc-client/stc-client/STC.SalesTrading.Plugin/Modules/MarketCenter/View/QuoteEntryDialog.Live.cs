@@ -24,6 +24,10 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         // 编辑与历史共用产品表单；创建报价统一经过精确报价预览与确认。
         public static void ShowForQuote(Window owner, FiccApiClient api, string quoteId)
         {
+            if (api == null || string.IsNullOrWhiteSpace(quoteId))
+            {
+                throw new ArgumentException("编辑报价必须指定已存在的报价ID和服务连接。");
+            }
             var dialog = new QuoteEntryDialog { Owner = owner, liveApi = api };
             dialog.ModalShell.IsEnabled = false;
             dialog.Loaded += async (sender, args) => await dialog.LoadLiveQuoteAsync(quoteId);

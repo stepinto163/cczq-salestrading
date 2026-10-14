@@ -73,7 +73,6 @@ namespace SalesTrading.UiTests
                 case "qtrade.confirmPublished":
                     await ConfirmPublishedQTradeAsync(step);
                     break;
-                case "fixture.pending":
                 case "management.edit":
                 case "management.save":
                 case "management.reject":
@@ -253,7 +252,8 @@ namespace SalesTrading.UiTests
             Require(input.IsVisible && input.IsEnabled, "输入框不可操作");
             input.Focus();
             highlight?.Show(input);
-            input.Text = value;
+            // 保留 Text 的双向绑定，与用户键入保持一致。直接赋值会移除绑定。
+            input.SetCurrentValue(TextBox.TextProperty, value);
         }
 
         private async Task<DataGridRow> ShowRecommendationRowAsync(bool feedbackColumn)
