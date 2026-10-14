@@ -141,17 +141,23 @@ namespace SalesTrading.UiTests
                             Stopwatch elapsed = Stopwatch.StartNew();
                             DateTime? stopTime = null;
                             int eventCount = 0;
+                            int observerEventCount = 0;
+                            var observerWaitBudget = new OperationWaitBudget();
                             bool killed = false;
                             int timeoutSeconds = Math.Min(600, 120 + definition.Steps.Count * 25);
                             while (!process.HasExited)
                             {
-                                ReadEvents(ref eventCount);
+                                ReadEvents(ref eventCount, CurrentDirectory, operationWaitBudget, false);
+                                if (observer != null)
+                                {
+                                    ReadEvents(ref observerEventCount, observer.DirectoryPath, observerWaitBudget, true);
+                                }
                                 if (StopRequested && stopTime == null)
                                 {
                                     stopTime = DateTime.UtcNow;
                                     File.WriteAllText(Path.Combine(CurrentDirectory, "cancel"), "stop");
                                 }
-                                if (elapsed.ElapsedMilliseconds - operationWaitBudget.ExcludedMilliseconds > timeoutSeconds * 1000L || (stopTime != null && DateTime.UtcNow - stopTime > TimeSpan.FromSeconds(30)))
+                                if (elapsed.ElapsedMilliseconds - operationWaitBudget.ExcludedMilliseconds - observerWaitBudget.ExcludedMilliseconds > timeoutSeconds * 1000L || (stopTime != null && DateTime.UtcNow - stopTime > TimeSpan.FromSeconds(30)))
                                 {
                                     // This is the single worker started above, never an unrelated STC process.
                                     process.Kill();
@@ -161,7 +167,11 @@ namespace SalesTrading.UiTests
                                 await Task.Delay(200);
                             }
                             process.WaitForExit();
-                            ReadEvents(ref eventCount);
+                            ReadEvents(ref eventCount, CurrentDirectory, operationWaitBudget, false);
+                            if (observer != null)
+                            {
+                                ReadEvents(ref observerEventCount, observer.DirectoryPath, observerWaitBudget, true);
+                            }
                             string resultFile = Path.Combine(CurrentDirectory, "result.json");
                             JObject result = File.Exists(resultFile) ? JObject.Parse(File.ReadAllText(resultFile)) : new JObject
                             {
@@ -197,9 +207,9 @@ namespace SalesTrading.UiTests
             return results.Count == cases.Count && results.All(result => (string)result["status"] == "PASSED");
         }
 
-        private void ReadEvents(ref int count)
+        private void ReadEvents(ref int count, string directory, OperationWaitBudget waitBudget, bool observer)
         {
-            string file = Path.Combine(CurrentDirectory, "events.jsonl");
+            string file = Path.Combine(directory, "events.jsonl");
             if (!File.Exists(file)) return;
             string content;
             using (FileStream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -213,11 +223,15 @@ namespace SalesTrading.UiTests
                     JObject entry = JObject.Parse(line);
                     if ((string)entry["state"] == "INTERVAL_WAIT")
                     {
-                        operationWaitBudget.Begin();
+                        waitBudget.Begin();
                     }
                     else if ((string)entry["state"] == "INTERVAL_DONE")
                     {
-                        operationWaitBudget.Complete((long?)entry["waitMillis"] ?? 0);
+                        waitBudget.Complete((long?)entry["waitMillis"] ?? 0);
+                    }
+                    if (observer)
+                    {
+                        entry["step"] = "观察账号 · " + (string)entry["step"];
                     }
                     Progress?.Invoke(entry);
                 }

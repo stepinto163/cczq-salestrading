@@ -586,6 +586,20 @@ namespace SalesTrading.UiTests
             Emit(step, "UI_ACTION", detail);
         }
 
+        // 先检测真实更新，再留出人工观察时间；结束后才允许操作方进入下一阶段。
+        private async Task HoldVerificationAsync(FrameworkElement target, string detail)
+        {
+            ThrowIfCancelled();
+            target.BringIntoView();
+            Window.GetWindow(target)?.Activate();
+            highlight?.Show(target);
+            await ShowCaptionAsync("验证通过，正在展示", detail);
+            string directory = Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT") ?? reportDirectory;
+            await new OperationInterval(directory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
+                Emit("验证结果展示", waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds));
+            ThrowIfCancelled();
+        }
+
         private async Task OpenModalAsync(Button control)
         {
             await BeforeUiActionAsync(control, "打开窗口");

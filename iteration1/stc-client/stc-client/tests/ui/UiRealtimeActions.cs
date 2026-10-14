@@ -84,7 +84,10 @@ namespace SalesTrading.UiTests
                 ["quoteId"] = quoteId, ["clientQuoteId"] = clientId, ["securityId"] = security,
                 ["time"] = DateTime.Now.ToString("O"), ["phase"] = phase
             });
-            await WaitSignalAsync(phase + "-observed", 35);
+            // 观察方需展示验证结果；最大可配置展示间隔不占用原35秒业务等待预算。
+            captions?.Suspend();
+            highlight?.Clear();
+            await WaitSignalAsync(phase + "-observed", 35 + OperationInterval.MaximumMilliseconds / 1000);
             Emit("双账号 " + phase, "PASSED", "观察账号已在原页面核对，未点击刷新");
         }
 
@@ -157,14 +160,49 @@ namespace SalesTrading.UiTests
                 await Until(matches, "观察账号页面未实时更新：" + tab + "/" + phase, 20);
                 view.UpdateLayout();
                 Require(matches(), "渲染后页面状态不一致");
+                DateTime observedAt = DateTime.Now;
+                string expectation = tab == "today"
+                    ? (active ? "目标报价已显示为有效报价" : "目标报价未出现在当前可见记录中")
+                    : "当前页面已符合本阶段的更新或隔离规则";
+                var grid = Descendants<DataGrid>(view).FirstOrDefault(control => control.IsVisible);
+                FrameworkElement verificationTarget = previewInput ?? (FrameworkElement)grid ?? view;
+                if (grid != null && active)
+                {
+                    object matchingRow = grid.Items.Cast<object>().FirstOrDefault(row => RowIncludesQuote(row, id));
+                    if (matchingRow != null)
+                    {
+                        grid.ScrollIntoView(matchingRow);
+                        grid.UpdateLayout();
+                        verificationTarget = grid.ItemContainerGenerator.ContainerFromItem(matchingRow) as FrameworkElement ?? grid;
+                    }
+                }
+                await HoldVerificationAsync(verificationTarget, "观察账号 · " + definition.Feature + " · " + RealtimePhaseLabel(phase) + " · " + expectation);
+                Require(matches(), "展示验证结果期间页面状态发生异常变化");
                 Capture("realtime-" + phase);
                 File.WriteAllText(Path.Combine(reportDirectory, "realtime-" + phase + ".json"), new JObject
                 {
                     ["tab"] = tab, ["phase"] = phase, ["quoteId"] = id,
-                    ["manualRefresh"] = false, ["observedAt"] = DateTime.Now.ToString("O")
+                    ["manualRefresh"] = false, ["observedAt"] = observedAt.ToString("O"),
+                    ["displayCompletedAt"] = DateTime.Now.ToString("O")
                 }.ToString());
                 Signal(phase + "-observed", new JObject { ["tab"] = tab, ["phase"] = phase });
                 Emit("实时观察 " + phase, "PASSED", tab);
+                captions?.Suspend();
+                highlight?.Clear();
+            }
+        }
+
+        private static string RealtimePhaseLabel(string phase)
+        {
+            switch (phase)
+            {
+                case "preview": return "仅识别，尚未确认";
+                case "active": return "确认后";
+                case "referred": return "Refer 后";
+                case "restored": return "Unrefer 后";
+                case "referred-again": return "再次 Refer 后";
+                case "deleted": return "删除后";
+                default: throw new ArgumentOutOfRangeException(nameof(phase));
             }
         }
 
