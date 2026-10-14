@@ -20,12 +20,28 @@ namespace SalesTrading.UiTests
         // 唯一准备入口是 U41 发布 API，不调用 intake/create 注入接收报价。
         private async Task PublishQTradeAsync(TestStep step)
         {
-            Require(Environment.GetEnvironmentVariable("STC_UI_QTRADE_PUBLISH") == "1",
-                "本例会向外部 QTrade 发送测试意向。设置 STC_UI_QTRADE_PUBLISH=1 后单独执行。");
             string token = Environment.GetEnvironmentVariable("STC_UI_INTAKE_TOKEN");
-            Require(!string.IsNullOrWhiteSpace(token), "内部发布测试需要已有 STC_UI_INTAKE_TOKEN");
-            Require(string.Equals(Environment.GetEnvironmentVariable("STC_UI_USER"), Parameter(step, "receiverLogin"),
-                StringComparison.OrdinalIgnoreCase), "请用用例 receiverLogin 指定的收件人账户登录；尚未发布消息");
+            Require(!string.IsNullOrWhiteSpace(token), "未加载所选环境的 QT 共享接入配置");
+            var login = STC.Common.Utils.LocalEnv.UserInfo;
+            var directory = await Task.Run(() => STC.Common.Handler.Admin.AdminHandler.Instance.stcUserQuery());
+            Require(directory != null && directory.Code == "0000" && directory.Datas != null,
+                "无法读取当前环境的 STC 用户目录，不能确定 QT 收件人；尚未发布消息");
+            var users = directory.Datas;
+            string receiverQtAccount = QTradeTestConfiguration.ResolveReceiver(login.UserId,
+                users.Select(user => new KeyValuePair<string, string>(user.Userid, user.Inf1)).ToList());
+            string senderQtAccount = Parameter(step, "senderQtAccount").Trim();
+            string groupId = ((string)step.Parameters["groupId"] ?? "").Trim();
+            Require(QTradeTestConfiguration.IsNumericAccount(senderQtAccount), "senderQtAccount 必须为数字 QT 账号");
+            Require(groupId.Length == 0 || QTradeTestConfiguration.IsNumericAccount(groupId), "groupId 必须为空或数字群号");
+            Require(senderQtAccount != receiverQtAccount, "发送人与当前登录收件人相同，无法验证双边接收；尚未发布消息");
+            File.WriteAllText(Path.Combine(reportDirectory, "qtrade-test-context.json"), new JObject
+            {
+                ["receiverUserId"] = login.UserId,
+                ["receiverLogin"] = login.UserName,
+                ["receiverQtAccount"] = receiverQtAccount,
+                ["senderQtAccount"] = senderQtAccount,
+                ["groupId"] = groupId
+            }.ToString());
             string appId = Parameter(step, "appId");
             Require(appId.Length == 9 && appId.All(char.IsDigit), "appId 应为 QTrade 分配的9位机构编号");
             string messageId = appId + DateTime.Now.ToString("yyMMddHHmmss", CultureInfo.InvariantCulture)
@@ -48,7 +64,7 @@ namespace SalesTrading.UiTests
             var request = new QTradePublishRequest
             {
                 MessageId = messageId,
-                SenderQtAccount = Parameter(step, "senderQtAccount"),
+                SenderQtAccount = senderQtAccount,
                 Token = token,
                 Mode = mode,
                 PostText = marker,
@@ -56,8 +72,8 @@ namespace SalesTrading.UiTests
                 {
                     new QTradePublishRecipient
                     {
-                        RoutingType = int.Parse(Parameter(step, "routingType"), CultureInfo.InvariantCulture),
-                        RoutingId = Parameter(step, "routingId")
+                        RoutingType = groupId.Length == 0 ? 58 : 53,
+                        RoutingId = groupId.Length == 0 ? receiverQtAccount : groupId
                     }
                 }
             };
@@ -112,7 +128,7 @@ namespace SalesTrading.UiTests
                 publishedQuoteIds.Add(id);
                 QuoteRecord quote = await model.Backend.Api.GetQuoteModelAsync(id);
                 Require(quote.Status == "PENDING_CONFIRM" && quote.Source != null && quote.Source.Type == "QT", "未经过真实 QT 待确认通路");
-                Require(quote.Source.SourceUserId == Parameter(step, "receiverQtAccount"), "收到的不是目标接收账号报价");
+                Require(quote.Source.SourceUserId == receiverQtAccount && quote.OwnerUserId == login.UserId, "收到的不是目标接收账号报价");
                 Require(!string.IsNullOrWhiteSpace(quote.Source.NegotiationId), "接收报价缺少双边 NegotiationID");
                 Require(quote.SecurityId == security && decimal.Parse(quote.Price, CultureInfo.InvariantCulture)
                     == decimal.Parse(price, CultureInfo.InvariantCulture), "债券或价格映射不正确");

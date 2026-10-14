@@ -32,7 +32,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 选择环境的 `STC.exe.config`，默认账号/密码为 `test2/123456`，可修改账号、密码及债券代码。此版本要求 `Ficc.IntegrationMode=stc`，不把本机模拟模式的通过结果冒充真实服务验证。密码只传给本轮子进程，不写入用例文件。
 
-真实 QT 发布用例24～26须用 `autotest.cmd restart -QTrade` 启动：自动读取既有共享接入凭据，默认收件人账号为 `adrian`。管理窗口显示「普通模式」或「QT模式」。运行前统一检查发布模式、接入凭据和用例指定收件人，不满足时在启动客户端前给出明确错误；工作进程仍保留二次检查。模式启用不等于外部 FIX 已登录，也不等于消息已送达。
+所有用例统一用 `autotest.cmd start` 启动，不再区分普通/QT模式，不需要 `-QTrade`。真实 QT 发布用例24～26使用窗口里实际登录的 STC 用户作为收件人，通过 AdminSvr 用户目录读取该用户的 `stc_tbook_users.inf1`。没有映射、映射不唯一、用户目录不可用或发送人与收件人相同，都在发送前明确失败，不能退回默认收件账号。
+
+用例编辑器中的 `qtrade.publish` 配置：
+
+| 参数 | 含义 |
+| --- | --- |
+| `senderQtAccount` | 发送人的数字 QT 账号，例如李继存 `2881631456` |
+| `groupId` | 可选群号；留空表示单聊，自动向登录用户的 QT 账号发送；填写群号表示群聊，例如 `1125362859`，登录用户须已入群 |
+| `appId` | QTrade 分配的机构编号，当前用例为 `107090227` |
+| `mode`、债券、价格及预期行数 | 保留结构化、文本及群聊多行场景的独立断言 |
+| 确认步骤的 `contactName` / `institutionName` | 发送人的 CRM 联系人与机构，用于实际界面补全及确认 |
+
+不再配置 `receiverLogin`、`receiverQtAccount`、`routingType`、`routingId`。账号和密码在管理窗口统一填写。当前本机 `adrian` 对应龚逸，`test2` 没有 QT 映射，因此 `test2` 可以运行其他用例，但真实收件测试会明确报缺少映射；不会偷偷切换到 `adrian`。
+
+需要接入 API 的用例自动读取 `ATS_ROOT/control/QtIntakeSvrAuth.properties` 的 `intake.token`。未设置已有 `ATS_ROOT` 环境变量时，从所选 `STC.exe.config` 所在目录的同级 `ats_root` 定位共享配置。凭据只传递给需要它的子进程；不要求填写到用例中。后端及外部 FIX 仍须在线，发布回执、FIX接收、待确认隔离和UI确认分别验证；收到失败或未知回执不会自动重发。
 
 ## 2026-10-14 全目录实跑结果
 
@@ -47,7 +61,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 | 24～26 真实QT发布 | 初次为QtIntakeSvr未被网关发现；重启服务后发布API已可达，但返回`REJECTED / FIX session did not accept the message`。服务日志显示发送logon后远端关闭socket，尚无成功FIX登录；未将API可达视为消息送达。 |
 | 37 行情模糊报价 | `DpsSalesTradingServices.Market.LoadIntentRowsAsync`仍明确抛出“模糊报价服务尚未接入”，保留失败。需要完成真正的业务API及数据链路，不能返回空列表绕过断言。 |
 
-复跑证据在 `runtime/ui-test-full-review/ui-test-reports/recheck-20261014-102905`。这些报告是本机生成产物，不随源码提交。额外验证了QT启动预检的普通模式、缺凭据、错误收件人拒绝与正确配置通过；管理器默认值、多选、页面树及范围执行检查通过。不能把34例通过解释成全部业务场景已覆盖，未覆盖项仍按下方矩阵管理。
+复跑证据在 `runtime/ui-test-full-review/ui-test-reports/recheck-20261014-102905`。这些报告是本机生成产物，不随源码提交。当时验证了旧QT启动预检，现已按统一登录收件规则替换；管理器默认值、多选、页面树及范围执行检查通过。不能把34例通过解释成全部业务场景已覆盖，未覆盖项仍按下方矩阵管理。
+
+用户切换至QT所需网络后，10:35:16服务收到FIX logon并记录`FIX state=CONNECTED`。再次串行运行24～26，单聊结构化、单聊文本、群聊双行全部通过发布回执、真实接收、待确认隔离、UI确认及正式行情核对，本例数据清理均成功。报告：`runtime/ui-test-client/ui-test-reports/20261014-103718-qtrade-network`。按最新结果汇总为 **37/38通过**，唯一未通过项仍为37行情模糊报价的真实服务集成。后续已统一启动方式，当前运行规则见上方「启动」。
+
+## 统一收件人规则验证（2026-10-14）
+
+不设置旧发布开关和接入 token 环境变量，使用 `adrian` 登录串行执行24～26：**3/3通过**，清理均成功。报告：`runtime/ui-test-unified-qtrade/ui-test-reports/unified-live`。每例的 `qtrade-test-context.json` 记录实际登录 STC userid、收件 QT 账号、发送账号和群号，不记录凭据；接收断言同时核对 QT sourceUserId 和 STC ownerUserId。
+
+使用 `test2` 混跑18和24，18双边议价通过；24按预期在发送前报告当前用户 `inf1` 未映射，未产生发布回执或报价，清理成功。报告：`runtime/ui-test-unified-qtrade/ui-test-reports/unmapped-login`。
+
+配置回归脚本 `scripts/test-qtrade-test-configuration.ps1` 验证登录切换、缺失/重复映射、共享配置路径与缺失配置报错，并加载验证全部38个用例。此次只复跑与统一启动相关的用例，不把历史37/38结果表述为本次重新全跑。
 
 ## 管理用例
 
@@ -116,7 +140,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 | 今日报价 | 筛选刷新清选择、边界范围/文本/清除 | 07；报价方式/状态、Copy、导出及权限按钮待补 | P0 |
 | 历史报价 §5.3 | 历史页实际控件、查询正常或真实空结果 | 40；日期范围、跨日历史、分页排序、只读和导出待补 | P0 |
 | 历史报价 | 报价操作历史与历史报价列表是不同功能 | 01的history.assert仅历史API，不算历史列表业务通过 | P0 |
-| QT跨页 §6 | 单聊结构化、单聊文本、群聊双行、接收→待确认→确认→行情 | 24～26真实FIX；需要-QTrade和收件人adrian | P0 |
+| QT跨页 §6 | 单聊结构化、单聊文本、群聊双行、接收→待确认→确认→行情 | 24～26真实FIX；登录用户为收件人，发送人及群号配置在用例中 | P0 |
 | QT跨页 §6 | 双边议价隔离、未确认不改变正式池、发送/接收ID、更新/撤销 | 18使用intake API夹具，非真实FIX议价；真实修改/撤销待补 | P0 |
 | 服务恢复 §2.4.4 | GW/CRM/Parser/Quote/Notification重启、发现重注册、超时重试 | 待补受控故障注入；已知ZK会话过期未自动恢复不能标记已修复 | P0 |
 | 公共显示 §2.4 | 字号、输入框裁切、禁用/加载/空/错误、滚动虚拟化、键盘焦点 | 20字号及独立专项脚本；不同DPI/尺寸/OS焦点待补 | P1 |

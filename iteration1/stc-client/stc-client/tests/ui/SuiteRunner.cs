@@ -50,7 +50,6 @@ namespace SalesTrading.UiTests
             List<CaseDefinition> cases = selected.ToList();
             if (cases.Count == 0) throw new InvalidOperationException("请勾选用例。");
             foreach (CaseDefinition definition in cases) definition.Validate();
-            ValidateQTradeEnvironment(cases, user);
             if (!File.Exists(configFile) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
             {
                 throw new InvalidOperationException("请选择真实 STC 配置并填写专用测试账号和密码。");
@@ -100,6 +99,14 @@ namespace SalesTrading.UiTests
                         start.EnvironmentVariables["STC_UI_USER"] = user;
                         start.EnvironmentVariables["STC_UI_PASSWORD"] = password;
                         start.EnvironmentVariables["STC_UI_SECURITY"] = securityId;
+                        bool needsIntake = definition.Steps.Any(step => step.Action == "qtrade.publish"
+                            || step.Action == "qtrade.negotiation");
+                        start.EnvironmentVariables.Remove("STC_UI_INTAKE_TOKEN");
+                        if (needsIntake)
+                        {
+                            start.EnvironmentVariables["STC_UI_INTAKE_TOKEN"] = QTradeTestConfiguration.LoadToken(
+                                configFile, Environment.GetEnvironmentVariable("ATS_ROOT"));
+                        }
                         using (StreamWriter console = new StreamWriter(Path.Combine(CurrentDirectory, "console.log"), false, Encoding.UTF8))
                         using (Process process = new Process { StartInfo = start })
                         {
@@ -220,30 +227,6 @@ namespace SalesTrading.UiTests
                 config.SelectSingleNode("/configuration/appSettings").AppendChild(setting);
             }
             setting.SetAttribute("value", value);
-        }
-
-        // 在启动客户端前检查真实 QT 用例的运行条件，避免登录后才逐例报同一配置错误。
-        internal static void ValidateQTradeEnvironment(IEnumerable<CaseDefinition> cases, string user)
-        {
-            var steps = cases.SelectMany(definition => definition.Steps).ToList();
-            var publishing = steps.Where(step => step.Action == "qtrade.publish").ToList();
-            if (publishing.Count > 0 && Environment.GetEnvironmentVariable("STC_UI_QTRADE_PUBLISH") != "1")
-            {
-                throw new InvalidOperationException("所选用例包含真实 QTrade 发布，当前管理器为普通模式。请用 autotest.cmd restart -QTrade 启动 QT 模式，再运行用例；尚未登录或发送消息。");
-            }
-            if ((publishing.Count > 0 || steps.Any(step => step.Action == "qtrade.negotiation"))
-                && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("STC_UI_INTAKE_TOKEN")))
-            {
-                throw new InvalidOperationException("QT 用例缺少共享接入凭据。请用 autotest.cmd restart -QTrade 自动加载 ATS_ROOT/control 中已有配置；尚未登录或发送消息。");
-            }
-            foreach (TestStep step in publishing)
-            {
-                string receiver = (string)step.Parameters["receiverLogin"];
-                if (!string.Equals(user, receiver, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("QT 接收验证要求登录 " + receiver + "，当前账号为 " + user + "。请修改测试账号；尚未登录或发送消息。");
-                }
-            }
         }
 
         private static string Quote(string path)

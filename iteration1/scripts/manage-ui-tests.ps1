@@ -1,8 +1,6 @@
 ﻿param(
     [string]$Action = 'status',
-    [string]$StcConfig,
-    [switch]$QTrade,
-    [string]$QTradeUser = 'adrian'
+    [string]$StcConfig
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,40 +41,10 @@ function Show-TestStatus {
 function Start-TestRunner {
     if (@(Get-TestProcesses).Count -gt 0) {
         Write-Host 'ALREADY RUNNING; a second runner was not launched.'
-        if ($QTrade) {
-            Write-Host 'Use autotest.cmd restart -QTrade to apply QTrade settings to the existing runner.'
-        }
         Show-TestStatus
         return
     }
-    $previousEnvironment = @{}
-    try {
-        if ($QTrade) {
-            # 复用部署生成的共享凭据，不要求手工创建文件或输入 token。
-            $authPath = Join-Path (Split-Path $repositoryRoot -Parent) 'qa_env/ats_root/control/QtIntakeSvrAuth.properties'
-            $auth = @{}
-            foreach ($line in Get-Content -LiteralPath $authPath -Encoding UTF8) {
-                if ($line -match '^\s*([^#!\s][^=]*)=(.*)$') {
-                    $auth[$matches[1].Trim()] = $matches[2].Trim()
-                }
-            }
-            if ([string]::IsNullOrWhiteSpace($auth['intake.token'])) {
-                throw "Missing intake.token in shared configuration: $authPath"
-            }
-            foreach ($name in @('STC_UI_QTRADE_PUBLISH', 'STC_UI_INTAKE_TOKEN', 'STC_UI_USER')) {
-                $previousEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
-            }
-            $env:STC_UI_QTRADE_PUBLISH = '1'
-            $env:STC_UI_INTAKE_TOKEN = $auth['intake.token']
-            $env:STC_UI_USER = $QTradeUser
-            Write-Host "QTrade publishing tests enabled; receiver login: $QTradeUser. Selecting cases 24-26 sends real test intentions."
-        }
-        & (Join-Path $clientRoot 'scripts/start-ui-tests.ps1') -StcConfig $StcConfig
-    } finally {
-        foreach ($name in $previousEnvironment.Keys) {
-            [Environment]::SetEnvironmentVariable($name, $previousEnvironment[$name], 'Process')
-        }
-    }
+    & (Join-Path $clientRoot 'scripts/start-ui-tests.ps1') -StcConfig $StcConfig
     Start-Sleep -Seconds 2
     if (@(Get-TestProcesses).Count -eq 0) {
         throw "UI test runner exited during startup: $executable"

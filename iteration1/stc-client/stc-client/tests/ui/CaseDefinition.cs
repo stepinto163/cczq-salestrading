@@ -56,6 +56,10 @@ namespace SalesTrading.UiTests
                 }
                 foreach (string field in fields)
                 {
+                    if (step.Action == "qtrade.publish" && field == "groupId")
+                    {
+                        continue; // 空群号表示单聊，收件人由实际登录用户确定。
+                    }
                     if (string.IsNullOrWhiteSpace((string)step.Parameters[field]))
                     {
                         throw new InvalidOperationException(step.Name + " 缺少参数：" + field);
@@ -89,7 +93,7 @@ namespace SalesTrading.UiTests
             { "page.open", new[] { "page", "tab", "view" } },
             { "fuzzy.preview", new string[0] },
             { "precise.input", new string[0] },
-            { "qtrade.publish", new[] { "appId", "senderQtAccount", "receiverQtAccount", "receiverLogin", "routingType", "routingId", "mode", "securityId", "symbol", "price", "expectedRows" } },
+            { "qtrade.publish", new[] { "appId", "senderQtAccount", "groupId", "mode", "securityId", "symbol", "price", "expectedRows" } },
             { "qtrade.confirmPublished", new[] { "contactName", "institutionName" } },
             { "fixture.pending", new[] { "securityId", "price", "quantity", "side", "settlType" } },
             { "management.edit", new[] { "securityId", "price", "quantity", "side", "settlType" } },
@@ -132,7 +136,7 @@ namespace SalesTrading.UiTests
             { "page.open", "切换实际页签并核对页面、查询状态及表格" },
             { "fuzzy.preview", "模糊报价预览：原文、选择计数、批量范围与删除" },
             { "precise.input", "精确报价输入：示例、清空、保留原文与页面切换" },
-            { "qtrade.publish", "发布真实 QTrade 意向并核对 FIX 接收及待确认" },
+            { "qtrade.publish", "发布真实 QTrade 意向（groupId 为空则发给登录用户）" },
             { "qtrade.confirmPublished", "确认收到的 QTrade 报价并核对行情" },
             { "fixture.pending", "API准备待确认夹具（非UI录入）" },
             { "management.edit", "报价管理打开修改表单并填写" },
