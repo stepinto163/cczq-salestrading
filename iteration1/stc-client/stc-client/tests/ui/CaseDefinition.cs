@@ -90,6 +90,7 @@ namespace SalesTrading.UiTests
     {
         public static readonly Dictionary<string, string[]> Fields = new Dictionary<string, string[]>
         {
+            { "realtime.lifecycle", new[] { "page", "tab", "view", "securityId", "price" } },
             { "page.open", new[] { "page", "tab", "view" } },
             { "fuzzy.preview", new string[0] },
             { "precise.input", new string[0] },
@@ -132,6 +133,7 @@ namespace SalesTrading.UiTests
 
         public static readonly Dictionary<string, string> Labels = new Dictionary<string, string>
         {
+            { "realtime.lifecycle", "高级双账号：确认、Refer、Unrefer、删除的实时推送与隔离" },
             { "page.open", "切换实际页签并核对页面、查询状态及表格" },
             { "fuzzy.preview", "模糊报价预览：原文、选择计数、批量范围与删除" },
             { "precise.input", "精确报价输入：示例、清空、保留原文与页面切换" },

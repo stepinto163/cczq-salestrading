@@ -507,6 +507,24 @@ namespace SalesTrading.UiTests
 
         private void ThrowIfCancelled()
         {
+            string parentPid = Environment.GetEnvironmentVariable("STC_UI_PARENT_PID");
+            if (!cleaning && int.TryParse(parentPid, out int parent))
+            {
+                try
+                {
+                    using (Process parentProcess = Process.GetProcessById(parent))
+                    {
+                        if (parentProcess.HasExited)
+                        {
+                            throw new OperationCanceledException("测试管理器已退出");
+                        }
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    throw new OperationCanceledException("测试管理器已退出");
+                }
+            }
             if (!cleaning && noticeAutomationFailure != null)
             {
                 throw new InvalidOperationException("自动处理用户使用须知失败。", noticeAutomationFailure);
@@ -561,7 +579,8 @@ namespace SalesTrading.UiTests
             target.BringIntoView();
             highlight?.Show(target);
             await ShowCaptionAsync("正在执行", step + " · " + detail);
-            await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
+            await new OperationInterval(Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROLE") == "observer"
+                ? Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT") : reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
                 Emit(step, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds));
             ThrowIfCancelled();
             Emit(step, "UI_ACTION", detail);

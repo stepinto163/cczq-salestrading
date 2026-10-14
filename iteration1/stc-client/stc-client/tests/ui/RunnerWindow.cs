@@ -21,6 +21,9 @@ namespace SalesTrading.UiTests
         private readonly TextBox user = new TextBox { Width = 130, Text = DefaultUser };
         private readonly TextBox password = new TextBox { Width = 130, Text = DefaultPassword, UseSystemPasswordChar = true };
         private readonly TextBox security = new TextBox { Width = 120, Text = "240210.IB" };
+        private readonly CheckBox advanced = new CheckBox { Text = "高级：双账号实时测试", AutoSize = true };
+        private readonly TextBox observerUser = new TextBox { Width = 130, Text = "adrian" };
+        private readonly TextBox observerPassword = new TextBox { Width = 130, Text = DefaultPassword, UseSystemPasswordChar = true };
         private readonly NumericUpDown operationInterval = new NumericUpDown
         {
             Name = "OperationIntervalSeconds", Width = 95, Minimum = 0, Maximum = 60,
@@ -51,11 +54,16 @@ namespace SalesTrading.UiTests
                     }
                     string[] unknown = ids.Where(id => id != "all" && !available.Any(item => item.Id == id)).ToArray();
                     if (unknown.Length > 0) throw new InvalidOperationException("未知用例 ID：" + string.Join(", ", unknown));
-                    List<CaseDefinition> selected = available.Where(item => ids.Contains(item.Id) || ids.Contains("all"))
+                    List<CaseDefinition> selected = available.Where(item => ids.Contains(item.Id) || (ids.Contains("all") && (options.ContainsKey("--advanced") && options["--advanced"] == "true" || !item.Steps.Any(step => step.Action == "realtime.lifecycle"))))
                         .OrderBy(item => item.Page, StringComparer.Ordinal).ThenBy(item => item.Feature, StringComparer.Ordinal)
                         .ThenBy(item => item.Id, StringComparer.Ordinal).ToList();
                     if (selected.Count == 0) throw new InvalidOperationException("没有可执行用例。");
-                    SuiteRunner cli = new SuiteRunner();
+                    SuiteRunner cli = new SuiteRunner
+                    {
+                        AdvancedMode = options.ContainsKey("--advanced") && options["--advanced"] == "true",
+                        ObserverUser = Environment.GetEnvironmentVariable("STC_UI_OBSERVER_USER"),
+                        ObserverPassword = Environment.GetEnvironmentVariable("STC_UI_OBSERVER_PASSWORD")
+                    };
                     if (options.ContainsKey("--interval-ms"))
                     {
                         cli.OperationIntervalMilliseconds = int.Parse(options["--interval-ms"], System.Globalization.CultureInfo.InvariantCulture);
@@ -103,7 +111,7 @@ namespace SalesTrading.UiTests
             Font = new Font("Microsoft YaHei UI", 10);
             StartPosition = FormStartPosition.CenterScreen;
             TableLayoutPanel root = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 6, ColumnCount = 1, Padding = new Padding(10) };
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 155));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
@@ -148,6 +156,18 @@ namespace SalesTrading.UiTests
                 {
                     status.Text = "操作间隔更新失败：" + error.Message;
                 }
+            };
+            settings.SetFlowBreak(settings.Controls[settings.Controls.Count - 1], true);
+            settings.Controls.Add(advanced);
+            settings.Controls.Add(new Label { Text = "观察账号", AutoSize = true });
+            settings.Controls.Add(observerUser);
+            settings.Controls.Add(new Label { Text = "观察密码", AutoSize = true });
+            settings.Controls.Add(observerPassword);
+            observerUser.Enabled = observerPassword.Enabled = false;
+            advanced.CheckedChanged += (sender, args) =>
+            {
+                observerUser.Enabled = observerPassword.Enabled = advanced.Checked;
+                LoadCases();
             };
             root.Controls.Add(settings, 0, 0);
             FlowLayoutPanel commands = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
@@ -259,7 +279,10 @@ namespace SalesTrading.UiTests
                 try
                 {
                     CaseDefinition item = CaseDefinition.Read(path);
-                    catalogItems.Add(Tuple.Create(path, item));
+                    if (advanced.Checked || !item.Steps.Any(step => step.Action == "realtime.lifecycle"))
+                    {
+                        catalogItems.Add(Tuple.Create(path, item));
+                    }
                 }
                 catch (Exception error)
                 {
@@ -418,13 +441,21 @@ namespace SalesTrading.UiTests
                 status.Text = "请先勾选要运行的用例；Ctrl/Shift 多选后按空格可批量勾选。";
                 return;
             }
-            runner = new SuiteRunner { OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000) };
+            runner = new SuiteRunner
+            {
+                OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000),
+                AdvancedMode = advanced.Checked, ObserverUser = observerUser.Text,
+                ObserverPassword = observerPassword.Text
+            };
             report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui-test-reports", DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
             progress.Rows.Clear();
             running = true;
             foreach (Button button in lockedButtons) button.Enabled = false;
             cases.Enabled = false;
             pageTree.Enabled = false;
+            advanced.Enabled = false;
+            observerUser.Enabled = false;
+            observerPassword.Enabled = false;
             runner.Progress += entry =>
             {
                 string state = (string)entry["state"];
@@ -453,6 +484,9 @@ namespace SalesTrading.UiTests
                 foreach (Button button in lockedButtons) button.Enabled = true;
                 cases.Enabled = true;
                 pageTree.Enabled = true;
+                advanced.Enabled = true;
+                observerUser.Enabled = advanced.Checked;
+                observerPassword.Enabled = advanced.Checked;
             }
         }
 

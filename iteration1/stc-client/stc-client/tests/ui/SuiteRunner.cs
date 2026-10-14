@@ -14,6 +14,11 @@ namespace SalesTrading.UiTests
 {
     internal sealed class SuiteRunner
     {
+        public bool AdvancedMode { get; set; }
+        public string ObserverUser { get; set; }
+        public string ObserverPassword { get; set; }
+        private ObserverSession currentObserver;
+
         public string OutputDirectory { get; private set; }
         public string CurrentDirectory { get; private set; }
         public bool StopRequested { get; private set; }
@@ -42,12 +47,19 @@ namespace SalesTrading.UiTests
         public void Stop()
         {
             StopRequested = true;
+            currentObserver?.Cancel();
             if (CurrentDirectory != null) File.WriteAllText(Path.Combine(CurrentDirectory, "cancel"), "stop");
         }
 
         public async Task<bool> RunAsync(IEnumerable<CaseDefinition> selected, string configFile, string user, string password, string securityId, string output)
         {
             List<CaseDefinition> cases = selected.ToList();
+            if (cases.Any(item => item.Steps.Any(step => step.Action == "realtime.lifecycle"))
+                && (!AdvancedMode || string.IsNullOrWhiteSpace(ObserverUser) || string.IsNullOrEmpty(ObserverPassword)
+                    || string.Equals(user, ObserverUser, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("双账号实时用例需要启用高级模式，填写不同的观察账号及密码。");
+            }
             if (cases.Count == 0) throw new InvalidOperationException("请勾选用例。");
             foreach (CaseDefinition definition in cases) definition.Validate();
             if (!File.Exists(configFile) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
@@ -99,6 +111,8 @@ namespace SalesTrading.UiTests
                         start.EnvironmentVariables["STC_UI_USER"] = user;
                         start.EnvironmentVariables["STC_UI_PASSWORD"] = password;
                         start.EnvironmentVariables["STC_UI_SECURITY"] = securityId;
+                        start.EnvironmentVariables.Remove("STC_UI_REALTIME_ROLE");
+                        start.EnvironmentVariables["STC_UI_REALTIME_ROOT"] = CurrentDirectory;
                         bool needsIntake = definition.Steps.Any(step => step.Action == "qtrade.publish"
                             || step.Action == "qtrade.negotiation");
                         start.EnvironmentVariables.Remove("STC_UI_INTAKE_TOKEN");
@@ -107,9 +121,12 @@ namespace SalesTrading.UiTests
                             start.EnvironmentVariables["STC_UI_INTAKE_TOKEN"] = QTradeTestConfiguration.LoadToken(
                                 configFile, Environment.GetEnvironmentVariable("ATS_ROOT"));
                         }
+                        using (ObserverSession observer = definition.Steps.Any(step => step.Action == "realtime.lifecycle")
+                            ? new ObserverSession(runtime, caseFile, CurrentDirectory, ObserverUser, ObserverPassword, securityId) : null)
                         using (StreamWriter console = new StreamWriter(Path.Combine(CurrentDirectory, "console.log"), false, Encoding.UTF8))
                         using (Process process = new Process { StartInfo = start })
                         {
+                            currentObserver = observer;
                             object outputLock = new object();
                             DataReceivedEventHandler record = (sender, args) =>
                             {
@@ -153,6 +170,14 @@ namespace SalesTrading.UiTests
                                 ["reason"] = killed ? "超时或停止宽限期结束；清理未确认，请检查 owned-quotes.json" : "进程提前退出，退出码 " + process.ExitCode + "；清理未确认"
                             };
                             if (process.ExitCode != 0 && (string)result["status"] == "PASSED") result["status"] = "FAILED";
+                            if (observer != null)
+                            {
+                                if ((string)result["status"] != "PASSED") observer.Cancel();
+                                JObject observation = await observer.CompleteAsync();
+                                result["observer"] = observation;
+                                if ((string)observation["status"] != "PASSED") result["status"] = "FAILED";
+                                if ((bool?)observation["cleanupPassed"] != true) result["cleanupPassed"] = false;
+                            }
                             File.WriteAllText(resultFile, result.ToString());
                             results.Add(result);
                             Progress?.Invoke(new JObject { ["caseId"] = definition.Id, ["step"] = "结果", ["state"] = result["status"], ["detail"] = result["reason"] ?? "" });
@@ -163,6 +188,7 @@ namespace SalesTrading.UiTests
                 }
                 finally
                 {
+                    currentObserver = null;
                     CurrentDirectory = null;
                     File.WriteAllText(Path.Combine(OutputDirectory, "summary.json"), new JArray(results).ToString());
                     WriteJUnit(results);

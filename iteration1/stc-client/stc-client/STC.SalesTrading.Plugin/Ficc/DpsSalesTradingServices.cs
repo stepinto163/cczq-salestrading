@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -114,6 +114,11 @@ namespace STC.SalesTrading.Plugin.Ficc
             if (!sessions.TryGetValue(key, out QuerySession session))
             {
                 LivePage page = new LivePage(Api, transport, domain);
+                // 正式报价按服务端授权范围展示；待确认仍只属于接收/录入用户。
+                if (key == "management")
+                {
+                    page.OwnerScope = "VISIBLE";
+                }
                 session = new QuerySession(page);
                 sessions.Add(key, session);
                 page.Updated += () => NotifyDomain(domain);

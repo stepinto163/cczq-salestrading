@@ -18,11 +18,13 @@ if (!$StcConfig) {
 }
 
 function Get-TestProcesses {
-    Get-CimInstance Win32_Process -Filter "Name='SalesTradingUiTests.exe' OR Name='UiScenarioWorker.exe'" |
+    Get-CimInstance Win32_Process -Filter "Name='SalesTradingUiTests.exe' OR Name='UiScenarioWorker.exe' OR Name LIKE 'UiObserverWorker-%.exe'" |
         Where-Object {
             $_.ExecutablePath -and (
                 [string]::Equals($_.ExecutablePath, $executable, [StringComparison]::OrdinalIgnoreCase) -or
-                [string]::Equals($_.ExecutablePath, $workerExecutable, [StringComparison]::OrdinalIgnoreCase))
+                [string]::Equals($_.ExecutablePath, $workerExecutable, [StringComparison]::OrdinalIgnoreCase) -or
+                ($_.Name -like 'UiObserverWorker-*.exe' -and
+                 [string]::Equals((Split-Path $_.ExecutablePath -Parent), [IO.Path]::GetFullPath($runtime), [StringComparison]::OrdinalIgnoreCase)))
         }
 }
 

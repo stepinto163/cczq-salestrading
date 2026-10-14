@@ -67,6 +67,9 @@ namespace SalesTrading.UiTests
                 case "precise.input":
                     await CheckPreciseInputAsync();
                     break;
+                case "realtime.lifecycle":
+                    await CheckRealtimeLifecycleAsync(step);
+                    break;
                 case "qtrade.publish":
                     await PublishQTradeAsync(step);
                     break;

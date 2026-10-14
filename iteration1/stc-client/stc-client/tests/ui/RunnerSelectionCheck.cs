@@ -17,7 +17,7 @@ namespace SalesTrading.UiTests
                 // 独立验证普通启动默认值，避免继承外部 QTrade 测试窗口的账户设置。
                 Environment.SetEnvironmentVariable("STC_UI_USER", null);
                 Environment.SetEnvironmentVariable("STC_UI_PASSWORD", null);
-                string source = Path.Combine(Directory.GetCurrentDirectory(), "cases");
+                string source = Path.Combine(Directory.GetCurrentDirectory(), "cases-" + Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(source);
                 for (int index = 1; index <= 3; index++)
                 {
@@ -26,6 +26,33 @@ namespace SalesTrading.UiTests
                     item.Feature = "选择检查";
                     item.Steps.Add(new TestStep { Name = "仅检查管理器，不执行业务", Action = "management.select" });
                     item.Save(Path.Combine(source, item.Id + ".json"));
+                }
+                var advancedCase = new CaseDefinition { Id = "advanced-selection", Name = "双账号检查" };
+                advancedCase.Steps.Add(new TestStep { Action = "realtime.lifecycle", Name = "观察实时更新" });
+                advancedCase.Steps[0].Parameters["page"] = "market";
+                advancedCase.Steps[0].Parameters["tab"] = "rateAll";
+                advancedCase.Steps[0].Parameters["view"] = "BoardListView";
+                advancedCase.Steps[0].Parameters["securityId"] = "240210.IB";
+                advancedCase.Steps[0].Parameters["price"] = "0.9";
+                advancedCase.Save(Path.Combine(source, advancedCase.Id + ".json"));
+                Type suiteType = typeof(CaseDefinition).Assembly.GetType("SalesTrading.UiTests.SuiteRunner", true);
+                object suite = Activator.CreateInstance(suiteType);
+                foreach (bool enabled in new[] { false, true })
+                {
+                    suiteType.GetProperty("AdvancedMode").SetValue(suite, enabled);
+                    suiteType.GetProperty("ObserverUser").SetValue(suite, "TEST2");
+                    suiteType.GetProperty("ObserverPassword").SetValue(suite, "123456");
+                    try
+                    {
+                        var task = (System.Threading.Tasks.Task<bool>)suiteType.GetMethod("RunAsync").Invoke(suite,
+                            new object[] { new[] { advancedCase }, "", "test2", "123456", "240210.IB", "" });
+                        task.GetAwaiter().GetResult();
+                        throw new Exception("未阻止关闭高级模式或重复账号的双账号测试");
+                    }
+                    catch (InvalidOperationException error)
+                    {
+                        Require(error.Message.Contains("双账号"), "未在启动前检查双账号配置");
+                    }
                 }
                 Type type = typeof(CaseDefinition).Assembly.GetType("SalesTrading.UiTests.RunnerWindow", true);
                 using (Form form = (Form)Activator.CreateInstance(type, new object[] { source, null }))
@@ -89,6 +116,20 @@ namespace SalesTrading.UiTests
                     Require(type.GetField("runner", fields).GetValue(form) == null, "不得运行其他页面隐藏的勾选项");
                     tree.SelectedNode = allPages;
                     Require(CheckedCount(grid) == 2, "切换页面丢失已有勾选状态");
+                    var advanced = (CheckBox)type.GetField("advanced", fields).GetValue(form);
+                    var observer = (TextBox)type.GetField("observerUser", fields).GetValue(form);
+                    var observerPassword = (TextBox)type.GetField("observerPassword", fields).GetValue(form);
+                    Require(!advanced.Checked && !observer.Enabled && !observerPassword.Enabled,
+                        "普通模式不得启用观察账号或显示高级用例");
+                    advanced.Checked = true;
+                    Application.DoEvents();
+                    Require(grid.Rows.Count == 4 && observer.Enabled && observerPassword.Enabled
+                        && observerPassword.UseSystemPasswordChar, "高级模式未显示双账号用例和登录设置");
+                    Require(observer.Bottom <= observer.Parent.ClientSize.Height, "观察账号输入框被裁剪");
+                    advanced.Checked = false;
+                    Application.DoEvents();
+                    Require(grid.Rows.Count == 3, "退出高级模式后仍显示双账号用例");
+                    advanced.Checked = true;
                     tree.ExpandAll();
                     using (var screenshot = new System.Drawing.Bitmap(form.Width, form.Height))
                     {
@@ -97,7 +138,7 @@ namespace SalesTrading.UiTests
                     }
                     form.Close();
                 }
-                Console.WriteLine("PASS: account/interval defaults, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard.");
+                Console.WriteLine("PASS: account/interval defaults, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard, advanced mode visibility and observer settings.");
                 return 0;
             }
             catch (Exception error)
