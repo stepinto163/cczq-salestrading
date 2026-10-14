@@ -256,6 +256,22 @@ namespace SalesTrading.UiTests
 
         private async Task ExecuteAsync(TestStep step)
         {
+            bool verification = new[] { "quote.assert", "pending.assert", "market.assert", "management.assert",
+                "history.assert", "parse.assert", "quote.fields", "parse.row", "parse.count", "parse.warning",
+                "parse.settlement", "recommendation.typography" }.Contains(step.Action);
+            if (verification)
+            {
+                await BeginVerificationAsync(step.Name);
+            }
+            await ExecuteActionAsync(step);
+            if (verification)
+            {
+                await HoldVerificationAsync(view, step.Name);
+            }
+        }
+
+        private async Task ExecuteActionAsync(TestStep step)
+        {
             switch (step.Action)
             {
                 case "quote.assert":
@@ -581,9 +597,27 @@ namespace SalesTrading.UiTests
             await ShowCaptionAsync("正在执行", step + " · " + detail);
             await new OperationInterval(Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROLE") == "observer"
                 ? Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT") : reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
-                Emit(step, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds));
+                Emit(step, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds),
+                paused => ReportPlaybackPause(paused, detail));
             ThrowIfCancelled();
             Emit(step, "UI_ACTION", detail);
+        }
+
+        private bool verificationStepGranted;
+        private string PlaybackDirectory => Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT") ?? reportDirectory;
+
+        private void ReportPlaybackPause(bool paused, string detail)
+        {
+            Emit("播放控制", paused ? "PLAYBACK_PAUSED" : "PLAYBACK_RELEASED", detail);
+            captions?.Present(shell, definition.Name, stepNumber, definition.Steps.Count,
+                paused ? "已暂停" : "正在执行", detail);
+        }
+
+        private async Task BeginVerificationAsync(string detail)
+        {
+            await ShowCaptionAsync("正在验证", detail);
+            verificationStepGranted = await new OperationInterval(PlaybackDirectory).WaitAsync(ThrowIfCancelled,
+                (waiting, milliseconds) => { }, paused => ReportPlaybackPause(paused, detail), gateOnly: true);
         }
 
         // 先检测真实更新，再留出人工观察时间；结束后才允许操作方进入下一阶段。
@@ -595,8 +629,16 @@ namespace SalesTrading.UiTests
             highlight?.Show(target);
             await ShowCaptionAsync("验证通过，正在展示", detail);
             string directory = Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT") ?? reportDirectory;
-            await new OperationInterval(directory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
-                Emit("验证结果展示", waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds));
+            try
+            {
+                await new OperationInterval(directory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
+                    Emit("验证结果展示", waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE", detail, milliseconds),
+                    paused => ReportPlaybackPause(paused, detail), singleStepGranted: verificationStepGranted);
+            }
+            finally
+            {
+                verificationStepGranted = false;
+            }
             ThrowIfCancelled();
         }
 

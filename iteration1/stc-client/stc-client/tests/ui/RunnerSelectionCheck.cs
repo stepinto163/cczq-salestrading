@@ -63,8 +63,34 @@ namespace SalesTrading.UiTests
                     Require(((TextBox)type.GetField("user", fields).GetValue(form)).Text == "test2", "默认账号错误");
                     var password = (TextBox)type.GetField("password", fields).GetValue(form);
                     Require(password.Text == "123456" && password.UseSystemPasswordChar, "默认密码或掩码错误");
-                    Require(((NumericUpDown)type.GetField("operationInterval", fields).GetValue(form)).Value == 2,
-                        "默认操作间隔应为2秒");
+                    var playback = (Form)type.GetField("playback", fields).GetValue(form);
+                    Type playbackType = playback.GetType();
+                    Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == 2000,
+                        "默认1倍速应为2秒");
+                    playback.Show();
+                    Application.DoEvents();
+                    Require(playback.TopMost && !playback.Modal && playback.ClientSize.Width <= 500,
+                        "播放控制必须是小型独立置顶浮动窗");
+                    var speed = (TrackBar)playbackType.GetField("speed", fields).GetValue(playback);
+                    speed.Value = 0;
+                    Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == 8000, "慢速应为8秒");
+                    speed.Value = 5;
+                    Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == 0, "最快应取消额外等待");
+                    speed.Value = 2;
+                    playbackType.GetMethod("SetRunning").Invoke(playback, new object[] { true });
+                    FindButton(playback, "暂停").PerformClick();
+                    Require(FindButton(playback, "继续") != null && FindButton(playback, "下一动作").Enabled,
+                        "暂停后应可继续或单步");
+                    FindButton(playback, "继续").PerformClick();
+                    Require(!FindButton(playback, "下一动作").Enabled, "连续播放时不得单步");
+                    using (var picture = new System.Drawing.Bitmap(playback.Width, playback.Height))
+                    {
+                        playback.DrawToBitmap(picture, new System.Drawing.Rectangle(0, 0, playback.Width, playback.Height));
+                        picture.Save(Path.Combine(Directory.GetCurrentDirectory(), "playback.png"));
+                    }
+                    playbackType.GetMethod("SetRunning").Invoke(playback, new object[] { false });
+                    playback.Close();
+                    Require(!playback.IsDisposed && !playback.Visible, "关闭控制窗应只隐藏，允许重新打开");
                     var grid = (DataGridView)type.GetField("cases", fields).GetValue(form);
                     var count = (Label)type.GetField("selectionCount", fields).GetValue(form);
                     Require(grid.MultiSelect && grid.Rows.Count == 3, "用例列表未启用多选");
@@ -138,7 +164,7 @@ namespace SalesTrading.UiTests
                     }
                     form.Close();
                 }
-                Console.WriteLine("PASS: account/interval defaults, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard, advanced mode visibility and observer settings.");
+                Console.WriteLine("PASS: account/speed defaults, floating playback window, pause/resume controls, multiple selection, checkbox commit, page hierarchy, scoped select-all, hidden-case exclusion, empty-run guard, advanced mode visibility and observer settings.");
                 return 0;
             }
             catch (Exception error)

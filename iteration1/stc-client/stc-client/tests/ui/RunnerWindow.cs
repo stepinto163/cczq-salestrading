@@ -24,11 +24,7 @@ namespace SalesTrading.UiTests
         private readonly CheckBox advanced = new CheckBox { Text = "高级：双账号实时测试", AutoSize = true };
         private readonly TextBox observerUser = new TextBox { Width = 130, Text = "adrian" };
         private readonly TextBox observerPassword = new TextBox { Width = 130, Text = DefaultPassword, UseSystemPasswordChar = true };
-        private readonly NumericUpDown operationInterval = new NumericUpDown
-        {
-            Name = "OperationIntervalSeconds", Width = 95, Minimum = 0, Maximum = 60,
-            DecimalPlaces = 1, Increment = 0.1m, Value = 2
-        };
+        private readonly PlaybackWindow playback = new PlaybackWindow();
         private readonly Label status = new Label { AutoSize = true, Text = "就绪；请使用专用测试账号。" };
         private readonly Label selectionCount = new Label { AutoSize = true, Margin = new Padding(8, 8, 0, 0) };
         private readonly List<Button> lockedButtons = new List<Button>();
@@ -140,23 +136,24 @@ namespace SalesTrading.UiTests
                 AutoSize = true
             });
             settings.SetFlowBreak(settings.Controls[settings.Controls.Count - 1], true);
-            settings.Controls.Add(new Label { Text = "操作间隔（秒）", AutoSize = true });
-            settings.Controls.Add(operationInterval);
-            settings.Controls.Add(new Label { Text = "点击、输入、选择前等待；实时验证后展示同样时长；0 = 不等待；运行中可调。", AutoSize = true });
-            operationInterval.ValueChanged += (sender, args) =>
+            var playbackButton = new Button { Text = "播放控制…", AutoSize = true };
+            playbackButton.Click += (sender, args) =>
             {
-                try
+                playback.Show();
+                playback.BringToFront();
+            };
+            settings.Controls.Add(playbackButton);
+            settings.Controls.Add(new Label { Text = "浮动窗：实时调速、暂停/继续、下一动作；1× = 2秒。", AutoSize = true });
+            playback.SpeedChanged += milliseconds =>
+            {
+                if (runner != null)
                 {
-                    if (runner != null)
-                    {
-                        runner.OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000);
-                    }
-                }
-                catch (Exception error)
-                {
-                    status.Text = "操作间隔更新失败：" + error.Message;
+                    runner.OperationIntervalMilliseconds = milliseconds;
                 }
             };
+            playback.PauseChanged += paused => runner?.SetPaused(paused);
+            playback.NextRequested += () => runner?.NextAction();
+            FormClosed += (sender, args) => playback.Dispose();
             settings.SetFlowBreak(settings.Controls[settings.Controls.Count - 1], true);
             settings.Controls.Add(advanced);
             settings.Controls.Add(new Label { Text = "观察账号", AutoSize = true });
@@ -240,7 +237,11 @@ namespace SalesTrading.UiTests
                 status.Text = "正在停止并清理，请等待完成后关闭窗口。";
                 args.Cancel = true;
             };
-            Shown += (sender, args) => LoadCases();
+            Shown += (sender, args) =>
+            {
+                LoadCases();
+                playback.Show();
+            };
         }
 
         private static DataGridView Grid()
@@ -443,13 +444,15 @@ namespace SalesTrading.UiTests
             }
             runner = new SuiteRunner
             {
-                OperationIntervalMilliseconds = (int)(operationInterval.Value * 1000),
+                OperationIntervalMilliseconds = playback.DelayMilliseconds,
                 AdvancedMode = advanced.Checked, ObserverUser = observerUser.Text,
                 ObserverPassword = observerPassword.Text
             };
             report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui-test-reports", DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
             progress.Rows.Clear();
             running = true;
+            playback.SetRunning(true);
+            playback.Show();
             foreach (Button button in lockedButtons) button.Enabled = false;
             cases.Enabled = false;
             pageTree.Enabled = false;
@@ -459,6 +462,14 @@ namespace SalesTrading.UiTests
             runner.Progress += entry =>
             {
                 string state = (string)entry["state"];
+                if (state == "PLAYBACK_PAUSED")
+                {
+                    playback.ShowProgress("已暂停 · " + (string)entry["detail"]);
+                }
+                else if (state == "UI_ACTION")
+                {
+                    playback.ShowProgress("正在执行 · " + (string)entry["detail"]);
+                }
                 int index = progress.Rows.Add((string)entry["caseId"], (string)entry["step"], state, (string)entry["detail"]);
                 progress.Rows[index].DefaultCellStyle.ForeColor = state == "FAILED" ? Color.Firebrick : state == "PASSED" ? Color.DarkGreen : Color.Black;
                 progress.FirstDisplayedScrollingRowIndex = index;
@@ -481,6 +492,7 @@ namespace SalesTrading.UiTests
             finally
             {
                 running = false;
+                playback.SetRunning(false);
                 foreach (Button button in lockedButtons) button.Enabled = true;
                 cases.Enabled = true;
                 pageTree.Enabled = true;

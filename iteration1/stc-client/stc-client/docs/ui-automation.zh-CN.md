@@ -333,26 +333,36 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 
 可运行 `scripts/test-ui-runner-selection.ps1` 检查真实管理窗口的全选/取消、多行勾选、空格切换、复选框内容点击即时提交以及空选择保护。该检查不启动业务测试，有 15 秒看门狗。更新管理器程序后须重新打开管理窗口；已运行窗口继续使用原版本。
 
-## 运行中调整操作间隔
+## 浮动播放控制：速度、暂停与单步
 
-管理窗口顶部新增「操作间隔（秒）」，范围 0–60，精度 0.1 秒，默认 2 秒（可改为 0 取消额外等待）。运行中仍可调整；调小或调大都会影响当前等待，约 100ms 内读取新值，已经等待的时间不会清零。点击「停止并清理」会中断等待并进入原有清理流程。
+管理器启动和开始运行时自动显示独立小浮窗，也可点击「播放控制…」打开。窗口可拖动、保持置顶、不阻塞业务窗口；点击右上角关闭只隐藏，可再次打开。停止并清理仍使用管理器中的独立按钮。
 
-间隔应用于每次真实界面操作之前：点击、文本输入（整次输入，不逐字）、下拉/页签/行选择、按键及打开/关闭编辑窗口。首个操作和登录操作同样等待，`groups.manage`、`pending.toolbar` 内的多次操作分别等待；JSON步骤之间不再额外等待。等待前显示目标红框和当前动作字幕，等待结束后才修改控件。后台夹具/结果核对、须知自动关闭、失败清理不加人工延迟；网络超时和页面就绪轮询保持不变。显式 `filter.latency` 测量期间跳过演示等待，避免污染延迟样本。
+| 滑条位置 | 操作前等待 / 验证结果展示 |
+| --- | --- |
+| 0.25× | 8秒 |
+| 0.5× | 4秒 |
+| 1×（默认） | 2秒 |
+| 2× | 1秒 |
+| 4× | 0.5秒 |
+| 最快 | 无额外等待 |
 
-执行日志依次记录 `INTERVAL_WAIT` / `INTERVAL_DONE`（含实际 `waitMillis`）以及即将执行的 `UI_ACTION`；每例报告目录的 `operation-interval-ms.txt` 是窗口与工作进程之间的实时控制文件。看门狗只扣除这段有界的人工间隔，业务执行超时和停止后 30 秒清理宽限期保持不变。关闭并重新打开管理窗口时恢复默认 2 秒。
+速度变化约100ms内作用于当前人为等待，已等待时间不清零。暂停与速度分开：点击「暂停」阻止下一个控件动作或验证阶段，保留字幕与红框；已发送请求继续完成，行情推送继续接收，网络请求与页面查询超时保持原设置。显示“暂停请求”不代表中断了在途请求；工作进程到达等待点后显示“已暂停”。「继续」恢复所选速度。
 
-命令行可指定初始间隔，例如：
+暂停时，「下一动作」发放一个全局许可：只放行一个等待的客户端动作或一个验证阶段，之后仍保持暂停；双账号同时等待时由先领取许可的账号执行，不会各执行一次。它不是执行整个 JSON 复合步骤。验证阶段包含断言和结果展示，单步放行后不再为同一阶段要求第二次许可；结果留在当前页面，下一次输入仍需再次单步或继续。重复快速点击不会积累一长串待执行动作。
+
+点击、文本输入（整次输入，不逐字）、下拉/页签/行选择、按键及编辑窗口操作都经过播放等待点。独立结果断言与双账号实时验证也有暂停点。须知自动处理、故障清理不等待人工继续；服务更新不会因播放暂停而冻结。显式 `filter.latency` 的控件操作仍跳过演示等待，不能把播放速度当成性能测量工具。
+
+日志保留 `INTERVAL_WAIT` / `INTERVAL_DONE`（实际主动等待毫秒）、`UI_ACTION`，新增 `PLAYBACK_PAUSED` / `PLAYBACK_RELEASED`。每例目录的 `operation-interval-ms.txt` 保存速度对应间隔，`playback-control.txt` 保存共享暂停状态、单步许可与累计暂停时长。单步许可通过进程间文件锁领取。看门狗扣除显式操作等待及用户暂停时间；双账号阶段同步也扣除暂停时间。业务请求自身超时和停止后30秒清理宽限期不变。
+
+命令行兼容原参数，不强制使用浮窗，例如：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/run-ui-tests.ps1 -Cases 22-account-groups -OperationIntervalMilliseconds 1000
 ```
 
-单步骤复合用例内部也会逐操作等待。无业务写入的间隔控制和真实 WPF 操作时序回归检查：
+验证：`test-ui-operation-interval.ps1` 检查两个独立进程暂停、全局单步互斥、继续、暂停期间取消和暂停计时；`test-ui-action-interval.ps1` 检查 WPF 响应、实时调速、同步等待不因暂停超时、一个验证阶段只领取一次许可；`test-ui-runner-selection.ps1` 检查浮窗置顶、速度档位、暂停/继续按钮和隐藏后可重新打开。
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-ui-operation-interval.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-client/scripts/test-ui-action-interval.ps1
-```
+本机真实服务用例47报告：`runtime/ui-test-playback/ui-test-reports/playback-live`。在观察结果处暂停、单步放行观察阶段、再单步放行操作方一次勾选、确认后续确认动作仍受阻，继续后用例及双方清理均通过。普通模式用例04（Ofr/T+0确认及持久化）也通过、清理成功，报告 `runtime/ui-test-client/ui-test-reports/playback-normal`。未重跑全目录，不代表 QA 环境结果。
 
 ## 自动处理用户使用须知
 

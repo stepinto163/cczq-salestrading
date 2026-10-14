@@ -104,6 +104,23 @@ namespace SalesTrading.UiTests
                     }
                     Assert(holdCancelled, "停止请求必须取消验证展示，不能提前发出通过回执");
                     File.Delete(Path.Combine(directory, "cancel"));
+                    var playback = new PlaybackControl(sharedDirectory);
+                    playback.SetPaused(true);
+                    Task synchronization = Invoke(worker, "WaitSignalAsync", "paused-peer", 1);
+                    await Task.Delay(1200);
+                    Assert(!synchronization.IsCompleted, "暂停时间不得消耗双账号同步超时");
+                    File.WriteAllText(Path.Combine(sharedDirectory, "paused-peer.json"), "{}");
+                    await synchronization;
+                    pending = Invoke(worker, "BeginVerificationAsync", "单步验证");
+                    await Task.Delay(100);
+                    Assert(!pending.IsCompleted, "暂停时不得开始下一验证阶段");
+                    playback.NextAction();
+                    await pending;
+                    pending = Invoke(worker, "HoldVerificationAsync", text, "单步验证结束");
+                    await Task.Delay(50);
+                    Assert(pending.IsCompleted && playback.IsPaused, "一个验证阶段只应领取一次单步许可");
+                    await pending;
+                    playback.SetPaused(false);
                     Environment.SetEnvironmentVariable("STC_UI_REALTIME_ROOT", null);
 
                     interval.Save(60000);

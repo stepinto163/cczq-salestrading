@@ -26,6 +26,7 @@ namespace SalesTrading.UiTests
 
         private int operationIntervalMilliseconds = 2000;
         private OperationWaitBudget operationWaitBudget;
+        private bool playbackPaused;
 
         public int OperationIntervalMilliseconds
         {
@@ -41,6 +42,23 @@ namespace SalesTrading.UiTests
                     new OperationInterval(CurrentDirectory).Save(value);
                 }
                 operationIntervalMilliseconds = value;
+            }
+        }
+
+        public void SetPaused(bool paused)
+        {
+            playbackPaused = paused;
+            if (CurrentDirectory != null)
+            {
+                new PlaybackControl(CurrentDirectory).SetPaused(paused);
+            }
+        }
+
+        public void NextAction()
+        {
+            if (CurrentDirectory != null)
+            {
+                new PlaybackControl(CurrentDirectory).NextAction();
             }
         }
 
@@ -93,6 +111,8 @@ namespace SalesTrading.UiTests
                         CurrentDirectory = Path.Combine(OutputDirectory, definition.Id);
                         Directory.CreateDirectory(CurrentDirectory);
                         new OperationInterval(CurrentDirectory).Save(OperationIntervalMilliseconds);
+                        var playback = new PlaybackControl(CurrentDirectory);
+                        playback.SetPaused(playbackPaused);
                         operationWaitBudget = new OperationWaitBudget();
                         string caseFile = Path.Combine(CurrentDirectory, "case.json");
                         definition.Save(caseFile);
@@ -157,7 +177,7 @@ namespace SalesTrading.UiTests
                                     stopTime = DateTime.UtcNow;
                                     File.WriteAllText(Path.Combine(CurrentDirectory, "cancel"), "stop");
                                 }
-                                if (elapsed.ElapsedMilliseconds - operationWaitBudget.ExcludedMilliseconds - observerWaitBudget.ExcludedMilliseconds > timeoutSeconds * 1000L || (stopTime != null && DateTime.UtcNow - stopTime > TimeSpan.FromSeconds(30)))
+                                if (elapsed.ElapsedMilliseconds - operationWaitBudget.ExcludedMilliseconds - observerWaitBudget.ExcludedMilliseconds - playback.PausedMilliseconds > timeoutSeconds * 1000L || (stopTime != null && DateTime.UtcNow - stopTime > TimeSpan.FromSeconds(30)))
                                 {
                                     // This is the single worker started above, never an unrelated STC process.
                                     process.Kill();

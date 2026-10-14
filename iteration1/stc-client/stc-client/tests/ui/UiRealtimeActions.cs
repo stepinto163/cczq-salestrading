@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -37,8 +38,12 @@ namespace SalesTrading.UiTests
         private async Task<JObject> WaitSignalAsync(string name, int seconds = 60)
         {
             string target = Path.Combine(RealtimeRoot, name + ".json");
-            await Until(() =>
+            var playback = new PlaybackControl(RealtimeRoot);
+            long initialPause = playback.PausedMilliseconds;
+            var elapsed = Stopwatch.StartNew();
+            while (!File.Exists(target))
             {
+                ThrowIfCancelled();
                 string peerReport = Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROLE") == "observer"
                     ? Path.Combine(RealtimeRoot, "result.json") : Path.Combine(RealtimeRoot, "observer", "result.json");
                 if (File.Exists(peerReport))
@@ -46,8 +51,12 @@ namespace SalesTrading.UiTests
                     JObject peer = JObject.Parse(File.ReadAllText(peerReport));
                     Require((string)peer["status"] == "PASSED", "另一账号执行失败，请查看独立报告：" + peerReport);
                 }
-                return File.Exists(target);
-            }, "等待双账号同步：" + name, seconds);
+                if (elapsed.ElapsedMilliseconds - (playback.PausedMilliseconds - initialPause) > seconds * 1000L)
+                {
+                    throw new TimeoutException("等待双账号同步：" + name);
+                }
+                await Task.Delay(100);
+            }
             return JObject.Parse(File.ReadAllText(target));
         }
 
@@ -117,6 +126,7 @@ namespace SalesTrading.UiTests
                 string id = (string)change["quoteId"];
                 string clientId = (string)change["clientQuoteId"];
                 bool active = phase == "active" || phase == "restored";
+                await BeginVerificationAsync("观察账号 · " + definition.Feature + " · " + RealtimePhaseLabel(phase));
                 Func<bool> matches;
                 if (tab == "quote-confirm" || previewInput != null || tab == "history")
                 {
