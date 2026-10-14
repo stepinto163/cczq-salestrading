@@ -37,6 +37,7 @@ namespace SalesTrading.UiTests
             Reject(() => QTradeTestConfiguration.LoadToken(config, null), "missing deployment config");
 
             int count = 0;
+            var publishingCombinations = new HashSet<string>();
             foreach (string file in Directory.GetFiles(args[0], "*.json"))
             {
                 CaseDefinition definition = CaseDefinition.Read(file);
@@ -46,6 +47,8 @@ namespace SalesTrading.UiTests
                     {
                         continue;
                     }
+                    string audience = string.IsNullOrWhiteSpace((string)step.Parameters["groupId"]) ? "DIRECT" : "GROUP";
+                    publishingCombinations.Add(audience + ":" + (string)step.Parameters["mode"]);
                     // 单聊可以省略群号；编辑器保存空群号也必须合法。
                     step.Parameters.Remove("groupId");
                     definition.Validate();
@@ -56,6 +59,8 @@ namespace SalesTrading.UiTests
                 }
                 count++;
             }
+            Assert(publishingCombinations.SetEquals(new[] { "DIRECT:TEXT", "DIRECT:STRUCTURED", "GROUP:TEXT", "GROUP:STRUCTURED" }),
+                "direct/group x structured/text publishing coverage");
             Console.WriteLine("PASS: receiver mapping, shared configuration, and " + count + " case definitions.");
             return 0;
         }

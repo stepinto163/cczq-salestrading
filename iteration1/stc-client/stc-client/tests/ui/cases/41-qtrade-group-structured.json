@@ -1,0 +1,33 @@
+{
+  "Version": 1,
+  "Id": "41-qtrade-group-structured",
+  "Name": "QT群聊结构化意向发布",
+  "Description": "通过真实 FIX U41 向配置群发布结构化意向（18117报价组）。以当前登录用户的inf1账号接收，核对群来源、待确认隔离、CRM补全、UI确认与行情。只清理当前用户本例报价，不删除QT消息及其他收件人报价。",
+  "Steps": [
+    {
+      "Name": "发布并核对真实接收报价",
+      "Action": "qtrade.publish",
+      "Parameters": {
+        "appId": "107090227",
+        "senderQtAccount": "2881631456",
+        "mode": "STRUCTURED",
+        "securityId": "240210.IB",
+        "symbol": "24国开10",
+        "price": "${uniquePrice}",
+        "expectedRows": "1",
+        "groupId": "1125362859"
+      }
+    },
+    {
+      "Name": "确认报价并核对行情",
+      "Action": "qtrade.confirmPublished",
+      "Parameters": {
+        "contactName": "李继存",
+        "institutionName": "长城证券股份有限公司"
+      }
+    }
+  ],
+  "Page": "04 跨页业务/01 QT接入",
+  "Feature": "01 真实FIX发布接收",
+  "Priority": "P0"
+}

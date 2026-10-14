@@ -129,6 +129,15 @@ namespace SalesTrading.UiTests
                 QuoteRecord quote = await model.Backend.Api.GetQuoteModelAsync(id);
                 Require(quote.Status == "PENDING_CONFIRM" && quote.Source != null && quote.Source.Type == "QT", "未经过真实 QT 待确认通路");
                 Require(quote.Source.SourceUserId == receiverQtAccount && quote.OwnerUserId == login.UserId, "收到的不是目标接收账号报价");
+                if (groupId.Length > 0)
+                {
+                    // QT 接收群标识可能已脱敏，不与发布时的数字群号强行比较。
+                    Require(!string.IsNullOrWhiteSpace(quote.Source.ChatGroupId), "群发布报价缺少群来源标识");
+                }
+                if (mode == "STRUCTURED")
+                {
+                    Require(quote.Side == "1", "结构化 Bid 报价方向映射不正确");
+                }
                 Require(!string.IsNullOrWhiteSpace(quote.Source.NegotiationId), "接收报价缺少双边 NegotiationID");
                 Require(quote.SecurityId == security && decimal.Parse(quote.Price, CultureInfo.InvariantCulture)
                     == decimal.Parse(price, CultureInfo.InvariantCulture), "债券或价格映射不正确");
@@ -155,11 +164,15 @@ namespace SalesTrading.UiTests
             Require(publishedQuoteIds.Count > 0, "本例未收到发布后的实际报价");
             await NavigateAsync("entry");
             var pendingRows = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).ToList();
+            var page = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
             foreach (var row in pendingRows)
             {
-                row.IsSelected = publishedQuoteIds.Contains(row.RecognitionId);
+                bool shouldSelect = publishedQuoteIds.Contains(row.RecognitionId);
+                if (row.IsSelected != shouldSelect)
+                {
+                    await SelectPendingRowAsync(page, row, shouldSelect);
+                }
             }
-            var page = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
             var toolbar = (Border)page.FindName("BatchToolbar");
             var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
             var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
