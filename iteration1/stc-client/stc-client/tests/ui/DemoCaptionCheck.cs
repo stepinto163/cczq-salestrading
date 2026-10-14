@@ -31,14 +31,20 @@ namespace SalesTrading.UiTests
                     await Task.Delay(100);
                     IInputElement focus = Keyboard.FocusedElement;
                     caption = new DemoCaptionWindow();
-                    caption.Present(window, "精确报价识别与确认", 2, 8, "下一步", "输入报价文本并点击识别报价", "核对债券、机构与交易员");
+                    caption.Present(window, "精确报价识别与确认", 2, 8, "正在执行", "输入报价文本并点击识别报价");
                     await Task.Delay(100);
                     Require(caption.IsVisible && !caption.ShowActivated, "Caption must be visible without activation");
                     Require(ReferenceEquals(focus, Keyboard.FocusedElement), "Caption stole input focus");
                     int style = GetWindowLong(new WindowInteropHelper(caption).Handle, -20);
                     Require((style & 0x08000020) == 0x08000020, "Missing native no-activate / mouse-pass-through styles");
-                    Require(caption.OperationText.StartsWith("下一步") && caption.NextText.Contains("交易员"), "Upcoming captions missing");
-                    caption.Present(window, "精确报价识别与确认", 2, 8, "正在执行", "输入报价文本并点击识别报价", "核对债券、机构与交易员");
+                    Require(caption.OperationText == "正在执行：输入报价文本并点击识别报价", "Current action caption incorrect");
+                    StackPanel lines = (StackPanel)((Border)caption.Content).Child;
+                    Require(lines.Children.Count == 2, "Caption must show only heading and current operation");
+                    caption.Present(window, "精确报价识别与确认", 2, 8, "已完成（间隔等待）", "输入报价文本并点击识别报价");
+                    await Task.Delay(100);
+                    Require(caption.OperationText == "已完成（间隔等待）：输入报价文本并点击识别报价", "Interval must retain the completed action");
+                    Require(((TextBlock)lines.Children[0]).Text.EndsWith("2 / 8"), "Interval changed step number too early");
+                    caption.Present(window, "精确报价识别与确认", 3, 8, "正在执行", "核对债券、机构与交易员");
                     caption.UpdateLayout();
                     Require(caption.OperationText.StartsWith("正在执行"), "Current action caption not updated");
                     RenderTargetBitmap bitmap = new RenderTargetBitmap((int)Math.Ceiling(caption.ActualWidth),
@@ -53,9 +59,9 @@ namespace SalesTrading.UiTests
                     Require(Math.Abs(caption.Left - oldLeft - 50) < 2, "Caption did not follow host window");
                     caption.Suspend();
                     Require(!caption.IsVisible, "Performance-action suspension failed");
-                    caption.Present(window, "精确报价识别与确认", 8, 8, "收尾", "清理本例测试数据", null);
-                    Require(caption.IsVisible && caption.NextText == "", "Caption did not resume or clear stale next action");
-                    Console.WriteLine("PASS: upcoming/current captions, input focus, click-through styles, host tracking, suspend/resume; screenshot demo-caption.png");
+                    caption.Present(window, "精确报价识别与确认", 8, 8, "收尾", "清理本例测试数据");
+                    Require(caption.IsVisible && caption.OperationText == "收尾：清理本例测试数据", "Caption did not resume for cleanup");
+                    Console.WriteLine("PASS: current-only captions, completed-step interval, step numbering, input focus, click-through styles, host tracking, suspend/resume; screenshot demo-caption.png");
                     caption.Close();
                     window.Close();
                     application.Shutdown(0);

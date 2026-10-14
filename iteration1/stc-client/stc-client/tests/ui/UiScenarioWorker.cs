@@ -111,42 +111,40 @@ namespace SalesTrading.UiTests
             {
                 captions = new DemoCaptionWindow();
                 highlight = new ControlHighlight();
-                await ShowCaptionAsync("准备", "登录 STC 并打开销售交易", definition.Steps[0].Name);
+                await ShowCaptionAsync("正在执行", "登录 STC 并打开销售交易");
                 Emit("登录", "RUNNING", "启动正式 STC 登录窗口，连接真实服务");
                 await LoginAsync();
                 Emit("登录", "PASSED", "已登录并加载报价、行情及提醒页面");
                 foreach (TestStep step in definition.Steps)
                 {
-                    stepNumber++;
                     ThrowIfCancelled();
-                    if (editDialog != null && step.Action != "management.edit" && step.Action != "management.save"
-                        && step.Action != "management.reject" && step.Action != "quote.assert") CloseEditor();
-                    string upcoming = stepNumber < definition.Steps.Count ? definition.Steps[stepNumber].Name : "清理本例数据";
+                    // 间隔内保留刚完成步骤的字幕与红框，不提前切换到尚未执行的步骤。
+                    if (stepNumber > 0)
+                    {
+                        await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
+                            Emit(step.Name, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE",
+                                waiting ? "操作间隔等待中；可在管理窗口实时调整" : "操作间隔等待 " + milliseconds + " ms", milliseconds));
+                    }
+                    stepNumber++;
+                    highlight.SetSuspended(step.Action == "filter.latency");
                     if (step.Action == "filter.latency")
                     {
                         captions.Suspend();
                     }
                     else
                     {
-                        await ShowCaptionAsync("下一步", step.Name, upcoming);
+                        await ShowCaptionAsync("正在执行", step.Name);
                     }
-                    if (stepNumber > 1)
-                    {
-                        await new OperationInterval(reportDirectory).WaitAsync(ThrowIfCancelled, (waiting, milliseconds) =>
-                            Emit(step.Name, waiting ? "INTERVAL_WAIT" : "INTERVAL_DONE",
-                                waiting ? "操作间隔等待中；可在管理窗口实时调整" : "操作间隔等待 " + milliseconds + " ms", milliseconds));
-                    }
-                    if (step.Action != "filter.latency")
-                    {
-                        await ShowCaptionAsync("正在执行", step.Name, upcoming);
-                    }
+                    if (editDialog != null && step.Action != "management.edit" && step.Action != "management.save"
+                        && step.Action != "management.reject" && step.Action != "quote.assert") CloseEditor();
                     Emit(step.Name, "RUNNING", step.Action);
-                    highlight.SetSuspended(step.Action == "filter.latency");
                     Stopwatch duration = Stopwatch.StartNew();
                     await ExecuteAsync(step);
                     await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                     Capture(stepNumber.ToString("D2") + "-passed");
+                    duration.Stop();
                     Emit(step.Name, "PASSED", duration.ElapsedMilliseconds + " ms");
+                    await ShowCaptionAsync(stepNumber < definition.Steps.Count ? "已完成（间隔等待）" : "已完成", step.Name);
                 }
             }
             catch (OperationCanceledException)
@@ -167,7 +165,7 @@ namespace SalesTrading.UiTests
                 try
                 {
                     await ShowCaptionAsync(outcome == "PASSED" ? "收尾" : outcome == "CANCELLED" ? "已停止" : "测试失败",
-                        "清理本例测试数据", null);
+                        "清理本例测试数据");
                 }
                 catch (Exception captionError)
                 {
@@ -200,9 +198,9 @@ namespace SalesTrading.UiTests
             return outcome == "PASSED" ? 0 : 1;
         }
 
-        private async Task ShowCaptionAsync(string phase, string action, string upcoming)
+        private async Task ShowCaptionAsync(string phase, string action)
         {
-            captions?.Present(shell, definition.Name, stepNumber, definition.Steps.Count, phase, action, upcoming);
+            captions?.Present(shell, definition.Name, stepNumber, definition.Steps.Count, phase, action);
             // 在操作计时前完成字幕渲染；不占用输入焦点，不附加固定睡眠。
             await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
         }

@@ -13,7 +13,6 @@ namespace SalesTrading.UiTests
     {
         private readonly TextBlock heading;
         private readonly TextBlock operation;
-        private readonly TextBlock next;
         private readonly DispatcherTimer positionTimer;
         private Window anchor;
 
@@ -37,11 +36,9 @@ namespace SalesTrading.UiTests
                 FontSize = 24, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
                 TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 4)
             };
-            next = new TextBlock { FontSize = 14, Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap };
             StackPanel lines = new StackPanel();
             lines.Children.Add(heading);
             lines.Children.Add(operation);
-            lines.Children.Add(next);
             Content = new Border
             {
                 Background = new SolidColorBrush(Color.FromArgb(235, 15, 23, 34)),
@@ -62,16 +59,13 @@ namespace SalesTrading.UiTests
         }
 
         public string OperationText => operation.Text;
-        public string NextText => next.Text;
 
         public void Present(Window target, string caseName, int index, int count,
-            string phase, string action, string upcoming)
+            string phase, string action)
         {
             anchor = target;
             heading.Text = caseName + (index > 0 ? "  ·  " + index + " / " + count : "");
             operation.Text = phase + "：" + action;
-            next.Text = string.IsNullOrEmpty(upcoming) ? "" : "接下来：" + upcoming;
-            next.Visibility = string.IsNullOrEmpty(upcoming) ? Visibility.Collapsed : Visibility.Visible;
             Position();
             if (!IsVisible) Show();
             positionTimer.Start();
