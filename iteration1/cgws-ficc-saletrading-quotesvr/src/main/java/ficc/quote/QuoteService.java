@@ -450,8 +450,8 @@ final class QuoteService {
                 }
                 if (q.status.equals("ACTIVE") && !op.equals("refer"))
                     q.quoteTime = now;
-                if (op.equals("confirm") || op.equals("unrefer")) {
-                    replaceConfirmedNegotiationLeg(q, c, now, replacedQuotes, replacementEvents);
+                if ("ACTIVE".equals(q.status)) {
+                    replaceActiveQuotesWithSameBusinessKey(q, c, now, replacedQuotes, replacementEvents);
                 }
                 store.saveQuote(q);
                 event =
@@ -548,23 +548,24 @@ final class QuoteService {
     }
 
     /**
-     * 新提案确认后，仅将同一接收人、QT 账户、NegotiationID 和方向的旧 ACTIVE 报价转为 REFERRED。
-     * 接入未确认提案时不调用本方法，其他交易员及其他双边会话的有效报价也不受影响。
+     * 人工确认、恢复或修改有效报价时，按完整业务键替换旧有效报价。
+     * 业务键为债券、方向、清算速度、归属人、对手机构及联系人 ID；来源和 NegotiationID 不参与匹配。
+     * 对手机构或联系人未匹配时保持独立。待确认报价不进入此路径，替换与本次写入共用事务。
      */
-    private void replaceConfirmedNegotiationLeg(QuoteRecord confirmed, Call call, String now,
+    private void replaceActiveQuotesWithSameBusinessKey(QuoteRecord confirmed, Call call, String now,
             List<QuoteRecord> replacedQuotes, List<JSONObject> replacementEvents) throws Exception {
-        QuoteSource source = confirmed.source;
-        if (source == null || !"QT".equals(source.type)
-                || source.negotiationId == null || source.negotiationId.trim().isEmpty()) {
+        if (confirmed.institutionId == null || confirmed.institutionId.trim().isEmpty()
+                || confirmed.contactId == null || confirmed.contactId.trim().isEmpty()) {
             return;
         }
         for (QuoteRecord existing : quotes.values()) {
             if (existing.quoteId.equals(confirmed.quoteId) || !"ACTIVE".equals(existing.status)
                     || !Objects.equals(existing.ownerUserId, confirmed.ownerUserId)
                     || !Objects.equals(existing.side, confirmed.side)
-                    || existing.source == null || !"QT".equals(existing.source.type)
-                    || !Objects.equals(existing.source.sourceUserId, source.sourceUserId)
-                    || !Objects.equals(existing.source.negotiationId, source.negotiationId)) {
+                    || !Objects.equals(existing.securityId, confirmed.securityId)
+                    || !Objects.equals(existing.settlType, confirmed.settlType)
+                    || !Objects.equals(existing.institutionId, confirmed.institutionId)
+                    || !Objects.equals(existing.contactId, confirmed.contactId)) {
                 continue;
             }
             QuoteRecord replaced = ProtocolCodec.decode(existing.toJson(), QuoteRecord.class);
@@ -581,7 +582,7 @@ final class QuoteService {
                     "quoteId", replaced.quoteId, "revision", replaced.revision, "action", "REFER",
                     "operatorUserId", call.user, "operationTime", now,
                     "before", existing.toJson(), "after", replaced.toJson(),
-                    "reason", "Replaced by confirmed negotiation quote " + confirmed.quoteId));
+                    "reason", "Replaced by active quote with the same business key: " + confirmed.quoteId));
             replacedQuotes.add(replaced);
             replacementEvents.add(event);
         }

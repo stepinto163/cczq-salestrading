@@ -135,6 +135,7 @@ namespace SalesTrading.UiTests
                         start.EnvironmentVariables["STC_UI_REALTIME_ROOT"] = CurrentDirectory;
                         bool needsIntake = definition.Steps.Any(step => step.Action == "qtrade.publish"
                             || step.Action == "qtrade.negotiation"
+                            || step.Action == "qtrade.business-key"
                             || (step.Action == "realtime.lifecycle" && (string)step.Parameters["source"] == "QT"));
                         start.EnvironmentVariables.Remove("STC_UI_INTAKE_TOKEN");
                         if (needsIntake)

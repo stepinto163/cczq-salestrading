@@ -53,9 +53,10 @@ public final class QTradeNegotiationSmoke {
         QuoteRecord quote = service.quotes.get(id);
         JSONObject edit = JsonUtils.object("quoteId", id, "expectedRevision", quote.revision);
         if ("confirm".equals(action)) {
-            // CRM completion is outside this scenario; explicitly clear unresolved fixture names.
-            edit.put("institutionName", null);
-            edit.put("contactName", null);
+            // 两个会话对应不同对手；同一对手的新提案使用相同的已匹配 CRM 身份。
+            boolean counterpartyC = quote.source.negotiationId.startsWith("A-C");
+            edit.put("institutionId", counterpartyC ? "I-002" : "I-001");
+            edit.put("contactId", counterpartyC ? "C-002" : "C-001");
         }
         JSONObject result = call(quote.ownerUserId, "ficc.quote." + action,
                 JsonUtils.object("quotes", JsonUtils.array(edit))).getJSONArray("results").getJSONObject(0);
@@ -96,6 +97,9 @@ public final class QTradeNegotiationSmoke {
     }
 
     private void run(JSONArray inputs) throws Exception {
+        // 新会话对应相同 CRM 业务键；确认后仍必须替换旧会话的有效报价。
+        inputs.getJSONObject(4).getJSONObject("intake").put("negotiationId", "A-C-NEW");
+        inputs.getJSONObject(5).getJSONObject("intake").put("negotiationId", "A-C-NEW");
         for (String user : Arrays.asList("A", "B", "C")) {
             for (String domain : Arrays.asList("quote", "price")) {
                 JSONObject stream = call(user, "ficc." + domain + ".stream.open", JsonUtils.object());
@@ -149,6 +153,8 @@ public final class QTradeNegotiationSmoke {
         pendingHasNoPriceEffect(inputs.getJSONObject(4));
         String replacement = receive(inputs.getJSONObject(4));
         check(!replacement.equals(offerC), "new proposal does not overwrite confirmed local record");
+        check(!service.quotes.get(replacement).source.negotiationId.equals(
+                service.quotes.get(offerC).source.negotiationId), "replacement crosses NegotiationIDs");
         pendingHasNoPriceEffect(inputs.getJSONObject(5));
         check(replacement.equals(receive(inputs.getJSONObject(5))), "pending conversation update reuses pending record");
         check("2.03".equals(service.quotes.get(replacement).price)
@@ -175,7 +181,7 @@ public final class QTradeNegotiationSmoke {
         action("unrefer", offerC);
         expectBook("A", "FULL", bidB, bidC, offerC, offerB);
         check("REFERRED".equals(service.quotes.get(replacement).status),
-                "explicit restore cannot activate two versions of the same conversation leg");
+                "explicit restore cannot activate two quotes with the same business key");
         snapshot("restored");
         service = new QuoteService(service.store, new ReferenceData());
         expectBook("A", "FULL", bidB, bidC, offerC, offerB);

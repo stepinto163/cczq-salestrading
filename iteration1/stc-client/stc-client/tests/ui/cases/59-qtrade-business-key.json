@@ -1,0 +1,40 @@
+{
+  "Version": 1,
+  "Id": "59-qtrade-business-key",
+  "Name": "QT 不同 NegotiationID 按完整业务键确认替换",
+  "Description": "真实 STC 登录及 GW；三个不同会话对应相同债券、方向、清算、归属人和 CRM 对手，逐次 UI 确认后替换，待确认更新不影响正式价池。已有非本例同键报价时中止；不发送外部 FIX。",
+  "Steps": [
+    {
+      "Name": "精确报价输入并识别",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} 2.5000 1 bid +1",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "勾选识别预览",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "确认本例归属报价",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "双边提案、确认及价格隔离",
+      "Action": "qtrade.business-key",
+      "Parameters": {}
+    }
+  ],
+  "Page": "04 跨页业务/01 QT接入",
+  "Feature": "02 双边议价",
+  "Priority": "P0"
+}

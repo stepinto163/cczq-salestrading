@@ -164,6 +164,9 @@ namespace SalesTrading.UiTests
                 case "qtrade.negotiation":
                     await CheckQTradeNegotiationAsync();
                     break;
+                case "qtrade.business-key":
+                    await CheckQTradeNegotiationAsync(true);
+                    break;
                 case "quote.fields":
                     JObject stored = await model.Backend.Api.GetQuoteAsync(quoteId);
                     foreach (string field in new[] { "side", "settlType" })

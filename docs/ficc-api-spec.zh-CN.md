@@ -137,6 +137,8 @@ ACTIVE 不能直接 delete，应先 refer。报价写入每批 1–100 条，**�
 
 待确认报价不进入有效价格簿。精确报价的“识别”只生成本地预览；当前“确认报价”实现依次调用 create、get、confirm，尚不是原子创建并确认，因此中间可能短暂出现 PENDING_CONFIRM；confirm 失败时已创建记录也可能保留为待确认。确认成功后应按视图移除事件移出待确认列表。
 
+确认、Unrefer 或编辑 ACTIVE 报价成功时，若 `institutionId`、`contactId` 均已匹配，则以 `securityId + side + settlType + ownerUserId + institutionId + contactId` 替换同键的其他 ACTIVE 报价。旧记录变为 REFERRED，版本递增，生成 REFER 历史与事件；新旧写入在同一事务内。此规则跨来源、跨 NegotiationID，内部 quoteId 不合并；交易日、报价价格、数量不是此业务键。任一对手 ID 缺失则保持独立。待确认接入/编辑不会触发替换。客户端应消费所有受影响报价的推送，不能仅更新请求中的 quoteId。
+
 ### 2.3 ID 的不同职责
 
 | 字段 | 含义 |

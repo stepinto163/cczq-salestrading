@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using STC.SalesTrading.Plugin.Ficc;
 using STC.SalesTrading.Plugin.Ficc.Protocol;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
+using STC.SalesTrading.Plugin.Shared.Components;
 
 namespace SalesTrading.UiTests
 {
@@ -14,7 +15,7 @@ namespace SalesTrading.UiTests
     {
         // Test fixture enters at the intake API through the real GW. No external FIX session
         // or QTrade publication is simulated as a successful delivery. Confirmations use UI controls.
-        private async Task CheckQTradeNegotiationAsync()
+        private async Task CheckQTradeNegotiationAsync(bool mergeDifferentConversations = false)
         {
             Require(quoteId != null, "先通过精确报价确认本例归属报价");
             string token = Environment.GetEnvironmentVariable("STC_UI_INTAKE_TOKEN");
@@ -46,7 +47,8 @@ namespace SalesTrading.UiTests
                         {
                             ClientQuoteId = eventId, SecurityId = security, Side = "2", QuoteType = "1",
                             YieldType = "1", Price = price, Quantity = "1", QuantityUnit = "WAN",
-                            Currency = "CNY", SettlType = "2", TradeDate = DateTime.Today.ToString("yyyy-MM-dd")
+                            Currency = "CNY", SettlType = conversation == "A-B" && !mergeDifferentConversations ? "1" : "2",
+                            TradeDate = DateTime.Today.ToString("yyyy-MM-dd")
                         }
                     }
                 };
@@ -67,31 +69,56 @@ namespace SalesTrading.UiTests
             string first = await receive("A-B", "2.1234");
             string second = await receive("A-C", "2.2345");
             Require(first != second, "同一意向的两个会话被错误合并");
-            await ConfirmNegotiationOnUiAsync(first);
-            await ConfirmNegotiationOnUiAsync(second);
-            await AssertNegotiationPriceAsync(first, 2.1234m);
+            await ConfirmNegotiationOnUiAsync(first, true);
+            await ConfirmNegotiationOnUiAsync(second, true);
+            if (mergeDifferentConversations)
+            {
+                await AssertRetiredNegotiationAsync(first);
+            }
+            else
+            {
+                await AssertNegotiationPriceAsync(first, 2.1234m);
+            }
             await AssertNegotiationPriceAsync(second, 2.2345m);
             Capture("qt-two-confirmed-conversations");
 
-            string replacement = await receive("A-C", "2.3456");
+            string replacementConversation = mergeDifferentConversations ? "A-D" : "A-C";
+            string replacement = await receive(replacementConversation, "2.3456");
             Require(replacement != second, "新提案覆盖了已确认记录");
             await AssertNegotiationPriceAsync(second, 2.2345m);
-            await AssertNegotiationPriceAsync(first, 2.1234m);
+            if (!mergeDifferentConversations)
+            {
+                await AssertNegotiationPriceAsync(first, 2.1234m);
+            }
             Capture("qt-pending-keeps-confirmed-price");
-            string refreshed = await receive("A-C", "2.4567");
+            string refreshed = await receive(replacementConversation, "2.4567");
             Require(refreshed == replacement, "同会话待确认更新新建了重复提案");
-            await ConfirmNegotiationOnUiAsync(replacement);
+            await ConfirmNegotiationOnUiAsync(replacement, true);
             await AssertNegotiationPriceAsync(replacement, 2.4567m);
-            await AssertNegotiationPriceAsync(first, 2.1234m);
+            if (!mergeDifferentConversations)
+            {
+                await AssertNegotiationPriceAsync(first, 2.1234m);
+            }
             await Until(() => !model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == second),
                 "旧 A-C 价格退出真实行情表");
             JObject retired = await model.Backend.Api.GetQuoteAsync(second);
             Require((string)retired["status"] == "REFERRED", "旧报价未撤出正式价池");
             Capture("qt-confirmed-replacement");
-            Emit("QT 双边更新", "PASSED", "A-C 新提案经 UI 确认后替换旧价；A-B 价格保持不变");
+            Emit("QT 业务键替换", "PASSED", mergeDifferentConversations
+                ? "不同 NegotiationID、相同完整业务键：仅确认后替换旧价"
+                : "同业务键新提案仅确认后替换旧价；不同清算速度报价保持不变");
         }
 
-        private async Task ConfirmNegotiationOnUiAsync(string id)
+        private async Task AssertRetiredNegotiationAsync(string id)
+        {
+            await NavigateAsync("market");
+            await Until(() => !model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == id),
+                "被替换报价退出行情 " + id);
+            JObject retired = await model.Backend.Api.GetQuoteAsync(id);
+            Require((string)retired["status"] == "REFERRED", "被替换报价应保留为 REFERRED");
+        }
+
+        private async Task ConfirmNegotiationOnUiAsync(string id, bool completeCounterparty = false)
         {
             await NavigateAsync("entry");
             await SelectTabAsync("quote-confirm");
@@ -101,6 +128,35 @@ namespace SalesTrading.UiTests
             foreach (var row in rows.Where(row => row.IsSelected || row.RecognitionId == id))
             {
                 await SelectPendingRowAsync(confirmation, row, row.RecognitionId == id);
+            }
+            if (completeCounterparty)
+            {
+                var toolbar = (Border)confirmation.FindName("BatchToolbar");
+                var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
+                var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
+                await SetTextAsync(institution, "");
+                var selected = await SelectToolbarCrmAsync(contact, "李继存");
+                Require(selected.ContactName == "李继存" && !string.IsNullOrEmpty(selected.InstitutionId),
+                    "测试联系人必须有已匹配的机构");
+                JObject incoming = await model.Backend.Api.GetQuoteAsync(id);
+                // 不能为了验证去重而撤掉测试开始前已有的业务报价。
+                QuoteQueryData existing = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteQuery,
+                    new QuoteQueryRequest
+                    {
+                        Limit = 100,
+                        OwnerScope = "MINE",
+                        Status = new System.Collections.Generic.List<string> { "ACTIVE" },
+                        Filter = new Filter { Conditions = new System.Collections.Generic.List<FilterCondition>
+                        {
+                            new FilterCondition { Field = "securityId", Operator = "EQ", Value = (string)incoming["securityId"] },
+                            new FilterCondition { Field = "side", Operator = "EQ", Value = (string)incoming["side"] },
+                            new FilterCondition { Field = "settlType", Operator = "EQ", Value = (string)incoming["settlType"] }
+                        } }
+                    });
+                Require(existing.TotalCount <= 100 && existing.Quotes
+                    .Where(item => item.InstitutionId == selected.InstitutionId && item.ContactId == selected.ContactId)
+                    .All(item => ownedQuotes.Contains(item.QuoteId)),
+                    "业务键已有非本例的有效报价；请换测试债券，不能覆盖业务数据");
             }
             await ClickAsync(Button(confirmation, "确认报价"));
             await AwaitCommand(model.QuotePage.Confirm.ConfirmSelectedCommand.ExecutionTask);
