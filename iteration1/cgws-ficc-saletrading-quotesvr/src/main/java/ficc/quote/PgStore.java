@@ -53,6 +53,9 @@ final class PgStore extends JdbcStore {
         exec("CREATE INDEX IF NOT EXISTS history_recommendation_idx ON history"
                 + " ((payload->'after'->>'securityId'), operation_time DESC)"
                 + " WHERE payload->'after'->>'status'='ACTIVE'");
+        exec("CREATE INDEX IF NOT EXISTS history_owner_time_idx ON history"
+                + " ((payload->'after'->>'ownerUserId'), operation_time)");
+        exec("CREATE INDEX IF NOT EXISTS history_time_idx ON history (operation_time)");
         exec(
                 "CREATE TABLE IF NOT EXISTS sources (id text primary key,source_type text not"
                         + " null,external_id text not null,payload jsonb not"

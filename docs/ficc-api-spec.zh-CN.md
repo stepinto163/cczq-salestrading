@@ -159,7 +159,7 @@ ACTIVE 不能直接 delete，应先 refer。报价写入每批 1–100 条，**�
 
 quote.query 默认 `ownerScope=VISIBLE`、`status=["ACTIVE"]`。报价确认页面显式指定 MINE + PENDING_CONFIRM；报价管理按页面指定 ACTIVE/REFERRED。按 updateTime 倒序、quoteId 升序。
 
-history.query 是一条报价的操作历史（before/after），要求归属权限，按 revision 倒序。history.search 是日期范围内每天每条报价的最后状态；fromDate/toDate 必填、包含两端，跨度不超过 366 天。当前读取 SQL 历史后在 Java 中聚合、筛选和分页，并非将全部筛选条件下推 SQL。其行 tradeDate 当前取操作日期，不应误读为 quote.tradeDate。
+history.query 是一条报价的操作历史（before/after），要求归属权限，按 revision 倒序。history.search 是日期范围内每天每条报价的最后状态；fromDate/toDate 必填、包含两端，跨度不超过 366 天。PostgreSQL 按日期和归属权限选取每天每条报价的最后版本，JDBC 分批读取每日快照；Java 复用公共业务筛选器并保留快照游标分页，并非全部条件下推 SQL。相同操作时刻以 revision 较大者为准。详见 [历史查询优化](history-search-optimization.zh-CN.md)。其行 tradeDate 当前取操作日期，不应误读为 quote.tradeDate。
 
 sourceMessage.query 实际按 sourceMessageId 和归属权限筛选；模型虽有 quoteId，当前处理器没有使用它。应先 get 报价取得 sourceMessageId 再查原文。
 

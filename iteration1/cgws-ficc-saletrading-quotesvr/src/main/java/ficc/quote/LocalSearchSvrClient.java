@@ -58,36 +58,41 @@ final class LocalSearchSvrClient implements SearchSvrClient {
 
     @Override
     public List<QuoteHistoryRow> searchHistory(String user, QuoteHistorySearchRequest query) throws Exception {
-        LocalDate from = LocalDate.parse(query.fromDate),
-                to = LocalDate.parse(query.toDate);
-        if (from.isAfter(to) || java.time.temporal.ChronoUnit.DAYS.between(from, to) > 366)
+        LocalDate from;
+        LocalDate to;
+        try {
+            from = LocalDate.parse(query.fromDate);
+            to = LocalDate.parse(query.toDate);
+        } catch (java.time.format.DateTimeParseException | NullPointerException error) {
             throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid date range", null);
-        Filter f = query.filter;
-        FilterEngine.validate(f == null ? null : f.toJson());
-        Predicate<QuoteRecord> matches = matcher.prepare(user, f);
-        List<JSONObject> found =
-                store.rows(
-                        "SELECT payload FROM history WHERE operation_time>=?::date AND"
-                            + " operation_time<(?::date+interval '1 day') ORDER BY operation_time",
-                        from.toString(),
-                        to.toString());
-        Map<String, QuoteHistoryRow> daily = new LinkedHashMap<>();
-        for (JSONObject history : found) {
-            QuoteRecord quote = history.getJSONObject("after") == null ? null
-                    : ProtocolCodec.decode(history.getJSONObject("after"), QuoteRecord.class);
-            if (quote == null || !access.owns(user, quote.ownerUserId)) {
-                continue;
-            }
-            String date = history.getString("operationTime").substring(0, 10);
-            QuoteHistoryRow row = new QuoteHistoryRow();
-            row.tradeDate = date;
-            row.quote = quote;
-            row.reference = quote.securityId == null || refs.security(quote.securityId) == null
-                    ? null : ProtocolCodec.decode(refs.security(quote.securityId), ReferenceRecord.class);
-            daily.put(date + quote.quoteId, row);
         }
-        return daily.values().stream()
-                .filter(row -> matches.test(row.quote))
-                .collect(Collectors.toList());
+        if (from.isAfter(to) || java.time.temporal.ChronoUnit.DAYS.between(from, to) > 366) {
+            throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid date range", null);
+        }
+        Filter filter = query.filter;
+        FilterEngine.validate(filter == null ? null : filter.toJson());
+        Predicate<QuoteRecord> matches = matcher.prepare(user, filter);
+        boolean allOwners = user != null && (access.administrator(user) || access.internal(user));
+        List<QuoteHistoryRow> result = new ArrayList<>();
+        // 先选当日最后状态，再判断价格等条件，不能让满足条件的旧版本重新出现。
+        // 基础资料及分组继续使用公共筛选器，保持历史页面使用当前基础资料的契约。
+        store.scanRows(HistorySearchSql.latestDaily(allOwners), snapshot -> {
+            QuoteRecord quote = ProtocolCodec.decode(snapshot.getJSONObject("quote"), QuoteRecord.class);
+            if (!access.owns(user, quote.ownerUserId) || !matches.test(quote)) {
+                return;
+            }
+            if (result.size() == 10000) {
+                throw ApiException.forField("1008", "RESOURCE_LIMIT",
+                        "Client result cap: narrow the filter", "filter");
+            }
+            QuoteHistoryRow row = new QuoteHistoryRow();
+            row.tradeDate = snapshot.getString("tradeDate");
+            row.quote = quote;
+            JSONObject security = quote.securityId == null ? null : refs.security(quote.securityId);
+            row.reference = security == null ? null : ProtocolCodec.decode(security, ReferenceRecord.class);
+            result.add(row);
+        }, allOwners ? new Object[] {from.toString(), to.toString()}
+                : new Object[] {from.toString(), to.toString(), user});
+        return result;
     }
 }

@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 /**
  * PostgreSQL 持久化基础：维护事务、事件序列和请求回执，供业务服务协调写入。
@@ -154,6 +155,48 @@ public class JdbcStore implements AutoCloseable {
             }
         }
         return rows;
+    }
+
+    /**
+     * 在单个数据库快照中分批读取 JSON 行，不在 JDBC 驱动或 Java 列表中缓存全部结果。
+     * PostgreSQL 只有在事务中才使用 fetchSize 游标；独立查询结束后恢复连接状态。
+     * 沿用本类的串行调用约束，回调不能在当前连接上启动其他事务。
+     */
+    public void scanRows(String sql, Consumer<JSONObject> consume, Object... arguments)
+            throws SQLException {
+        boolean ownsTransaction = db.getAutoCommit();
+        if (ownsTransaction) {
+            db.setAutoCommit(false);
+        }
+        Throwable failure = null;
+        try {
+            try (PreparedStatement statement = db.prepareStatement(sql)) {
+                statement.setFetchSize(128);
+                bind(statement, arguments);
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        consume.accept(JsonUtils.parseObject(result.getString(1)));
+                    }
+                }
+            }
+        } catch (SQLException | RuntimeException | Error error) {
+            failure = error;
+            throw error;
+        } finally {
+            if (ownsTransaction) {
+                // 只读事务无需提交；异常、提前中止和正常返回都必须关闭数据库游标。
+                try {
+                    db.rollback();
+                    db.setAutoCommit(true);
+                } catch (SQLException cleanupError) {
+                    if (failure != null) {
+                        failure.addSuppressed(cleanupError);
+                    } else {
+                        throw cleanupError;
+                    }
+                }
+            }
+        }
     }
 
     public String scalar(String sql, Object... arguments) throws SQLException {

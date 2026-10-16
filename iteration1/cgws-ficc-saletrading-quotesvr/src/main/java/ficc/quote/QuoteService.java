@@ -912,8 +912,12 @@ final class QuoteService {
     }
 
     Object historySearch(Call c) throws Exception {
-        return page(c, "rows", search.searchHistory(c.user, ProtocolCodec.decode(c.request, QuoteHistorySearchRequest.class)).stream()
-                        .map(QuoteHistoryRow::toJson).collect(Collectors.toList()), JsonUtils.object());
+        // 无效页大小必须在访问数据库前拒绝。
+        limit(c.request, 1000);
+        QuoteHistorySearchRequest request = ProtocolCodec.decode(c.request, QuoteHistorySearchRequest.class);
+        List<JSONObject> rows = search.searchHistory(c.user, request).stream()
+                .map(QuoteHistoryRow::toJson).collect(Collectors.toList());
+        return page(c, "rows", rows, JsonUtils.object());
     }
 
     Object sourceQuery(Call c) throws Exception {
