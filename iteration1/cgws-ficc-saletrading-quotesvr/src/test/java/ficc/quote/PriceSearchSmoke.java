@@ -94,7 +94,7 @@ public final class PriceSearchSmoke {
         quote("bid3", "A", "QT", "1", "2.10");
         quote("ofr1", "A", "QT", "2", "2.30");
         quote("ofr2", "A", "QT", "2", "2.20");
-        quote("privateB", "B", "QT", "1", "1.00");
+        quote("privateB", "B", "QT", "1", "2.50");
         quote("publicB", "B", "MANUAL", "2", "2.40");
         quote("pending", "A", "QT", "1", "0.10").status = "PENDING_CONFIRM";
         quote("referred", "A", "QT", "1", "0.20").status = "REFERRED";
@@ -107,17 +107,17 @@ public final class PriceSearchSmoke {
         search = new LocalSearchSvrClient(null, references, quotes, matcher, access, books);
 
         PriceBook full = query("A", "FULL", null);
-        check(ids(full).equals(Arrays.asList("FICC:bid2", "FICC:bid1", "FICC:bid3",
+        check(ids(full).equals(Arrays.asList("FICC:bid2", "FICC:bid1", "FICC:bid3", "FICC:privateB",
                 "FICC:publicB", "FICC:ofr1", "FICC:ofr2")), "FULL ordering and visibility");
         check(ids(query("A", "BEST", null)).equals(Arrays.asList("FICC:bid2", "FICC:bid1",
                 "FICC:publicB")), "BEST retains all quotes at equal best price");
         check(ids(query("A", "DEPTH", 2)).equals(Arrays.asList("FICC:bid2", "FICC:bid1",
                 "FICC:bid3", "FICC:publicB", "FICC:ofr1")), "DEPTH counts distinct prices");
-        check(ids(query("B", "FULL", null)).equals(Arrays.asList("FICC:privateB", "FICC:publicB")),
-                "Each recipient has a different QT price projection");
+        check(ids(query("B", "FULL", null)).equals(ids(full)),
+                "All traders share the confirmed QT price projection");
         check(books.book(null, "250001.IB", null, "FULL", 0).marketData.NoMDEntries.size() == 7,
                 "Authorized internal feed includes both recipients, only confirmed quotes");
-        check(full.quoteRefs.size() == 6 && "1".equals(full.quoteRefs.get("FICC:bid2").quoteRevision),
+        check(full.quoteRefs.size() == 7 && "1".equals(full.quoteRefs.get("FICC:bid2").quoteRevision),
                 "Quote references preserve quote revision");
         check(JsonUtils.canonicalHash(full.toJson()).equals(JsonUtils.canonicalHash(
                 books.book("A", "250001.IB", null, "FULL", 0).toJson())),
@@ -130,11 +130,11 @@ public final class PriceSearchSmoke {
                 "MDEntryTime", "08:01:00.000", "Yield", "2.000", "InstitutionID", "I-A", "TraderID", "C-A",
                 "InstitutionName", "机构-A", "TraderName", "对手-A");
         check(entry.equals(expected), "Exact existing market entry field names and scalar types");
-        JSONObject publicEntry = full.marketData.NoMDEntries.get(3).toJson();
-        check(!publicEntry.containsKey("InstitutionID") && !publicEntry.containsKey("TraderID"),
-                "Public quote hides another owner's institution and contact");
-        check(!publicEntry.containsKey("InstitutionName") && !publicEntry.containsKey("TraderName"),
-                "Public quote also hides counterparty names");
+        JSONObject publicEntry = full.marketData.NoMDEntries.get(4).toJson();
+        check("I-B".equals(publicEntry.getString("InstitutionID")) && "C-B".equals(publicEntry.getString("TraderID")),
+                "Shared quote includes institution and contact");
+        check(publicEntry.getString("InstitutionName") != null && publicEntry.getString("TraderName") != null,
+                "Shared quote includes counterparty names");
         check("B".equals(publicEntry.getString("UserID")), "Public quote retains its actual STC owner");
         for (String mode : Arrays.asList("FULL", "BEST", "DEPTH")) {
             MarketEntry ownEntry = query("A", mode, "DEPTH".equals(mode) ? 1 : null)
@@ -151,7 +151,7 @@ public final class PriceSearchSmoke {
         PriceQueryRequest filtered = request("FULL", null);
         filtered.filter = ProtocolCodec.decode(JsonUtils.object("conditions", JsonUtils.array(
                 JsonUtils.object("field", "side", "operator", "EQ", "value", "1"))), Filter.class);
-        check(search.queryPrices("A", filtered).get(0).marketData.NoMDEntries.size() == 3,
+        check(search.queryPrices("A", filtered).get(0).marketData.NoMDEntries.size() == 4,
                 "Typed condition filter applies before price selection");
         filtered.filter = new Filter();
         filtered.filter.market = "CREDIT";
@@ -218,14 +218,14 @@ public final class PriceSearchSmoke {
         QuoteRecord cleanPrice = quote("clean", "A", "QT", "1", "101.25");
         cleanPrice.quoteType = "2";
         books.changed(cleanPrice, null);
-        check(query("A", "FULL", null).marketData.NoMDEntries.size() == 6,
+        check(query("A", "FULL", null).marketData.NoMDEntries.size() == 7,
                 "Healthy prices remain when a clean-price conversion is missing");
         check(query("A", "BEST", null).calculationIssues.size() == 1,
                 "BEST reports excluded conversion without ranking clean price as yield");
         check(books.book(null, "250001.IB", null, "FULL", 0).calculationIssues.size() == 1,
                 "Notification internal snapshot also tolerates a missing conversion");
-        check(query("B", "FULL", null).calculationIssues == null,
-                "Private calculation failures do not leak to another user");
+        check(query("B", "FULL", null).calculationIssues.size() == 1,
+                "Shared confirmed quote exposes the same calculation issue to every viewer");
         books.yieldResolver = (quote, yieldType, version) -> new QuoteYieldResolver.Result("1.95", null);
         PriceBook converted = query("A", "BEST", null);
         check(ids(converted).contains("FICC:clean") && converted.calculationIssues == null,

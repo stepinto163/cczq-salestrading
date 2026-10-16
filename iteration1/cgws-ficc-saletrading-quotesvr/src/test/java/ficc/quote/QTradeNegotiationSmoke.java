@@ -108,35 +108,43 @@ public final class QTradeNegotiationSmoke {
         String bidB = receive(inputs.getJSONObject(0));
         String bidC = receive(inputs.getJSONObject(1));
         for (String user : Arrays.asList("A", "B", "C")) expectBook(user, "FULL");
+        JSONObject privateRead = service.handle("A", "SESSION-A", "ficc.quote.get",
+                JsonUtils.object("requestId", "pending-private", "quoteId", bidB));
+        check("1002".equals(privateRead.getString("Code")), "pending quote is private to its recipient");
         snapshot("pending-only");
         action("confirm", bidB);
         expectBook("B", "FULL", bidB);
-        expectBook("C", "FULL");
+        expectBook("C", "FULL", bidB);
         action("confirm", bidC);
-        expectBook("B", "FULL", bidB);
-        expectBook("C", "FULL", bidC);
+        expectBook("B", "FULL", bidB, bidC);
+        expectBook("C", "FULL", bidB, bidC);
         String offerB = receive(inputs.getJSONObject(2));
         String offerC = receive(inputs.getJSONObject(3));
         check(!offerB.equals(offerC), "same intention produces two independent bilateral proposals");
         check("INTENTION-1".equals(service.quotes.get(offerB).source.externalQuoteId)
                 && "INTENTION-1".equals(service.quotes.get(offerC).source.externalQuoteId),
                 "both proposals retain their common intention identity");
-        expectBook("A", "FULL");
+        expectBook("A", "FULL", bidB, bidC);
         snapshot("counteroffers-pending");
         action("confirm", offerB);
         action("confirm", offerC);
-        expectBook("A", "FULL", offerC, offerB);
-        expectBook("A", "BEST", offerC);
-        expectBook("A", "DEPTH", offerC);
-        expectBook("B", "BEST", bidB);
-        expectBook("C", "BEST", bidC);
+        expectBook("A", "FULL", bidB, bidC, offerC, offerB);
+        expectBook("A", "BEST", bidB, bidC, offerC);
+        expectBook("A", "DEPTH", bidB, bidC, offerC);
+        expectBook("B", "BEST", bidB, bidC, offerC);
+        expectBook("C", "BEST", bidB, bidC, offerC);
         JSONObject denied = service.handle("B", "SESSION-B", "ficc.quote.get",
                 JsonUtils.object("requestId", "denied", "quoteId", offerC));
-        check("1002".equals(denied.getString("Code")), "direct read cannot expose A-C to B");
+        check("0000".equals(denied.getString("Code")), "confirmed A-C proposal is shared with B");
+        JSONObject forbidden = call("B", "ficc.quote.refer", JsonUtils.object("quotes", JsonUtils.array(
+                JsonUtils.object("quoteId", offerC, "expectedRevision", service.quotes.get(offerC).revision))));
+        check("1003".equals(forbidden.getJSONArray("results").getJSONObject(0).getString("Code")),
+                "shared visibility never grants modification rights");
         JSONObject query = call("B", "ficc.quote.query", JsonUtils.object());
-        check(query.getJSONArray("quotes").size() == 1
-                        && bidB.equals(query.getJSONArray("quotes").getJSONObject(0).getString("quoteId")),
-                "default active quote query respects recipient visibility");
+        check(query.getJSONArray("quotes").size() == 4,
+                "default active quote query shares all confirmed quotes");
+        JSONObject mine = call("B", "ficc.quote.query", JsonUtils.object("ownerScope", "MINE"));
+        check(mine.getJSONArray("quotes").size() == 1, "MINE remains an optional owner filter");
         snapshot("both-counteroffers-confirmed");
         pendingHasNoPriceEffect(inputs.getJSONObject(4));
         String replacement = receive(inputs.getJSONObject(4));
@@ -151,30 +159,30 @@ public final class QTradeNegotiationSmoke {
                 JsonUtils.array(JsonUtils.object("quoteId", replacement, "expectedRevision", "0"))));
         check("1004".equals(staleConfirm.getJSONArray("results").getJSONObject(0).getString("Code")),
                 "stale confirmation is rejected before replacing the confirmed quote");
-        expectBook("A", "FULL", offerC, offerB);
+        expectBook("A", "FULL", bidB, bidC, offerC, offerB);
         check("PENDING_CONFIRM".equals(service.quotes.get(replacement).status),
                 "rejected confirmation keeps proposal pending");
         action("confirm", replacement);
-        expectBook("A", "FULL", replacement, offerB);
+        expectBook("A", "FULL", bidB, bidC, replacement, offerB);
         check("REFERRED".equals(service.quotes.get(offerC).status), "confirmation retires previous A-C offer");
         check("ACTIVE".equals(service.quotes.get(offerB).status), "A-B offer remains active");
-        expectBook("B", "FULL", bidB);
-        expectBook("C", "FULL", bidC);
+        expectBook("B", "FULL", bidB, bidC, replacement, offerB);
+        expectBook("C", "FULL", bidB, bidC, replacement, offerB);
         String revision = service.quotes.get(replacement).revision;
         receive(inputs.getJSONObject(4));
         check(revision.equals(service.quotes.get(replacement).revision),
                 "repeated old intake request does not roll back a confirmed record");
         action("unrefer", offerC);
-        expectBook("A", "FULL", offerC, offerB);
+        expectBook("A", "FULL", bidB, bidC, offerC, offerB);
         check("REFERRED".equals(service.quotes.get(replacement).status),
                 "explicit restore cannot activate two versions of the same conversation leg");
         snapshot("restored");
         service = new QuoteService(service.store, new ReferenceData());
-        expectBook("A", "FULL", offerC, offerB);
-        expectBook("B", "FULL", bidB);
-        expectBook("C", "FULL", bidC);
+        expectBook("A", "FULL", bidB, bidC, offerC, offerB);
+        expectBook("B", "FULL", bidB, bidC, offerC, offerB);
+        expectBook("C", "FULL", bidB, bidC, offerC, offerB);
         check("A-C".equals(service.quotes.get(offerC).source.negotiationId),
-                "reload preserves conversation identity and isolated prices");
+                "reload preserves conversation identity and shared prices");
         QuoteRecord expired = ficc.api.ProtocolCodec.decode(service.quotes.get(bidB).toJson(), QuoteRecord.class);
         expired.quoteId = "TEST-EXPIRED-REFERENCE";
         expired.securityId = "NO-LONGER-IN-BASE.IB";

@@ -153,7 +153,7 @@ ACTIVE 不能直接 delete，应先 refer。报价写入每批 1–100 条，**�
 | source.chatGroupId | 聊天群标识，不表示“一个原文组” |
 | revision / source.externalRevision | 本地记录版本 / 上游版本；各自独立 |
 
-可见性按当前 AccessPolicy：归属人、配置的管理员和内部用户可访问归属报价；普通用户可看非 QT 的 ACTIVE 报价；QT 即使已确认仍按所属交易员隔离。MINE 进一步要求 ownerUserId 等于登录用户。价格簿在生成前应用同一可见性，不能跨用户复用同一份行情结果。
+可见性按 2026-10-16 决策：本机构平台内所有登录用户共享所有来源的 ACTIVE、REFERRED 报价及机构/联系人字段；DELETED 仅在有 confirmTime 时共享。待确认及未确认即删除的输入仍按所有者、配置管理员和内部用户授权。MINE 进一步要求 ownerUserId 等于登录用户。价格簿使用共享 ACTIVE 池，但用户筛选和分组仍独立。修改权限不随共享读取而扩大。
 
 ### 2.4 查询、历史与原文
 
@@ -574,7 +574,7 @@ sourceQuoteId 和 clientQuoteId 是实际必填扩展字段，QuoteChangeItem �
 
 输入模型：[QuoteGetRequest](api-models.zh-CN.md#quotegetrequest)；目录声明的输出模型：[QuoteGetData](api-models.zh-CN.md#quotegetdata)。
 
-示例 QuoteRecord 节选；含完整审计字段。非归属用户能读取的公开 ACTIVE 报价会隐藏对手字段。
+示例 QuoteRecord 节选；含完整审计字段。共享已确认报价保留机构、联系人及内部归属信息。
 
 输入：
 
@@ -637,7 +637,7 @@ records 元素是 QuoteHistoryRecord，含 before/after、action、操作人、�
 
 输入模型：[QuoteHistorySearchRequest](api-models.zh-CN.md#quotehistorysearchrequest)；目录声明的输出模型：[QuoteHistorySearchData](api-models.zh-CN.md#quotehistorysearchdata)。
 
-rows 元素是 QuoteHistoryRow，含操作日期 tradeDate、quote、reference（示例节选）。ownerScope 虽声明但当前查询固定使用归属权限。
+rows 元素是 QuoteHistoryRow，含操作日期 tradeDate、quote、reference（示例节选）。ownerScope 默认 VISIBLE，支持 MINE；先选每日最后版本再判断可见性，不能返回不再符合权限的旧版本。
 
 输入：
 

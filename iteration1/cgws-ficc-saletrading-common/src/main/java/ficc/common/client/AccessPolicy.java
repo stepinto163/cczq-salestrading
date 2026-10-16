@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 
 /**
  * 报价归属与可见性规则，使用 STC userid 判定，不使用 QTrade 昵称或机构名称代替身份。
- * 所有人、配置的管理员和内部用户可访问归属报价；普通用户还能看非 QT 来源的 ACTIVE 报价。
- * QT 报价确认后仍按接收人隔离；本类判断业务授权，不负责登录会话验证。
+ * 已确认报价在本平台内共享；待确认和未确认即删除的输入仍按归属隔离。
+ * 查看权限不代表修改权限，修改仍通过 owns 检查；本类不负责登录会话验证。
  */
 public final class AccessPolicy {
     private final Set<String> administrators;
@@ -47,9 +47,16 @@ public final class AccessPolicy {
                 && (userId.equals(ownerUserId) || administrator(userId) || internal(userId));
     }
 
-    /** QT 来源的报价始终归接收人；确认只改变状态，不将双边报价公开给其他普通用户。 */
+    /** 兼容只查询有效报价的调用；来源不再决定已确认报价的可见范围。 */
     public boolean canViewQuote(String userId, String ownerUserId, String sourceType, String status) {
+        return canViewQuote(userId, ownerUserId, sourceType, status, null);
+    }
+
+    /** 删除状态必须有确认时间才可共享，避免公开被删除的私人待确认输入。 */
+    public boolean canViewQuote(String userId, String ownerUserId, String sourceType,
+            String status, String confirmTime) {
         return owns(userId, ownerUserId)
-                || (userId != null && "ACTIVE".equals(status) && !"QT".equals(sourceType));
+                || (userId != null && ("ACTIVE".equals(status) || "REFERRED".equals(status)
+                || ("DELETED".equals(status) && confirmTime != null && !confirmTime.trim().isEmpty())));
     }
 }

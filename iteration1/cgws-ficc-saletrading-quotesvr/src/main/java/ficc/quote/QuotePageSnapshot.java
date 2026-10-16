@@ -32,12 +32,6 @@ final class QuotePageSnapshot {
 
     static JSONObject visibleJson(QuoteRecord quote, String user, AccessPolicy access) {
         JSONObject result = quote.toJson();
-        if (!access.owns(user, quote.ownerUserId)) {
-            result.put("institutionId", null);
-            result.put("institutionName", null);
-            result.put("contactId", null);
-            result.put("contactName", null);
-        }
         return result;
     }
 }

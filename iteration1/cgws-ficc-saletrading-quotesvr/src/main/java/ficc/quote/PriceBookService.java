@@ -169,7 +169,7 @@ final class PriceBookService {
         List<QuoteRecord> quotes = quotesForSecurity(security).stream()
                 .filter(quote -> security.equals(quote.securityId) && "ACTIVE".equals(quote.status)
                         && (user == null || access.canViewQuote(user, quote.ownerUserId,
-                                quote.source == null ? null : quote.source.type, quote.status))
+                                quote.source == null ? null : quote.source.type, quote.status, quote.confirmTime))
                         && matches.test(quote))
                 .collect(Collectors.toList());
         // 价格排序只使用同一收益率口径。单条换算失败不能使整个行情或内部快照失败。
@@ -275,7 +275,8 @@ final class PriceBookService {
         } else {
             entry.Yield = quote.price;
         }
-        if (user == null || access.owns(user, quote.ownerUserId)) {
+        if (user == null || access.canViewQuote(user, quote.ownerUserId,
+                quote.source == null ? null : quote.source.type, quote.status, quote.confirmTime)) {
             entry.InstitutionID = quote.institutionId;
             entry.TraderID = quote.contactId;
             entry.InstitutionName = quote.institutionName;

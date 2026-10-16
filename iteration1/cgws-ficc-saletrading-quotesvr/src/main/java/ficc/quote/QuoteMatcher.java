@@ -53,7 +53,7 @@ final class QuoteMatcher {
         }
         return quote -> statuses.contains(quote.status)
                 && access.canViewQuote(user, quote.ownerUserId,
-                        quote.source == null ? null : quote.source.type, quote.status)
+                        quote.source == null ? null : quote.source.type, quote.status, quote.confirmTime)
                 && (!"MINE".equals(scope) || user.equals(quote.ownerUserId))
                 && matches.test(quote);
     }

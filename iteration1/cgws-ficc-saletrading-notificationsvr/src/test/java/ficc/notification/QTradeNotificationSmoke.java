@@ -48,7 +48,7 @@ public final class QTradeNotificationSmoke {
                     for (String user : Arrays.asList("A", "B", "C")) {
                         Set<String> permitted = new HashSet<>();
                         for (JSONObject quote : quotes) {
-                            if (user.equals(quote.getString("ownerUserId")) && "ACTIVE".equals(quote.getString("status"))) {
+                            if ("ACTIVE".equals(quote.getString("status"))) {
                                 permitted.add(quote.getString("quoteId"));
                             }
                         }
@@ -58,7 +58,7 @@ public final class QTradeNotificationSmoke {
                             linked.addAll(notification.getJSONArray("quoteIds").toJavaList(String.class));
                         }
                         check(permitted.equals(linked), stage.getString("stage") + " " + user
-                                + " watchlist links exactly own confirmed quotes");
+                                + " watchlist links all shared confirmed quotes");
                         String serialized = JsonUtils.toJson(notifications);
                         if ("both-counteroffers-confirmed".equals(stage.getString("stage"))) {
                             confirmedNotifications.put(user, serialized);

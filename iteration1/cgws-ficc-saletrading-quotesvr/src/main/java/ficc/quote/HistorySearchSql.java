@@ -18,8 +18,12 @@ final class HistorySearchSql {
                 + " FROM history WHERE operation_time>=?::date"
                 + " AND operation_time<(?::date + INTERVAL '1 day')"
                 + " AND jsonb_typeof(payload->'after')='object'"
-                + (allOwners ? "" : " AND payload->'after'->>'ownerUserId'=?")
                 + ") candidates ORDER BY operation_date, quote_id, operation_time DESC, revision DESC) daily"
+                // 必须在选出每日最后版本之后判断权限，不能复活已被私有状态替代的旧版本。
+                + (allOwners ? "" : " WHERE (snapshot->>'ownerUserId'=?"
+                        + " OR snapshot->>'status' IN ('ACTIVE','REFERRED')"
+                        + " OR (snapshot->>'status'='DELETED'"
+                        + " AND NULLIF(btrim(snapshot->>'confirmTime'),'') IS NOT NULL))")
                 + " ORDER BY first_operation, operation_date, quote_id";
     }
 }

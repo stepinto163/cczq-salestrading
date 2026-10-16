@@ -307,17 +307,11 @@ final class QuoteService {
 
     boolean canView(String user, QuoteRecord quote) {
         return access.canViewQuote(user, quote.ownerUserId,
-                quote.source == null ? null : quote.source.type, quote.status);
+                quote.source == null ? null : quote.source.type, quote.status, quote.confirmTime);
     }
 
     QuoteRecord visible(QuoteRecord quote, String user) {
         QuoteRecord result = ProtocolCodec.decode(quote.toJson(), QuoteRecord.class);
-        if (!owns(user, quote)) {
-            result.clearField("institutionId");
-            result.clearField("institutionName");
-            result.clearField("contactId");
-            result.clearField("contactName");
-        }
         return result;
     }
 

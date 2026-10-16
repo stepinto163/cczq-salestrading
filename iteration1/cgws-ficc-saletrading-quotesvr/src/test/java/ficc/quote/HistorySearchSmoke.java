@@ -36,7 +36,8 @@ public final class HistorySearchSmoke {
                 "securityId", "250001.IB", "side", "1", "price", price,
                 "quantity", "1000", "quoteType", "1", "yieldType", "1",
                 "status", status, "revision", Integer.toString(revision),
-                "tradeDate", "2026-10-19", "updateTime", time);
+                "tradeDate", "2026-10-19", "updateTime", time,
+                "confirmTime", "C".equals(id) ? null : time);
         store.history(JsonUtils.object("eventId", id + "-" + revision, "quoteId", id,
                 "revision", revision, "operationTime", time, "after", quote));
     }
@@ -80,16 +81,19 @@ public final class HistorySearchSmoke {
                         Collections.<String, SettingRecord>emptyMap()), new AccessPolicy(configuration), null);
                 QuoteHistorySearchRequest request = request();
                 List<QuoteHistoryRow> rows = search.searchHistory("U1", request);
-                check(rows.size() == 3, "one snapshot per day and quote, own records only");
+                check(rows.size() == 4, "one snapshot per day and quote, confirmed records shared");
                 check("3".equals(rows.get(0).quote.revision), "equal timestamps use highest revision");
                 check("DELETED".equals(rows.get(0).quote.status), "terminal snapshot retained");
                 check("2026-10-15".equals(rows.get(0).tradeDate)
                         && "2026-10-19".equals(rows.get(0).quote.tradeDate), "operation day differs from trade date");
-                check("5".equals(rows.get(2).quote.price), "inclusive end day excludes next midnight");
-                check(search.searchHistory("U2", request).size() == 1, "other owner isolated");
+                check("5".equals(rows.get(3).quote.price), "inclusive end day excludes next midnight");
+                check(search.searchHistory("U2", request).size() == 3, "other owner sees confirmed but not pending history");
                 check(search.searchHistory("ADMIN", request).size() == 4, "administrator scope preserved");
                 check(search.searchHistory("INTERNAL", request).size() == 4, "internal scope preserved");
                 check(search.searchHistory(null, request).isEmpty(), "null identity sees no history");
+                request.ownerScope = "MINE";
+                check(search.searchHistory("U1", request).size() == 3, "MINE explicitly filters history owner");
+                request.ownerScope = "VISIBLE";
                 request.filter = ProtocolCodec.decode(JsonUtils.object("conditions", JsonUtils.array(
                         JsonUtils.object("field", "bidPrice", "operator", "EQ", "value", "2"))), Filter.class);
                 check(search.searchHistory("U1", request).isEmpty(), "filter after latest snapshot, no resurrection");
@@ -100,7 +104,7 @@ public final class HistorySearchSmoke {
                 request.filter = ProtocolCodec.decode(JsonUtils.object("conditions", JsonUtils.array(
                         JsonUtils.object("field", "bondRating", "operator", "EQ", "value", "AAA"))), Filter.class);
                 references.securities().get("250001.IB").put("bondRating", "AAA");
-                check(search.searchHistory("U1", request).size() == 3, "current reference data used");
+                check(search.searchHistory("U1", request).size() == 4, "current reference data used");
                 references.securities().get("250001.IB").put("bondRating", "AA+");
                 check(search.searchHistory("U1", request).isEmpty(), "reference refresh affects next query");
                 request.fromDate = "invalid";
@@ -131,12 +135,14 @@ public final class HistorySearchSmoke {
                         "fromDate", "2026-10-15", "toDate", "2026-10-16", "limit", 1));
                 check("0000".equals(first.getString("Code")), "history endpoint succeeds");
                 JSONObject data = first.getJSONObject("Data");
-                check(data.getIntValue("totalCount") == 3 && data.getJSONArray("rows").size() == 1,
+                check(data.getIntValue("totalCount") == 4 && data.getJSONArray("rows").size() == 1,
                         "page limit and totalCount preserved");
                 String cursor = data.getString("nextCursor");
                 event(store, "C", 2, "U1", "2026-10-15T03:00:00+08:00", "8", "DELETED");
+                check(search.searchHistory("U2", request()).size() == 3,
+                        "deleted never-confirmed input remains private");
                 JSONObject second = query(service, "U1", "SESSION", JsonUtils.object("cursor", cursor)).getJSONObject("Data");
-                check("7".equals(second.getJSONArray("rows").getJSONObject(0).getJSONObject("quote").getString("price")),
+                check("1".equals(second.getJSONArray("rows").getJSONObject(0).getJSONObject("quote").getString("price")),
                         "cursor remains a stable snapshot after a write");
                 check("1007".equals(query(service, "U2", "SESSION", JsonUtils.object("cursor", cursor)).getString("Code")),
                         "cursor cannot cross users");

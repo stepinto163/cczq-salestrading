@@ -71,6 +71,10 @@ final class LocalSearchSvrClient implements SearchSvrClient {
         }
         Filter filter = query.filter;
         FilterEngine.validate(filter == null ? null : filter.toJson());
+        String scope = query.ownerScope == null ? "VISIBLE" : query.ownerScope;
+        if (!Arrays.asList("VISIBLE", "MINE").contains(scope)) {
+            throw ApiException.forField("1001", "VALIDATION_FAILED", "Invalid ownerScope", "ownerScope");
+        }
         Predicate<QuoteRecord> matches = matcher.prepare(user, filter);
         boolean allOwners = user != null && (access.administrator(user) || access.internal(user));
         List<QuoteHistoryRow> result = new ArrayList<>();
@@ -78,7 +82,10 @@ final class LocalSearchSvrClient implements SearchSvrClient {
         // 基础资料及分组继续使用公共筛选器，保持历史页面使用当前基础资料的契约。
         store.scanRows(HistorySearchSql.latestDaily(allOwners), snapshot -> {
             QuoteRecord quote = ProtocolCodec.decode(snapshot.getJSONObject("quote"), QuoteRecord.class);
-            if (!access.owns(user, quote.ownerUserId) || !matches.test(quote)) {
+            if (!access.canViewQuote(user, quote.ownerUserId,
+                    quote.source == null ? null : quote.source.type, quote.status, quote.confirmTime)
+                    || ("MINE".equals(scope) && !Objects.equals(user, quote.ownerUserId))
+                    || !matches.test(quote)) {
                 return;
             }
             if (result.size() == 10000) {

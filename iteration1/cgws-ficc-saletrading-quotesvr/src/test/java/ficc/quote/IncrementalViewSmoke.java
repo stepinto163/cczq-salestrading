@@ -276,10 +276,10 @@ public final class IncrementalViewSmoke {
         QuoteRecord other = ProtocolCodec.decode(service.quotes.get("B").toJson(), QuoteRecord.class);
         other.institutionId = "PRIVATE-INSTITUTION";
         other.contactName = "PRIVATE-CONTACT";
-        check(QuotePageSnapshot.visibleJson(other, "U-001", service.access).get("institutionId") == null,
-                "page redacts other owner's institution");
-        check(QuotePageSnapshot.visibleJson(other, "U-001", service.access).get("contactName") == null,
-                "page redacts other owner's contact name");
+        check(QuotePageSnapshot.visibleJson(other, "U-001", service.access).getString("institutionId").equals("PRIVATE-INSTITUTION"),
+                "page shares confirmed counterparty institution");
+        check(QuotePageSnapshot.visibleJson(other, "U-001", service.access).getString("contactName").equals("PRIVATE-CONTACT"),
+                "page shares confirmed counterparty contact");
         check("PRIVATE-INSTITUTION".equals(other.institutionId), "redaction never mutates stored version");
         check(JsonUtils.canonicalHash(service.visible(own, "U-001").toJson()).equals(
                 JsonUtils.canonicalHash(QuotePageSnapshot.visibleJson(own, "U-001", service.access))),

@@ -154,8 +154,16 @@ namespace SalesTrading.UiTests
                     matches = () =>
                     {
                         var row = model.QuoteMgmtPage.Today.Rows.FirstOrDefault(item => item.QuoteId == id);
-                        // 普通其他用户只可见非QT的有效报价；撤销后退回所有者私有范围。
-                        return active ? row != null && row.Status.ToString() == "Active" : row == null;
+                        // 已确认报价共享，Refer 后仍在管理页显示撤销状态；删除后移出今日列表。
+                        if (active)
+                        {
+                            return row != null && row.Status.ToString() == "Active";
+                        }
+                        if (phase == "referred" || phase == "referred-again")
+                        {
+                            return row != null && row.Status.ToString() == "Revoked";
+                        }
+                        return row == null;
                     };
                 }
                 else
@@ -172,7 +180,8 @@ namespace SalesTrading.UiTests
 
                 DateTime observedAt = DateTime.Now;
                 string expectation = tab == "today"
-                    ? (active ? "目标报价已显示为有效报价" : "目标报价未出现在当前可见记录中")
+                    ? (active ? "目标报价已显示为有效报价"
+                        : phase.StartsWith("referred") ? "目标报价已显示为撤销状态" : "目标报价未出现在当前可见记录中")
                     : "当前页面已符合本阶段的更新或隔离规则";
                 var currentPage = Descendants<FrameworkElement>(view).FirstOrDefault(control => control.IsVisible
                     && control.GetType().Name == Parameter(step, "view"));
@@ -180,7 +189,8 @@ namespace SalesTrading.UiTests
                 var grids = Descendants<DataGrid>(currentPage).Where(control => control.IsVisible).ToArray();
                 FrameworkElement verificationTarget = previewInput ?? (FrameworkElement)grids.FirstOrDefault();
                 Require(verificationTarget != null, "验证目标缺失：当前页面没有可见的结果区域");
-                bool expectsRow = active && previewInput == null && tab != "quote-confirm" && tab != "history";
+                bool expectsRow = (active || (tab == "today" && phase.StartsWith("referred")))
+                    && previewInput == null && tab != "quote-confirm" && tab != "history";
                 if (expectsRow)
                 {
                     Func<object, bool> matchesRow = row => tab == "alert"
