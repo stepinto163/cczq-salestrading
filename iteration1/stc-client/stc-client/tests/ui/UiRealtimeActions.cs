@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
+using STC.SalesTrading.Plugin.Ficc;
 using STC.SalesTrading.Plugin.Ficc.Protocol;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 
@@ -71,12 +72,22 @@ namespace SalesTrading.UiTests
             string security = Parameter(step, "securityId");
             Signal("input", new JObject { ["securityId"] = security, ["actor"] = STC.Common.Utils.LocalEnv.UserInfo.UserName });
             await WaitSignalAsync("observer-ready");
-            // 新增只走正常精确报价页面；确认前必须没有服务端待确认记录。
-            await ExecuteAsync(Step("parse", "text", security + " " + Parameter(step, "price") + " 1 bid +1", "expectedRows", "1"));
-            string clientId = model.QuotePage.Precise.Rows.Single().Row.ClientQuoteId;
-            await RealtimeStageAsync("preview", security, clientId);
-            await ExecuteAsync(Step("parse.select", "row", "1", "selected", "true", "expectedCount", "1"));
-            await ExecuteAsync(Step("parse.confirm", "expectedCount", "1"));
+            string clientId;
+            if ((string)step.Parameters["source"] == "QT")
+            {
+                clientId = await ReceiveRealtimeQTradeAsync(security, Parameter(step, "price"));
+                await RealtimeStageAsync("preview", security, clientId);
+                await ConfirmNegotiationOnUiAsync(quoteId);
+            }
+            else
+            {
+                // 精确报价预览只在客户端，不能进入服务端待确认池。
+                await ExecuteAsync(Step("parse", "text", security + " " + Parameter(step, "price") + " 1 bid +1", "expectedRows", "1"));
+                clientId = model.QuotePage.Precise.Rows.Single().Row.ClientQuoteId;
+                await RealtimeStageAsync("preview", security, clientId);
+                await ExecuteAsync(Step("parse.select", "row", "1", "selected", "true", "expectedCount", "1"));
+                await ExecuteAsync(Step("parse.confirm", "expectedCount", "1"));
+            }
             await RealtimeStageAsync("active", security, clientId);
             int operationIndex = 0;
             foreach (string operation in new[] { "Refer", "Unrefer", "Refer", "删除" })
@@ -84,6 +95,57 @@ namespace SalesTrading.UiTests
                 await ExecuteAsync(Step("management.operate", "button", operation));
                 await RealtimeStageAsync(operation == "Refer" ? (operationIndex++ == 0 ? "referred" : "referred-again") : operation == "Unrefer" ? "restored" : "deleted", security, clientId);
             }
+        }
+
+        // 真实 GW/QuoteSvr 接入边界；不向外部 QTrade 发布，也不冒充 FIX 验证。
+        private async Task<string> ReceiveRealtimeQTradeAsync(string security, string price)
+        {
+            string eventId = "UI-QT-SHARED-" + Guid.NewGuid().ToString("N");
+            string owner = STC.Common.Utils.LocalEnv.UserInfo.UserId;
+            string token = Environment.GetEnvironmentVariable("STC_UI_INTAKE_TOKEN");
+            Require(!string.IsNullOrEmpty(token), "缺少本机接入测试凭据");
+            var request = new QuoteCreateRequest
+            {
+                RequestId = eventId,
+                Intake = new IntakeIdentity
+                {
+                    Token = token,
+                    OwnerUserId = owner,
+                    SourceUserId = "UI-QT-" + owner,
+                    ExternalMessageId = eventId,
+                    ExternalQuoteId = eventId,
+                    NegotiationId = eventId + "-conversation",
+                    TransType = "N",
+                    SourceTime = DateTime.Now.ToString("yyyyMMdd-HH:mm:ss.fff"),
+                    Text = "UI shared confirmed quote regression"
+                },
+                Quotes = new List<QuoteCreateItem>
+                {
+                    new QuoteCreateItem
+                    {
+                        ClientQuoteId = eventId,
+                        SecurityId = security,
+                        Side = "1",
+                        QuoteType = "1",
+                        YieldType = "1",
+                        Price = price,
+                        Quantity = "1",
+                        QuantityUnit = "WAN",
+                        Currency = "CNY",
+                        SettlType = "2",
+                        TradeDate = DateTime.Today.ToString("yyyy-MM-dd")
+                    }
+                }
+            };
+            QuoteWriteData response = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteCreate, request);
+            FiccApiClient.RequireQuoteResults(response);
+            quoteId = response.Results.Single().QuoteId;
+            Track(quoteId);
+            await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
+                .Any(row => row.RecognitionId == quoteId), "QT 待确认推送至所属账号");
+            Require((string)(await model.Backend.Api.GetQuoteAsync(quoteId))["status"] == "PENDING_CONFIRM",
+                "QT 输入必须等待人工确认");
+            return eventId;
         }
 
         private async Task RealtimeStageAsync(string phase, string security, string clientId)
@@ -126,6 +188,30 @@ namespace SalesTrading.UiTests
                 string id = (string)change["quoteId"];
                 string clientId = (string)change["clientQuoteId"];
                 bool active = phase == "active" || phase == "restored";
+                if ((string)step.Parameters["source"] == "QT" && phase == "preview")
+                {
+                    bool denied = false;
+                    try
+                    {
+                        await model.Backend.Api.GetQuoteAsync(id);
+                    }
+                    catch (InvalidOperationException error)
+                    {
+                        denied = error.Message.StartsWith("1002:", StringComparison.Ordinal);
+                    }
+                    Require(denied, "其他账号不得读取 QT 待确认记录");
+                    Emit("待确认读取权限", "PASSED", "其他账号读取被拒绝");
+                }
+                if (phase == "active")
+                {
+                    JObject confirmed = await model.Backend.Api.GetQuoteAsync(id);
+                    JObject rejected = await model.Backend.Api.OperateAsync("refer", new[] { confirmed });
+                    Require((string)rejected["results"][0]["Code"] == "1003", "共享读取不能授予他人 Refer 权限");
+                    JObject unchanged = await model.Backend.Api.GetQuoteAsync(id);
+                    Require((string)unchanged["status"] == "ACTIVE"
+                        && JToken.DeepEquals(unchanged["revision"], confirmed["revision"]), "权限拒绝后报价发生变化");
+                    Emit("共享报价操作权限", "PASSED", "其他账号 Refer 被拒绝，状态及版本未变");
+                }
                 highlight?.Clear();
                 Func<bool> matches;
                 if (tab == "quote-confirm" || previewInput != null || tab == "history")

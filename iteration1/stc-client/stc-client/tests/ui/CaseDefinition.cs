@@ -56,6 +56,10 @@ namespace SalesTrading.UiTests
                 }
                 foreach (string field in fields)
                 {
+                    if (step.Action == "realtime.lifecycle" && field == "source")
+                    {
+                        continue; // 默认精确报价；QT 通过真实接入接口准备私有待确认记录。
+                    }
                     if (step.Action == "qtrade.publish" && field == "groupId")
                     {
                         continue; // 空群号表示单聊，收件人由实际登录用户确定。
@@ -90,7 +94,7 @@ namespace SalesTrading.UiTests
     {
         public static readonly Dictionary<string, string[]> Fields = new Dictionary<string, string[]>
         {
-            { "realtime.lifecycle", new[] { "page", "tab", "view", "securityId", "price" } },
+            { "realtime.lifecycle", new[] { "page", "tab", "view", "securityId", "price", "source" } },
             { "page.open", new[] { "page", "tab", "view" } },
             { "fuzzy.preview", new string[0] },
             { "precise.input", new string[0] },
