@@ -64,6 +64,7 @@ def main():
           output / "quote-protocol.json")
     smoke("notification-negotiation", "notificationsvr", "ficc.notification.QTradeNotificationSmoke", config, snapshots)
     smoke("quote-business-key", "quotesvr", "ficc.quote.QuoteBusinessKeySmoke", config)
+    smoke("price-ordering", "quotesvr", "ficc.quote.PriceSearchSmoke")
     smoke("existing-intake", "quotesvr", "ficc.quote.QtIntakeSmoke", config)
     smoke("existing-incremental-views", "quotesvr", "ficc.quote.IncrementalViewSmoke", config,
           output / "incremental-view-result.json")

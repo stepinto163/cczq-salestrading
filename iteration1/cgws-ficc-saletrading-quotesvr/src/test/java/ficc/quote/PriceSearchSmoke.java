@@ -262,10 +262,46 @@ public final class PriceSearchSmoke {
                 "Deleting representative promotes next latest quote");
     }
 
+    private void checkPriceBeforeTime() {
+        quotes.clear();
+        quote("bid-best", "A", "QT", "1", "1.90").updateTime = "2026-10-09T07:00:00+08:00";
+        quote("bid-old", "A", "QT", "1", "2.00").updateTime = "2026-10-09T08:00:00+08:00";
+        quote("bid-new", "A", "QT", "1", "2.000").updateTime = "2026-10-09T00:00:00.001Z";
+        quote("ofr-best", "A", "QT", "2", "2.30").updateTime = "2026-10-09T07:00:00+08:00";
+        quote("ofr-old", "A", "QT", "2", "2.20").updateTime = "2026-10-09T08:00:00+08:00";
+        quote("ofr-new", "A", "QT", "2", "2.200").updateTime = "2026-10-09T00:00:00.001Z";
+        books = new PriceBookService(references, new QuoteMatcher(references, new LinkedHashMap<>()),
+                new AccessPolicy(new Properties()), quotes.values());
+        check(ids(books.book("A", "250001.IB", null, "FULL", 0)).equals(Arrays.asList(
+                "FICC:bid-best", "FICC:bid-new", "FICC:bid-old",
+                "FICC:ofr-best", "FICC:ofr-new", "FICC:ofr-old")),
+                "FULL: yield priority precedes time; equal yields use actual instant across offsets");
+        check(ids(books.book("A", "250001.IB", null, "BEST", 0)).equals(Arrays.asList(
+                "FICC:bid-best", "FICC:ofr-best")), "BEST: later inferior prices never displace better prices");
+        PriceBook full = books.book("A", "250001.IB", null, "FULL", 0);
+        check("08:00:00.001".equals(full.marketData.NoMDEntries.get(1).MDEntryTime)
+                        && "2026-10-09T00:00:00.001Z".equals(full.updateTime),
+                "Quote time displays in Shanghai; book timestamp selects the actual latest instant");
+        QuoteRecord better = ProtocolCodec.decode(quotes.get("bid-best").toJson(), QuoteRecord.class);
+        better.price = "2.00";
+        better.updateTime = "2026-10-09T00:00:00.002Z";
+        books.changed(better, null);
+        check(ids(books.book("A", "250001.IB", null, "BEST", 0)).equals(Arrays.asList(
+                "FICC:bid-best", "FICC:bid-new", "FICC:bid-old", "FICC:ofr-best")),
+                "Live update: tied best-price popup members retain newest-first order");
+        QuoteRecord sameInstant = ProtocolCodec.decode(quotes.get("bid-old").toJson(), QuoteRecord.class);
+        sameInstant.updateTime = "2026-10-09T08:00:00.002000+08:00";
+        books.changed(sameInstant, null);
+        check(ids(books.book("A", "250001.IB", null, "BEST", 0)).equals(Arrays.asList(
+                "FICC:bid-best", "FICC:bid-old", "FICC:bid-new", "FICC:ofr-best")),
+                "Equivalent instants use stable quoteId ordering, regardless of precision or offset");
+    }
+
     public static void main(String[] args) {
         PriceSearchSmoke test = new PriceSearchSmoke();
         test.run();
         test.checkBestTimePriority();
+        test.checkPriceBeforeTime();
         System.out.println("PASS PriceSearchSmoke: " + test.checks + " functional checks; no load or transport test");
     }
 }

@@ -203,6 +203,8 @@ Parser 的旧服务还保留 image、deal、IRS 等处理器；当前销交客�
 
 行情条目的 `UserID` 是本方报价归属人的 STC userid，用用户目录解析为“长城交易员”；`InstitutionID/InstitutionName`、`TraderID/TraderName` 是对手机构与联系人。最优价页同价多笔时，汇总报量保留同价成员合计，机构、交易员等展示信息采用最新报价；时间取条目的 MDEntryDate/MDEntryTime，不能取整本价格簿 updateTime。
 
+2026-10-16 排序补充：价格优先、同价时间优先仅作用于同一债券、同一方向，不跨债券比较价格。时间按 `updateTime` 解析后的实际时刻倒序，而非 ISO 字符串字典序；同一时刻以 quoteId 升序保持稳定。输出 MDEntryDate/MDEntryTime 统一为 Asia/Shanghai。全部表与最优价展开明细保留服务端顺序。净价不直接与收益率数值混排；客户端不自行按久期近似换算。
+
 单次 `ficc.price.query` 必填 securityIds（最多 100）和 mode，实际输出 **`Data.prices`**。视图接口输出 **`Data.books`**，两个名称目前不一致。虽然 PriceQueryRequest 继承 PageRequest，这个单次接口不接受 limit/cursor。
 
 <a id="recommendation"></a>

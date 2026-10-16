@@ -17,7 +17,9 @@ import ficc.common.RequestValidator;
 import ficc.common.client.AccessPolicy;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 final class PriceBookService {
     private static final DateTimeFormatter ENTRY_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final DateTimeFormatter ENTRY_TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private static final ZoneId DISPLAY_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final ReferenceData references;
     private final QuoteMatcher matcher;
@@ -205,7 +208,8 @@ final class PriceBookService {
             result.calculationIssues = issues;
         }
         result.securityId = security;
-        result.updateTime = quotes.stream().map(quote -> quote.updateTime).max(String::compareTo).orElse(null);
+        result.updateTime = quotes.stream().map(quote -> quote.updateTime)
+                .max(Comparator.comparing(time -> OffsetDateTime.parse(time).toInstant())).orElse(null);
         if (result.updateTime == null) {
             result.clearField("updateTime");
         }
@@ -227,8 +231,11 @@ final class PriceBookService {
             if ("2".equals(side)) {
                 comparator = comparator.reversed();
             }
+            // 已统一收益率口径：Bid 低收益率优先，Ofr 高收益率优先；仅同价时比较实际时刻。
+            // ISO 文本可能使用不同偏移或精度，不能依赖字符串顺序判断新旧。
             comparator = comparator.thenComparing(
-                    Comparator.<QuoteRecord, String>comparing(quote -> quote.updateTime).reversed())
+                    Comparator.<QuoteRecord, Instant>comparing(
+                            quote -> OffsetDateTime.parse(quote.updateTime).toInstant()).reversed())
                     .thenComparing(quote -> quote.quoteId);
             List<QuoteRecord> sorted = comparableQuotes.stream().filter(quote -> side.equals(quote.side))
                     .sorted(comparator).collect(Collectors.toList());
@@ -257,7 +264,8 @@ final class PriceBookService {
     }
 
     private MarketEntry entry(String user, QuoteRecord quote, int ordinal) {
-        OffsetDateTime time = OffsetDateTime.parse(quote.updateTime);
+        OffsetDateTime time = OffsetDateTime.parse(quote.updateTime)
+                .atZoneSameInstant(DISPLAY_ZONE).toOffsetDateTime();
         MarketEntry entry = new MarketEntry();
         entry.MDEntryID = "FICC:" + quote.quoteId;
         entry.MDEntryType = "1".equals(quote.side) ? "0" : "1";
