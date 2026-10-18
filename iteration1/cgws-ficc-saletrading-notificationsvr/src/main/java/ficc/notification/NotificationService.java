@@ -549,9 +549,11 @@ final class NotificationService {
         for (String quoteId : versions.keySet()) {
             JSONObject source = quotes.get(quoteId);
             JSONObject snapshot = new JSONObject();
-            // 弹窗只携带触发报价的公共字段；不包含对手机构、联系人或备注。
+            // 提醒表与弹窗共用触发快照。保留该笔报价的交易方和发布时间，
+            // 避免客户端另查全局行情后把其他报价的数据拼到当前提醒上；备注仍不携带。
             for (String field : Arrays.asList("quoteId", "revision", "securityId", "ownerUserId", "side",
-                    "quoteType", "yieldType", "price", "quantity", "quantityUnit", "settlType", "updateTime")) {
+                    "quoteType", "yieldType", "price", "quantity", "quantityUnit", "settlType", "updateTime",
+                    "institutionId", "institutionName", "contactId", "contactName", "quoteTime", "createTime")) {
                 snapshot.put(field, source.get(field));
             }
             snapshots.add(snapshot);

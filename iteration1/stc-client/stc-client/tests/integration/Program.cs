@@ -237,6 +237,83 @@ namespace SalesTrading.IntegrationTests
             return null;
         }
 
+        private static Task NotificationRowFields()
+        {
+            var time = new DateTime(2026, 10, 18, 10, 11, 12);
+            var bid = new QuoteRecord { QuoteId = "bid", SecurityId = "bond", Side = "1", Price = "2.3",
+                Quantity = "0.2", QuantityUnit = "YI", InstitutionName = "机构甲", ContactName = "联系人甲",
+                OwnerUserId = "owner1", UpdateTime = time, QuoteTime = time.AddMinutes(-1) };
+            var older = new QuoteRecord { QuoteId = "old", SecurityId = "bond", Side = "1", Price = "1.0",
+                Quantity = "9999", InstitutionName = "旧机构", UpdateTime = time.AddMinutes(-5) };
+            var ofr = new QuoteRecord { QuoteId = "ofr", SecurityId = "bond", Side = "2", Price = "2.2",
+                Quantity = "400", QuantityUnit = "WAN", InstitutionName = "机构乙", ContactName = "联系人乙",
+                OwnerUserId = "owner2", UpdateTime = time.AddMinutes(-2) };
+            var notification = new STC.SalesTrading.Plugin.Gateway.Contracts.Notification.NotificationRecord
+            {
+                NotificationId = "n", SecurityId = "bond", UpdateTime = time.AddHours(1),
+                Triggers = new List<STC.SalesTrading.Plugin.Gateway.Contracts.Notification.NotificationTrigger>
+                {
+                    new STC.SalesTrading.Plugin.Gateway.Contracts.Notification.NotificationTrigger
+                    { Type = "WATCHLIST", Quotes = new List<QuoteRecord> { older, ofr, bid } },
+                    new STC.SalesTrading.Plugin.Gateway.Contracts.Notification.NotificationTrigger
+                    { Type = "FILTER_GROUP", Quotes = new List<QuoteRecord> { bid } }
+                }
+            };
+            var names = new Dictionary<string, string> { { "owner1", "交易员甲" }, { "owner2", "交易员乙" } };
+            var row = GatewayMarketCenterService.MapAlert(notification, names);
+            Equal((decimal?)2.3m, row.Bid, "latest trigger, not globally best or first quote");
+            Equal((decimal?)2000m, row.VolBid, "YI converts to WAN; duplicate reasons do not multiply quantity");
+            Equal("机构甲", row.InstBid, "bid institution");
+            Equal("联系人甲", row.ContactBid, "bid counterparty trader");
+            Equal("交易员甲", row.TraderBid, "bid owner is not contact");
+            Equal((decimal?)2.2m, row.Ofr, "ofr price");
+            Equal((decimal?)400m, row.VolOfr, "ofr quantity");
+            Equal("机构乙", row.InstOfr, "ofr institution");
+            Equal("联系人乙", row.ContactOfr, "ofr contact");
+            Equal("交易员乙", row.TraderOfr, "ofr owner");
+            Equal(bid.QuoteTime, row.QuoteTime, "quote timestamp is not notification read/update time");
+            notification.Triggers.RemoveAt(0);
+            row = GatewayMarketCenterService.MapAlert(notification, names);
+            Equal(null, row.Ofr, "no invented opposite price");
+            Equal(null, row.InstOfr, "no invented opposite institution");
+            Equal(null, row.TraderOfr, "no invented opposite owner");
+            bid.InstitutionName = null;
+            bid.ContactName = null;
+            row = GatewayMarketCenterService.MapAlert(notification, names);
+            Equal(null, row.InstBid, "missing CRM is not copied from another quote");
+            Equal(null, row.ContactBid, "missing CRM remains explicit");
+            return Task.CompletedTask;
+        }
+
+        private static async Task NotificationReferenceFields()
+        {
+            var gateway = new ControlledGateway { Respond = request => Task.FromResult(Reply(new { records = new[]
+            {
+                new BaseRecord { SecurityId = "bond", SecurityName = "债券简称", RemainingYears = "3.5",
+                    BondSubtype = "国开", IssuerRating = "AAA", BondRating = "AA+", ValuationYield = "2.1",
+                    ValuationCleanPrice = "101.2", CsiValuationYield = "2.2", CsiValuationCleanPrice = "100.3" }
+            } })) };
+            var rows = new[] { new AlertRow { SecurityId = "bond", Bid = 2.5m }, new AlertRow { SecurityId = "bond" } };
+            var cache = new ReferenceDataCache();
+            await GatewayReferenceFill.EnsureAlertsAsync(new GatewayRequester(gateway), rows, Token, cache);
+            await GatewayReferenceFill.EnsureAlertsAsync(new GatewayRequester(gateway), rows, Token, cache);
+            foreach (var row in rows)
+            {
+                Equal("债券简称", row.SecurityName, "notification security name");
+                Equal("3.5", row.Maturity, "maturity");
+                Equal("国开", row.BondLibrary, "bond library");
+                Equal("AAA", row.IssuerRating, "issuer rating");
+                Equal("AA+", row.BondRating, "bond rating");
+                Equal((decimal?)2.1m, row.NzYtm, "ChinaBond yield");
+                Equal((decimal?)101.2m, row.NzNetPrice, "ChinaBond price");
+                Equal((decimal?)2.2m, row.CsYtm, "CSI yield");
+                Equal((decimal?)100.3m, row.CsNetPrice, "CSI price");
+                Equal(null, row.CsFullPrice, "unavailable full price is not fabricated");
+            }
+            Equal((decimal?)2.5m, rows[0].Bid, "reference data cannot replace trigger price");
+            Equal(1, gateway.Requests.Count, "same security and subsequent refresh reuse batched cache");
+        }
+
         private static Task NotificationTriggerIdentity()
         {
             var tracker = new AlertTriggerTracker();
@@ -917,6 +994,8 @@ namespace SalesTrading.IntegrationTests
                 return Task.CompletedTask;
             });
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
+            await Run("notification-row-fields", NotificationRowFields);
+            await Run("notification-reference-fields", NotificationReferenceFields);
             await Run("notification-trigger-identity-and-snapshot", NotificationTriggerIdentity);
             await Run("notification-combined-reasons", NotificationCombinedReasons);
             await Run("notification-snapshots-paging", NotificationSnapshotsAndPaging);

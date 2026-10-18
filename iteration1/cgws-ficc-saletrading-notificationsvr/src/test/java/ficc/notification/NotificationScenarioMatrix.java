@@ -36,6 +36,7 @@ public final class NotificationScenarioMatrix {
             try {
                 NotificationScenarioMatrix matrix = new NotificationScenarioMatrix(store);
                 matrix.lifecycle();
+                matrix.snapshotFields();
                 matrix.preferencesAndReasons();
                 matrix.filterCombinations();
                 matrix.comparisonsAndUsers();
@@ -71,6 +72,37 @@ public final class NotificationScenarioMatrix {
                 "status", "ACTIVE", "revision", "1", "side", side, "price", "2.5",
                 "quoteType", "1", "yieldType", "1", "settlType", "2", "quantity", "100",
                 "quantityUnit", "WAN", "updateTime", "2026-10-18T01:00:00Z");
+    }
+
+    private void snapshotFields() throws Exception {
+        reset();
+        JSONObject changed = JsonUtils.deepCopy(service.quotes.get("A"));
+        changed.put("revision", "2");
+        changed.put("institutionId", "I1");
+        changed.put("institutionName", "测试机构甲");
+        changed.put("contactId", "C1");
+        changed.put("contactName", "测试联系人甲");
+        changed.put("quoteTime", "2026-10-18T01:02:03Z");
+        changed.put("createTime", "2026-10-18T01:00:00Z");
+        changed.put("remark", "not part of notification snapshot");
+        check(service.quoteMessage(event(changed, service.quoteSequence + 1)), "snapshot field update accepted");
+        book();
+        int checkedSnapshots = 0;
+        for (JSONObject row : service.select("U1", new JSONObject())) {
+            JSONObject wire = ficc.api.ProtocolCodec.decode(row, ficc.api.NotificationRecord.class).toJson();
+            for (JSONObject trigger : wire.getJSONArray("triggers").toJavaList(JSONObject.class)) {
+                for (JSONObject snapshot : trigger.getJSONArray("quotes").toJavaList(JSONObject.class)) {
+                    if (!"A".equals(snapshot.getString("quoteId"))) continue;
+                    for (String field : Arrays.asList("institutionId", "institutionName", "contactId", "contactName",
+                            "quoteTime", "createTime", "ownerUserId", "price", "quantity", "side")) {
+                        check(changed.get(field).equals(snapshot.get(field)), "trigger snapshot preserves " + field);
+                    }
+                    check(!snapshot.containsKey("remark"), "snapshot excludes unrelated remark");
+                    checkedSnapshots++;
+                }
+            }
+        }
+        check(checkedSnapshots > 0, "snapshot assertions exercised actual notification records");
     }
 
     private void snapshot(List<JSONObject> quotes) throws Exception {

@@ -4,7 +4,7 @@
 
 - 修复同券聚合行成员变化导致未变报价误弹：新增 `triggers` 独立实例键；WATCHLIST/FILTER_GROUP/MY_BEST 按来源报价版本、COUNTER_QUOTE 按双方版本去重。合并展示行继续保留，不把“当前有效提醒列表”改成历史事件列表。
 - “我的最优”要求同方向、同计价/收益率类型、同清算速度存在比较报价；单笔不触发。实例已读落在现有 notification_reads 表中，移除 A 不让已读 B 变回未读；同 ID 的旧已读行自动补齐独立实例记录。
-- 客户端初次快照/手动刷新不弹存量；其他页签仍接收新提醒；移除八秒自动消失。弹窗价格、数量和归属用户来自具体触发报价摘要，摘要不含对手机构、联系人或备注。
+- 客户端初次快照/手动刷新不弹存量；其他页签仍接收新提醒；移除八秒自动消失。弹窗价格、数量和归属用户来自具体触发报价摘要，2026-10-18 起摘要同时携带机构/联系人和报价时间，供提醒表展示；仍不含备注。
 - 服务端 `NotificationProtocolSmoke` 在独立临时 schema 通过 42 项检查并清理；common Maven 检查通过。客户端受控检查 36 项通过（包括重复事件、首快照、手动刷新、成员移除、已读实例去重）。
 - 实际桌面：`14-watchlist-notification-read` 和新增 `62-notification-change-trigger` 均通过，均清理成功。62 经真实精确报价确认两笔同券报价，验证新建 B 不重弹 A、Refer A 不重弹 B、修改 B 只弹一次且价格为 2.5330/数量为 1、手动刷新不弹存量。报告：`qa_env/client-history-ui/reports/notification-final`。
 - 本机 NotificationSvr/common 已部署、监听并完成上述真实业务验证；QA 未部署。QA 需配套更新 common + NotificationSvr + 客户端；无需 SQL 表结构迁移。QuoteSvr 业务代码未改。未运行性能测试、未声称全套自动化均重新通过。

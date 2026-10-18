@@ -7,7 +7,7 @@ using System.Windows.Threading;
 
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 {
-    /// <summary>报价提醒视图（23 列）：列拖拽/宽度持久化 + 行右键菜单。</summary>
+    /// <summary>报价提醒视图：列拖拽/宽度持久化 + 行右键菜单。</summary>
     public partial class BoardAlertView : UserControl
     {
         private readonly DispatcherTimer _saveTimer;

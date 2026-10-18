@@ -421,7 +421,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             var slice = notifications.Skip((Math.Max(1, page) - 1) * Math.Max(1, pageSize)).Take(Math.Max(1, pageSize));
             var userNames = UserNameMap.Build();
             var rows = slice.Select(record => MapAlert(record, userNames)).ToList();
-            // 通知行本身不带估值/期限（决策 #3 显示空）；债券简称由 securityId 即本行已有，无需补取
+            await GatewayReferenceFill.EnsureAlertsAsync(requester, rows, ct, referenceCache).ConfigureAwait(false);
             return rows;
         }
 
@@ -447,10 +447,21 @@ namespace STC.SalesTrading.Plugin.Gateway
             alertView.MarkReadLocally(notificationId);
         }
 
-        /// <summary>NotificationRecord → AlertRow。报价摘要字段后端不携带（决策 #3 显示空）。</summary>
-        private static AlertRow MapAlert(NotificationRecord record, Dictionary<string, string> userNames)
+        /// <summary>仅使用本通知的触发报价快照；不读取全局最优行情替代触发内容。</summary>
+        internal static AlertRow MapAlert(NotificationRecord record, Dictionary<string, string> userNames)
         {
             if (record == null) return null;
+            // 同一报价可匹配多个提醒原因。摘要每方向取最近变更的一笔，价量和交易方保持同源。
+            var quotes = (record.Triggers ?? new List<NotificationTrigger>())
+                .Where(trigger => trigger != null)
+                .SelectMany(trigger => trigger.Quotes ?? new List<QuoteRecord>())
+                .Where(quote => quote != null && quote.SecurityId == record.SecurityId)
+                .OrderByDescending(quote => quote.UpdateTime ?? quote.QuoteTime ?? quote.CreateTime)
+                .ThenBy(quote => quote.QuoteId, StringComparer.Ordinal)
+                .ToList();
+            var bid = quotes.FirstOrDefault(quote => quote.Side == "1");
+            var ofr = quotes.FirstOrDefault(quote => quote.Side == "2");
+            var latest = quotes.FirstOrDefault();
             return new AlertRow
             {
                 NotificationId = record.NotificationId,
@@ -462,6 +473,20 @@ namespace STC.SalesTrading.Plugin.Gateway
                 QuoteIds = record.QuoteIds,
                 ReadTime = record.ReadTime,
                 UpdateTime = record.UpdateTime,
+                QuoteTime = latest?.QuoteTime ?? latest?.UpdateTime,
+                Bid = GatewayModelMapper.ParseDecimal(bid?.Price),
+                Ofr = GatewayModelMapper.ParseDecimal(ofr?.Price),
+                VolBid = NotificationVolume(bid),
+                VolOfr = NotificationVolume(ofr),
+                InstBid = bid?.InstitutionName,
+                InstOfr = ofr?.InstitutionName,
+                ContactBid = bid?.ContactName,
+                ContactOfr = ofr?.ContactName,
+                TraderBid = Lookup(userNames, bid?.OwnerUserId),
+                TraderOfr = Lookup(userNames, ofr?.OwnerUserId),
+                InstitutionName = latest?.InstitutionName,
+                ContactName = latest?.ContactName,
+                OwnerUserName = Lookup(userNames, latest?.OwnerUserId),
             };
         }
 

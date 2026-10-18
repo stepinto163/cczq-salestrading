@@ -3,6 +3,8 @@
     /// <summary>Topic 与请求、Data 类型的编译期关联。</summary>
     public static class SalesTradingApi
     {
+        public static readonly Endpoint<BaseGetRequest, BaseGetData> BaseGet =
+            new Endpoint<BaseGetRequest, BaseGetData>("ficc.base.get");
         public static readonly Endpoint<QuoteViewOpenRequest, QuoteViewData> QuoteViewOpen = new Endpoint<QuoteViewOpenRequest, QuoteViewData>("ficc.quote.view.open");
         public static readonly Endpoint<ViewCloseRequest, ViewCloseData> QuoteViewClose = new Endpoint<ViewCloseRequest, ViewCloseData>("ficc.quote.view.close");
         public static readonly Endpoint<QTradePublishRequest, QTradePublishData> QTradeQuotePublish =

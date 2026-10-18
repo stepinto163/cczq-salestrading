@@ -334,7 +334,7 @@ read 一批 1–200 个 notificationIds，read=true 标记已读，false 恢复�
 
 桌面每条 NotificationRecord 显示一行，非对价原因合并、对价保持独立。合并行的 `notificationId/alertKey` 会随成员集合变化，不能用它们判断是否应该弹窗。
 
-新增 `triggers[]` 描述行内独立实例：`alertKey`、`type`、`quoteIds`、`quotes`。非对价实例键由账户、类型、单笔 quoteId/revision 生成；对价实例键包含双方 quoteId/revision。`quotes` 仅包含触发报价的公开摘要，不包含对手机构、联系人或备注；弹窗直接使用这些价格、数量和归属信息，不使用整券最优价替代。
+新增 `triggers[]` 描述行内独立实例：`alertKey`、`type`、`quoteIds`、`quotes`。非对价实例键由账户、类型、单笔 quoteId/revision 生成；对价实例键包含双方 quoteId/revision。`quotes` 包含触发报价的价格、数量、归属人、机构/联系人 ID 与名称，以及 quoteTime/createTime/updateTime，不包含备注。交易方沿用本机构已确认报价共享规则；弹窗直接使用触发快照，不使用整券最优价替代。提醒表每方向使用本通知内最近变更的一笔快照，价量、机构、报价交易员和长城交易员均来自该笔报价；债券资料使用批量缓存补取，不逐行查用户或债券。
 
 客户端首份快照/手动刷新只建立实例键基线；增量只对未见过且未读的键弹窗。撤销 A 后，未变化 B 的实例键不变，即使合并行 ID 变化也不重弹 B。相同版本重复事件及全局重算不重弹；新版本生成新实例。当前页签不可见时仍接收提醒，弹窗由用户关闭或查看，不自动超时消失。
 

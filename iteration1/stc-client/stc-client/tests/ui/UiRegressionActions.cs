@@ -156,6 +156,9 @@ namespace SalesTrading.UiTests
                 case "realtime.notification-switch":
                     await CheckNotificationSwitchAsync(step);
                     return;
+                case "notification.fields":
+                    await CheckNotificationFieldsAsync(step);
+                    return;
                 case "notification.lifecycle":
                     await CheckNotificationLifecycleAsync(Parameter(step, "securityId"));
                     break;

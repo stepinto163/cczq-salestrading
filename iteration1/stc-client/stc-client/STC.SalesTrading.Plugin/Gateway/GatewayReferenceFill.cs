@@ -78,6 +78,28 @@ namespace STC.SalesTrading.Plugin.Gateway
             }
         }
 
+        /// <summary>提醒行与行情页共用批量资料缓存；不逐行查询，不替换通知的报价快照。</summary>
+        public static async Task EnsureAlertsAsync(GatewayRequester requester, IReadOnlyList<AlertRow> rows,
+            CancellationToken ct, ReferenceDataCache cache = null)
+        {
+            var records = await FetchAsync(requester, rows?.Select(row => row.SecurityId).ToList(), ct, cache).ConfigureAwait(false);
+            if (records == null || rows == null) return;
+            foreach (var row in rows)
+            {
+                BaseRecord record;
+                if (row.SecurityId == null || !records.TryGetValue(row.SecurityId, out record)) continue;
+                row.SecurityName = record.SecurityName;
+                row.Maturity = record.RemainingYears;
+                row.BondLibrary = record.BondSubtype;
+                row.IssuerRating = record.IssuerRating;
+                row.BondRating = record.BondRating;
+                row.NzYtm = ParseDecimal(record.ValuationYield);
+                row.NzNetPrice = ParseDecimal(record.ValuationCleanPrice);
+                row.CsYtm = ParseDecimal(record.CsiValuationYield);
+                row.CsNetPrice = ParseDecimal(record.CsiValuationCleanPrice);
+            }
+        }
+
         /// <summary>批量 ficc.base.get SECURITY（单请求最多 100 Id）；无缺失返回 null 跳过请求。</summary>
         private static async Task<Dictionary<string, BaseRecord>> FetchAsync(GatewayRequester requester,
             List<string> securityIds, CancellationToken ct, ReferenceDataCache cache = null)

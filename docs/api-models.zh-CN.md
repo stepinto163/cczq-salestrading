@@ -1156,7 +1156,7 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `quoteIds` | `List<String>` | 关联报价 ID |
 | `triggers` | `List<Trigger>` | 独立提醒实例；弹窗去重使用此处 alertKey，不用合并行 ID |
 
-`Trigger` 字段：`alertKey: String`、`type: String`、`quoteIds: List<String>`、`quotes: List<QuoteRecord>`。quotes 只包含 quoteId、revision、securityId、ownerUserId、side、quoteType、yieldType、price、quantity、quantityUnit、settlType、updateTime，不包含机构、联系人及备注。
+`Trigger` 字段：`alertKey: String`、`type: String`、`quoteIds: List<String>`、`quotes: List<QuoteRecord>`。quotes 包含 quoteId、revision、securityId、ownerUserId、side、quoteType、yieldType、price、quantity、quantityUnit、settlType、updateTime，以及 institutionId、institutionName、contactId、contactName、quoteTime、createTime；不包含备注。机构/联系人沿用已确认报价在本机构共享的规则。
 
 ## 视图与推送
 

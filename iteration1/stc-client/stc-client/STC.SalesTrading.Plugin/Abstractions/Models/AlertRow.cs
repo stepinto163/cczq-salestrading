@@ -83,12 +83,15 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         /// <summary>最近修改时间，列表排序依据（updateTime）。</summary>
         public DateTime? UpdateTime { get; set; }
 
-        #region 报价摘要（后端通知不携带，补齐前显示空）
+        /// <summary>摘要报价的发布时间；与通知更新时间分开，标记已读不会改变报价时间。</summary>
+        public DateTime? QuoteTime { get; set; }
 
-        /// <summary>买方最优价。</summary>
+        #region 触发报价摘要（每方向最近变更的快照）
+
+        /// <summary>买方触发报价的原始价格。</summary>
         public decimal? Bid { get; set; }
 
-        /// <summary>卖方最优价。</summary>
+        /// <summary>卖方触发报价的原始价格。</summary>
         public decimal? Ofr { get; set; }
 
         /// <summary>买方报量，单位万。</summary>
@@ -106,9 +109,11 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         /// <summary>报价归属用户显示名。为空时回退显示 OwnerUserId。</summary>
         public string OwnerUserName { get; set; }
 
-        // 提醒表「报价机构.Bid/长城交易员.Bid/销售.Ofr/报价机构.Ofr」四列的绑定目标。
-        // 后端通知不携带这些摘要（决策 #3 显示空），先以空属性占位——
-        // 绑定到不存在的属性每行走一遍绑定失败重试慢路径，是滚动卡顿的放大器（实测踩坑）
+        // 每方向的价、量、机构、联系人和归属人来自同一笔触发报价，不拼接其他报价字段。
+        public string ContactBid { get; set; }
+
+        public string ContactOfr { get; set; }
+
         public string InstBid { get; set; }
 
         public string TraderBid { get; set; }
@@ -142,7 +147,7 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         /// <summary>中债偏离，BP。</summary>
         public decimal? NzDeviation { get; set; }
 
-        // 看板列工厂统一插入中证 3 列；提醒域无中证计算源，恒空占位（同理避免绑定失败）
+        // 中证估值由基础资料补齐；数据源未提供的全价保持空，不能用净价冒充。
         public decimal? CsNetPrice { get; set; }
 
         public decimal? CsFullPrice { get; set; }

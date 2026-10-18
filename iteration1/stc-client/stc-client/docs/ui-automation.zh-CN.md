@@ -533,3 +533,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 本轮验证：本机 200% 缩放下，`47-realtime-today` 与 `65-notification-switch-watchlist` 双账号桌面用例通过，均确认清理完成；窗口 Z 序修正后重新执行 65。30 组布局组合、字幕、播放控制/选择器、动作等待、精确验证目标及 40 项客户端集成检查通过。桌面报告保存在 `qa_env/client-history-ui/reports/dpi-default-final`、`dpi-zorder-final`；这些是本地服务验证，不是 QA 部署验收或全套桌面用例结论。
 
 补充验证记录：后续 `dpi-desktop-final` 的 65 用例在“重新启用不能弹出存量报价”断言失败，双方清理成功；此前该用例在 `dpi-default-final`、`dpi-zorder-final` 通过。此项是提醒重新启用的间歇性回归，尚未确定根因，不能把本轮结果写成全部提醒场景通过。桌面截图加入 CAPTUREBLT 以包含透明叠加窗口，已通过独立截图执行检查；最近一次真实提醒运行在截图步骤前被上述业务断言阻止。
+
+
+### 提醒行字段回归（2026-10-18）
+
+用例 `69-notification-row-fields` 位于「行情中心 / 报价提醒」。通过精确报价及真实 CRM 下拉创建 Bid、Ofr，再修改 Bid；每阶段逐列滚动、红框展示并读取实际 `TextBlock.Text`，与 API 返回的报价和基础资料逐字段比较。不能把行对象存在、截图成功或 ViewModel 值正确当作单元格正确。
+
+覆盖代码、提醒原因、双向价格/报量、机构、报价交易员、长城交易员、报价时间、简称、期限、债券库、评级及可用的中债/中证估值。`notification-fields-*.json` 保存预期值和实际渲染文本。源数据没有评级/估值时明确校验空值；最新成交、中证全价及需要独立计算的偏离值不在本次补齐范围。
+
+修复需同时部署 NotificationSvr 和客户端：服务端触发快照增加机构/联系人 ID、名称及报价时间；客户端从本通知的快照填充每侧最近变更报价，并批量缓存补取债券资料。价格、数量、交易方和归属人保持来自同一笔报价；不使用全局最优价代替提醒报价，不汇总重复原因中的同一笔报量。未发生数据库结构或 common 协议类型变更。
+
+功能测试还覆盖多原因重复快照、每侧不同归属人、同方向新旧快照、亿/万转换、缺少另一侧及缺失 CRM 字段；通知时间与报价时间分别保存，标记已读不冒充新的报价时间。
+
+验证记录：新版客户端集成检查 42 项通过；NotificationProtocolSmoke 42 项、NotificationScenarioMatrix 293 项通过（临时 PostgreSQL schema，结束删除）。桌面用例 69 首次复现「报价机构.Bid 预期长城证券股份有限公司，实际空」；部署修复后两次通过，每次 51 个实际单元格比较，清理通过。最终使用重建的正式 STC 宿主和默认测试器、每操作 2 秒，报告位于本机 `qa_env/notification-fields-ui/reports/fields-final`。本次是字段专项回归，不代表全部桌面用例已重新运行；此前记录的开关重新启用偶发弹存量问题不在本次修复范围。
