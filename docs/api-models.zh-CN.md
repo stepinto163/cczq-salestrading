@@ -175,12 +175,16 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 <a id="quotehistorydata"></a>
 ### QuoteHistoryData
 
-[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/QuoteHistoryData.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/QuoteHistoryData.cs)；继承 [PageData](#pagedata) 的字段。
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/QuoteHistoryData.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Gateway/Contracts/Quote/QuoteLogData.cs)；继承 [PageData](#pagedata) 的字段。
 
 | 字段 | 声明类型 | 说明 |
 |---|---|---|
 | `quoteId` | `String` | 内部报价主键 |
 | `records` | `List<QuoteHistoryRecord>` | 记录集合；结构依所属模型而定 |
+| `pageNumber` | `Integer` | 页码，从 1 开始；请求默认 1 |
+| `pageSize` | `Integer` | 每页条数；请求默认 20，范围 1～1000 |
+| `snapshotRevision` | `String` | 首查返回最大版本；翻页原样带回，刷新省略 |
+
 <a id="quotehistoryrecord"></a>
 ### QuoteHistoryRecord
 
@@ -200,11 +204,15 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 <a id="quotehistoryrequest"></a>
 ### QuoteHistoryRequest
 
-[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/QuoteHistoryRequest.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/QuoteHistoryRequest.cs)；继承 [PageRequest](#pagerequest) 的字段。
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/QuoteHistoryRequest.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Gateway/Contracts/Quote/QuoteLogRequest.cs)；继承 [PageRequest](#pagerequest) 的字段。
 
 | 字段 | 声明类型 | 说明 |
 |---|---|---|
 | `quoteId` | `String` | 内部报价主键 |
+| `pageNumber` | `Integer` | 页码，从 1 开始；请求默认 1 |
+| `pageSize` | `Integer` | 每页条数；请求默认 20，范围 1～1000 |
+| `snapshotRevision` | `String` | 首查返回最大版本；翻页原样带回，刷新省略 |
+
 <a id="quotehistoryrow"></a>
 ### QuoteHistoryRow
 

@@ -418,7 +418,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         /// <summary>右键菜单：报价日志（ficc.quote.history.query，H10）。</summary>
         [RelayCommand]
-        private async System.Threading.Tasks.Task QuoteLog(object row)
+        private void QuoteLog(object row)
         {
             var quoteId = BoardRowQuoteResolver.ResolveQuoteId(row);
             if (string.IsNullOrEmpty(quoteId))
@@ -428,9 +428,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             }
             try
             {
-                var entries = await _quoteService.LoadQuoteLogAsync(quoteId, System.Threading.CancellationToken.None);
                 MarketView.QuoteLogWindow.Show(System.Windows.Application.Current?.MainWindow, quoteId,
-                    BoardRowQuoteResolver.ResolveLabel(row), entries);
+                    BoardRowQuoteResolver.ResolveLabel(row), _quoteService);
             }
             catch (Exception ex)
             {

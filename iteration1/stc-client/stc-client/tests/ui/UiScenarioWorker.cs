@@ -345,9 +345,35 @@ namespace SalesTrading.UiTests
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "行情表未显示本例报价");
                     break;
                 case "history.assert":
-                    JObject history = await api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = quoteId, ["limit"] = 100 }));
-                    Require(((JArray)history["records"]).Count >= int.Parse(Parameter(step, "minimumCount")), "持久化变更历史条数不足");
+                    JObject history = await api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery,
+                        new QuoteHistoryRequest { QuoteId = quoteId, PageNumber = 1, PageSize = 1 });
+                    int historyCount = (int)history["totalCount"];
+                    Require(historyCount >= int.Parse(Parameter(step, "minimumCount")), "持久化变更历史条数不足");
+                    Require((int)history["pageNumber"] == 1 && (int)history["pageSize"] == 1,
+                        "变更历史未返回页码及页大小");
+                    Require(((JArray)history["records"]).Count == 1, "变更历史未限制每页记录数");
+                    string historyBoundary = (string)history["snapshotRevision"];
+                    Require(!string.IsNullOrEmpty(historyBoundary), "变更历史缺少固定版本边界");
+                    var historyPages = new JArray(history);
+                    if (historyCount > 1)
+                    {
+                        JObject nextHistory = await api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery,
+                            new QuoteHistoryRequest { QuoteId = quoteId, PageNumber = 2, PageSize = 1,
+                                SnapshotRevision = historyBoundary });
+                        Require((int)nextHistory["pageNumber"] == 2 && (int)nextHistory["totalCount"] == historyCount,
+                            "下一页页码或总数错误");
+                        Require((string)nextHistory["records"][0]["revision"] != (string)history["records"][0]["revision"],
+                            "下一页重复返回首条记录");
+                        historyPages.Add(nextHistory);
+                        JObject lastHistory = await api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery,
+                            new QuoteHistoryRequest { QuoteId = quoteId, PageNumber = historyCount, PageSize = 1,
+                                SnapshotRevision = historyBoundary });
+                        Require(((JArray)lastHistory["records"]).Count == 1 && !(bool)lastHistory["hasMore"],
+                            "末页记录或 hasMore 错误");
+                        historyPages.Add(lastHistory);
+                    }
                     File.WriteAllText(Path.Combine(reportDirectory, "history.json"), history.ToString());
+                    File.WriteAllText(Path.Combine(reportDirectory, "history-pages.json"), historyPages.ToString());
                     break;
                 case "parse.keyboard":
                 case "parse":

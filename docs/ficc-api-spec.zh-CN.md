@@ -625,14 +625,27 @@ records 元素是 QuoteHistoryRecord，含 before/after、action、操作人、�
 输入：
 
 ```json
-{"requestId":"R-010","quoteId":"Q-001","limit":50}
+{"requestId":"R-010","quoteId":"Q-001","pageNumber":1,"pageSize":20}
 ```
 
 成功 Data：
 
 ```json
-{"totalCount":1,"nextCursor":null,"quoteId":"Q-001","records":[{"eventId":"EV-001","quoteId":"Q-001","revision":"2","action":"CONFIRM","operatorUserId":"U-001","operationTime":"2026-10-12T10:00:00+08:00","before":{"quoteId":"Q-001","revision":"1","status":"PENDING_CONFIRM"},"after":{"quoteId":"Q-001","revision":"2","status":"ACTIVE"}}]}
+{"pageNumber":1,"pageSize":20,"totalCount":1,"hasMore":false,"snapshotRevision":"2","quoteId":"Q-001","records":[{"eventId":"EV-001","quoteId":"Q-001","revision":"2","action":"CONFIRM","operatorUserId":"U-001","operationTime":"2026-10-12T10:00:00+08:00","before":{"quoteId":"Q-001","revision":"1","status":"PENDING_CONFIRM"},"after":{"quoteId":"Q-001","revision":"2","status":"ACTIVE"}}]}
 ```
+
+
+按页查询：`pageNumber` 从 1 开始，`pageSize` 默认 20、最大 1000；记录按 revision 降序。响应同时返回 `pageNumber/pageSize/totalCount/hasMore`，客户端使用统一分页条。
+
+首次查询省略 `snapshotRevision`；后续翻页带回服务端返回的该字段（十进制字符串），例如：
+
+```json
+{"requestId":"R-010-2","quoteId":"Q-001","pageNumber":2,"pageSize":20,"snapshotRevision":"105"}
+```
+
+该边界固定本次浏览可见的最大版本，新增操作不会使已有页漂移。刷新时回到第 1 页并省略边界；越界页返回空 records，totalCount 保持真实总数。每次请求仍校验报价归属权限。服务端利用 `(quote_id,revision)` 索引执行 SQL 计数和 LIMIT/OFFSET，不将整份审计日志加载到内存。
+
+兼容旧客户端显式 `limit` 首查和 `cursor` 续取；不能与页码字段混用。历史报价筛选 `history.search` 的协议本次不变。发布顺序为 common + QuoteSvr，再更新客户端；旧服务端不支持新的分页字段。
 
 <a id="ficc.quote.history.search"></a>
 ### 11. 历史报价筛选

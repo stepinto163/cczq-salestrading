@@ -6,6 +6,15 @@ namespace SalesTrading.UiTests.Contracts
     /// <summary>QuoteHistoryRequest</summary>
     public class QuoteHistoryRequest : PageRequest
     {
+        [JsonProperty("pageNumber")]
+        public int PageNumber { get; set; } = 1;
+
+        [JsonProperty("pageSize")]
+        public int PageSize { get; set; } = 20;
+
+        [JsonProperty("snapshotRevision")]
+        public string SnapshotRevision { get; set; }
+
         [JsonProperty("quoteId")]
         public string QuoteId { get; set; }
 

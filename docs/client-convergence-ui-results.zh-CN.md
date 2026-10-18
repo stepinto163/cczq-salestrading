@@ -1,5 +1,16 @@
 # 候选客户端 UI 自动化验收记录（2026-10-18）
 
+## 2026-10-18 报价变更历史分页
+
+- `ficc.quote.history.query` 新增 `pageNumber/pageSize/snapshotRevision`，按版本倒序返回 `records/totalCount/hasMore`。翻页保留版本上界，刷新重新取最新边界；显式 limit/cursor 的旧调用保持兼容。
+- STC 报价日志复用 `PaginationBar`，默认每页 20 条；支持前后翻页、刷新、失败重试。请求失败时保留此前成功页；关闭窗口后取消请求。移除只加载前 100 条的截断。
+- 验证：common Maven 66 项（65 通过、1 项原有跳过），QuoteSvr Maven 5 项通过；独立 PostgreSQL schema 的历史功能回归 159 项检查通过，覆盖 105 条审计记录、并发新增、首末页、空页、权限、无效参数和旧游标兼容。该测试不属于性能测试。
+- 客户端 34 项检查通过，使用实际插件及受控 DPS 应答；其中 WPF 测试创建真实报价日志窗口，操作统一分页条的上一页/下一页并核对显示行，截图位于本机 `qa_env/client-history-ui/bin/quote-history-pagination.png`。
+- 实际桌面用例 `01-quote-lifecycle` 通过，连接真实本机 STC/GW/QuoteSvr；`history.assert` 核对首/次/末页接口返回，清理通过。报告位于 `qa_env/client-history-ui/reports/history-paging`。此实际链路用例没有操作历史窗口；窗口控件测试使用受控传输，两者不得混称为历史窗口完整实时端到端验证。
+- 发布：本机 QuoteSvr/common 已部署并重启，JAR 哈希与构建产物相同；源码 Debug 的 `client/plugin/STC.SalesTrading.Plugin.dll` 已构建安装。QA 环境未部署；QA 需先更新 common/QuoteSvr，再更新客户端，不涉及数据库结构变更。
+- 另一次临时只读 API 调试器探测在登录阶段超时并由 30 秒看门狗终止，不计入通过项；随后采用现有桌面测试器完成上述真实服务验证。
+
+
 ## 第二轮修复与复验（当前结论）
 
 分支：`integration/ficc-client-convergence`。本轮修复客户端和自动化驱动中无需新增业务决策的问题，未修改 Java 服务或对外协议，未合并稳定 QA 分支，未替换现有 QA 客户端。

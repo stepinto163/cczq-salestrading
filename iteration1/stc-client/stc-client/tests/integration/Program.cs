@@ -152,6 +152,150 @@ namespace SalesTrading.IntegrationTests
             }).ToList();
             return Reply(new { results });
         }
+        private static Task QuoteHistoryWindowPaging()
+        {
+            Exception failure = null;
+            var thread = new Thread(() =>
+            {
+                System.Windows.Window window = null;
+                try
+                {
+                    var gateway = new ControlledGateway
+                    {
+                        Respond = request =>
+                        {
+                            var body = JObject.Parse((string)request.Payload);
+                            int number = (int)body["pageNumber"];
+                            return Task.FromResult(Reply(new QuoteLogData
+                            {
+                                QuoteId = "q1", PageNumber = number, PageSize = 20,
+                                SnapshotRevision = "41", TotalCount = 41, HasMore = number < 3,
+                                Records = Enumerable.Range(1, 41).Reverse().Skip((number - 1) * 20).Take(20)
+                                    .Select(revision => new QuoteLogRecord { Revision = revision.ToString(), Action = "UPDATE" }).ToList()
+                            }));
+                        }
+                    };
+                    var requester = new GatewayRequester(gateway);
+                    using (var stream = new GatewayReportStream<QuoteStreamBatch>(requester, GatewayTopics.QuoteStreamOpen))
+                    using (var service = new GatewayQuoteService(requester, stream))
+                    using (var model = new STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteLogViewModel(service, "q1"))
+                    {
+                        window = (System.Windows.Window)Activator.CreateInstance(
+                            typeof(STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteLogWindow), true);
+                        window.DataContext = model;
+                        window.Show();
+                        model.LoadPageAsync(1, true).GetAwaiter().GetResult();
+                        Action render = () =>
+                        {
+                            window.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.DataBind, new Action(() => { }));
+                            window.UpdateLayout();
+                        };
+                        render();
+                        var pager = FindVisual<STC.SalesTrading.Plugin.Shared.Components.PaginationBar>(window);
+                        var next = (System.Windows.Controls.Button)pager.FindName("NextButton");
+                        var previous = (System.Windows.Controls.Button)pager.FindName("PrevButton");
+                        var grid = (System.Windows.Controls.DataGrid)window.FindName("LogGrid");
+                        Equal(false, previous.IsEnabled, "first page disables previous");
+                        Equal(20, grid.Items.Count, "first page rendered row count");
+                        next.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                        render();
+                        Equal(2, model.Page, "real next button loads page two");
+                        Equal("21", ((QuoteLogEntry)grid.Items[0]).Revision, "page two grid data");
+                        next.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                        render();
+                        Equal(1, grid.Items.Count, "last page renders single remaining record");
+                        Equal(false, next.IsEnabled, "last page disables next");
+                        previous.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                        render();
+                        Equal(2, model.Page, "real previous button restores page two");
+                        var image = new System.Windows.Media.Imaging.RenderTargetBitmap((int)window.ActualWidth,
+                            (int)window.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                        image.Render(window);
+                        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));
+                        using (var output = System.IO.File.Create("quote-history-pagination.png")) encoder.Save(output);
+                    }
+                }
+                catch (Exception error) { failure = error; }
+                finally { window?.Close(); }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+            if (failure != null) throw new Exception("WPF history paging", failure);
+            return Task.CompletedTask;
+        }
+
+        private static T FindVisual<T>(System.Windows.DependencyObject root) where T : System.Windows.DependencyObject
+        {
+            if (root is T match) return match;
+            for (int index = 0; index < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); index++)
+            {
+                var found = FindVisual<T>(System.Windows.Media.VisualTreeHelper.GetChild(root, index));
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        private static async Task QuoteHistoryPaging()
+        {
+            bool fail = false;
+            int latest = 105;
+            var gateway = new ControlledGateway
+            {
+                Respond = request =>
+                {
+                    Equal(GatewayTopics.QuoteHistoryQuery, request.Topic, "history topic");
+                    var body = JObject.Parse((string)request.Payload);
+                    Equal(null, body["limit"], "no legacy limit");
+                    Equal(null, body["cursor"], "no legacy cursor");
+                    Equal("q1", (string)body["quoteId"], "quote identity retained");
+                    if (fail) throw new TimeoutException("history unavailable");
+                    int number = (int)body["pageNumber"];
+                    int size = (int)body["pageSize"];
+                    int boundary = body["snapshotRevision"] == null ? latest : int.Parse((string)body["snapshotRevision"]);
+                    var records = Enumerable.Range(1, boundary).Reverse().Skip((number - 1) * size).Take(size)
+                        .Select(revision => new QuoteLogRecord { Revision = revision.ToString(), Action = "UPDATE" }).ToList();
+                    return Task.FromResult(Reply(new QuoteLogData { QuoteId = "q1", PageNumber = number,
+                        PageSize = size, SnapshotRevision = boundary.ToString(), TotalCount = boundary,
+                        HasMore = number * size < boundary, Records = records }));
+                }
+            };
+            var requester = new GatewayRequester(gateway);
+            using (var stream = new GatewayReportStream<QuoteStreamBatch>(requester, GatewayTopics.QuoteStreamOpen))
+            using (var service = new GatewayQuoteService(requester, stream))
+            using (var model = new STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteLogViewModel(service, "q1"))
+            {
+                await model.LoadPageAsync(1, true);
+                Equal(105, model.TotalCount, "all audit entries counted");
+                Equal(6, model.TotalPages, "six pages rather than truncated first 100");
+                Equal("105", model.Records[0].Revision, "latest first");
+                latest = 106;
+                await model.LoadPageAsync(6);
+                Equal(6, model.Page, "last page selected");
+                Equal(5, model.Records.Count, "last page contains five entries");
+                Equal("1", model.Records.Last().Revision, "oldest entry reachable");
+                Equal(105, model.TotalCount, "new event does not shift current snapshot");
+                fail = true;
+                await model.LoadPageAsync(5);
+                Equal(6, model.Page, "failed navigation preserves displayed page");
+                Equal(5, model.Records.Count, "failed navigation preserves records");
+                Equal(true, model.RetryCommand.CanExecute(null), "failed page can be retried");
+                fail = false;
+                await model.RetryCommand.ExecuteAsync(null);
+                Equal(5, model.Page, "retry requests failed target page");
+                Equal(null, model.ErrorMessage, "retry clears error");
+                await model.RefreshCommand.ExecuteAsync(null);
+                Equal(1, model.Page, "refresh resets to first page");
+                Equal(106, model.TotalCount, "refresh fetches latest boundary");
+                Equal("106", model.Records[0].Revision, "refresh displays newest event");
+                int beforeClose = gateway.Requests.Count;
+                model.Dispose();
+                await model.LoadPageAsync(2);
+                Equal(beforeClose, gateway.Requests.Count, "closed dialog sends no further requests");
+            }
+        }
+
         private static async Task LifecyclePayload()
         {
             var gateway = new ControlledGateway
@@ -609,6 +753,8 @@ namespace SalesTrading.IntegrationTests
                 return Task.CompletedTask;
             });
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
+            await Run("quote-history-numbered-paging-refresh-and-retry", QuoteHistoryPaging);
+            await Run("quote-history-wpf-pagination-controls", QuoteHistoryWindowPaging);
             await Run("lifecycle-payload-excludes-edit-fields", LifecyclePayload);
             await Run("preview-direction-does-not-require-persisted-id", () =>
             {

@@ -54,6 +54,95 @@ public final class HistorySearchSmoke {
         return service.handle(user, session, "ficc.quote.history.search", body);
     }
 
+    private static JSONObject audit(QuoteService service, String user, JSONObject request) {
+        request.put("requestId", UUID.randomUUID().toString());
+        return ficc.api.ProtocolBoundary.reply("ficc.quote.history.query",
+                service.handle(user, "AUDIT", "ficc.quote.history.query", request));
+    }
+
+    private static JSONObject auditPage(int number, String boundary) {
+        JSONObject request = JsonUtils.object("quoteId", "LOG", "pageNumber", number, "pageSize", 20);
+        if (boundary != null) {
+            request.put("snapshotRevision", boundary);
+        }
+        return request;
+    }
+
+    /** 105 条审计记录仅用于覆盖第 100 条之后的分页边界，不做性能压测。 */
+    private static void checkAuditPaging(PgStore store, ReferenceData references, Properties configuration)
+            throws Exception {
+        for (int revision = 1; revision <= 105; revision++) {
+            event(store, "LOG", revision, "U1", "2026-10-18T10:00:00+08:00", "2", "ACTIVE");
+        }
+        JSONObject last = store.rows("SELECT payload FROM history WHERE quote_id='LOG' AND revision=105").get(0);
+        ficc.api.QuoteRecord quote = ProtocolCodec.decode(last.getJSONObject("after"), ficc.api.QuoteRecord.class);
+        quote.urgent = false;
+        quote.recommended = false;
+        quote.whole = false;
+        quote.oco = false;
+        quote.packing = false;
+        store.saveQuote(quote);
+        QuoteService service = new QuoteService(store, references, new AccessPolicy(configuration));
+        JSONObject first = audit(service, "U1", auditPage(1, null)).getJSONObject("Data");
+        check(first != null && first.getIntValue("totalCount") == 105, "audit total includes more than 100 revisions");
+        check(first.getIntValue("pageNumber") == 1 && first.getIntValue("pageSize") == 20,
+                "audit echoes standard numbered-page fields");
+        check(first.getJSONArray("records").size() == 20 && first.getBooleanValue("hasMore"),
+                "audit first page has 20 records and more pages");
+        String boundary = first.getString("snapshotRevision");
+        check("105".equals(boundary), "audit snapshot captures highest revision");
+        event(store, "LOG", 106, "U1", "2026-10-18T10:00:01+08:00", "3", "ACTIVE");
+        java.util.Set<String> revisions = new java.util.HashSet<>();
+        for (int pageNumber = 1; pageNumber <= 6; pageNumber++) {
+            JSONObject data = audit(service, "U1", auditPage(pageNumber, boundary)).getJSONObject("Data");
+            check(data.getIntValue("totalCount") == 105, "audit total stable on page " + pageNumber);
+            for (Object value : data.getJSONArray("records")) {
+                JSONObject row = (JSONObject) value;
+                check(revisions.add(row.getString("revision")), "audit unique revision " + row.getString("revision"));
+            }
+            if (pageNumber == 6) {
+                check(data.getJSONArray("records").size() == 5 && !data.getBooleanValue("hasMore"),
+                        "audit final partial page after record 100");
+            }
+        }
+        check(revisions.size() == 105 && revisions.contains("1") && !revisions.contains("106"),
+                "audit paging has no gaps or newly inserted revisions");
+        JSONObject back = audit(service, "U1", auditPage(1, boundary)).getJSONObject("Data");
+        check("105".equals(back.getJSONArray("records").getJSONObject(0).getString("revision")),
+                "audit previous page keeps descending snapshot order");
+        JSONObject refreshed = audit(service, "U1", auditPage(1, null)).getJSONObject("Data");
+        check(refreshed.getIntValue("totalCount") == 106
+                        && "106".equals(refreshed.getJSONArray("records").getJSONObject(0).getString("revision")),
+                "audit refresh includes newest revision");
+        JSONObject empty = audit(service, "U1", auditPage(7, boundary)).getJSONObject("Data");
+        check(empty.getJSONArray("records").isEmpty() && !empty.getBooleanValue("hasMore"),
+                "audit out-of-range page is empty");
+        check("1003".equals(audit(service, "U2", auditPage(1, boundary)).getString("Code")),
+                "audit paging preserves ownership checks");
+        for (String field : new String[] {"pageNumber", "pageSize"}) {
+            for (Object value : new Object[] {0, -1, "1.5", "2147483648"}) {
+                JSONObject invalid = auditPage(1, null);
+                invalid.put(field, value);
+                check("1001".equals(audit(service, "U1", invalid).getString("Code")),
+                        "audit rejects invalid " + field + "=" + value);
+            }
+        }
+        JSONObject invalidSize = auditPage(1, null);
+        invalidSize.put("pageSize", 1001);
+        check("1001".equals(audit(service, "U1", invalidSize).getString("Code")), "audit enforces page-size cap");
+        check("1001".equals(audit(service, "U1", auditPage(1, "107")).getString("Code")),
+                "audit rejects a future snapshot boundary");
+        JSONObject zero = audit(service, "U1", auditPage(1, "0")).getJSONObject("Data");
+        check(zero.getIntValue("totalCount") == 0 && zero.getJSONArray("records").isEmpty(),
+                "audit supports empty snapshot");
+        JSONObject legacy = audit(service, "U1", JsonUtils.object("quoteId", "LOG", "limit", 100)).getJSONObject("Data");
+        check(legacy.getJSONArray("records").size() == 100 && legacy.getString("nextCursor") != null,
+                "legacy cursor clients remain supported");
+        JSONObject legacyNext = audit(service, "U1", JsonUtils.object("cursor", legacy.getString("nextCursor")))
+                .getJSONObject("Data");
+        check(legacyNext.getJSONArray("records").size() == 6, "legacy continuation retains remaining records");
+    }
+
     public static void main(String[] args) throws Exception {
         Properties configuration = new Properties();
         try (Reader reader = Files.newBufferedReader(Paths.get(args[0]))) {
@@ -151,6 +240,7 @@ public final class HistorySearchSmoke {
                 check("2".equals(store.scalar("SELECT count(*) FROM pg_indexes WHERE schemaname=?"
                         + " AND indexname IN ('history_owner_time_idx','history_time_idx')", schema)),
                         "history date and owner indexes installed");
+                checkAuditPaging(store, references, configuration);
             } finally {
                 store.exec("DROP SCHEMA " + schema + " CASCADE");
             }

@@ -25,8 +25,8 @@ namespace STC.SalesTrading.Plugin.Abstractions
         /// <summary>按 Id 拉取完整报价（编辑弹窗先拉全量再预填，§3.1.4 专项 1）。</summary>
         Task<QuoteRow> GetQuoteAsync(string quoteId, CancellationToken ct);
 
-        /// <summary>报价变更历史（ficc.quote.history.query，H10；按 revision 升序，看板行右键"报价日志"）。</summary>
-        Task<IReadOnlyList<QuoteLogEntry>> LoadQuoteLogAsync(string quoteId, CancellationToken ct);
+        /// <summary>报价变更历史（ficc.quote.history.query，H10；按 revision 降序，看板行右键"报价日志"）。</summary>
+        Task<QuoteLogPage> LoadQuoteLogAsync(string quoteId, int pageNumber, int pageSize, string snapshotRevision, CancellationToken ct);
 
         /// <summary>精确报价文本识别（原型：POST /api/parse → 结构化行 + 估值回填）。</summary>
         Task<QuoteParseResult> ParsePreciseTextAsync(string text, CancellationToken ct);

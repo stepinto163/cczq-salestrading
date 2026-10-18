@@ -86,23 +86,41 @@ namespace STC.SalesTrading.Plugin.Gateway
             return row;
         }
 
-        /// <summary>报价变更历史（ficc.quote.history.query，H10；按 revision 升序）。</summary>
-        public async Task<IReadOnlyList<QuoteLogEntry>> LoadQuoteLogAsync(string quoteId, CancellationToken ct)
+        /// <summary>报价变更历史（ficc.quote.history.query，H10；按 revision 降序）。</summary>
+        public async Task<QuoteLogPage> LoadQuoteLogAsync(string quoteId, int pageNumber, int pageSize, string snapshotRevision, CancellationToken ct)
         {
             var data = await requester.RequestAsync<QuoteLogRequest, QuoteLogData>(
                 GatewayTopics.QuoteHistoryQuery,
-                new QuoteLogRequest { QuoteId = quoteId, Limit = 100 }, ct).ConfigureAwait(false);
-            return (data.Records ?? new List<QuoteLogRecord>())
-                .Where(r => r != null)
-                .Select(r => new QuoteLogEntry
+                new QuoteLogRequest
                 {
-                    OperationTime = r.OperationTime,
-                    Action = r.Action,
-                    Revision = r.Revision,
-                    OperatorUserId = r.OperatorUserId,
-                    Reason = r.Reason,
-                })
-                .ToList();
+                    QuoteId = quoteId,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    SnapshotRevision = snapshotRevision
+                }, ct).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(data.SnapshotRevision)
+                || data.PageNumber != pageNumber || data.PageSize != pageSize)
+            {
+                throw new InvalidOperationException("服务端未返回有效的历史分页信息，请更新 common 和 QuoteSvr。");
+            }
+            return new QuoteLogPage
+            {
+                PageNumber = data.PageNumber,
+                PageSize = data.PageSize,
+                TotalCount = data.TotalCount,
+                SnapshotRevision = data.SnapshotRevision,
+                Records = (data.Records ?? new List<QuoteLogRecord>())
+                    .Where(r => r != null)
+                    .Select(r => new QuoteLogEntry
+                    {
+                        OperationTime = r.OperationTime,
+                        Action = r.Action,
+                        Revision = r.Revision,
+                        OperatorUserId = r.OperatorUserId,
+                        Reason = r.Reason,
+                    })
+                    .ToList()
+            };
         }
 
         /// <summary>确认并修正（ficc.quote.confirm，H02）：行上的编辑值 + CRM Id 随确认提交。</summary>

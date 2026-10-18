@@ -1,6 +1,7 @@
 <Window x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteLogWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
         Title="报价日志" Width="640" Height="420"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         WindowStyle="None" Background="{DynamicResource PageBgBrush}"
@@ -8,7 +9,7 @@
         SnapsToDevicePixels="True">
     <!--
         报价日志弹窗（原型 quote-log-modal）：单条报价的变更历史
-        （ficc.quote.history.query，H10，按 revision 升序）。
+        （ficc.quote.history.query，H10，按 revision 降序）。
     -->
     <Window.Resources>
         <ResourceDictionary>
@@ -22,6 +23,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- 标题栏 -->
@@ -37,7 +40,8 @@
             </Border>
 
             <!-- 历史记录 -->
-            <DataGrid Grid.Row="1" x:Name="LogGrid" Margin="8"
+            <DataGrid Grid.Row="1" x:Name="LogGrid" Margin="8" ItemsSource="{Binding Records}"
+                      Style="{DynamicResource StcDataGrid}"
                       AutoGenerateColumns="False" IsReadOnly="True"
                       HeadersVisibility="Column" CanUserAddRows="False" CanUserDeleteRows="False"
                       Background="Transparent" BorderThickness="0"
@@ -45,13 +49,24 @@
                       GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BorderStdBrush}"
                       FontSize="12">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding OperationTimeText}" Width="150" />
+                    <DataGridTextColumn Header="时间" Binding="{Binding OperationTime, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="150" />
                     <DataGridTextColumn Header="动作" Binding="{Binding Action}" Width="90" />
                     <DataGridTextColumn Header="版本" Binding="{Binding Revision}" Width="70" />
                     <DataGridTextColumn Header="操作人" Binding="{Binding OperatorUserId}" Width="110" />
                     <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="*" />
                 </DataGrid.Columns>
             </DataGrid>
+            <TextBlock Grid.Row="2" Text="{Binding ErrorMessage}" Margin="12,4"
+                       Foreground="{DynamicResource WarnBrush}" TextWrapping="Wrap" />
+            <DockPanel Grid.Row="3" Margin="8">
+                <Button DockPanel.Dock="Right" Content="刷新" Command="{Binding RefreshCommand}"
+                        Style="{DynamicResource StcButtonGhost}" Margin="8,0,0,0" />
+                <Button DockPanel.Dock="Right" Content="重试" Command="{Binding RetryCommand}"
+                        Style="{DynamicResource StcButtonGhost}" Margin="8,0,0,0" />
+                <components:PaginationBar TotalCount="{Binding TotalCount}"
+                        TotalPages="{Binding TotalPages}" CurrentPage="{Binding Page, Mode=TwoWay}"
+                        IsLoading="{Binding IsLoading}" />
+            </DockPanel>
         </Grid>
     </Border>
 </Window>

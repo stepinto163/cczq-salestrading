@@ -898,12 +898,61 @@ final class QuoteService {
         QuoteRecord q = get(id, c.user);
         if (!owns(c.user, q))
             throw ApiException.forField("1003", "FORBIDDEN", "History requires ownership", null);
-        return page(
-                c,
-                "records",
-                store.rows(
-                        "SELECT payload FROM history WHERE quote_id=? ORDER BY revision DESC", id),
-                JsonUtils.object("quoteId", id));
+        // 旧客户端显式使用 limit/cursor 时保留原协议；新客户端按页查询。
+        if (c.request.containsKey("limit")) {
+            if (c.request.containsKey("pageNumber") || c.request.containsKey("pageSize")
+                    || c.request.containsKey("snapshotRevision")) {
+                throw ApiException.forField("1001", "VALIDATION_FAILED",
+                        "Cannot mix cursor pagination and numbered pages", "limit");
+            }
+            return page(c, "records",
+                    store.rows("SELECT payload FROM history WHERE quote_id=? ORDER BY revision DESC", id),
+                    JsonUtils.object("quoteId", id));
+        }
+        int pageNumber = historyPageInteger(c.request, "pageNumber", 1, Integer.MAX_VALUE);
+        int pageSize = historyPageInteger(c.request, "pageSize", 20, 1000);
+        long latestRevision = Long.parseLong(store.scalar(
+                "SELECT COALESCE(MAX(revision),0) FROM history WHERE quote_id=?", id));
+        long snapshotRevision = latestRevision;
+        if (c.request.containsKey("snapshotRevision")) {
+            try {
+                snapshotRevision = Long.parseLong(c.request.getString("snapshotRevision"));
+                if (snapshotRevision < 0 || snapshotRevision > latestRevision) {
+                    throw new NumberFormatException();
+                }
+            } catch (NumberFormatException error) {
+                throw ApiException.forField("1001", "VALIDATION_FAILED",
+                        "Invalid history revision boundary", "snapshotRevision");
+            }
+        }
+        // history 的 (quote_id,revision) 唯一索引支持有序分页；不把整份日志载入内存。
+        int totalCount = Integer.parseInt(store.scalar(
+                "SELECT COUNT(*) FROM history WHERE quote_id=? AND revision<=?", id, snapshotRevision));
+        long offset = ((long) pageNumber - 1) * pageSize;
+        List<JSONObject> records = store.rows(
+                "SELECT payload FROM history WHERE quote_id=? AND revision<=?"
+                        + " ORDER BY revision DESC LIMIT ? OFFSET ?",
+                id, snapshotRevision, pageSize, offset);
+        return JsonUtils.object("quoteId", id, "records", records,
+                "pageNumber", pageNumber, "pageSize", pageSize,
+                "totalCount", totalCount, "hasMore", offset + records.size() < totalCount,
+                "snapshotRevision", Long.toString(snapshotRevision));
+    }
+
+    private static int historyPageInteger(JSONObject request, String field, int fallback, int maximum) {
+        if (!request.containsKey(field)) {
+            return fallback;
+        }
+        try {
+            int value = Integer.parseInt(request.getString(field));
+            if (value >= 1 && value <= maximum) {
+                return value;
+            }
+        } catch (NumberFormatException error) {
+            // 统一返回字段验证错误，而不是在 SQL 层报错。
+        }
+        throw ApiException.forField("1001", "VALIDATION_FAILED",
+                field + " must be an integer between 1 and " + maximum, field);
     }
 
     Object historySearch(Call c) throws Exception {
