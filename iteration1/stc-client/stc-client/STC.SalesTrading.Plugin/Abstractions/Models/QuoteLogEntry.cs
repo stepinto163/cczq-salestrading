@@ -27,8 +27,11 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         /// <summary>操作后的版本。</summary>
         public string Revision { get; set; }
 
-        /// <summary>操作人。</summary>
+        /// <summary>审计中的操作人主键，保留原值用于追溯。</summary>
         public string OperatorUserId { get; set; }
+
+        /// <summary>操作人的 STC 登录名；无法解析时明确显示未知用户。</summary>
+        public string OperatorUserName { get; set; }
 
         /// <summary>原因（refer/unrefer/delete 可携带）。</summary>
         public string Reason { get; set; }

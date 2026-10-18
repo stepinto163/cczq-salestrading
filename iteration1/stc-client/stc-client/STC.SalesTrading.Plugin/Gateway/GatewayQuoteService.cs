@@ -103,6 +103,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             {
                 throw new InvalidOperationException("服务端未返回有效的历史分页信息，请更新 common 和 QuoteSvr。");
             }
+            var operatorNames = UserNameMap.BuildLoginNames();
             return new QuoteLogPage
             {
                 PageNumber = data.PageNumber,
@@ -117,6 +118,7 @@ namespace STC.SalesTrading.Plugin.Gateway
                         Action = r.Action,
                         Revision = r.Revision,
                         OperatorUserId = r.OperatorUserId,
+                        OperatorUserName = UserNameMap.ResolveLoginName(r.OperatorUserId, operatorNames),
                         Reason = r.Reason,
                     })
                     .ToList()

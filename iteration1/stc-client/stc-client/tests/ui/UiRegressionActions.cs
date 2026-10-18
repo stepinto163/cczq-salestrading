@@ -105,6 +105,19 @@ namespace SalesTrading.UiTests
                     Require(pager.CurrentPage == 1 && pager.TotalPages == 1 && pager.TotalCount == expectedCount, "分页摘要错误");
                     Require(!previous.IsEnabled && !next.IsEnabled, "单页的翻页按钮应禁用");
                 });
+                var currentUser = STC.Common.Utils.LocalEnv.UserInfo;
+                var operatorColumn = grid.Columns.OfType<DataGridTextColumn>()
+                    .Single(column => Convert.ToString(column.Header) == "操作人");
+                grid.UpdateLayout();
+                var operatorCell = operatorColumn.GetCellContent(historyModel.Records[0]) as TextBlock;
+                Require(operatorCell != null && operatorCell.IsVisible, "操作人单元格未渲染");
+                await VerifyAsync(operatorCell, "操作人 · 显示本例操作账号的登录名 " + currentUser.UserName, () =>
+                {
+                    Require(((Binding)operatorColumn.Binding).Path.Path == "OperatorUserName", "操作人列仍绑定主键");
+                    Require(operatorCell.Text == currentUser.UserName, "操作人单元格未显示登录名");
+                    Require(historyModel.Records.All(record => record.OperatorUserId == currentUser.UserId), "本例历史操作人主键不符");
+                    Require(historyModel.Records.All(record => record.OperatorUserName == currentUser.UserName), "操作人未显示登录名");
+                });
                 var oldRecords = historyModel.Records;
                 var refresh = Descendants<Button>(historyWindow).Single(button => button.Command == historyModel.RefreshCommand);
                 await ClickAsync(refresh);
@@ -118,7 +131,7 @@ namespace SalesTrading.UiTests
                 {
                     quoteId, totalCount = historyModel.TotalCount, pageNumber = pager.CurrentPage,
                     totalPages = pager.TotalPages, previousEnabled = previous.IsEnabled,
-                    nextEnabled = next.IsEnabled, refreshReloaded = !ReferenceEquals(oldRecords, historyModel.Records)
+                    nextEnabled = next.IsEnabled, operatorUserName = historyModel.Records[0].OperatorUserName, refreshReloaded = !ReferenceEquals(oldRecords, historyModel.Records)
                 }).ToString());
                 var close = Descendants<Button>(historyWindow).Single(button => button.Command == null && !(button.Parent is StackPanel));
                 await ClickAsync(close);

@@ -237,6 +237,22 @@ namespace SalesTrading.IntegrationTests
             return null;
         }
 
+        private static Task QuoteHistoryOperatorNames()
+        {
+            var users = new[]
+            {
+                new STC.Common.Model.Admin.StcTbookUsers { Userid = "101", Username = "adrian", Name = "龚逸" },
+                new STC.Common.Model.Admin.StcTbookUsers { Userid = "202", Username = "lijc", Name = "李继存" }
+            };
+            var names = UserNameMap.BuildLoginNames(users, "303", "test2");
+            Equal("adrian", UserNameMap.ResolveLoginName("101", names), "operator uses login name rather than display name");
+            Equal("lijc", UserNameMap.ResolveLoginName("202", names), "other operator is not relabeled as current viewer");
+            Equal("test2", UserNameMap.ResolveLoginName("303", names), "current session supplements absent cache entry");
+            Equal("未知用户", UserNameMap.ResolveLoginName("404", names), "unknown numeric identity is not shown as a username");
+            Equal("未知用户", UserNameMap.ResolveLoginName(null, names), "missing identity is explicit");
+            return Task.CompletedTask;
+        }
+
         private static async Task QuoteHistoryPaging()
         {
             bool fail = false;
@@ -753,6 +769,7 @@ namespace SalesTrading.IntegrationTests
                 return Task.CompletedTask;
             });
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
+            await Run("quote-history-operator-login-names", QuoteHistoryOperatorNames);
             await Run("quote-history-numbered-paging-refresh-and-retry", QuoteHistoryPaging);
             await Run("quote-history-wpf-pagination-controls", QuoteHistoryWindowPaging);
             await Run("lifecycle-payload-excludes-edit-fields", LifecyclePayload);
