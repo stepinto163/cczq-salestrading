@@ -18,4 +18,13 @@ public class NotificationRecord extends ProtocolModel {
     public String readTime;
     public List<NotificationReason> reasons;
     public List<String> quoteIds;
+    /** 合并展示行中的独立触发实例；不能用合并行 ID 判断是否应弹窗。 */
+    public List<Trigger> triggers;
+
+    public static class Trigger extends ProtocolModel {
+        public String alertKey;
+        public String type;
+        public List<String> quoteIds;
+        public List<QuoteRecord> quotes;
+    }
 }

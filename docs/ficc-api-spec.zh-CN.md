@@ -330,11 +330,15 @@ read 一批 1–200 个 notificationIds，read=true 标记已读，false 恢复�
 | MY_BEST | 本人多笔报价并列最优，或买卖两侧分别最优 |
 | COUNTER_QUOTE | 本方一笔与另一归属人同券反方向一笔；关联两条 ID，当前不要求价格交叉 |
 
-普通原因可合并成一个通知，其 quoteIds 是关联集合的并集。WATCHLIST/FILTER_GROUP 原因携带 groupIds，MY_BEST 原因携带 quoteIds，对价原因用 ownQuoteId/otherQuoteId。内部 contentToken 由关联 quoteId/revision 集合计算；关联版本变化可生成新的 notificationId。对外可见记录会去掉内部 active/contentToken 字段，不能因 DTO 声明就依赖其必定返回。
+普通原因按用户和债券合并展示，`quoteIds` 是当前关联集合，并非本次变化集合。WATCHLIST/FILTER_GROUP 原因同时携带 `groupIds` 和命中的 `quoteIds`；MY_BEST 只在存在同券、同方向、同计价/收益率类型、同清算速度比较报价时成立。
 
-桌面报价提醒页按 **reasons 展开行**，不是按 quoteIds 展开；例如 3 个关联 quoteId、2 个 reason 会产生 2 行，共享 notificationId 和已读状态。弹窗按提醒类型合并，也不是一条 NotificationRecord 固定对应一个弹窗；当前每轮最多取 2 个新原因行。弹窗“查看”定位仍为占位提示，不能视为完整导航已实现。
+桌面每条 NotificationRecord 显示一行，非对价原因合并、对价保持独立。合并行的 `notificationId/alertKey` 会随成员集合变化，不能用它们判断是否应该弹窗。
 
-当前没有单独的“触发本次提醒的报价 ID”字段。触发事件与关联上下文的进一步拆分仍属待改进项，本文不将它描述为已实现的业务规则。
+新增 `triggers[]` 描述行内独立实例：`alertKey`、`type`、`quoteIds`、`quotes`。非对价实例键由账户、类型、单笔 quoteId/revision 生成；对价实例键包含双方 quoteId/revision。`quotes` 仅包含触发报价的公开摘要，不包含对手机构、联系人或备注；弹窗直接使用这些价格、数量和归属信息，不使用整券最优价替代。
+
+客户端首份快照/手动刷新只建立实例键基线；增量只对未见过且未读的键弹窗。撤销 A 后，未变化 B 的实例键不变，即使合并行 ID 变化也不重弹 B。相同版本重复事件及全局重算不重弹；新版本生成新实例。当前页签不可见时仍接收提醒，弹窗由用户关闭或查看，不自动超时消失。
+
+已读仍按 `notificationIds` 批量操作，但服务端同时保存其中每个独立实例的已读状态；合并行缩减时保留剩余实例的已读状态。新增独立实例则整行未读。升级兼容：原 ID/版本不变的已读行自动补齐实例已读记录，无需新增数据库表；客户端连接旧服务端缺少 `triggers` 时显示列表但不根据聚合 ID 猜测新弹窗，需配套部署 common、NotificationSvr 和客户端。
 
 <a id="views"></a>
 ## 8. Stream、View：订阅及分页

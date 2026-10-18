@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -9,6 +9,7 @@ using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Abstractions.Queries;
 using STC.SalesTrading.Plugin.Gateway.Contracts.Base;
 using STC.SalesTrading.Plugin.Gateway.Contracts.Notification;
+using STC.SalesTrading.Plugin.Gateway.Contracts.Quote;
 using STC.SalesTrading.Plugin.Gateway.Contracts.View;
 
 namespace STC.SalesTrading.Plugin.Gateway
@@ -365,7 +366,8 @@ namespace STC.SalesTrading.Plugin.Gateway
             }
 
             var slice = notifications.Skip((Math.Max(1, page) - 1) * Math.Max(1, pageSize)).Take(Math.Max(1, pageSize));
-            var rows = slice.Select(MapAlert).ToList();
+            var userNames = UserNameMap.Build();
+            var rows = slice.Select(record => MapAlert(record, userNames)).ToList();
             // 通知行本身不带估值/期限（决策 #3 显示空）；债券简称由 securityId 即本行已有，无需补取
             return rows;
         }
@@ -393,12 +395,14 @@ namespace STC.SalesTrading.Plugin.Gateway
         }
 
         /// <summary>NotificationRecord → AlertRow。报价摘要字段后端不携带（决策 #3 显示空）。</summary>
-        private static AlertRow MapAlert(NotificationRecord record)
+        private static AlertRow MapAlert(NotificationRecord record, Dictionary<string, string> userNames)
         {
             if (record == null) return null;
             return new AlertRow
             {
                 NotificationId = record.NotificationId,
+                Triggers = (record.Triggers ?? new List<NotificationTrigger>())
+                    .Select(trigger => MapTrigger(trigger, userNames)).ToList(),
                 Types = MapAlertTypes(record.Reasons),
                 SecurityId = record.SecurityId,
                 Content = record.Content,
@@ -406,6 +410,34 @@ namespace STC.SalesTrading.Plugin.Gateway
                 ReadTime = record.ReadTime,
                 UpdateTime = record.UpdateTime,
             };
+        }
+
+        private static AlertTrigger MapTrigger(NotificationTrigger trigger, Dictionary<string, string> userNames)
+        {
+            var quotes = trigger.Quotes ?? new List<QuoteRecord>();
+            var bid = quotes.FirstOrDefault(quote => quote.Side == "1");
+            var ofr = quotes.FirstOrDefault(quote => quote.Side == "2");
+            var source = bid ?? ofr;
+            return new AlertTrigger
+            {
+                AlertKey = trigger.AlertKey,
+                Type = MapAlertTypes(new List<NotificationReason> { new NotificationReason { Type = trigger.Type } })[0],
+                QuoteIds = trigger.QuoteIds,
+                Bid = GatewayModelMapper.ParseDecimal(bid?.Price),
+                Ofr = GatewayModelMapper.ParseDecimal(ofr?.Price),
+                VolBid = NotificationVolume(bid),
+                VolOfr = NotificationVolume(ofr),
+                TraderBid = Lookup(userNames, bid?.OwnerUserId),
+                TraderOfr = Lookup(userNames, ofr?.OwnerUserId),
+                PriceTypeMark = source == null ? null : source.QuoteType == "2" ? "净"
+                    : source.QuoteType == "3" ? "全" : source.YieldType == "2" ? "行" : "到"
+            };
+        }
+
+        private static decimal? NotificationVolume(QuoteRecord quote)
+        {
+            var quantity = GatewayModelMapper.ParseDecimal(quote?.Quantity);
+            return quote?.QuantityUnit == "YI" ? quantity * 10000m : quantity;
         }
 
         /// <summary>reasons[].type 四类映射；同券非对价原因后端已合并，一行多类型取去重集合。</summary>

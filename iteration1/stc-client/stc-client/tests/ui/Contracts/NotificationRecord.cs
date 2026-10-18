@@ -4,6 +4,16 @@ using Newtonsoft.Json;
 namespace SalesTrading.UiTests.Contracts
 {
     /// <summary>NotificationRecord</summary>
+    public class NotificationTrigger : ProtocolModel
+    {
+        [JsonProperty("alertKey")]
+        public string AlertKey { get; set; }
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        [JsonProperty("quoteIds")]
+        public List<string> QuoteIds { get; set; }
+    }
+
     public class NotificationRecord : ProtocolModel
     {
         [JsonProperty("notificationId")]
@@ -45,5 +55,7 @@ namespace SalesTrading.UiTests.Contracts
         [JsonProperty("quoteIds")]
         public List<string> QuoteIds { get; set; }
 
+        [JsonProperty("triggers")]
+        public List<NotificationTrigger> Triggers { get; set; }
     }
 }

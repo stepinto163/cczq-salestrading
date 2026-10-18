@@ -271,13 +271,24 @@ final class NotificationService {
                         .toJavaList(JSONObject.class)) {
             String quoteId = entry.getString("MDEntryID").substring("FICC:".length());
             if (!visibleIds.contains(quoteId)) continue;
-            String side = entry.getString("MDEntryType");
+            JSONObject candidate = quotes.get(quoteId);
+            String bucket = comparisonBucket(candidate);
+            long comparableCount = visible.stream()
+                    .filter(quote -> bucket.equals(comparisonBucket(quote))).count();
+            if (comparableCount < 2) continue;
+            String side = bucket;
             BigDecimal px = new BigDecimal(entry.getString("MDEntryPx"));
             first.putIfAbsent(side, px);
             if (first.get(side).compareTo(px) == 0)
                 ids.add(entry.getString("MDEntryID").substring("FICC:".length()));
         }
         return ids;
+    }
+
+    /** 不把单条报价或不同方向、计价方式、清算速度的报价当作最优比较对象。 */
+    private static String comparisonBucket(JSONObject quote) {
+        return JsonUtils.toJson(Arrays.asList(quote.getString("side"), quote.getString("quoteType"),
+                quote.getString("yieldType"), quote.getString("settlType")));
     }
 
     Set<String> interestedUsers() {
@@ -317,6 +328,7 @@ final class NotificationService {
                 for (String kind : Arrays.asList("watchlist", "filterGroup"))
                     if (pref.getBooleanValue(kind + "Enabled")) {
                         JSONArray matched = new JSONArray();
+                        Set<String> reasonQuotes = new TreeSet<>();
                         for (JSONObject group : marketSettings.values()) {
                             String key = kind + "Id";
                             if (!group.containsKey(key)
@@ -347,6 +359,7 @@ final class NotificationService {
                                                         JsonUtils.object("conditions", cs));
                                 if (match) {
                                     links.add(q.getString("quoteId"));
+                                    reasonQuotes.add(q.getString("quoteId"));
                                     hit = true;
                                 }
                             }
@@ -359,6 +372,8 @@ final class NotificationService {
                                             kind.equals("watchlist") ? "WATCHLIST" : "FILTER_GROUP",
                                             "groupIds",
                                             matched,
+                                            "quoteIds",
+                                            new ArrayList<>(reasonQuotes),
                                             "text",
                                             kind.equals("watchlist") ? "命中关注债券分组" : "命中行情筛选分组"));
                     }
@@ -426,19 +441,22 @@ final class NotificationService {
                         && Objects.equals(
                                 candidate.getString("contentToken"), prev.getString("contentToken"))
                         && JsonUtils.canonicalHash(candidate.get("reasons"))
-                                .equals(JsonUtils.canonicalHash(prev.get("reasons")))) continue;
+                                .equals(JsonUtils.canonicalHash(prev.get("reasons")))
+                        && JsonUtils.canonicalHash(candidate.get("triggers"))
+                                .equals(JsonUtils.canonicalHash(prev.get("triggers")))) continue;
                 candidate.put(
                         "createTime",
                         prev == null ? BusinessClock.currentTime() : prev.getString("createTime"));
                 candidate.put("updateTime", BusinessClock.currentTime());
                 candidate.put("active", true);
-                candidate.put(
-                        "readTime",
-                        store.scalar(
-                                "SELECT read_time FROM notification_reads WHERE id=? AND"
-                                        + " content_token=?",
-                                entry.getKey(),
-                                candidate.getString("contentToken")));
+                if (prev != null && prev.getString("readTime") != null && prev.getJSONArray("triggers") == null) {
+                    for (JSONObject trigger : candidate.getJSONArray("triggers").toJavaList(JSONObject.class)) {
+                        String triggerKey = trigger.getString("alertKey");
+                        store.update("INSERT INTO notification_reads VALUES (?,?,?) ON CONFLICT(id,content_token) DO NOTHING",
+                                triggerKey, triggerKey, prev.getString("readTime"));
+                    }
+                }
+                candidate.put("readTime", triggerReadTime(candidate));
                 save(candidate);
                 changes.put(entry.getKey(), candidate);
                 events.add(event("NOTIFICATION", "UPSERT", entry.getKey(), visible(candidate)));
@@ -501,7 +519,57 @@ final class NotificationService {
                         "contentToken",
                         token,
                         "alertKey",
-                        id + ":" + token));
+                        id + ":" + token,
+                        "triggers",
+                        notificationTriggers(user, reasons, ids)));
+    }
+
+    /** 合并行 ID 仅用于列表；弹窗按类型和具体来源报价版本去重，移除同券其他报价不产生新实例。 */
+    private JSONArray notificationTriggers(String user, JSONArray reasons, Set<String> linkedIds) {
+        JSONArray triggers = new JSONArray();
+        for (JSONObject reason : reasons.toJavaList(JSONObject.class)) {
+            String type = reason.getString("type");
+            if ("COUNTER_QUOTE".equals(type)) {
+                triggers.add(notificationTrigger(user, type, linkedIds));
+            } else {
+                for (String quoteId : reason.getJSONArray("quoteIds").toJavaList(String.class)) {
+                    triggers.add(notificationTrigger(user, type, Collections.singleton(quoteId)));
+                }
+            }
+        }
+        return triggers;
+    }
+
+    private JSONObject notificationTrigger(String user, String type, Set<String> quoteIds) {
+        Map<String, String> versions = new TreeMap<>();
+        for (String quoteId : quoteIds) {
+            versions.put(quoteId, quotes.get(quoteId).getString("revision"));
+        }
+        JSONArray snapshots = new JSONArray();
+        for (String quoteId : versions.keySet()) {
+            JSONObject source = quotes.get(quoteId);
+            JSONObject snapshot = new JSONObject();
+            // 弹窗只携带触发报价的公共字段；不包含对手机构、联系人或备注。
+            for (String field : Arrays.asList("quoteId", "revision", "securityId", "ownerUserId", "side",
+                    "quoteType", "yieldType", "price", "quantity", "quantityUnit", "settlType", "updateTime")) {
+                snapshot.put(field, source.get(field));
+            }
+            snapshots.add(snapshot);
+        }
+        return JsonUtils.object("alertKey", "A-" + JsonUtils.canonicalHash(Arrays.asList(user, type, versions)),
+                "type", type, "quoteIds", new ArrayList<>(versions.keySet()), "quotes", snapshots);
+    }
+
+    /** 已读归属于独立实例，合并行缩减成员时不把剩余已读报价变回未读。 */
+    private String triggerReadTime(JSONObject notification) throws Exception {
+        String latest = null;
+        for (JSONObject trigger : notification.getJSONArray("triggers").toJavaList(JSONObject.class)) {
+            String key = trigger.getString("alertKey");
+            String readTime = store.scalar("SELECT read_time FROM notification_reads WHERE id=? AND content_token=?", key, key);
+            if (readTime == null) return null;
+            if (latest == null || readTime.compareTo(latest) > 0) latest = readTime;
+        }
+        return latest;
     }
 
     JSONObject visible(JSONObject n) {
@@ -768,6 +836,14 @@ final class NotificationService {
                         id,
                         n.getString("contentToken"),
                         time);
+                JSONArray triggers = n.getJSONArray("triggers");
+                if (triggers != null) {
+                    for (JSONObject trigger : triggers.toJavaList(JSONObject.class)) {
+                        String key = trigger.getString("alertKey");
+                        store.update("INSERT INTO notification_reads VALUES (?,?,?) ON CONFLICT(id,content_token)"
+                                + " DO UPDATE SET read_time=excluded.read_time", key, key, time);
+                    }
+                }
                 changed.put(id, n);
                 events.add(event("NOTIFICATION", "UPSERT", id, visible(n)));
                 results.add(

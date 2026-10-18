@@ -1137,7 +1137,7 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 <a id="notificationrecord"></a>
 ### NotificationRecord
 
-[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/NotificationRecord.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Ficc/Protocol/NotificationRecord.cs)；继承 [ProtocolModel](#protocolmodel) 的字段。
+[Java 定义](../iteration1/cgws-ficc-saletrading-common/src/main/java/ficc/api/NotificationRecord.java) · [C# 定义](../iteration1/stc-client/stc-client/STC.SalesTrading.Plugin/Gateway/Contracts/Notification/NotificationRecord.cs)；继承 [ProtocolModel](#protocolmodel) 的字段。
 
 | 字段 | 声明类型 | 说明 |
 |---|---|---|
@@ -1154,6 +1154,9 @@ Parser 的完整旧响应对象还包含 intentionId、clordid、各类标志及
 | `readTime` | `String` | 已读时间，未读为 null |
 | `reasons` | `List<NotificationReason>` | 提醒原因数组 |
 | `quoteIds` | `List<String>` | 关联报价 ID |
+| `triggers` | `List<Trigger>` | 独立提醒实例；弹窗去重使用此处 alertKey，不用合并行 ID |
+
+`Trigger` 字段：`alertKey: String`、`type: String`、`quoteIds: List<String>`、`quotes: List<QuoteRecord>`。quotes 只包含 quoteId、revision、securityId、ownerUserId、side、quoteType、yieldType、price、quantity、quantityUnit、settlType、updateTime，不包含机构、联系人及备注。
 
 ## 视图与推送
 

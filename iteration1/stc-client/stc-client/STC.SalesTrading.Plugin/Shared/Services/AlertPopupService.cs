@@ -11,13 +11,12 @@ namespace STC.SalesTrading.Plugin.Shared.Services
 {
     /// <summary>
     /// 右下角提醒弹窗服务（对应原型 alert-popup：**按提醒类型分组**，头部件显示「类型 (新增数)」与「查看/关闭」，
-    /// 正文最多 3 条，8s 自动消失）。
+    /// 正文最多 3 条，由用户查看或关闭）。
     /// 独立无边框窗口定位在【主窗口所在屏幕】的工作区右下角，精确停靠任务栏上方、多屏跟随；
     /// 队列空时自动隐藏；任意线程可 Show，内部调度到 UI 线程。
     /// </summary>
     public static class AlertPopupService
     {
-        private const int DurationMs = 8000;
 
         /// <summary>当前弹窗分组队列（AlertPopupWindow 绑定）。</summary>
         public static ObservableCollection<AlertPopupGroup> Groups { get; } = new ObservableCollection<AlertPopupGroup>();
@@ -59,9 +58,6 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                 group = new AlertPopupGroup(item.TypeLabel, item.AlertType);
                 group.PropertyChanged += OnGroupChanged;
                 Groups.Insert(0, group);
-                // 到期 Timer 自行 Dispose（对齐 ToastService 写法；不 Dispose 会积攒终了的 Timer 对象）
-                Timer expiry = null;
-                expiry = new Timer(_ => { expiry.Dispose(); OnExpired(group); }, null, DurationMs, Timeout.Infinite);
             }
 
             group.Append(item);
@@ -75,17 +71,6 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             group.PropertyChanged -= OnGroupChanged;
             Groups.Remove(group);
             UpdateWindow();
-        }
-
-        private static void OnExpired(AlertPopupGroup group)
-        {
-            var dispatcher = Application.Current?.Dispatcher;
-            if (dispatcher == null) return;
-
-            dispatcher.BeginInvoke(new Action(() =>
-            {
-                group.IsClosed = true;
-            }));
         }
 
         private static void UpdateWindow()

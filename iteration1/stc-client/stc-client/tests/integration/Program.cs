@@ -237,6 +237,29 @@ namespace SalesTrading.IntegrationTests
             return null;
         }
 
+        private static Task NotificationTriggerIdentity()
+        {
+            var tracker = new AlertTriggerTracker();
+            Func<string, string[], AlertRow> row = (id, keys) => new AlertRow
+            {
+                NotificationId = id,
+                Triggers = keys.Select(key => new AlertTrigger { AlertKey = key, Type = AlertType.FavoriteBond }).ToList()
+            };
+            Equal(0, tracker.Observe(new[] { row("merged-A", new[] { "A1" }) }, true).Count, "first snapshot never pops even if push races login");
+            Equal(1, tracker.Observe(new[] { row("merged-AB", new[] { "A1", "B1" }) }, true).Count, "adding B pops only B");
+            Equal(0, tracker.Observe(new[] { row("merged-AB", new[] { "A1", "B1" }) }, true).Count, "duplicate update does not pop");
+            Equal(0, tracker.Observe(new[] { row("merged-B", new[] { "B1" }) }, true).Count, "removing A must not re-pop unchanged B");
+            var changed = tracker.Observe(new[] { row("merged-B2", new[] { "B2" }) }, true);
+            Equal("B2", changed.Single().Value.AlertKey, "new version pops exactly once");
+            Equal(0, tracker.Observe(new[] { row("refreshed", new[] { "B3" }) }, false).Count, "manual refresh establishes baseline only");
+            Equal(0, tracker.Observe(new[] { row("refreshed", new[] { "B3" }) }, true).Count, "refresh baseline prevents delayed popup");
+            var read = row("read", new[] { "B4" });
+            read.ReadTime = DateTime.UtcNow;
+            Equal(0, tracker.Observe(new[] { read }, true).Count, "read notification does not re-pop");
+            Equal(0, tracker.Observe(new[] { new AlertRow { NotificationId = "old-server" } }, true).Count, "missing trigger metadata does not guess from aggregate identity");
+            return Task.CompletedTask;
+        }
+
         private static Task QuoteHistoryOperatorNames()
         {
             var users = new[]
@@ -769,6 +792,7 @@ namespace SalesTrading.IntegrationTests
                 return Task.CompletedTask;
             });
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
+            await Run("notification-trigger-identity-and-snapshot", NotificationTriggerIdentity);
             await Run("quote-history-operator-login-names", QuoteHistoryOperatorNames);
             await Run("quote-history-numbered-paging-refresh-and-retry", QuoteHistoryPaging);
             await Run("quote-history-wpf-pagination-controls", QuoteHistoryWindowPaging);

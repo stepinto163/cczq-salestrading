@@ -136,6 +136,7 @@ namespace SalesTrading.UiTests
             { "parse.settlement", new[] { "row", "settlement", "dayOffset", "priceType" } },
             { "notification.prepare", new[] { "securityId" } },
             { "notification.read", new string[0] },
+            { "notification.lifecycle", new[] { "securityId" } },
             { "qtrade.negotiation", new string[0] },
             { "qtrade.business-key", new string[0] }
         };
@@ -179,6 +180,7 @@ namespace SalesTrading.UiTests
             { "parse.settlement", "核对识别交易日期、清算和计价方式" },
             { "notification.prepare", "准备独立关注分组（自动恢复偏好）" },
             { "notification.read", "核对本例提醒推送并通过界面标记已读" },
+            { "notification.lifecycle", "同券报价变更提醒：新增、修改、撤销、刷新不误弹" },
             { "qtrade.negotiation", "QT 双边提案经 GW 入库、UI 确认及行情隔离" },
             { "qtrade.business-key", "QT 不同 NegotiationID 按完整业务键确认替换" }
         };

@@ -9,10 +9,27 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
     /// <para>一行 = 一条通知。同券的多种非对价原因后端已合并为一条、对价独立成条，
     /// 因此不必再按 reason 拆行；一条含多个类型时 UI 显示首类并在 tooltip 给出全量。</para>
     /// </summary>
+    public sealed class AlertTrigger
+    {
+        public string AlertKey { get; set; }
+        public AlertType Type { get; set; }
+        public IReadOnlyList<string> QuoteIds { get; set; }
+        public decimal? Bid { get; set; }
+        public decimal? Ofr { get; set; }
+        public decimal? VolBid { get; set; }
+        public decimal? VolOfr { get; set; }
+        public string TraderBid { get; set; }
+        public string TraderOfr { get; set; }
+        public string PriceTypeMark { get; set; }
+    }
+
     public class AlertRow
     {
         /// <summary>通知 Id，标记已读的操作主键（notificationId）。</summary>
         public string NotificationId { get; set; }
+
+        /// <summary>独立触发实例；合并行成员变化不会改变未变报价的实例键。</summary>
+        public IReadOnlyList<AlertTrigger> Triggers { get; set; }
 
         /// <summary>本通知包含的提醒类型集合（reasons[].type 去重）。</summary>
         public IReadOnlyList<AlertType> Types { get; set; }

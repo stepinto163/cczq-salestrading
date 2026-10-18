@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -177,15 +177,12 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             _ = LoadAsync();
         }
 
-        /// <summary>已弹过/已见过的提醒 Id（横幅只对推送新到达的提醒弹，历史不弹）。</summary>
-        private readonly HashSet<string> _seenNotificationIds = new HashSet<string>();
-
-        /// <summary>推送触发本轮刷新时新增的提醒行（LoadAsync 内填充，供弹窗）。</summary>
-        private List<AlertRow> _freshRows;
+        /// <summary>按独立报价版本实例建立基线并去重，不使用合并行 ID。</summary>
+        private readonly AlertTriggerTracker triggerTracker = new AlertTriggerTracker();
 
         private async System.Threading.Tasks.Task LoadAsync(bool silent = false)
         {
-            var previousIds = silent ? new HashSet<string>(_seenNotificationIds) : null;
+            List<KeyValuePair<AlertRow, AlertTrigger>> freshTriggers = null;
             await QueryFlow.RunAsync(_loadCoordinator, this, async lease =>
             {
                 var rows = await _marketCenterService.LoadAlertRowsAsync(productFilter, Page, PageSize, lease.Token);
@@ -207,29 +204,26 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 QueryId = null;
                 IsPartial = false;
 
-                foreach (var row in rows) _seenNotificationIds.Add(row.NotificationId);
-                _freshRows = silent
-                    ? rows.Where(r => !previousIds.Contains(r.NotificationId)).ToList()
-                    : null;
+                freshTriggers = triggerTracker.Observe(rows, silent);
                 return Rows.Count > 0;
             }, Title, silent);
             // 弹窗在 QueryFlow 结束后执行：静默轮只弹新增，用户操作轮只记入不弹
-            PushAlertPopups(_freshRows);
-            _freshRows = null;
+            PushAlertPopups(freshTriggers);
         }
 
         /// <summary>
         /// 加载后推送右下角提醒弹窗 + nav 角标（原型 0910 alert-popup 语义）：
         /// 同类型提醒并入同一个弹窗分组（头部显示类型 + 新增数，正文最多 3 条）。
         /// </summary>
-        private void PushAlertPopups(List<AlertRow> freshOnly)
+        private void PushAlertPopups(List<KeyValuePair<AlertRow, AlertTrigger>> freshOnly)
         {
-            IEnumerable<AlertRow> popupSource = freshOnly ?? Enumerable.Empty<AlertRow>();
-            foreach (var a in popupSource)
+            var popupSource = freshOnly ?? new List<KeyValuePair<AlertRow, AlertTrigger>>();
+            foreach (var source in popupSource)
             {
-                var type = a.Types != null && a.Types.Count > 0 ? a.Types[0] : default(AlertType);
+                var a = source.Key;
+                var type = source.Value.Type;
                 var item = new STC.SalesTrading.Plugin.Shared.ViewModel.AlertPopupItem(
-                    a.NotificationId, TypeLabel(type), type,
+                    source.Value.AlertKey, TypeLabel(type), type,
                     a.SecurityId ?? string.Empty, a.SecurityName ?? string.Empty,
                     a.UpdateTime?.ToString("HH:mm") ?? string.Empty,
                     () =>
@@ -239,16 +233,17 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                         _ = _marketCenterService.MarkAlertReadAsync(a.NotificationId, System.Threading.CancellationToken.None);
                     })
                 {
-                    BidTrader = a.ContactName,
-                    BidVolume = a.VolBid?.ToString("0"),
-                    BidPrice = a.Bid?.ToString("0.0000") ?? "—",
-                    OfrPrice = a.Ofr?.ToString("0.0000") ?? "—",
-                    OfrVolume = a.VolOfr?.ToString("0"),
-                    OfrTrader = a.ContactName,
+                    BidTrader = source.Value.TraderBid,
+                    BidVolume = source.Value.VolBid?.ToString("0"),
+                    BidPrice = source.Value.Bid?.ToString("0.0000") ?? "—",
+                    OfrPrice = source.Value.Ofr?.ToString("0.0000") ?? "—",
+                    OfrVolume = source.Value.VolOfr?.ToString("0"),
+                    OfrTrader = source.Value.TraderOfr,
+                    PriceTypeMark = source.Value.PriceTypeMark,
                 };
                 STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Show(item);
             }
-            EventAggregator.Publish(new AlertCountChangedMessage(Rows.Count));
+            EventAggregator.Publish(new AlertCountChangedMessage(Rows.Count(row => !row.IsRead)));
         }
 
         private static string TypeLabel(AlertType type)
@@ -277,15 +272,10 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         /// <summary>提醒域推送到达（notification 流 views.changed）：静默刷新列表，新到达的提醒弹横幅。
         /// 推送在 netapi 回调线程——CollectionView 拒绝跨线程改源集合，必须分流到 UI 线程。
-        /// 不可见看板只置脏，激活时补静默刷新。</summary>
+        /// 提醒在其他页签也持续接收，避免切回时才补弹。</summary>
         private void OnAlertsChanged(Shared.Messages.AlertsChangedMessage message)
         {
-            if (!_boardActive)
-            {
-                _dirty = true;
-                return;
-            }
-
+            // 提醒是账户级事件；停留其他页时也应接收新提醒，而不是切回本页才补弹。
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
             if (dispatcher != null && !dispatcher.CheckAccess())
             {
@@ -295,20 +285,9 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             _ = LoadAsync(silent: true);
         }
 
-        // ---- 子页激活态（IBoardLifecycle）：KeepAlive 常驻，不可见时推送置脏不查询 ----
-
-        private bool _boardActive;
-        private bool _dirty;
-
         public void SetBoardActive(bool active)
         {
-            var was = _boardActive;
-            _boardActive = active;
-            if (active && !was && _dirty)
-            {
-                _dirty = false;
-                _ = LoadAsync(silent: true);
-            }
+            // 账户级提醒持续处理；页签切换不重放已经见过的实例。
         }
 
         /// <summary>复制提醒报价文本。</summary>

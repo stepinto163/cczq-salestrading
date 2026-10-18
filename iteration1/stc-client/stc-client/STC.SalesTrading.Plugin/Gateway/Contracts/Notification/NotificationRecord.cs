@@ -6,6 +6,18 @@ namespace STC.SalesTrading.Plugin.Gateway.Contracts.Notification
 {
 
     /// <summary>通知（S02 推送、H26/H27/H29 应答）。同券非对价原因合并一条、对价独立。</summary>
+    public class NotificationTrigger
+    {
+        [JsonProperty("alertKey")]
+        public string AlertKey { get; set; }
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        [JsonProperty("quoteIds")]
+        public List<string> QuoteIds { get; set; }
+        [JsonProperty("quotes")]
+        public List<STC.SalesTrading.Plugin.Gateway.Contracts.Quote.QuoteRecord> Quotes { get; set; }
+    }
+
     public class NotificationRecord
     {
         [JsonProperty("notificationId")]
@@ -44,6 +56,9 @@ namespace STC.SalesTrading.Plugin.Gateway.Contracts.Notification
         public List<string> QuoteIds { get; set; }
 
         /// <summary>null 表示未读。</summary>
+        [JsonProperty("triggers")]
+        public List<NotificationTrigger> Triggers { get; set; }
+
         [JsonProperty("readTime")]
         public DateTime? ReadTime { get; set; }
 
