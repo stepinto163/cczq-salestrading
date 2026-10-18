@@ -195,6 +195,12 @@ namespace STC.SalesTrading.Plugin.Gateway
             if (handler != null) handler();
         }
 
+        /// <summary>账户开关改变后下次查询取服务端新快照，不复用旧开关的投影。</summary>
+        internal void InvalidatePreferences()
+        {
+            lock (sync) filterSignature = null;
+        }
+
         public async Task CloseAsync()
         {
             string current;
@@ -272,10 +278,6 @@ namespace STC.SalesTrading.Plugin.Gateway
                         rowsById[id] = row;
                         firstPageChanged = true;
                     }
-                }
-                if (batch.Preference != null)
-                {
-                    // 偏好变化暂无 UI 消费；进推送即视为变化信号由上层处理
                 }
                 if (totalCount >= 0) TotalCount = totalCount;
                 RebuildOrdered();

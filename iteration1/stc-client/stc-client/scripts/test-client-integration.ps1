@@ -17,6 +17,8 @@ foreach ($name in @('PresentationFramework', 'PresentationCore', 'WindowsBase', 
 $testExe = Join-Path $binaryRoot 'SalesTrading.IntegrationTests.exe'
 & $compiler /nologo /target:exe /debug /langversion:latest "/out:$testExe" $references "$clientRoot/tests/integration/Program.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Integration test compilation failed.' }
+# 与实际客户端使用相同程序集绑定，避免测试进程加载不同版本的框架依赖。
+Copy-Item -LiteralPath (Join-Path $buildRoot 'STC.exe.config') -Destination ($testExe + '.config') -Force
 $stdout = Join-Path $buildRoot 'integration-tests.log'
 $stderr = Join-Path $buildRoot 'integration-tests-error.log'
 # 功能测试独立进程，固定 30 秒看门狗；不是性能压力测试。

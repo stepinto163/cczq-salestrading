@@ -72,7 +72,7 @@ namespace SalesTrading.UiTests
         public async Task<bool> RunAsync(IEnumerable<CaseDefinition> selected, string configFile, string user, string password, string securityId, string output)
         {
             List<CaseDefinition> cases = selected.ToList();
-            if (cases.Any(item => item.Steps.Any(step => step.Action == "realtime.lifecycle"))
+            if (cases.Any(item => item.Steps.Any(step => step.Action == "realtime.lifecycle" || step.Action == "realtime.notification-switch"))
                 && (!AdvancedMode || string.IsNullOrWhiteSpace(ObserverUser) || string.IsNullOrEmpty(ObserverPassword)
                     || string.Equals(user, ObserverUser, StringComparison.OrdinalIgnoreCase)))
             {
@@ -143,7 +143,7 @@ namespace SalesTrading.UiTests
                             start.EnvironmentVariables["STC_UI_INTAKE_TOKEN"] = QTradeTestConfiguration.LoadToken(
                                 configFile, Environment.GetEnvironmentVariable("ATS_ROOT"));
                         }
-                        using (ObserverSession observer = definition.Steps.Any(step => step.Action == "realtime.lifecycle")
+                        using (ObserverSession observer = definition.Steps.Any(step => step.Action == "realtime.lifecycle" || step.Action == "realtime.notification-switch")
                             ? new ObserverSession(runtime, caseFile, CurrentDirectory, ObserverUser, ObserverPassword, securityId) : null)
                         using (StreamWriter console = new StreamWriter(Path.Combine(CurrentDirectory, "console.log"), false, Encoding.UTF8))
                         using (Process process = new Process { StartInfo = start })

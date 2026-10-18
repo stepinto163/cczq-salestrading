@@ -689,6 +689,73 @@ namespace SalesTrading.IntegrationTests
             }
         }
 
+        private static Task NotificationPreferenceControls()
+        {
+            Exception failure = null;
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    bool reject = false;
+                    bool watchlist = true;
+                    string revision = "1";
+                    JObject lastSave = null;
+                    var gateway = new ControlledGateway
+                    {
+                        Respond = request =>
+                        {
+                            if (request.Topic == GatewayTopics.NotificationPreferenceSave)
+                            {
+                                lastSave = JObject.Parse((string)request.Payload);
+                                if (reject) return Task.FromResult("{\"Code\":\"1009\",\"Msg\":\"save rejected\"}");
+                                watchlist = (bool)lastSave["watchlistEnabled"];
+                                revision = "2";
+                            }
+                            if (request.Topic == GatewayTopics.NotificationPreferenceGet || request.Topic == GatewayTopics.NotificationPreferenceSave)
+                            {
+                                return Task.FromResult(Reply(new { preference = new
+                                {
+                                    watchlistEnabled = watchlist, filterGroupEnabled = false,
+                                    counterQuoteEnabled = true, myBestEnabled = false, revision
+                                } }));
+                            }
+                            if (request.Topic == GatewayTopics.NotificationViewOpen)
+                                return Task.FromResult(Reply(new { streamId = "s", sequence = "1", notifications = new object[0] }));
+                            return Task.FromResult(Reply(new StreamOpenData { StreamId = "s", PushTopic = "push" }));
+                        }
+                    };
+                    using (var service = new GatewayMarketCenterService(new GatewayRequester(gateway)))
+                    using (var model = new STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel.BoardAlertViewModel(service, null, null))
+                    {
+                        Equal(true, model.CanChangePreferences, "settings initialized before interaction");
+                        Equal(true, model.ShowFavorite, "loaded saved watchlist switch");
+                        Equal(false, model.ShowFilterGroup, "loaded saved filter switch");
+                        Equal(true, model.ShowPriceMatch, "loaded saved counter switch");
+                        model.ShowFavorite = false;
+                        Equal(false, (bool)lastSave["watchlistEnabled"], "false serialized explicitly");
+                        Equal(true, (bool)lastSave["counterQuoteEnabled"], "other flags preserved");
+                        Equal("1", (string)lastSave["expectedRevision"], "optimistic concurrency revision");
+                        Equal(false, model.ShowFavorite, "successful save applied: " + model.PreferenceError);
+                        reject = true;
+                        model.ShowFavorite = true;
+                        Equal(false, model.ShowFavorite, "rejected save rolls back checkbox");
+                        Equal("2", (string)lastSave["expectedRevision"], "next save uses committed revision");
+                        Equal(true, model.PreferenceError.Contains("save rejected"), "failure visible to user");
+                        Equal(true, model.CanChangePreferences, "failure does not permanently disable controls");
+                    }
+                }
+                catch (Exception error)
+                {
+                    failure = error;
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+            if (failure != null) throw new Exception("Reminder preferences", failure);
+            return Task.CompletedTask;
+        }
+
         private static int Main()
         {
             Execute().GetAwaiter().GetResult();
@@ -805,6 +872,7 @@ namespace SalesTrading.IntegrationTests
             await Run("pending-toolbar-selected-rows-only", PendingToolbarSelection);
             await Run("management-scope-refresh-pagination", ManagementPageAndRefresh);
             await Run("notification-read-rejection-keeps-unread", NotificationReadFailure);
+            await Run("notification-preference-load-save-rollback", NotificationPreferenceControls);
             await Run("crm-batched-institution-metadata", CrmInstitutionMetadata);
             await Run("group-stale-editor-preserves-original-revision", async () =>
             {

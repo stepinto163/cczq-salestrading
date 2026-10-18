@@ -40,6 +40,11 @@ namespace STC.SalesTrading.Plugin.Abstractions
         /// <summary>标记提醒已读（后端 ficc.notification.read；弹窗"查看"与提醒页工具栏上报）。</summary>
         Task MarkAlertReadAsync(string notificationId, CancellationToken ct);
 
+        /// <summary>读取及保存账户提醒开关；保存必须携带读取到的版本。</summary>
+        Task<AlertPreferences> LoadAlertPreferencesAsync(CancellationToken ct);
+        Task<AlertPreferences> SaveAlertPreferencesAsync(AlertPreferences preferences, CancellationToken ct);
+        event Action<AlertPreferences> AlertPreferencesChanged;
+
         /// <summary>最近一轮推送实际变更的报价 Id（全部页增量闪烁判定）。</summary>
         IReadOnlyList<string> SnapshotTouchedQuoteIds();
 

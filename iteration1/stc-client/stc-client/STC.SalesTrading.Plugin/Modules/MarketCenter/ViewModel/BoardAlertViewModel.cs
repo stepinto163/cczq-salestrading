@@ -20,9 +20,10 @@ using System.Windows.Data;
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 {
     /// <summary>
-    /// 报价提醒 VM：23 列提醒表 + 4 开关（关注债券/筛选分组/对价提醒/我的最优报价）+ 右下角弹窗推送（待接）。
+    /// 报价提醒 VM：23 列提醒表 + 4 开关（关注债券/筛选分组/对价提醒/我的最优报价）+ 账户开关持久化与右下角弹窗推送。
     /// </summary>
-    public partial class BoardAlertViewModel : ObservableObject, IDisposable, IQueryLoadContext, IBoardLifecycle    {
+    public partial class BoardAlertViewModel : ObservableObject, IDisposable, IQueryLoadContext, IBoardLifecycle
+    {
         private readonly IMarketCenterService _marketCenterService;
         private readonly IQuoteService _quoteService;
         private readonly IQuoteMgmtService _mgmtService;
@@ -40,7 +41,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                    .Add("pair", "对价: 0", "BidDeepBrush", "#D29922");
 
             View = CollectionViewSource.GetDefaultView(Rows);
-            View.Filter = FilterRow;
+            _marketCenterService.AlertPreferencesChanged += OnPreferencesChanged;
 
             EventAggregator.Subscribe<DataSourceResetMessage>(this, OnDataSourceReset);
             EventAggregator.Subscribe<Shared.Messages.AlertsChangedMessage>(this, OnAlertsChanged);
@@ -82,11 +83,11 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             OnPropertyChanged(nameof(IsEmpty));
         }
 
-                /// <summary>当前选中行（驱动右侧债券详情面板，行类型随子表而异）。</summary>
+        /// <summary>当前选中行（驱动右侧债券详情面板，行类型随子表而异）。</summary>
         [ObservableProperty]
         private object _selectedRow;
 
-[ObservableProperty]
+        [ObservableProperty]
         private bool _showFavorite;
 
         [ObservableProperty]
@@ -98,21 +99,145 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         [ObservableProperty]
         private bool _showBestQuote;
 
-        partial void OnShowFavoriteChanged(bool value) { View.Refresh(); }
-        partial void OnShowFilterGroupChanged(bool value) { View.Refresh(); }
-        partial void OnShowPriceMatchChanged(bool value) { View.Refresh(); }
-        partial void OnShowBestQuoteChanged(bool value) { View.Refresh(); }
+        private AlertPreferences savedPreferences;
+        private bool applyingPreferences;
+        private bool disposed;
+        private System.Threading.Tasks.Task preferenceLoad;
 
-        private bool FilterRow(object o)
+        [ObservableProperty]
+        private bool _preferencesBusy;
+
+        [ObservableProperty]
+        private string _preferenceError;
+
+        public bool CanChangePreferences => savedPreferences != null && !PreferencesBusy;
+
+        partial void OnPreferencesBusyChanged(bool value)
         {
-            var r = (AlertRow)o;
-            var anyFilter = ShowFavorite || ShowFilterGroup || ShowPriceMatch || ShowBestQuote;
-            if (!anyFilter) return true;
-            if (ShowFavorite && r.Types.Contains(AlertType.FavoriteBond)) return true;
-            if (ShowFilterGroup && r.Types.Contains(AlertType.FilterGroup)) return true;
-            if (ShowPriceMatch && r.Types.Contains(AlertType.PriceMatch)) return true;
-            if (ShowBestQuote && r.Types.Contains(AlertType.MyBestQuote)) return true;
-            return false;
+            OnPropertyChanged(nameof(CanChangePreferences));
+        }
+
+        partial void OnShowFavoriteChanged(bool value)
+        {
+            SavePreferencesFromUi();
+        }
+
+        partial void OnShowFilterGroupChanged(bool value)
+        {
+            SavePreferencesFromUi();
+        }
+
+        partial void OnShowPriceMatchChanged(bool value)
+        {
+            SavePreferencesFromUi();
+        }
+
+        partial void OnShowBestQuoteChanged(bool value)
+        {
+            SavePreferencesFromUi();
+        }
+
+
+        private void ApplyPreferences(AlertPreferences preferences)
+        {
+            savedPreferences = preferences;
+            applyingPreferences = true;
+            try
+            {
+                ShowFavorite = preferences.WatchlistEnabled;
+                ShowFilterGroup = preferences.FilterGroupEnabled;
+                ShowPriceMatch = preferences.CounterQuoteEnabled;
+                ShowBestQuote = preferences.MyBestEnabled;
+            }
+            finally
+            {
+                applyingPreferences = false;
+            }
+            OnPropertyChanged(nameof(CanChangePreferences));
+            // 关闭某类型时同步关闭其尚未处理的弹窗，不标记已读。
+            foreach (var group in AlertPopupService.Groups.Where(group => !preferences.IsEnabled(group.AlertType)).ToList())
+            {
+                group.Close();
+            }
+        }
+
+        private async System.Threading.Tasks.Task LoadPreferencesAsync()
+        {
+            PreferencesBusy = true;
+            PreferenceError = null;
+            try
+            {
+                var preferences = await _marketCenterService.LoadAlertPreferencesAsync(CancellationToken.None);
+                if (!disposed) ApplyPreferences(preferences);
+            }
+            catch (Exception error)
+            {
+                PreferenceError = "提醒设置加载失败：" + error.Message;
+                throw;
+            }
+            finally
+            {
+                PreferencesBusy = false;
+            }
+        }
+
+        private void SavePreferencesFromUi()
+        {
+            if (applyingPreferences || disposed) return;
+            if (!CanChangePreferences)
+            {
+                if (savedPreferences != null) ApplyPreferences(savedPreferences);
+                return;
+            }
+            _ = SavePreferencesAsync();
+        }
+
+        private async System.Threading.Tasks.Task SavePreferencesAsync()
+        {
+            var previous = savedPreferences;
+            var requested = new AlertPreferences
+            {
+                WatchlistEnabled = ShowFavorite,
+                FilterGroupEnabled = ShowFilterGroup,
+                CounterQuoteEnabled = ShowPriceMatch,
+                MyBestEnabled = ShowBestQuote,
+                Revision = previous.Revision
+            };
+            PreferencesBusy = true;
+            PreferenceError = null;
+            try
+            {
+                var saved = await _marketCenterService.SaveAlertPreferencesAsync(requested, CancellationToken.None);
+                if (disposed) return;
+                ApplyPreferences(saved);
+                // 设置重算建立基线；不能把重新启用时已有的报价当作新的报价事件。
+                await LoadAsync();
+            }
+            catch (Exception error)
+            {
+                if (disposed) return;
+                ApplyPreferences(previous);
+                PreferenceError = "提醒设置保存失败，已恢复原值：" + error.Message;
+                ToastService.Show(PreferenceError, ToastKind.Error);
+            }
+            finally
+            {
+                PreferencesBusy = false;
+            }
+        }
+
+        private void OnPreferencesChanged(AlertPreferences preferences)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            Action apply = () =>
+            {
+                if (disposed || PreferencesBusy) return;
+                ApplyPreferences(preferences);
+                PreferenceError = null;
+                _ = LoadAsync();
+            };
+            if (dispatcher != null && !dispatcher.CheckAccess()) dispatcher.BeginInvoke(apply);
+            else apply();
         }
 
         private void RecomputeStats()
@@ -185,6 +310,11 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             List<KeyValuePair<AlertRow, AlertTrigger>> freshTriggers = null;
             await QueryFlow.RunAsync(_loadCoordinator, this, async lease =>
             {
+                if (savedPreferences == null)
+                {
+                    if (preferenceLoad == null || preferenceLoad.IsFaulted) preferenceLoad = LoadPreferencesAsync();
+                    await preferenceLoad;
+                }
                 var rows = await _marketCenterService.LoadAlertRowsAsync(productFilter, Page, PageSize, lease.Token);
                 if (!lease.IsCurrent) return null;
 
@@ -204,7 +334,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 QueryId = null;
                 IsPartial = false;
 
-                freshTriggers = triggerTracker.Observe(rows, silent);
+                freshTriggers = triggerTracker.Observe(rows, silent && !PreferencesBusy);
                 return Rows.Count > 0;
             }, Title, silent);
             // 弹窗在 QueryFlow 结束后执行：静默轮只弹新增，用户操作轮只记入不弹
@@ -222,6 +352,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             {
                 var a = source.Key;
                 var type = source.Value.Type;
+                if (savedPreferences == null || !savedPreferences.IsEnabled(type)) continue;
                 var item = new STC.SalesTrading.Plugin.Shared.ViewModel.AlertPopupItem(
                     source.Value.AlertKey, TypeLabel(type), type,
                     a.SecurityId ?? string.Empty, a.SecurityName ?? string.Empty,
@@ -397,6 +528,16 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         [RelayCommand]
         private async System.Threading.Tasks.Task Refresh()
         {
+            preferenceLoad = LoadPreferencesAsync();
+            try
+            {
+                await preferenceLoad;
+            }
+            catch
+            {
+                // LoadPreferencesAsync 已保留具体错误，页面继续展示旧值供重试。
+                return;
+            }
             await LoadAsync();
             ToastService.Show("报价提醒已刷新", ToastKind.Success);
         }
@@ -416,6 +557,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         public void Dispose()
         {
+            disposed = true;
+            _marketCenterService.AlertPreferencesChanged -= OnPreferencesChanged;
             _loadCoordinator.Dispose();
             EventAggregator.Unsubscribe(this);
         }

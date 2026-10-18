@@ -49,6 +49,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             _alertCoalescer = new FrameCoalescer(() => STC.Common.Utils.Events.EventAggregator.Publish(
                 new STC.SalesTrading.Plugin.Shared.Messages.AlertsChangedMessage()));
             alertView.Changed += _alertCoalescer.Signal;
+            notificationStream.Register(OnPreferenceBatch);
             Action<string> onStreamFailed = reason => STC.Common.Utils.Events.EventAggregator.Publish(
                 new STC.SalesTrading.Plugin.Shared.Messages.DataSourceResetMessage());
             priceStream.Failed += onStreamFailed;
@@ -87,6 +88,58 @@ namespace STC.SalesTrading.Plugin.Gateway
                 Volatile.Write(ref _scheduled, 0);
                 if (Interlocked.Exchange(ref _pending, 0) == 1) _flush();
             }
+        }
+
+        public event Action<AlertPreferences> AlertPreferencesChanged;
+
+        public async Task<AlertPreferences> LoadAlertPreferencesAsync(CancellationToken ct)
+        {
+            var data = await requester.RequestAsync<object, NotificationPreferenceData>(
+                GatewayTopics.NotificationPreferenceGet, new { }, ct).ConfigureAwait(false);
+            return MapPreferences(data?.Preference);
+        }
+
+        public async Task<AlertPreferences> SaveAlertPreferencesAsync(AlertPreferences preferences, CancellationToken ct)
+        {
+            var request = new NotificationPreference
+            {
+                WatchlistEnabled = preferences.WatchlistEnabled,
+                FilterGroupEnabled = preferences.FilterGroupEnabled,
+                CounterQuoteEnabled = preferences.CounterQuoteEnabled,
+                MyBestEnabled = preferences.MyBestEnabled,
+                ExpectedRevision = preferences.Revision
+            };
+            var data = await requester.RequestAsync<NotificationPreference, NotificationPreferenceData>(
+                GatewayTopics.NotificationPreferenceSave, request, ct).ConfigureAwait(false);
+            alertView.InvalidatePreferences();
+            return MapPreferences(data?.Preference);
+        }
+
+        private void OnPreferenceBatch(NotificationStreamBatch batch)
+        {
+            if (batch.Preference != null)
+            {
+                alertView.InvalidatePreferences();
+                AlertPreferencesChanged?.Invoke(MapPreferences(batch.Preference));
+            }
+        }
+
+        private static AlertPreferences MapPreferences(NotificationPreference preference)
+        {
+            if (preference == null || string.IsNullOrEmpty(preference.Revision)
+                || !preference.WatchlistEnabled.HasValue || !preference.FilterGroupEnabled.HasValue
+                || !preference.CounterQuoteEnabled.HasValue || !preference.MyBestEnabled.HasValue)
+            {
+                throw new InvalidOperationException("提醒设置返回不完整，请重试");
+            }
+            return new AlertPreferences
+            {
+                WatchlistEnabled = preference.WatchlistEnabled.Value,
+                FilterGroupEnabled = preference.FilterGroupEnabled.Value,
+                CounterQuoteEnabled = preference.CounterQuoteEnabled.Value,
+                MyBestEnabled = preference.MyBestEnabled.Value,
+                Revision = preference.Revision
+            };
         }
 
         #region 全部报价页（mode=FULL 展开）
@@ -657,6 +710,7 @@ namespace STC.SalesTrading.Plugin.Gateway
 
         public void Dispose()
         {
+            notificationStream.Unregister(OnPreferenceBatch);
             alertView.Dispose();
             lock (sync)
             {

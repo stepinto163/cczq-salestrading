@@ -6,6 +6,12 @@ namespace STC.SalesTrading.Plugin.Gateway.Contracts.Notification
 {
 
     /// <summary>个人提醒开关（ficc.notification.preference.get/save，H31/H32）。save 携带 expectedRevision。</summary>
+    public sealed class NotificationPreferenceData
+    {
+        [JsonProperty("preference")]
+        public NotificationPreference Preference { get; set; }
+    }
+
     public class NotificationPreference
     {
         [JsonProperty("watchlistEnabled")]

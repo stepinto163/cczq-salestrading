@@ -153,6 +153,9 @@ namespace SalesTrading.UiTests
                 case "notification.read-survives-removal":
                     await CheckNotificationReadSurvivesRemovalAsync(Parameter(step, "securityId"));
                     break;
+                case "realtime.notification-switch":
+                    await CheckNotificationSwitchAsync(step);
+                    return;
                 case "notification.lifecycle":
                     await CheckNotificationLifecycleAsync(Parameter(step, "securityId"));
                     break;
@@ -508,10 +511,10 @@ namespace SalesTrading.UiTests
             }
         }
 
-        private async Task CreateNotificationQuoteAsync(string securityId, string price)
+        private async Task CreateNotificationQuoteAsync(string securityId, string price, string side = "bid")
         {
             await ExecuteAsync(new TestStep { Action = "parse", Parameters = new JObject
-                { ["text"] = securityId + " " + price + " 1 bid +1", ["expectedRows"] = "1" } });
+                { ["text"] = securityId + " " + price + " 1 " + side + " +1", ["expectedRows"] = "1" } });
             await ExecuteAsync(new TestStep { Action = "parse.select", Parameters = new JObject
                 { ["row"] = "1", ["selected"] = "true", ["expectedCount"] = "1" } });
             await ExecuteAsync(new TestStep { Action = "parse.confirm", Parameters = new JObject { ["expectedCount"] = "1" } });
@@ -635,21 +638,24 @@ namespace SalesTrading.UiTests
                 JObject.FromObject(new { first, second, secondKey, changedKey }).ToString());
         }
 
-        private async Task PrepareNotificationFixtureAsync(string securityId)
+        private async Task PrepareNotificationFixtureAsync(string securityId, bool enableWatchlist = true)
         {
             Require(originalNotificationPreference == null, "每例只准备一次提醒夹具");
             originalNotificationPreference = (JObject)(await api.RequestProjectionAsync(
                 SalesTradingApi.NotificationPreferenceGet, new Request()))["preference"];
             File.WriteAllText(Path.Combine(reportDirectory, "original-notification-preference.json"), originalNotificationPreference.ToString());
-            await api.RequestProjectionAsync(SalesTradingApi.NotificationPreferenceSave,
-                new NotificationPreferenceSaveRequest
-                {
-                    ExpectedRevision = (string)originalNotificationPreference["revision"],
-                    WatchlistEnabled = true,
-                    FilterGroupEnabled = (bool)originalNotificationPreference["filterGroupEnabled"],
-                    CounterQuoteEnabled = (bool)originalNotificationPreference["counterQuoteEnabled"],
-                    MyBestEnabled = (bool)originalNotificationPreference["myBestEnabled"]
-                });
+            if (enableWatchlist)
+            {
+                await api.RequestProjectionAsync(SalesTradingApi.NotificationPreferenceSave,
+                    new NotificationPreferenceSaveRequest
+                    {
+                        ExpectedRevision = (string)originalNotificationPreference["revision"],
+                        WatchlistEnabled = true,
+                        FilterGroupEnabled = (bool)originalNotificationPreference["filterGroupEnabled"],
+                        CounterQuoteEnabled = (bool)originalNotificationPreference["counterQuoteEnabled"],
+                        MyBestEnabled = (bool)originalNotificationPreference["myBestEnabled"]
+                    });
+            }
             testWatchlist = (JObject)(await api.RequestProjectionAsync(SalesTradingApi.WatchlistSave,
                 new WatchlistSaveRequest
                 {
@@ -757,7 +763,10 @@ namespace SalesTrading.UiTests
                             CounterQuoteEnabled = (bool)originalNotificationPreference["counterQuoteEnabled"],
                             MyBestEnabled = (bool)originalNotificationPreference["myBestEnabled"]
                         }))["preference"];
-                    Require(JToken.DeepEquals(restored["watchlistEnabled"], originalNotificationPreference["watchlistEnabled"]), "提醒偏好恢复未确认");
+                    foreach (string field in ReminderFields)
+                    {
+                        Require(JToken.DeepEquals(restored[field], originalNotificationPreference[field]), "提醒偏好恢复未确认：" + field);
+                    }
                     File.WriteAllText(Path.Combine(reportDirectory, "notification-cleanup.json"), restored.ToString());
                 }
                 catch (Exception error)
