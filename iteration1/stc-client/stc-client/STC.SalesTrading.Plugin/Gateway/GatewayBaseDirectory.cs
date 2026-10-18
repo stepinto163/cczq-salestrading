@@ -1,4 +1,4 @@
-using STC.SalesTrading.Plugin.Abstractions;
+﻿using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Gateway.Contracts.Base;
 using System;
@@ -38,10 +38,60 @@ namespace STC.SalesTrading.Plugin.Gateway
             var data = await requester.RequestAsync<BaseQueryRequest, BaseQueryData>(
                 GatewayTopics.BaseQuery, request, ct).ConfigureAwait(false);
 
+            // CONTACT 应答只保证机构 ID；一次批量补齐本页机构，避免逐联系人查询。
+            if (kind == "CONTACT")
+            {
+                var contacts = (data.Records ?? new List<BaseRecord>()).Where(record => record != null).ToList();
+                var institutionIds = contacts.SelectMany(contact => ContactInstitutions(contact))
+                    .Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+                if (institutionIds.Count > 0)
+                {
+                    var byId = new Dictionary<string, BaseRecord>(StringComparer.Ordinal);
+                    for (var index = 0; index < institutionIds.Count; index += 100)
+                    {
+                        var institutions = await requester.RequestAsync<BaseGetRequest, BaseQueryData>(GatewayTopics.BaseGet,
+                            new BaseGetRequest { Kind = "INSTITUTION", Ids = institutionIds.Skip(index).Take(100).ToList() }, ct).ConfigureAwait(false);
+                        foreach (var institution in institutions.Records ?? new List<BaseRecord>())
+                        {
+                            if (institution?.InstitutionId != null) byId[institution.InstitutionId] = institution;
+                        }
+                    }
+                    var expanded = new List<BaseRecord>();
+                    foreach (var contact in contacts)
+                    {
+                        var matches = ContactInstitutions(contact);
+                        foreach (var id in matches.Where(id => string.IsNullOrEmpty(institutionId) || id == institutionId))
+                        {
+                            BaseRecord institution;
+                            if (id == null || !byId.TryGetValue(id, out institution))
+                            {
+                                throw new InvalidOperationException("联系人所属机构资料缺失：" + contact.ContactId);
+                            }
+                            expanded.Add(new BaseRecord
+                            {
+                                ContactId = contact.ContactId,
+                                ContactName = contact.ContactName,
+                                InstitutionId = id,
+                                InstitutionIds = matches,
+                                InstitutionName = institution.InstitutionName
+                            });
+                        }
+                    }
+                    data.Records = expanded;
+                }
+            }
             var items = (data.Records ?? new List<BaseRecord>())
                 .Where(r => r != null && (kind == "CONTACT" ? r.ContactId : r.InstitutionId) != null)
                 .Select(r => kind == "CONTACT"
-                    ? new LazySearchItem { Id = r.ContactId, Name = r.ContactName, SubText = r.PositionName }
+                    ? new LazySearchItem
+                    {
+                        Id = r.ContactId,
+                        Name = r.ContactName,
+                        SubText = r.InstitutionName,
+                        InstitutionId = r.InstitutionId,
+                        InstitutionName = r.InstitutionName,
+                        InstitutionIds = r.InstitutionIds
+                    }
                     : new LazySearchItem
                     {
                         Id = r.InstitutionId,
@@ -55,6 +105,12 @@ namespace STC.SalesTrading.Plugin.Gateway
                 Items = items,
                 HasMore = data.HasMore == true,
             };
+        }
+
+        private static List<string> ContactInstitutions(BaseRecord contact)
+        {
+            return (contact.InstitutionIds ?? new List<string>()).Concat(new[] { contact.InstitutionId })
+                .Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
         }
 
         public async Task<IReadOnlyList<CrmDirectoryEntry>> SearchAsync(string kind, string text, string institutionId, CancellationToken ct)

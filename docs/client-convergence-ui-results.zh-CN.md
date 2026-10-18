@@ -1,5 +1,74 @@
 # 候选客户端 UI 自动化验收记录（2026-10-18）
 
+## 第二轮修复与复验（当前结论）
+
+分支：`integration/ficc-client-convergence`。本轮修复客户端和自动化驱动中无需新增业务决策的问题，未修改 Java 服务或对外协议，未合并稳定 QA 分支，未替换现有 QA 客户端。
+
+### 已修复
+
+1. 报价管理修改成功后主动读取最新版本，避免下一次 Refer 使用旧 revision；今日报价使用服务端 `VISIBLE` 权限范围，恢复已确认报价跨账号实时展示；修正查询第二页重复 Skip 导致漏行。
+2. 管理侧栏接入筛选字典与服务端组合条件，避免分页后客户端过滤；防抖查询保留 UI 同步上下文；无报价方向的最优报量保持空值。历史查询延迟至首次打开历史页，避免登录时初始化日期触发无意义的历史查询。
+3. CRM 联系人搜索按本页去重后的机构 ID 批量补齐机构名称；候选展示姓名与机构，选择后同步 ID 与名称；机构变化清除不相容联系人，输入文字不等同于已选联系人。行与工具栏共用该规则，工具栏只作用于勾选行。Down 键支持重新打开候选，并接收被 WPF TextBox 类处理器处理过的按键；旧搜索结果在输入/机构变化时作废。
+4. 批量工具栏修正 BP 换算、直接报量输入及固定 ±1000 万调整；同步选中行的价格类型/清算速度，避免下拉默认值相同而无法应用；精确报价未勾选时提供明确提示。
+5. 提醒页提供标记已读，服务器拒绝时不提前把本地状态设成已读。推荐页接回真实证据展开、反馈、刷新及对应字号；反馈仍调用既有服务端接口。
+6. 关注/筛选分组回填服务端 ID、保存编辑副本版本，保留条件运算符与数值/布尔/数组类型；删除限定当前市场并传播失败；管理页显示和使用共享账户分组。已验证旧编辑副本产生 1004 冲突而不覆盖最新名称。
+
+### 验证口径
+
+- 实际插件构建通过；确定性检查 **32/32**（原 24 项 + 8 项新回归）。新增覆盖 CRM 机构补齐、选中行范围、分组类型/市场隔离/旧版本冲突、管理查询权限/刷新/分页、通知已读失败。
+- 本轮实际执行 **29 个不同桌面用例：28 通过，1 环境前置阻断**。按各例最后一次结果计数，不把重试次数累加为覆盖数；这些结果分批取得，并非一次整套运行。全部 29 例均完成清理。
+- 测试通过正式 STC 登录、真实 GW/Java 服务和可见 WPF 控件。18、55—59 使用接入接口夹具，**不是外部 FIX 交付验证**。21 在发布前因 `test2.inf1` 无有效 QT 映射而停止，没有发送外部消息。
+- 每例独立进程看门狗，保留虚拟化；组合筛选使用六笔功能夹具。未执行性能压测、未自动增大负载。
+- 工具自身的 7 项检查为首轮记录，本轮没有将其冒充重新执行。
+- 隔离运行目录：`D:/workspace/greatewall/ficc/qa_env/client-integration-ui`；确定性日志：`integration-tests.log`。桌面复验后仅整理新增方法格式，并重新构建及执行 32 项确定性检查。最新插件 SHA256：`DD1C700DBF05676C8271CD30EBA409904C12AE9B7CA627057007707940CBE625`。
+
+### 本轮桌面证据
+
+报告根目录：`D:/workspace/greatewall/ficc/qa_env/client-integration-ui/reports/`。
+
+| 用例 | 最后结果 | 报告子目录 |
+|---|---|---|
+| `01-quote-lifecycle` | 通过 | `repair-core-7/01-quote-lifecycle` |
+| `06-invalid-price-recovery` | 通过 | `repair-core-7/06-invalid-price-recovery` |
+| `07-management-filters` | 通过 | `repair-core-7/07-management-filters` |
+| `08-market-filters` | 通过 | `repair-core-3/08-market-filters` |
+| `14-watchlist-notification-read` | 通过 | `repair-core-6/14-watchlist-notification-read` |
+| `17-precise-toolbar` | 通过 | `repair-core-6/17-precise-toolbar` |
+| `18-qtrade-negotiation` | 通过 | `repair-core-8/18-qtrade-negotiation` |
+| `20-smart-recommendation` | 通过 | `repair-core-6/20-smart-recommendation` |
+| `21-pending-toolbar` | 前置阻断：test2 缺少 QT 映射（原报告 FAILED） | `repair-core-4/21-pending-toolbar` |
+| `22-account-groups` | 通过 | `repair-core-6/22-account-groups` |
+| `40-page-history` | 通过 | `repair-core-5/40-page-history` |
+| `42-realtime-rateAll` | 通过 | `repair-core-5/42-realtime-rateAll` |
+| `43-realtime-rateBest` | 通过 | `repair-core-5/43-realtime-rateBest` |
+| `44-realtime-creditAll` | 通过 | `repair-core-5/44-realtime-creditAll` |
+| `45-realtime-creditBest` | 通过 | `repair-core-5/45-realtime-creditBest` |
+| `46-realtime-alert` | 通过 | `repair-core-5/46-realtime-alert` |
+| `47-realtime-today` | 通过 | `repair-core-3/47-realtime-today` |
+| `48-realtime-quote-confirm` | 通过 | `repair-core-5/48-realtime-quote-confirm` |
+| `49-realtime-quote-precise` | 通过 | `repair-core-5/49-realtime-quote-precise` |
+| `51-realtime-history` | 通过 | `repair-core-5/51-realtime-history` |
+| `52-filter-combinations-today` | 通过 | `repair-core-5/52-filter-combinations-today` |
+| `53-filter-combinations-rateAll` | 通过 | `repair-core-4/53-filter-combinations-rateAll` |
+| `54-filter-combinations-rateBest` | 通过 | `repair-core-4/54-filter-combinations-rateBest` |
+| `55-realtime-qt-today` | 通过 | `repair-core-6/55-realtime-qt-today` |
+| `56-realtime-qt-rateAll` | 通过 | `repair-core-6/56-realtime-qt-rateAll` |
+| `57-realtime-qt-rateBest` | 通过 | `repair-core-6/57-realtime-qt-rateBest` |
+| `58-realtime-qt-quote-confirm` | 通过 | `repair-core-6/58-realtime-qt-quote-confirm` |
+| `59-qtrade-business-key` | 通过 | `repair-core-8/59-qtrade-business-key` |
+| `60-precise-crm-dropdown` | 通过 | `repair-core-8/60-precise-crm-dropdown` |
+
+### 未解决与限制
+
+- 模糊报价/意向页仍未恢复（27、32、37、50）；候选代码隐藏入口并声明后端域不支持。不能直接启用伪造预览模型来满足测试，需要明确迁移该域的协议与实现范围。
+- 真实外部 FIX 发布/接收、21 外部 FIX 驱动的完整待确认工具栏仍未通过。工具栏本轮有确定性检查及 18/59 的真实桌面 CRM/确认覆盖，不能等同于 21 全流程。
+- 首轮 QuoteSvr OOM、本轮 12:30 附近 ParserSvr 定时刷新 OOM 的根因未修复。恢复 ParserSvr 监听后完成本轮功能复验；延迟历史页首次加载只消除多余调用，不能据此宣称 OOM 已解决。没有调整 JVM 参数。
+- 本轮修正两处测试适配：反馈状态按实际 `FeedbackText` 绑定定位，避免误选同文字的按钮内容；分组冲突断言接收候选插件的 `GatewayApiException.Code=1004`。未删除业务断言或将失败转为通过；增加 CRM/筛选超时诊断 JSON。
+
+## 首轮历史记录（修复前，保留取证）
+
+以下结果为首轮状态，已修复项目以本页第二轮结果为准。
+
 ## 结论
 
 自动化驱动已适配候选插件并可编译、登录、操作真实桌面与核对真实后端。**业务验收未完成，禁止据此合并到稳定 QA 分支。** 本报告保留失败断言，不把隐藏页面、缺失控件或服务离线改成通过。

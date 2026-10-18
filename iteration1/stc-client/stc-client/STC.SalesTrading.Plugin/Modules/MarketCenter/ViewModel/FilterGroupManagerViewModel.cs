@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -488,7 +488,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         private static FilterNamedGroup CloneGroup(FilterNamedGroup src)
         {
-            var copy = new FilterNamedGroup { Name = src.Name, Id = src.Id };
+            var copy = new FilterNamedGroup { Name = src.Name, Id = src.Id, Revision = src.Revision };
             foreach (var sg in src.Subgroups)
             {
                 var sgCopy = new FilterSubgroup();

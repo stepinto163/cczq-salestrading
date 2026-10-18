@@ -130,9 +130,10 @@
                                          SelectedValue="{Binding InstitutionSelectedId, Mode=TwoWay}" />
                 <components:LazySearchComboBox Placeholder="报价交易员" Width="110" Margin="0,0,6,6"
                                          SearchCommand="{x:Static services:CrmLazySearch.Contact}"
-                                         ColumnMembers="Name" DisplayMember="Name" ValueMember="Id"
+                                         SearchParameter="{Binding InstitutionSelectedId}"
+                                         ColumnMembers="Name,InstitutionName" DisplayMember="Name" ValueMember="Id"
                                          Text="{Binding TraderInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         SelectedValue="{Binding TraderSelectedId, Mode=TwoWay}" />
+                                         SelectionCommand="{Binding SelectContactCommand}" SelectedValue="{Binding TraderSelectedId, Mode=TwoWay}" />
                 <ToggleButton Content="急" Style="{DynamicResource StcToolbarFlagUrgent}" Margin="0,0,6,6"
                               Command="{Binding ToggleFlagCommand}" CommandParameter="urgent" />
                 <ToggleButton Content="荐" Style="{DynamicResource StcToolbarFlagRecommend}" Margin="0,0,6,6"
@@ -269,7 +270,7 @@
                                 SearchCommand="{x:Static services:CrmLazySearch.Institution}"
                                 ColumnMembers="SubText,Name" DisplayMember="SubText" ValueMember="Id"
                                 Text="{Binding Institution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                SelectedValue="{Binding Row.InstitutionId, Mode=TwoWay}" />
+                                SelectedValue="{Binding InstitutionId, Mode=TwoWay}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -278,10 +279,11 @@
                         <DataTemplate>
                             <components:LazySearchComboBox Placeholder="交易员"
                                 SearchCommand="{x:Static services:CrmLazySearch.Contact}"
-                                SearchParameter="{Binding Row.InstitutionId, Mode=OneWay}"
-                                ColumnMembers="Name" DisplayMember="Name" ValueMember="Id"
+                                SearchParameter="{Binding InstitutionId, Mode=OneWay}"
+                                ColumnMembers="Name,InstitutionName" DisplayMember="Name" ValueMember="Id"
                                 Text="{Binding Trader, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                SelectedValue="{Binding Row.ContactId, Mode=TwoWay}" />
+                                SelectionCommand="{Binding SelectContactCommand}"
+                                SelectedValue="{Binding ContactId, Mode=TwoWay}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

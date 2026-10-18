@@ -32,7 +32,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
             if (!(TodayGrid.SelectedItem is QuoteRow row)) return;
             if (string.IsNullOrEmpty(row.QuoteId)) return;
             MarketCenter.View.QuoteEntryDialog.ShowForQuote(
-                System.Windows.Application.Current?.MainWindow, row, MarketCenter.View.QuoteFormMode.Edit);
+                System.Windows.Application.Current?.MainWindow, row, MarketCenter.View.QuoteFormMode.Edit, vm.RefreshAfterEditAsync);
         }
 
         // SelectionChanged 仅包含增量；读取完整选中集合，避免 Ctrl 多选丢失旧行。

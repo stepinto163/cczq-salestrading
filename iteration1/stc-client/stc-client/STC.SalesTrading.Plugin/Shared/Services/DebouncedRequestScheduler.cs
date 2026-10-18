@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +20,6 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             {
                 if (_disposed) return;
                 _pending?.Cancel();
-                _pending?.Dispose();
                 source = new CancellationTokenSource();
                 _pending = source;
             }
@@ -40,8 +39,9 @@ namespace STC.SalesTrading.Plugin.Shared.Services
         {
             try
             {
-                await Task.Delay(delay, source.Token).ConfigureAwait(false);
-                await action(source.Token).ConfigureAwait(false);
+                await Task.Delay(delay, source.Token);
+                // 保留调用方同步上下文；UI 查询必须在 Dispatcher 上回写集合和加载状态。
+                await action(source.Token);
             }
             catch (OperationCanceledException)
             {
@@ -63,7 +63,6 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                 if (_disposed) return;
                 _disposed = true;
                 _pending?.Cancel();
-                _pending?.Dispose();
                 _pending = null;
             }
         }

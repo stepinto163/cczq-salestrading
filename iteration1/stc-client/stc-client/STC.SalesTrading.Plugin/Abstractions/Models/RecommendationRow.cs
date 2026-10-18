@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace STC.SalesTrading.Plugin.Abstractions.Models
 {
@@ -7,7 +7,7 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
     /// 选择 / 推荐度 / 机构·交易员 / 代码·简称 / 报价次数 / 最近报价·报量(万) / 长城交易员）。
     /// 对应原型 app.js recommendationMockRows 的行形态。
     /// </summary>
-    public class RecommendationRow
+    public class RecommendationRow : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
     {
         /// <summary>推荐 id（Mock 阶段生成）。</summary>
         public string RecommendationId { get; set; }
@@ -55,7 +55,20 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         public string PriceTypeName { get; set; }
 
         /// <summary>反馈状态：USEFUL / NOT_USEFUL / NOT_APPLICABLE；null=未反馈（可反馈）。</summary>
-        public string Feedback { get; set; }
+        private string feedback;
+        public string Feedback
+        {
+            get { return feedback; }
+            set
+            {
+                if (SetProperty(ref feedback, value))
+                {
+                    OnPropertyChanged(nameof(CanFeedback));
+                    OnPropertyChanged(nameof(FeedbackText));
+                }
+            }
+        }
+        public string FeedbackText => Feedback == "USEFUL" ? "有用" : Feedback == "NOT_USEFUL" ? "无用" : Feedback == "NOT_APPLICABLE" ? "不适用" : "未反馈";
 
         /// <summary>还可反馈（一次性：已有反馈状态后不可再点）。</summary>
         public bool CanFeedback

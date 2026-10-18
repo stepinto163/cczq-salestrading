@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -165,6 +165,17 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
             OnPropertyChanged(nameof(IsEmpty));
         }
 
+        private ProductFilter productFilter;
+        private string searchText;
+
+        public void ApplyFilters(ProductFilter filter, string text)
+        {
+            productFilter = filter;
+            searchText = text;
+            SelectedRow.Clear();
+            ReloadImmediate();
+        }
+
         private void ReloadImmediate()
         {
             _textQueryScheduler.Cancel();
@@ -178,14 +189,17 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
             _textQueryScheduler.Schedule(TextQueryDebounce, token => QueryAsync());
         }
 
-                        private async System.Threading.Tasks.Task QueryAsync(bool silent = false)
+        private async System.Threading.Tasks.Task QueryAsync(bool silent = false, bool forceRefresh = false)
         {
             await QueryFlow.RunAsync(_queryCoordinator, this, async lease =>
             {
                 var result = await _mgmtService.QueryTodayRowsAsync(new QuoteMgmtQuery
                 {
                     Today = true,
+                    ForceRefresh = forceRefresh,
                     Status = SelectedStatus,
+                    ProductFilter = productFilter,
+                    SearchText = searchText,
                     BondSearchText = BondSearchText,
                     InstitutionSearchText = InstitutionSearchText,
                     Page = Page,
@@ -202,6 +216,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                 BuildSuggestions();
                 return Rows.Count > 0;
             }, Title);
+        }
+
+        public async System.Threading.Tasks.Task RefreshAfterEditAsync()
+        {
+            SelectedRow.Clear();
+            _pendingRefresh = false;
+            await QueryAsync(forceRefresh: true);
         }
 
         private void BuildSuggestions()

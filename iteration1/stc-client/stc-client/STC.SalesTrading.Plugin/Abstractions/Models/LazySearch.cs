@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace STC.SalesTrading.Plugin.Abstractions.Models
 {
@@ -8,6 +8,9 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         public string Id { get; set; }
         public string Name { get; set; }
         public string SubText { get; set; }
+        public string InstitutionId { get; set; }
+        public string InstitutionName { get; set; }
+        public List<string> InstitutionIds { get; set; }
     }
 
     /// <summary>分页搜索结果（后端 CRM 查询无 totalCount，仅 hasMore 页码步进）。</summary>

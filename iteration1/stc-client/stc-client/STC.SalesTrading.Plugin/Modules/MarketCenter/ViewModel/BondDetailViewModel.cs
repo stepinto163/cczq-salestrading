@@ -1,3 +1,5 @@
+﻿using STC.SalesTrading.Plugin.Shared.ViewModel;
+using STC.SalesTrading.Plugin.Shared.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -348,6 +350,35 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         /// <summary>窗口（7d/30d/90d/custom）换算起止并查询；防过期响应覆盖、1-365 天校验；
         /// 服务未装配/无券/异常时清空（面板空态提示，后端未上线静默）。</summary>
+        private DateTime recommendationStart;
+        private DateTime recommendationEnd;
+        private bool feedbackInFlight;
+
+        public async System.Threading.Tasks.Task SubmitRecommendationFeedbackAsync(RecommendationRow row, string feedback)
+        {
+            if (row == null || !row.CanFeedback || feedbackInFlight || !Recommendations.Contains(row)) return;
+            feedbackInFlight = true;
+            try
+            {
+                row.Feedback = await RecommendationService.SubmitFeedbackAsync(Code, recommendationStart, recommendationEnd,
+                    row.RecommendationId, feedback, System.Threading.CancellationToken.None);
+            }
+            catch (Exception error)
+            {
+                ToastService.Show("推荐反馈失败：" + error.Message, ToastKind.Error);
+            }
+            finally
+            {
+                feedbackInFlight = false;
+            }
+        }
+
+        [RelayCommand]
+        private System.Threading.Tasks.Task RefreshRecommendationsAsync()
+        {
+            return ReloadRecommendationsAsync();
+        }
+
         private async System.Threading.Tasks.Task ReloadRecommendationsAsync()
         {
             var service = RecommendationService;
@@ -380,6 +411,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             {
                 var rows = await service.QueryAsync(Code, start, end, cts.Token);
                 if (id != _recRequestId) return; // 过期响应（已切券/已换窗口）
+                recommendationStart = start;
+                recommendationEnd = end;
                 Recommendations.Clear();
                 foreach (var row in rows) Recommendations.Add(row);
             }

@@ -14,7 +14,7 @@ namespace STC.SalesTrading.Plugin.Gateway
 {
     /// <summary>
     /// 报价管理域服务（IQuoteMgmtService 网关实现，批次 2：查询路径）。
-    /// 今日页走 quote 域 LiveView（ownerScope=MINE，推送自动维护行集合）；
+    /// 今日页走 quote 域 LiveView（ownerScope=VISIBLE，推送自动维护行集合）；
     /// 历史页走 ficc.quote.history.search（游标续取）；删除走 ficc.quote.delete 批量逐条校验。
     /// 债券资料（reference）依赖后端补齐（决策 #9）；补齐前用 EnsureReferenceAsync 过渡补取（决策 #10），
     /// 后端补齐后注释 QueryAsync 末尾那一行调用即可。
@@ -48,51 +48,34 @@ namespace STC.SalesTrading.Plugin.Gateway
         }
 
         /// <summary>
-        /// 今日页查询：状态条件与 ownerScope=MINE 下推 view，文本搜索在客户端过滤
-        /// （后端筛选字段目录 dictionary.query 上线后再下推，方案 §3.2.6 第二期）。
+        /// 今日页查询：状态、权限范围和组合筛选统一下推服务端，避免分页后过滤造成漏行。
         /// </summary>
         public async Task<PagedResult<QuoteRow>> QueryTodayRowsAsync(QuoteMgmtQuery query, CancellationToken ct)
         {
             var status = ParseStatusFilter(query.Status);
-            var viewRows = await todayView.OpenAsync(new QuoteFilter(), status, "MINE", query.PageSize, ct).ConfigureAwait(false);
-            var reference = todayView.LastReference;
-
-            // 推送已实时维护行集合：非第一页滚动按需 query；当前 VM 分页直接切片
+            var viewRows = await todayView.OpenAsync(ToFilter(query), status, "VISIBLE", query.PageSize, ct).ConfigureAwait(false);
             var page = Math.Max(1, query.Page);
-            IEnumerable<QuoteRecord> source = viewRows;
-            if (page > 1 && viewRows.Count < page * query.PageSize && todayView.TotalCount > viewRows.Count)
+            if (query.ForceRefresh || page > 1)
             {
-                await todayView.QueryPageAsync(page, ct).ConfigureAwait(false);
-                source = todayView.Rows;
-                reference = todayView.LastReference;
+                // query 返回当前页，不对返回页再次 Skip；Open 缓存则包含已加载页。
+                var pageRows = await todayView.QueryPageAsync(page, ct).ConfigureAwait(false);
+                // 快照请求期间可能已收到更高版本推送；按本页 ID 读取回放后的最新缓存。
+                var latestRows = todayView.Rows.ToDictionary(row => row.QuoteId);
+                viewRows = pageRows.Where(row => latestRows.ContainsKey(row.QuoteId))
+                    .Select(row => latestRows[row.QuoteId]).ToList();
             }
+            var reference = todayView.LastReference;
+            IEnumerable<QuoteRecord> source = viewRows;
 
             // 债券资料优先取视图/推送 reference（决策 #9 已落地），映射为 UI 行
             var mapped = source
                 .Select(r => GatewayModelMapper.ToQuoteRow(r, RefAt(reference, r.SecurityId)))
                 .ToList();
 
-            // 文本搜索（客户端过滤）：代码/简称/机构/联系人
-            var bond = (query.BondSearchText ?? string.Empty).Trim();
-            var inst = (query.InstitutionSearchText ?? string.Empty).Trim();
-            if (bond.Length > 0)
-            {
-                mapped = mapped.Where(r =>
-                    (r.SecurityId ?? string.Empty).IndexOf(bond, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    (r.SecurityName ?? string.Empty).IndexOf(bond, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-            }
-            if (inst.Length > 0)
-            {
-                mapped = mapped.Where(r =>
-                    (r.InstitutionName ?? string.Empty).IndexOf(inst, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    (r.ContactName ?? string.Empty).IndexOf(inst, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-            }
-
             // 缺失部分 base.get 兜底（决策 #10；视图/推送已带的不会再请求）
             await GatewayReferenceFill.EnsureAsync(requester, mapped, ct).ConfigureAwait(false);
 
             var items = mapped
-                .Skip((page - 1) * query.PageSize)
                 .Take(query.PageSize)
                 .ToList();
             return new PagedResult<QuoteRow>
@@ -260,19 +243,39 @@ namespace STC.SalesTrading.Plugin.Gateway
         {
             if (string.IsNullOrEmpty(status) || status == "全部") return new List<string> { "ACTIVE", "REFERRED" };
             if (status == "有效" || status == "ACTIVE") return new List<string> { "ACTIVE" };
-            if (status == "已Refer" || status == "REFERRED") return new List<string> { "REFERRED" };
+            if (status == "撤销" || status == "已Refer" || status == "REFERRED") return new List<string> { "REFERRED" };
             return new List<string> { "ACTIVE", "REFERRED" };
         }
 
-        /// <summary>查询语义 → 后端 filter（历史页用；今日页当前不下推文本条件）。</summary>
+        /// <summary>查询语义 → 后端 filter，今日和历史页共用。</summary>
         private static QuoteFilter ToFilter(QuoteMgmtQuery query)
         {
+            var credit = Shared.Services.MarketGroupSelectionService.ActiveGroupIds(Shared.Services.FilterProfileService.MarketKind.Credit);
+            var rate = Shared.Services.MarketGroupSelectionService.ActiveGroupIds(Shared.Services.FilterProfileService.MarketKind.Rate);
             return new QuoteFilter
             {
-                Conditions = new List<FilterCondition>(),
-                WatchlistIds = new List<string>(),
-                FilterGroupIds = new List<string>(),
+                Conditions = BuildConditions(query),
+                WatchlistIds = credit.favorites.Concat(rate.favorites).ToList(),
+                FilterGroupIds = credit.filters.Concat(rate.filters).ToList(),
             };
+        }
+
+        private static List<FilterCondition> BuildConditions(QuoteMgmtQuery query)
+        {
+            var conditions = (query.ProductFilter?.Conditions ?? new List<FilterConditionPayload>())
+                .Select(condition => new FilterCondition
+                {
+                    Field = condition.Field,
+                    Operator = condition.Operator,
+                    Value = condition.Value
+                }).ToList();
+            if (!string.IsNullOrWhiteSpace(query.SearchText))
+                conditions.Add(new FilterCondition { Field = "searchText", Operator = "CONTAINS", Value = query.SearchText.Trim() });
+            if (!string.IsNullOrWhiteSpace(query.BondSearchText))
+                conditions.Add(new FilterCondition { Field = "searchText", Operator = "CONTAINS", Value = query.BondSearchText.Trim() });
+            if (!string.IsNullOrWhiteSpace(query.InstitutionSearchText))
+                conditions.Add(new FilterCondition { Field = "institutionName", Operator = "CONTAINS", Value = query.InstitutionSearchText.Trim() });
+            return conditions;
         }
 
         public void Dispose()

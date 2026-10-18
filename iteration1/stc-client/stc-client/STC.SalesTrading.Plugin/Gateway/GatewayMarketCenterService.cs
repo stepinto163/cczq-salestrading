@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -267,11 +267,11 @@ namespace STC.SalesTrading.Plugin.Gateway
             var ofrLevel = bestOfr.HasValue ? ofrs.Where(e => e.Price == bestOfr.Value).ToList() : new List<BestEntry>();
 
             row.Bid = bestBid;
-            row.BidVolume = bidLevel.Sum(e => e.Quantity ?? 0m);
+            row.BidVolume = bidLevel.Count == 0 ? (decimal?)null : bidLevel.Sum(e => e.Quantity ?? 0m);
             row.BidQuotesCount = bidLevel.Count;
             row.BidQuotes = BuildDetails(bidLevel, book, userId, userNames);
             row.Ofr = bestOfr;
-            row.OfrVolume = ofrLevel.Sum(e => e.Quantity ?? 0m);
+            row.OfrVolume = ofrLevel.Count == 0 ? (decimal?)null : ofrLevel.Sum(e => e.Quantity ?? 0m);
             row.OfrQuotesCount = ofrLevel.Count;
             row.OfrQuotes = BuildDetails(ofrLevel, book, userId, userNames);
 
@@ -370,11 +370,10 @@ namespace STC.SalesTrading.Plugin.Gateway
             return rows;
         }
 
-        /// <summary>标记已读（ficc.notification.read，H30）：先本地置位让 UI 立即反映，再上报。</summary>
+        /// <summary>标记已读（ficc.notification.read，H30）：服务端成功后回写本地状态。</summary>
         public async Task MarkAlertReadAsync(string notificationId, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(notificationId)) return;
-            alertView.MarkReadLocally(notificationId);
             var request = new NotificationReadRequest
             {
                 NotificationIds = new List<string> { notificationId },
@@ -390,6 +389,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             {
                 throw new GatewayApiException("gateway", string.Join("；", failures));
             }
+            alertView.MarkReadLocally(notificationId);
         }
 
         /// <summary>NotificationRecord → AlertRow。报价摘要字段后端不携带（决策 #3 显示空）。</summary>

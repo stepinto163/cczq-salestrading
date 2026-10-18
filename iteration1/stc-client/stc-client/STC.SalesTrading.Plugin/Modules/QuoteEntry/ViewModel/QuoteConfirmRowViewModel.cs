@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using System;
 using PriceTypeEnum = STC.SalesTrading.Plugin.Abstractions.Models.PriceType;
@@ -47,6 +48,67 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             // 只有名称、没有 Id 才算未选定；两者都空（后端也允许无对手的报价）不算。
             get { return (string.IsNullOrWhiteSpace(Row.InstitutionName) || !string.IsNullOrWhiteSpace(Row.InstitutionId))
                 && (string.IsNullOrWhiteSpace(Row.ContactName) || !string.IsNullOrWhiteSpace(Row.ContactId)); }
+        }
+
+        public string InstitutionId
+        {
+            get { return Row.InstitutionId; }
+            set
+            {
+                if (Row.InstitutionId == value) return;
+                Row.InstitutionId = value;
+                OnPropertyChanged();
+                if (!applyingContact)
+                {
+                    ContactId = null;
+                    Trader = string.Empty;
+                }
+            }
+        }
+
+        public string ContactId
+        {
+            get { return Row.ContactId; }
+            set
+            {
+                if (Row.ContactId == value) return;
+                Row.ContactId = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool applyingContact;
+
+        partial void OnInstitutionChanged(string value)
+        {
+            Row.InstitutionName = value;
+            if (applyingContact) return;
+            ContactId = null;
+            Trader = string.Empty;
+            Row.ContactName = null;
+        }
+
+        partial void OnTraderChanged(string value)
+        {
+            Row.ContactName = value;
+        }
+
+        [RelayCommand]
+        private void SelectContact(LazySearchItem contact)
+        {
+            if (contact == null) return;
+            applyingContact = true;
+            try
+            {
+                Institution = contact.InstitutionName;
+                InstitutionId = contact.InstitutionId;
+                Trader = contact.Name;
+                ContactId = contact.Id;
+            }
+            finally
+            {
+                applyingContact = false;
+            }
         }
 
         #region 只读显示列

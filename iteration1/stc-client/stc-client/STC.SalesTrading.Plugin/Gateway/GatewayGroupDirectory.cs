@@ -1,4 +1,4 @@
-using STC.SalesTrading.Plugin.Abstractions;
+﻿using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Gateway.Contracts.Dictionary;
 using STC.SalesTrading.Plugin.Shared.Services;
@@ -16,8 +16,7 @@ namespace STC.SalesTrading.Plugin.Gateway
     /// 分组目录网关实现（ficc.watchlist.* / ficc.filterGroup.*，scope=MARKET）。
     /// 后端按「一次一组」保存（H20/H23 完整替换该组成员）、按 Id 删除（H21/H24），
     /// UI 的整体替换语义在此做差量映射：传入集合逐组 upsert、服务端多余组删除。
-    /// <para>已知限制（方案 §3.2.6 二期完善）：筛选条件 UI 模型是 key|value chip，无运算符与码表——
-    /// 落库统一按 EQ（多值逗号分隔按 IN），显示 label 暂用字段名；条件编辑器上线后替换转换。</para>
+    /// <para>筛选条件保留结构化运算符和值类型；无结构化载荷的旧条件才回退 EQ/IN。</para>
     /// <para>组级 expectedRevision 缓存于读取时；弹窗为模态低频操作，保存同步等待（netapi 同步风格一致）。</para>
     /// </summary>
     internal sealed class GatewayGroupDirectory : IGroupDirectory
@@ -27,6 +26,9 @@ namespace STC.SalesTrading.Plugin.Gateway
         private readonly Dictionary<string, string> filterRevisions = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<FilterProfileService.MarketKind, IReadOnlyList<FilterFieldEntry>> filterFieldCache =
             new Dictionary<FilterProfileService.MarketKind, IReadOnlyList<FilterFieldEntry>>();
+
+        private readonly Dictionary<FilterProfileService.MarketKind, HashSet<string>> watchIds = new Dictionary<FilterProfileService.MarketKind, HashSet<string>>();
+        private readonly Dictionary<FilterProfileService.MarketKind, HashSet<string>> filterIds = new Dictionary<FilterProfileService.MarketKind, HashSet<string>>();
 
         public GatewayGroupDirectory(GatewayRequester requester)
         {
@@ -41,7 +43,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             {
                 if (w == null || w.WatchlistId == null) continue;
                 watchRevisions[w.WatchlistId] = w.Revision;
-                var group = new FavBondGroup { Id = w.WatchlistId, Name = w.Name };
+                var group = new FavBondGroup { Id = w.WatchlistId, Name = w.Name, Revision = w.Revision };
                 foreach (var item in w.Securities ?? new List<WatchlistItem>())
                 {
                     if (item == null || item.SecurityId == null) continue;
@@ -52,6 +54,7 @@ namespace STC.SalesTrading.Plugin.Gateway
 
             // 回写会话缓存（FilterProfileService 静态内存）：侧栏 chip / chip 过滤与弹窗同一数据源，
             // Save 内部触发 DataChanged 驱动侧栏重建
+            watchIds[market] = new HashSet<string>(result.Select(group => group.Id), StringComparer.Ordinal);
             FilterProfileService.SaveFavGroups(market, result);
             return result;
         }
@@ -87,7 +90,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             {
                 if (g == null || g.FilterGroupId == null) continue;
                 filterRevisions[g.FilterGroupId] = g.Revision;
-                var group = new FilterNamedGroup { Id = g.FilterGroupId, Name = g.Name };
+                var group = new FilterNamedGroup { Id = g.FilterGroupId, Name = g.Name, Revision = g.Revision };
                 foreach (var subgroup in g.Subgroups ?? new List<FilterSubgroupDto>())
                 {
                     if (subgroup == null) continue;
@@ -102,7 +105,15 @@ namespace STC.SalesTrading.Plugin.Gateway
                             condition.Field,
                             fieldLabel ?? condition.Field,
                             valueText,
-                            TranslateConditionValue(valueLabels, condition.Field, valueText)));
+                            TranslateConditionValue(valueLabels, condition.Field, valueText))
+                        {
+                            Protocol = new FilterConditionPayload
+                            {
+                                Field = condition.Field,
+                                Operator = condition.Operator,
+                                Value = condition.Value
+                            }
+                        });
                     }
                     if (ui.Conditions.Count > 0) group.Subgroups.Add(ui);
                 }
@@ -110,6 +121,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             }
 
             // 回写会话缓存：同 GetFavGroups
+            filterIds[market] = new HashSet<string>(result.Select(group => group.Id), StringComparer.Ordinal);
             FilterProfileService.SaveFilterGroups(market, result);
             return result;
         }
@@ -173,6 +185,7 @@ namespace STC.SalesTrading.Plugin.Gateway
             {
                 serverId = group.Id;
             }
+            expected = group.Revision;
             var index = FilterProfileService.GetFavGroups(market).IndexOf(group);
             var request = new WatchlistSaveRequest
             {
@@ -194,12 +207,23 @@ namespace STC.SalesTrading.Plugin.Gateway
             {
                 watchRevisions[saved.WatchlistId] = saved.Revision;
                 group.Id = saved.WatchlistId;
+                group.Revision = saved.Revision;
+                HashSet<string> existingIds;
+                if (!watchIds.TryGetValue(market, out existingIds))
+                {
+                    existingIds = new HashSet<string>(StringComparer.Ordinal);
+                    watchIds[market] = existingIds;
+                }
+                existingIds.Add(group.Id);
             }
         }
 
         public void SaveFavGroups(FilterProfileService.MarketKind market, IEnumerable<FavBondGroup> groups)
         {
             var marketCode = ToMarketCode(market);
+            HashSet<string> existingIds;
+            var previousIds = watchIds.TryGetValue(market, out existingIds)
+                ? existingIds.ToList() : new List<string>();
             var list = (groups ?? new FavBondGroup[0]).ToList();
             var keptIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -211,7 +235,7 @@ namespace STC.SalesTrading.Plugin.Gateway
                 if (group.Id != null && watchRevisions.ContainsKey(group.Id))
                 {
                     serverId = group.Id;
-                    watchRevisions.TryGetValue(group.Id, out expected);
+                    expected = group.Revision;
                 }
                 var request = new WatchlistSaveRequest
                 {
@@ -231,6 +255,8 @@ namespace STC.SalesTrading.Plugin.Gateway
                 var saved = data != null ? data.Watchlist : null;
                 if (saved != null && saved.WatchlistId != null)
                 {
+                    group.Id = saved.WatchlistId;
+                    group.Revision = saved.Revision;
                     keptIds.Add(saved.WatchlistId);
                     watchRevisions[saved.WatchlistId] = saved.Revision;
                 }
@@ -245,20 +271,24 @@ namespace STC.SalesTrading.Plugin.Gateway
             }
 
             DeleteMissing<WatchlistDeleteRequest, WatchlistDeleteData>(GatewayTopics.WatchlistDelete,
-                watchRevisions.Keys.Except(keptIds, StringComparer.Ordinal).ToList(),
+                previousIds.Except(keptIds, StringComparer.Ordinal).ToList(),
                 id => new WatchlistDeleteRequest { WatchlistId = id, ExpectedRevision = watchRevisions[id] });
-            foreach (var removed in watchRevisions.Keys.Where(id => !keptIds.Contains(id)).ToList())
+            foreach (var removed in previousIds.Where(id => !keptIds.Contains(id)).ToList())
             {
                 watchRevisions.Remove(removed);
             }
 
             // 回写会话缓存：侧栏立即反映保存结果（内部触发 DataChanged）
+            watchIds[market] = keptIds;
             FilterProfileService.SaveFavGroups(market, list);
         }
 
         public void SaveFilterGroups(FilterProfileService.MarketKind market, IEnumerable<FilterNamedGroup> groups)
         {
             var marketCode = ToMarketCode(market);
+            HashSet<string> existingIds;
+            var previousIds = filterIds.TryGetValue(market, out existingIds)
+                ? existingIds.ToList() : new List<string>();
             var list = (groups ?? new FilterNamedGroup[0]).ToList();
             var keptIds = new HashSet<string>(StringComparer.Ordinal);
 
@@ -296,7 +326,7 @@ namespace STC.SalesTrading.Plugin.Gateway
                 if (group.Id != null && filterRevisions.ContainsKey(group.Id))
                 {
                     serverId = group.Id;
-                    filterRevisions.TryGetValue(group.Id, out expected);
+                    expected = group.Revision;
                 }
                 var request = new FilterGroupSaveRequest
                 {
@@ -316,6 +346,8 @@ namespace STC.SalesTrading.Plugin.Gateway
                 var saved = data != null ? data.FilterGroup : null;
                 if (saved != null && saved.FilterGroupId != null)
                 {
+                    group.Id = saved.FilterGroupId;
+                    group.Revision = saved.Revision;
                     keptIds.Add(saved.FilterGroupId);
                     filterRevisions[saved.FilterGroupId] = saved.Revision;
                 }
@@ -329,14 +361,15 @@ namespace STC.SalesTrading.Plugin.Gateway
             }
 
             DeleteMissing<FilterGroupDeleteRequest, FilterGroupDeleteData>(GatewayTopics.FilterGroupDelete,
-                filterRevisions.Keys.Except(keptIds, StringComparer.Ordinal).ToList(),
+                previousIds.Except(keptIds, StringComparer.Ordinal).ToList(),
                 id => new FilterGroupDeleteRequest { FilterGroupId = id, ExpectedRevision = filterRevisions[id] });
-            foreach (var removed in filterRevisions.Keys.Where(id => !keptIds.Contains(id)).ToList())
+            foreach (var removed in previousIds.Where(id => !keptIds.Contains(id)).ToList())
             {
                 filterRevisions.Remove(removed);
             }
 
             // 回写会话缓存：同 SaveFavGroups
+            filterIds[market] = keptIds;
             FilterProfileService.SaveFilterGroups(market, list);
         }
 
@@ -428,15 +461,8 @@ namespace STC.SalesTrading.Plugin.Gateway
         {
             foreach (var id in ids)
             {
-                try
-                {
-                    requester.RequestAsync<TReq, TData>(topic, buildRequest(id), System.Threading.CancellationToken.None)
-                        .GetAwaiter().GetResult();
-                }
-                catch
-                {
-                    // 单组删除失败不阻断其余组的保存；下次保存会再次尝试清理
-                }
+                requester.RequestAsync<TReq, TData>(topic, buildRequest(id), System.Threading.CancellationToken.None)
+                    .GetAwaiter().GetResult();
             }
         }
 

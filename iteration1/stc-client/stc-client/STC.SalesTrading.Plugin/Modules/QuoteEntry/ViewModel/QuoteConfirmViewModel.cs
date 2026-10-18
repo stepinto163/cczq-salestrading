@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -294,8 +294,24 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             finally { _isUpdatingSelectionState = false; }
         }
 
+        private bool syncingToolbar;
+
         private void RecomputeStats()
         {
+            var firstSelected = SelectedRows.FirstOrDefault();
+            if (firstSelected != null)
+            {
+                syncingToolbar = true;
+                try
+                {
+                    ToolbarSettlement = firstSelected.Settlement;
+                    ToolbarPriceType = firstSelected.PriceType;
+                }
+                finally
+                {
+                    syncingToolbar = false;
+                }
+            }
             var rows = AllRows.ToList();
             var selected = rows.Count(r => r.IsSelected);
             SelectedCount = selected;
@@ -476,8 +492,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     continue;
                 }
 
-                // 收益率口径 1BP=0.0001；净价/全价口径 1BP=0.01（原型 adjustBP 语义）
-                var step = row.PriceType == "净价" || row.PriceType == "全价" ? 0.01m : 0.0001m;
+                // 收益率以百分数显示，1BP = 0.01 个百分点。
+                var step = 0.01m;
                 row.Price = (price + delta * step).ToString("0.####", CultureInfo.InvariantCulture);
             }
 
@@ -493,6 +509,16 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [RelayCommand]
         private void AdjustAmountDown() { ApplyAmount(-1); }
 
+        partial void OnAmountInputChanged(string value)
+        {
+            decimal amount;
+            if (!TryParseNonNegative(value, out amount)) return;
+            foreach (var row in SelectedRows)
+            {
+                row.Volume = amount.ToString("0.####", CultureInfo.InvariantCulture);
+            }
+        }
+
         private void ApplyAmount(int sign)
         {
             var selected = SelectedRows.ToList();
@@ -502,14 +528,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 return;
             }
 
-            decimal amount;
-            if (!TryParseNonNegative(AmountInput, out amount))
-            {
-                ToastService.Show("报量调整值必须是非负数字", ToastKind.Warning);
-                return;
-            }
-
-            var delta = amount * sign * 1000m;   // 原型 +1k = 加 1000 万
+            var delta = sign * 1000m;
             var skipped = 0;
 
             foreach (var row in selected)
@@ -541,7 +560,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         partial void OnToolbarPriceTypeChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
+            if (syncingToolbar || string.IsNullOrEmpty(value)) return;
             foreach (var row in SelectedRows) row.PriceType = value;
         }
 
@@ -551,7 +570,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         partial void OnToolbarSettlementChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
+            if (syncingToolbar || string.IsNullOrEmpty(value)) return;
             foreach (var row in SelectedRows) row.Settlement = value;
         }
 
@@ -563,7 +582,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             {
                 row.Institution = InstitutionInput.Trim();
                 // CRM Id 随批量应用回填；未从联想选定（null）时由确认前置校验拦截
-                row.Row.InstitutionId = InstitutionSelectedId;
+                row.InstitutionId = InstitutionSelectedId;
             }
         }
 
@@ -574,7 +593,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             foreach (var row in SelectedRows)
             {
                 row.Trader = TraderInput.Trim();
-                row.Row.ContactId = TraderSelectedId;
+                row.ContactId = TraderSelectedId;
             }
         }
 
@@ -596,6 +615,69 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         }
 
         #endregion
+
+        partial void OnInstitutionInputChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.Institution = (value ?? string.Empty).Trim();
+                row.InstitutionId = InstitutionSelectedId;
+            }
+        }
+
+        partial void OnInstitutionSelectedIdChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.InstitutionId = value;
+            }
+            if (!selectingContact)
+            {
+                TraderSelectedId = null;
+                TraderInput = string.Empty;
+            }
+        }
+
+        partial void OnTraderInputChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.Trader = (value ?? string.Empty).Trim();
+                row.ContactId = TraderSelectedId;
+            }
+        }
+
+        partial void OnTraderSelectedIdChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.ContactId = value;
+            }
+        }
+
+        private bool selectingContact;
+
+        [RelayCommand]
+        private void SelectContact(LazySearchItem contact)
+        {
+            if (contact == null) return;
+            selectingContact = true;
+            try
+            {
+                InstitutionInput = contact.InstitutionName;
+                InstitutionSelectedId = contact.InstitutionId;
+                TraderInput = contact.Name;
+                TraderSelectedId = contact.Id;
+                foreach (var row in SelectedRows)
+                {
+                    row.SelectContactCommand.Execute(contact);
+                }
+            }
+            finally
+            {
+                selectingContact = false;
+            }
+        }
 
         #region 释放
 

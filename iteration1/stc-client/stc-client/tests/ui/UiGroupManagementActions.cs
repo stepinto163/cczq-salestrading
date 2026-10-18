@@ -108,9 +108,9 @@ namespace SalesTrading.UiTests
             {
                 await Task.Run(() => staleEditor.Save());
             }
-            catch (InvalidOperationException error)
+            catch (STC.SalesTrading.Plugin.Gateway.GatewayApiException error)
             {
-                conflict = error.Message.StartsWith("1004:");
+                conflict = error.Code == "1004";
             }
             check(conflict && FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate)
                 .Single(group => group.Id == watchlist.Id).Name == groupTestPrefix + "A", "旧编辑副本触发版本冲突且保留最新名称");

@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -394,10 +394,33 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         #endregion
 
         [RelayCommand]
+        private async System.Threading.Tasks.Task MarkRead(System.Collections.IList selected)
+        {
+            var rows = selected?.Cast<AlertRow>().ToList() ?? new List<AlertRow>();
+            if (rows.Count == 0)
+            {
+                ToastService.Show("请先选择提醒", ToastKind.Warning);
+                return;
+            }
+            try
+            {
+                foreach (var notificationId in rows.Select(row => row.NotificationId).Distinct())
+                {
+                    await _marketCenterService.MarkAlertReadAsync(notificationId, CancellationToken.None);
+                    foreach (var row in Rows.Where(item => item.NotificationId == notificationId)) row.ReadTime = DateTime.Now;
+                }
+            }
+            catch (Exception error)
+            {
+                ToastService.Show("标记已读失败：" + error.Message, ToastKind.Error);
+            }
+        }
+
+        [RelayCommand]
         private async System.Threading.Tasks.Task Refresh()
         {
             await LoadAsync();
-            ToastService.Show("报价提醒已刷新（模拟）", ToastKind.Success);
+            ToastService.Show("报价提醒已刷新", ToastKind.Success);
         }
 
         [RelayCommand]

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -22,6 +22,8 @@ namespace STC.SalesTrading.Plugin.Shared.Components
         public LazySearchComboBox()
         {
             InitializeComponent();
+            // TextBox 的类处理器可能先处理方向键；候选导航仍需接收该按键。
+            InputBox.AddHandler(Keyboard.KeyDownEvent, new KeyEventHandler(OnInputKeyDown), true);
             Candidates = new ObservableCollection<object>();
             CandidateGrid.ItemsSource = Candidates;
             InputBox.GotKeyboardFocus += (s, e) => UpdateChrome();
@@ -43,7 +45,8 @@ namespace STC.SalesTrading.Plugin.Shared.Components
         }
 
         public static readonly DependencyProperty SearchParameterProperty = DependencyProperty.Register(
-            nameof(SearchParameter), typeof(object), typeof(LazySearchComboBox), new PropertyMetadata(null));
+            nameof(SearchParameter), typeof(object), typeof(LazySearchComboBox),
+            new PropertyMetadata(null, (sender, args) => ((LazySearchComboBox)sender).InvalidateCandidates()));
 
         /// <summary>业务附加参数（原样进 args.Parameter，语义由命令实现方约定）。</summary>
         public object SearchParameter
@@ -138,6 +141,15 @@ namespace STC.SalesTrading.Plugin.Shared.Components
             set { SetValue(PageSizeProperty, value); }
         }
 
+        public static readonly DependencyProperty SelectionCommandProperty = DependencyProperty.Register(
+            nameof(SelectionCommand), typeof(ICommand), typeof(LazySearchComboBox));
+
+        public ICommand SelectionCommand
+        {
+            get { return (ICommand)GetValue(SelectionCommandProperty); }
+            set { SetValue(SelectionCommandProperty, value); }
+        }
+
         // ============ 状态 ============
 
         /// <summary>候选行（任意类型，列按 ColumnMembers 反射取值）。</summary>
@@ -174,10 +186,21 @@ namespace STC.SalesTrading.Plugin.Shared.Components
         {
             if (_restoring) return;
             // 名称变更：清 Id（显式推源；语义——名称改了 Id 不能还是旧的）
+            InvalidateCandidates();
             PushSelection(null);
+            Text = InputBox.Text;
+            PushText();
             UpdateChrome();
             _debounce.Stop();
             _debounce.Start();
+        }
+
+        private void InvalidateCandidates()
+        {
+            _searchSeq++;
+            Candidates?.Clear();
+            _debounce.Stop();
+            if (IsDropDownOpen) _debounce.Start();
         }
 
         private void OnDebounceTick(object sender, EventArgs e)
@@ -240,7 +263,11 @@ namespace STC.SalesTrading.Plugin.Shared.Components
             try
             {
                 InputBox.Text = string.Empty;
+                Text = string.Empty;
+                PushText();
                 PushSelection(null);
+                _searchSeq++;
+                Candidates.Clear();
                 UpdateChrome();
             }
             finally
@@ -262,7 +289,14 @@ namespace STC.SalesTrading.Plugin.Shared.Components
 
         private void OnInputKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter && IsDropDownOpen && CandidateGrid.SelectedItem != null)
+            if (e.Key == Key.Down && !IsDropDownOpen)
+            {
+                // 已关闭候选时，方向键明确重新打开；不依赖上一次输入防抖是否仍在计时。
+                _debounce.Stop();
+                IsDropDownOpen = true;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && IsDropDownOpen && CandidateGrid.SelectedItem != null)
             {
                 ApplySelection(CandidateGrid.SelectedItem);
                 e.Handled = true;
@@ -286,6 +320,7 @@ namespace STC.SalesTrading.Plugin.Shared.Components
                 PushSelection(GetMemberValue(item, ValueMember) as string);
                 Text = InputBox.Text;
                 PushText();
+                if (SelectionCommand?.CanExecute(item) == true) SelectionCommand.Execute(item);
                 UpdateChrome();
             }
             finally

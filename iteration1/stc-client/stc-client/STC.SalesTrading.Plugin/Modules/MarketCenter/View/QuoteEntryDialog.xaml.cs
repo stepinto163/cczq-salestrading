@@ -1,4 +1,4 @@
-using STC.SalesTrading.Plugin.Abstractions;
+﻿using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
@@ -86,9 +86,9 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         /// 从完整报价行预填并打开（报价管理今日页双击编辑，方案 §3.1.4 入口矩阵）：
         /// 行即 quote view 产出的完整 Quote（含 Revision），直接回填无需再拉。
         /// </summary>
-        public static void ShowForQuote(Window owner, QuoteRow row, QuoteFormMode mode = QuoteFormMode.Edit)
+        public static void ShowForQuote(Window owner, QuoteRow row, QuoteFormMode mode = QuoteFormMode.Edit, Func<System.Threading.Tasks.Task> onSaved = null)
         {
-            ShowCore(owner, mode, dlg => dlg.Prefill(row, mode), null);
+            ShowCore(owner, mode, dlg => { dlg.Prefill(row, mode); dlg.onSaved = onSaved; }, null);
         }
 
         private static async void ShowCore(Window owner, QuoteFormMode mode, Action<QuoteEntryDialog> prefill, string pullQuoteId)
@@ -419,6 +419,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 
         /// <summary>校验后提交（原型 validateQuoteForm：价格/报量非空须为不小于 0 的有效数字）。
         /// 编辑（带报价 Id）走 update、新报价走 create，均经 <see cref="QuoteService"/>。</summary>
+        private Func<System.Threading.Tasks.Task> onSaved;
+
         private async void OnSubmit(object sender, RoutedEventArgs e)
         {
             ClearValidation();
@@ -427,7 +429,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             if (!string.IsNullOrWhiteSpace(PriceBox.Text)
                 && (!decimal.TryParse(PriceBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out price) || price < 0m))
             {
-                MarkInvalid(PriceBox, PriceErrorText, "请输入不小于0的有效价格");
+                MarkInvalid(PriceBox, PriceErrorText, "价格必须为数字且不小于0");
                 return;
             }
 
@@ -472,6 +474,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
                     await QuoteService.SubmitQuotesAsync(new[] { row }, CancellationToken.None);
                     ToastService.Show("已提交新报价（" + row.SecurityId + "）", ToastKind.Success);
                 }
+                if (onSaved != null) await onSaved();
                 Close();
             }
             catch (Exception ex)

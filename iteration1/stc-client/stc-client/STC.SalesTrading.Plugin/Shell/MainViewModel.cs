@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using STC.Common.Utils.Events;
@@ -123,7 +123,7 @@ namespace STC.SalesTrading.Plugin.Shell
             _overlayService = overlayService;
             QuotePage = new QuoteViewModel(quoteService);
             MarketCenterPage = new MarketCenterViewModel(marketCenterService, quoteService, mgmtService, groupDirectory);
-            QuoteMgmtPage = new QuoteMgmtViewModel(mgmtService);
+            QuoteMgmtPage = new QuoteMgmtViewModel(mgmtService, groupDirectory);
 
             NavItems = new ObservableCollection<NavItem>
             {

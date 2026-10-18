@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace STC.SalesTrading.Plugin.Abstractions.Queries
 {
@@ -10,6 +10,9 @@ namespace STC.SalesTrading.Plugin.Abstractions.Queries
     public sealed class QuoteMgmtQuery
     {
         public bool Today { get; set; }
+        public bool ForceRefresh { get; set; }
+        public ProductFilter ProductFilter { get; set; }
+        public string SearchText { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string Status { get; set; }

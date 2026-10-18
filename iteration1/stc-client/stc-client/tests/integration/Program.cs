@@ -12,6 +12,8 @@ using STC.SalesTrading.Plugin.Gateway;
 using STC.SalesTrading.Plugin.Gateway.Contracts.Quote;
 using STC.SalesTrading.Plugin.Gateway.Contracts.View;
 using STC.SalesTrading.Plugin.Gateway.Contracts.Base;
+using STC.SalesTrading.Plugin.Shared.Services;
+using STC.SalesTrading.Plugin.Shared.ViewModel;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel;
 
 namespace SalesTrading.IntegrationTests
@@ -261,6 +263,192 @@ namespace SalesTrading.IntegrationTests
             Equal(2, gateway.Requests.Count, "cache avoids extra network call");
         }
         [STAThread]
+        private static async Task CrmInstitutionMetadata()
+        {
+            var gateway = new ControlledGateway
+            {
+                Respond = request =>
+                {
+                    var payload = JObject.Parse((string)request.Payload);
+                    if (request.Topic == GatewayTopics.BaseQuery)
+                    {
+                        return Task.FromResult(Reply(new { records = new[]
+                        {
+                            new { contactId = "c1", contactName = "同名联系人", institutionIds = new[] { "i1", "i2" } },
+                            new { contactId = "c2", contactName = "同名联系人", institutionIds = new[] { "i1" } }
+                        }}));
+                    }
+                    Equal(GatewayTopics.BaseGet, request.Topic, "batched institution lookup");
+                    Equal(2, ((JArray)payload["ids"]).Count, "deduplicated institutions");
+                    return Task.FromResult(Reply(new { records = new[]
+                    {
+                        new { institutionId = "i1", institutionName = "机构甲" },
+                        new { institutionId = "i2", institutionName = "机构乙" }
+                    }}));
+                }
+            };
+            var directory = new GatewayBaseDirectory(new GatewayRequester(gateway));
+            var result = await directory.SearchPageAsync("CONTACT", "同名", null, 0, 50, Token);
+            Equal(3, result.Items.Count, "one choice per contact/institution relationship");
+            Equal(true, result.Items.All(item => !string.IsNullOrEmpty(item.InstitutionName)), "visible institution names");
+            Equal(2, gateway.Requests.Count, "no per-contact request loop");
+            var scoped = await directory.SearchPageAsync("CONTACT", "同名", "i2", 0, 50, Token);
+            Equal(1, scoped.Items.Count, "institution scope");
+            Equal("i2", scoped.Items.Single().InstitutionId, "chosen relationship");
+        }
+
+        private static Task GroupRoundTrip(bool watchlist)
+        {
+            var gateway = new ControlledGateway
+            {
+                Respond = request =>
+                {
+                    var payload = JObject.Parse((string)request.Payload);
+                    var market = (string)payload["market"];
+                    if (request.Topic == GatewayTopics.QuoteDictionaryQuery)
+                        return Task.FromResult(Reply(new { filterFields = new[] { new { field = "price" }, new { field = "urgent" } } }));
+                    if (request.Topic == GatewayTopics.WatchlistQuery)
+                        return Task.FromResult(Reply(new { watchlists = new[] { new { watchlistId = market, name = market, revision = "1" } } }));
+                    if (request.Topic == GatewayTopics.FilterGroupQuery)
+                        return Task.FromResult(Reply(new { filterGroups = new[] { new
+                        {
+                            filterGroupId = market, name = market, revision = "1",
+                            subgroups = new[] { new { conditions = new object[]
+                            {
+                                new { field = "price", @operator = "BETWEEN", value = new[] { 1.1m, 2.3m } },
+                                new { field = "urgent", @operator = "EQ", value = true }
+                            } } }
+                        } } }));
+                    if (request.Topic == GatewayTopics.FilterGroupSave)
+                    {
+                        var conditions = (JArray)payload["subgroups"][0]["conditions"];
+                        Equal("BETWEEN", (string)conditions[0]["operator"], "range operator preserved");
+                        Equal(JTokenType.Array, conditions[0]["value"].Type, "range is not converted to text");
+                        Equal(true, (bool)conditions[1]["value"], "boolean type preserved");
+                        return Task.FromResult(Reply(new { filterGroup = new { filterGroupId = "RATE", revision = "2" } }));
+                    }
+                    if (request.Topic == GatewayTopics.WatchlistSave)
+                        return Task.FromResult(Reply(new { watchlist = new { watchlistId = "RATE", revision = "2" } }));
+                    return Task.FromResult(Reply(new { deleted = true }));
+                }
+            };
+            var directory = new GatewayGroupDirectory(new GatewayRequester(gateway));
+            if (watchlist)
+            {
+                directory.GetFavGroups(FilterProfileService.MarketKind.Credit);
+                var rate = directory.GetFavGroups(FilterProfileService.MarketKind.Rate);
+                directory.SaveFavGroups(FilterProfileService.MarketKind.Rate, rate);
+                Equal(0, gateway.Requests.Count(request => request.Topic == GatewayTopics.WatchlistDelete), "other market retained");
+                directory.SaveFavGroups(FilterProfileService.MarketKind.Rate, new FavBondGroup[0]);
+                var deleted = gateway.Requests.Single(request => request.Topic == GatewayTopics.WatchlistDelete);
+                Equal("RATE", (string)JObject.Parse((string)deleted.Payload)["watchlistId"], "delete only this market");
+            }
+            else
+            {
+                directory.GetFilterGroups(FilterProfileService.MarketKind.Credit);
+                var rate = directory.GetFilterGroups(FilterProfileService.MarketKind.Rate);
+                directory.SaveFilterGroups(FilterProfileService.MarketKind.Rate, rate);
+                Equal(0, gateway.Requests.Count(request => request.Topic == GatewayTopics.FilterGroupDelete), "other market retained");
+                directory.SaveFilterGroups(FilterProfileService.MarketKind.Rate, new FilterNamedGroup[0]);
+                var deleted = gateway.Requests.Single(request => request.Topic == GatewayTopics.FilterGroupDelete);
+                Equal("RATE", (string)JObject.Parse((string)deleted.Payload)["filterGroupId"], "delete only this market");
+            }
+            return Task.CompletedTask;
+        }
+
+        private static Task PendingToolbarSelection()
+        {
+            var gateway = new ControlledGateway();
+            var requester = new GatewayRequester(gateway);
+            using (var stream = new GatewayReportStream<QuoteStreamBatch>(requester, GatewayTopics.QuoteStreamOpen))
+            using (var service = new GatewayQuoteService(requester, stream))
+            using (var model = new QuoteConfirmViewModel(service))
+            {
+                var batch = new QuoteConfirmBatchViewModel(new QuoteConfirmBatch { BatchId = "test" });
+                var selected = new QuoteConfirmRowViewModel(Input("a")) { IsSelected = true };
+                var untouched = new QuoteConfirmRowViewModel(Input("b"));
+                batch.Rows.Add(selected);
+                batch.Rows.Add(untouched);
+                model.Batches.Add(batch);
+                model.AmountInput = "300";
+                Equal("300", selected.Volume, "quantity text replaces selected quantity");
+                model.AdjustAmountUpCommand.Execute(null);
+                Equal("1300", selected.Volume, "+1k is fixed 1000, not input multiplier");
+                Equal("1000", untouched.Volume, "unchecked quantity unchanged");
+                model.SelectContactCommand.Execute(new LazySearchItem { Id = "c1", Name = "联系人", InstitutionId = "i1", InstitutionName = "机构甲" });
+                Equal("i1", selected.InstitutionId, "batch contact fills institution");
+                Equal(null, untouched.ContactId, "unchecked contact unchanged");
+                model.TraderSelectedId = null;
+                model.TraderInput = "仅输入文本";
+                Equal(null, selected.ContactId, "typed text does not resolve contact");
+                model.InstitutionSelectedId = "i2";
+                Equal(string.Empty, selected.Trader, "new institution clears incompatible contact");
+                Equal(string.Empty, model.TraderInput, "toolbar clears incompatible contact text too");
+                Equal(null, model.TraderSelectedId, "toolbar clears incompatible contact ID too");
+            }
+            return Task.CompletedTask;
+        }
+
+        private static async Task ManagementPageAndRefresh()
+        {
+            var gateway = new ControlledGateway
+            {
+                Respond = request =>
+                {
+                    var payload = JObject.Parse((string)request.Payload);
+                    if (request.Topic == GatewayTopics.QuoteViewOpen)
+                    {
+                        Equal("VISIBLE", (string)payload["ownerScope"], "confirmed quotes shared within permissions");
+                        return Task.FromResult(Reply(new { streamId = "s", sequence = "1", view = new { totalCount = 2 }, quotes = new[] { Quote("1") } }));
+                    }
+                    if (request.Topic == GatewayTopics.QuoteViewQuery)
+                    {
+                        var page = (int)payload["pageNumber"];
+                        var quote = Quote("2");
+                        if (page == 2) quote.QuoteId = "q2";
+                        return Task.FromResult(Reply(new { streamId = "s", sequence = "2", view = new { totalCount = 2 }, quotes = new[] { quote } }));
+                    }
+                    return Task.FromResult(Reply(new StreamOpenData { StreamId = "s", PushTopic = "push" }));
+                }
+            };
+            var requester = new GatewayRequester(gateway);
+            using (var stream = new GatewayReportStream<QuoteStreamBatch>(requester, GatewayTopics.QuoteStreamOpen))
+            using (var service = new GatewayQuoteMgmtService(requester, stream))
+            {
+                var query = new STC.SalesTrading.Plugin.Abstractions.Queries.QuoteMgmtQuery { PageSize = 1 };
+                var first = await service.QueryTodayRowsAsync(query, Token);
+                Equal("1", first.Items.Single().Revision, "initial revision");
+                query.ForceRefresh = true;
+                var refreshed = await service.QueryTodayRowsAsync(query, Token);
+                Equal("2", refreshed.Items.Single().Revision, "own edit must fetch latest revision");
+                query.Page = 2;
+                var second = await service.QueryTodayRowsAsync(query, Token);
+                Equal("q2", second.Items.Single().QuoteId, "second page not skipped twice");
+            }
+        }
+
+        private static async Task NotificationReadFailure()
+        {
+            var gateway = new ControlledGateway
+            {
+                Respond = request =>
+                {
+                    if (request.Topic == GatewayTopics.NotificationViewOpen)
+                        return Task.FromResult(Reply(new { streamId = "s", sequence = "1", notifications = new[] { new { notificationId = "n1", quoteIds = new[] { "q1" } } } }));
+                    if (request.Topic == GatewayTopics.NotificationRead)
+                        return Task.FromResult(Reply(new { results = new[] { new { notificationId = "n1", Code = "1001", Msg = "rejected" } } }));
+                    return Task.FromResult(Reply(new StreamOpenData { StreamId = "s", PushTopic = "push" }));
+                }
+            };
+            using (var service = new GatewayMarketCenterService(new GatewayRequester(gateway)))
+            {
+                await service.LoadAlertRowsAsync(null, 1, 50, Token);
+                await Throws<GatewayApiException>(() => service.MarkAlertReadAsync("n1", Token));
+                var rows = await service.LoadAlertRowsAsync(null, 1, 50, Token);
+                Equal(false, rows.Single().IsRead, "server rejection cannot appear read locally");
+            }
+        }
+
         private static int Main()
         {
             Execute().GetAwaiter().GetResult();
@@ -374,6 +562,52 @@ namespace SalesTrading.IntegrationTests
             });
             foreach (var mode in new[] { "blank", "unresolved", "partial-create", "partial-confirm", "create-timeout", "confirm-timeout" })
                 await Run("submission-" + mode, () => Submission(mode));
+            await Run("pending-toolbar-selected-rows-only", PendingToolbarSelection);
+            await Run("management-scope-refresh-pagination", ManagementPageAndRefresh);
+            await Run("notification-read-rejection-keeps-unread", NotificationReadFailure);
+            await Run("crm-batched-institution-metadata", CrmInstitutionMetadata);
+            await Run("group-stale-editor-preserves-original-revision", async () =>
+            {
+                var gateway = new ControlledGateway
+                {
+                    Respond = request =>
+                    {
+                        if (request.Topic == GatewayTopics.WatchlistQuery)
+                            return Task.FromResult(Reply(new { watchlists = new[] { new { watchlistId = "w1", name = "old", revision = "1" } } }));
+                        var payload = JObject.Parse((string)request.Payload);
+                        Equal("1", (string)payload["expectedRevision"], "editor's original revision, not another save's revision");
+                        if ((string)payload["name"] == "stale")
+                            return Task.FromResult("{\"Code\":\"1004\",\"Msg\":\"Group changed\"}");
+                        return Task.FromResult(Reply(new { watchlist = new { watchlistId = "w1", revision = "2" } }));
+                    }
+                };
+                var directory = new GatewayGroupDirectory(new GatewayRequester(gateway));
+                var first = directory.GetFavGroups(FilterProfileService.MarketKind.Rate);
+                var second = directory.GetFavGroups(FilterProfileService.MarketKind.Rate);
+                first.Single().Name = "first";
+                directory.SaveFavGroups(FilterProfileService.MarketKind.Rate, first);
+                second.Single().Name = "stale";
+                await Throws<GatewayApiException>(() =>
+                {
+                    directory.SaveFavGroups(FilterProfileService.MarketKind.Rate, second);
+                    return Task.CompletedTask;
+                });
+                Equal("first", FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Single().Name, "failed save cannot replace local state");
+            });
+            await Run("watchlist-delete-is-market-scoped", () => GroupRoundTrip(true));
+            await Run("filter-group-types-and-market-isolation", () => GroupRoundTrip(false));
+            await Run("crm-row-selection-fills-and-invalidates-institution", () =>
+            {
+                var row = new QuoteConfirmRowViewModel(Input("a"));
+                row.SelectContactCommand.Execute(new LazySearchItem { Id = "c1", Name = "联系人", InstitutionId = "i1", InstitutionName = "机构甲" });
+                Equal("i1", row.Row.InstitutionId, "selection fills institution ID");
+                Equal("机构甲", row.Institution, "selection fills displayed institution");
+                Equal("c1", row.Row.ContactId, "selected contact ID");
+                row.InstitutionId = "i2";
+                Equal(null, row.Row.ContactId, "different institution invalidates contact");
+                Equal(string.Empty, row.Trader, "stale displayed contact cleared");
+                return Task.CompletedTask;
+            });
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
             await Run("lifecycle-payload-excludes-edit-fields", LifecyclePayload);
             await Run("preview-direction-does-not-require-persisted-id", () =>

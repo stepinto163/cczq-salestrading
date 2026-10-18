@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -16,6 +16,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
         /// <summary>清除过滤：重置面板内全部筛选标签与输入框（视觉走树，Mock 阶段不驱动数据过滤）。</summary>
         private void OnClearFilters(object sender, RoutedEventArgs e)
         {
+            STC.SalesTrading.Plugin.Shared.Services.MarketGroupSelectionService.ClearActive();
             foreach (var toggle in FindChildren<ToggleButton>(this))
             {
                 toggle.IsChecked = false;

@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -149,8 +149,18 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
             OnPropertyChanged(nameof(IsEmpty));
         }
 
-                        private async System.Threading.Tasks.Task QueryAsync(bool silent = false)
+        private bool active;
+
+        public void Activate()
         {
+            if (active) return;
+            active = true;
+            ReloadImmediate();
+        }
+
+        private async System.Threading.Tasks.Task QueryAsync(bool silent = false)
+        {
+            if (!active) return;
             await QueryFlow.RunAsync(_queryCoordinator, this, async lease =>
             {
                 var result = await _mgmtService.QueryHistoryRowsAsync(new QuoteMgmtQuery
@@ -158,6 +168,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                     Today = false,
                     StartDate = StartDate,
                     EndDate = EndDate,
+                    ProductFilter = productFilter,
+                    SearchText = searchText,
                     BondSearchText = BondSearchText,
                     InstitutionSearchText = InstitutionSearchText,
                     // 原型历史无分页控件：一次取足（后端游标协议保留，二期滚动加载复用）
@@ -177,6 +189,17 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
 
         private void Reload()
         {
+            ReloadImmediate();
+        }
+
+        private ProductFilter productFilter;
+        private string searchText;
+
+        public void ApplyFilters(ProductFilter filter, string text)
+        {
+            productFilter = filter;
+            searchText = text;
+            SelectedRow.Clear();
             ReloadImmediate();
         }
 

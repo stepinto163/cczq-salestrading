@@ -45,7 +45,7 @@ namespace SalesTrading.UiTests
                 await VerifyAsync(text, "长城交易员 · 字号预期 11，实际 " + text.FontSize,
                     () => Require(text.FontSize == 11, "长城交易员字号应为11"));
             }
-            var feedbackTexts = Descendants<TextBlock>(container).Where(text => text.Text == FeedbackText(recommendation.Feedback)).ToArray();
+            var feedbackTexts = Descendants<TextBlock>(container).Where(text => BindingOperations.GetBinding(text, TextBlock.TextProperty)?.Path?.Path == "FeedbackText").ToArray();
             Require(feedbackTexts.Length > 0, "验证目标缺失：反馈状态");
             foreach (var text in feedbackTexts)
             {

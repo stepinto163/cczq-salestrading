@@ -270,7 +270,21 @@ namespace SalesTrading.UiTests
             input.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(input), Environment.TickCount, Key.Down)
                 { RoutedEvent = Keyboard.KeyDownEvent });
             var suggestions = (DataGrid)control.FindName("CandidateGrid");
-            await Until(() => control.IsDropDownOpen && suggestions.Items.Count > 0, "CRM 下拉返回：" + text);
+            try
+            {
+                await Until(() => control.IsDropDownOpen && suggestions.Items.Count > 0, "CRM 下拉返回：" + text);
+            }
+            catch
+            {
+                File.WriteAllText(Path.Combine(reportDirectory, "crm-popup-failure.json"), JObject.FromObject(new
+                {
+                    control.IsDropDownOpen, control.IsLoaded, control.SearchParameter,
+                    candidates = suggestions.Items.Count, text = input.Text,
+                    focused = input.IsKeyboardFocusWithin,
+                    messages = STC.SalesTrading.Plugin.Shared.Services.ToastService.Messages.Select(message => message.Text).ToArray()
+                }).ToString());
+                throw;
+            }
             var selected = suggestions.Items[0];
             bool contact = control.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Contact;
             var choice = new CrmChoice

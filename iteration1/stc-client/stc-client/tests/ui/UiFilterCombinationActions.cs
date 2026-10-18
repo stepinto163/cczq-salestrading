@@ -147,7 +147,20 @@ namespace SalesTrading.UiTests
             try
             {
                 await ClickAsync(Descendants<Button>(panel).First(button => button.IsVisible && Convert.ToString(button.Content) == "筛选"));
-                await Until(() => sawLoading && !loading(), "本次组合筛选查询完成");
+                try
+                {
+                    await Until(() => sawLoading && !loading(), "本次组合筛选查询完成");
+                }
+                catch
+                {
+                    File.WriteAllText(Path.Combine(reportDirectory, "filter-query-failure.json"), JObject.FromObject(new
+                    {
+                        sawLoading, loading = loading(), stateType = state.GetType().FullName,
+                        error = state.GetType().GetProperty("ErrorMessage")?.GetValue(state),
+                        messages = STC.SalesTrading.Plugin.Shared.Services.ToastService.Messages.Select(message => message.Text).ToArray()
+                    }).ToString());
+                    throw;
+                }
             }
             finally
             {

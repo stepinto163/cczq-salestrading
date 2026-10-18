@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -35,7 +35,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             // 深拷贝工作副本：取消不落库，保存才整体替换
             foreach (var g in _directory.GetFavGroups(market))
             {
-                var copy = new FavBondGroup { Name = g.Name, Id = g.Id };
+                var copy = new FavBondGroup { Name = g.Name, Id = g.Id, Revision = g.Revision };
                 foreach (var b in g.Bonds)
                 {
                     copy.Bonds.Add(new FavBondEntry { Code = b.Code, Name = b.Name, Tenor = b.Tenor, BondLib = b.BondLib, Valuation = b.Valuation, Found = b.Found, Market = b.Market });

@@ -1,3 +1,4 @@
+﻿using STC.SalesTrading.Plugin.Abstractions.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
@@ -296,7 +297,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         partial void OnToolbarPriceTypeChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
+            if (syncingToolbar || string.IsNullOrEmpty(value)) return;
             foreach (var row in SelectedRows) row.PriceType = value;
         }
 
@@ -305,19 +306,21 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         partial void OnToolbarSettlementChanged(string value)
         {
-            if (string.IsNullOrEmpty(value)) return;
+            if (syncingToolbar || string.IsNullOrEmpty(value)) return;
             foreach (var row in SelectedRows) row.Settlement = value;
         }
 
         [RelayCommand]
         private void SetDirectionBid()
         {
+            if (!RequireSelectedRows()) return;
             foreach (var row in SelectedRows) row.Direction = "Bid";
         }
 
         [RelayCommand]
         private void SetDirectionOfr()
         {
+            if (!RequireSelectedRows()) return;
             foreach (var row in SelectedRows) row.Direction = "Ofr";
         }
 
@@ -329,6 +332,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void ApplyBp(int sign)
         {
+            if (!RequireSelectedRows()) return;
             decimal bp;
             if (!decimal.TryParse(BpInput, out bp)) bp = 0;
             var delta = bp * sign;
@@ -337,7 +341,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             {
                 decimal price;
                 if (!decimal.TryParse(row.Price, out price)) continue;
-                var step = row.PriceType == "净价" || row.PriceType == "全价" ? 0.01m : 0.0001m;
+                // 收益率以百分数显示，1 BP = 0.01 个百分点。
+                var step = 0.01m;
                 row.Price = (price + delta * step).ToString("0.####", CultureInfo.InvariantCulture);
             }
         }
@@ -350,9 +355,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void ApplyAmount(int sign)
         {
-            decimal amount;
-            if (!decimal.TryParse(AmountInput, out amount)) amount = 0;
-            var delta = amount * sign * 1000m;
+            if (!RequireSelectedRows()) return;
+            var delta = sign * 1000m;
 
             foreach (var row in SelectedRows)
             {
@@ -360,39 +364,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 if (!decimal.TryParse(row.Volume, out vol)) vol = 0;
                 row.Volume = Math.Max(0, vol + delta).ToString("0.#", CultureInfo.InvariantCulture);
             }
-        }
-
-        partial void OnInstitutionInputChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return;
-            foreach (var row in SelectedRows)
-            {
-                row.Institution = value.Trim();
-                row.Row.InstitutionId = _institutionSelectedId;
-            }
-        }
-
-        partial void OnInstitutionSelectedIdChanged(string value)
-        {
-            // 选中回填的 Text 变化先到，这里补写 Id（两者幂等）
-            if (value == null) return;
-            foreach (var row in SelectedRows) row.Row.InstitutionId = value;
-        }
-
-        partial void OnTraderInputChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return;
-            foreach (var row in SelectedRows)
-            {
-                row.Trader = value.Trim();
-                row.Row.ContactId = _traderSelectedId;
-            }
-        }
-
-        partial void OnTraderSelectedIdChanged(string value)
-        {
-            if (value == null) return;
-            foreach (var row in SelectedRows) row.Row.ContactId = value;
         }
 
         [RelayCommand]
@@ -413,13 +384,112 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         #endregion
 
+        partial void OnInstitutionInputChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.Institution = (value ?? string.Empty).Trim();
+                row.InstitutionId = InstitutionSelectedId;
+            }
+        }
+
+        partial void OnInstitutionSelectedIdChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.InstitutionId = value;
+            }
+            if (!selectingContact)
+            {
+                TraderSelectedId = null;
+                TraderInput = string.Empty;
+            }
+        }
+
+        partial void OnTraderInputChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.Trader = (value ?? string.Empty).Trim();
+                row.ContactId = TraderSelectedId;
+            }
+        }
+
+        partial void OnTraderSelectedIdChanged(string value)
+        {
+            foreach (var row in SelectedRows)
+            {
+                row.ContactId = value;
+            }
+        }
+
+        private bool selectingContact;
+
+        [RelayCommand]
+        private void SelectContact(LazySearchItem contact)
+        {
+            if (contact == null) return;
+            selectingContact = true;
+            try
+            {
+                InstitutionInput = contact.InstitutionName;
+                InstitutionSelectedId = contact.InstitutionId;
+                TraderInput = contact.Name;
+                TraderSelectedId = contact.Id;
+                foreach (var row in SelectedRows)
+                {
+                    row.SelectContactCommand.Execute(contact);
+                }
+            }
+            finally
+            {
+                selectingContact = false;
+            }
+        }
+
         #region 行钩子
+
+        private bool syncingToolbar;
+
+        private bool RequireSelectedRows()
+        {
+            if (SelectedRows.Any()) return true;
+            StatusMessage = "请先勾选要调整的报价";
+            return false;
+        }
+
+        partial void OnAmountInputChanged(string value)
+        {
+            if (syncingToolbar || string.IsNullOrWhiteSpace(value)) return;
+            if (!RequireSelectedRows()) return;
+            decimal quantity;
+            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out quantity) || quantity < 0)
+            {
+                StatusMessage = "报量必须为非负数字";
+                return;
+            }
+            foreach (var row in SelectedRows) row.Volume = quantity.ToString("0.####", CultureInfo.InvariantCulture);
+        }
 
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(QuoteConfirmRowViewModel.IsSelected))
             {
                 RecomputeStats();
+                var selected = SelectedRows.FirstOrDefault();
+                if (selected != null)
+                {
+                    syncingToolbar = true;
+                    try
+                    {
+                        ToolbarSettlement = selected.Settlement;
+                        ToolbarPriceType = selected.PriceType;
+                    }
+                    finally
+                    {
+                        syncingToolbar = false;
+                    }
+                }
             }
         }
 

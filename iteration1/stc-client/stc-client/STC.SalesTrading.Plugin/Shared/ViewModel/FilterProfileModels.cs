@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using STC.SalesTrading.Plugin.Abstractions.Models;
@@ -58,6 +58,9 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
 
         /// <summary>稳定标识（侧栏 chip 激活集 / 右键子菜单按 id 定位；保存整体替换时同名沿用旧 id）。</summary>
         public string Id { get; set; } = "g" + Guid.NewGuid().ToString("N").Substring(0, 12);
+
+        /// <summary>编辑副本读取时的服务端版本；不能使用其他窗口更新后的共享版本。</summary>
+        public string Revision { get; set; }
 
         public string Name
         {
@@ -136,6 +139,9 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
 
         /// <summary>稳定标识（侧栏 chip 激活集按 id 定位；保存整体替换时同名沿用旧 id）。</summary>
         public string Id { get; set; } = "f" + Guid.NewGuid().ToString("N").Substring(0, 12);
+
+        /// <summary>编辑副本读取时的服务端版本；不能使用其他窗口更新后的共享版本。</summary>
+        public string Revision { get; set; }
 
         public string Name
         {
