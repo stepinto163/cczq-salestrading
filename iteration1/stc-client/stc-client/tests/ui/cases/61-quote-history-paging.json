@@ -1,0 +1,68 @@
+{
+  "Version": 1,
+  "Id": "61-quote-history-paging",
+  "Name": "报价变更历史：分页与弹窗",
+  "Description": "精确报价确认后修改一次；真实服务验证分页接口，再打开日志验证单页控件、刷新与关闭。仅创建一笔本例报价，结束自动清理。",
+  "Steps": [
+    {
+      "Name": "精确报价输入并识别",
+      "Action": "parse",
+      "Parameters": {
+        "text": "${securityId} 2.5000 1 bid +1",
+        "expectedRows": "1"
+      }
+    },
+    {
+      "Name": "勾选识别预览",
+      "Action": "parse.select",
+      "Parameters": {
+        "row": "1",
+        "selected": "true",
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "确认精确报价",
+      "Action": "parse.confirm",
+      "Parameters": {
+        "expectedCount": "1"
+      }
+    },
+    {
+      "Name": "打开报价管理修改表单并填写",
+      "Action": "management.edit",
+      "Parameters": {
+        "securityId": "${securityId}",
+        "price": "2.5100",
+        "quantity": "1",
+        "side": "1",
+        "settlType": "2"
+      }
+    },
+    {
+      "Name": "保存报价修改",
+      "Action": "management.save",
+      "Parameters": {}
+    },
+    {
+      "Name": "核对历史分页接口：首、次、末页",
+      "Action": "history.assert",
+      "Parameters": {
+        "minimumCount": "2"
+      }
+    },
+    {
+      "Name": "定位行情中的本例报价",
+      "Action": "market.assert",
+      "Parameters": {}
+    },
+    {
+      "Name": "核对日志弹窗、单页边界、刷新与关闭",
+      "Action": "history.dialog",
+      "Parameters": {}
+    }
+  ],
+  "Page": "03 报价管理/03 变更历史",
+  "Feature": "01 分页与刷新",
+  "Priority": "P1"
+}

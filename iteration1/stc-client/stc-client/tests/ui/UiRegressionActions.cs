@@ -68,10 +68,75 @@ namespace SalesTrading.UiTests
             }).ToString());
         }
 
+        // 小样本通过真实精确报价流程生成；接口跨页由 history.assert 单独检查。
+        private async Task CheckQuoteHistoryDialogAsync()
+        {
+            var quoteRow = model.MarketCenterPage.RateAll.Rows.Single(row => row.QuoteId == quoteId);
+            var rowControl = FindVerificationRow(quoteRow);
+            Require(rowControl != null && rowControl.IsVisible, "行情中的本例报价行不可见");
+            var command = model.MarketCenterPage.RateAll.QuoteLogCommand;
+            Require(command.CanExecute(quoteRow), "报价日志命令不可用");
+            await BeforeUiActionAsync(rowControl, "打开本例报价日志");
+            // ShowDialog 使用嵌套消息循环，必须排入 Dispatcher，不能同步阻塞测试步骤。
+            _ = Application.Current.Dispatcher.BeginInvoke(new Action(() => command.Execute(quoteRow)));
+            await Until(() => Application.Current.Windows.OfType<QuoteLogWindow>().Any(window => window.IsVisible),
+                "报价日志弹窗打开");
+            var historyWindow = Application.Current.Windows.OfType<QuoteLogWindow>().Single(window => window.IsVisible);
+            try
+            {
+                var historyModel = (QuoteLogViewModel)historyWindow.DataContext;
+                await Until(() => !historyModel.IsLoading && (historyModel.TotalCount > 0 || !string.IsNullOrEmpty(historyModel.ErrorMessage)),
+                    "报价日志加载完成");
+                Require(string.IsNullOrEmpty(historyModel.ErrorMessage), historyModel.ErrorMessage);
+                var expected = JObject.Parse(File.ReadAllText(Path.Combine(reportDirectory, "history.json")));
+                int expectedCount = (int)expected["totalCount"];
+                Require(expectedCount >= 2 && expectedCount <= QuoteLogViewModel.PageSize, "本用例要求 2 至 20 条历史记录");
+                var grid = (DataGrid)historyWindow.FindName("LogGrid");
+                var pager = Descendants<PaginationBar>(historyWindow).Single();
+                var previous = (Button)pager.FindName("PrevButton");
+                var next = (Button)pager.FindName("NextButton");
+                await VerifyAsync(grid, "报价日志 · 记录数及最新版本与服务端一致", () =>
+                {
+                    Require(grid.Items.Count == expectedCount && historyModel.TotalCount == expectedCount, "日志记录数与服务端不一致");
+                    Require(Convert.ToString(historyModel.Records[0].Revision) == (string)expected["records"][0]["revision"], "日志最新版本不一致");
+                });
+                await VerifyAsync(pager, "单页边界 · 第 1/1 页，上一页及下一页禁用", () =>
+                {
+                    Require(pager.CurrentPage == 1 && pager.TotalPages == 1 && pager.TotalCount == expectedCount, "分页摘要错误");
+                    Require(!previous.IsEnabled && !next.IsEnabled, "单页的翻页按钮应禁用");
+                });
+                var oldRecords = historyModel.Records;
+                var refresh = Descendants<Button>(historyWindow).Single(button => button.Command == historyModel.RefreshCommand);
+                await ClickAsync(refresh);
+                await Until(() => !historyModel.IsLoading && !ReferenceEquals(oldRecords, historyModel.Records), "刷新重新加载历史记录");
+                await VerifyAsync(grid, "刷新后仍为第一页，记录完整且没有错误", () =>
+                {
+                    Require(string.IsNullOrEmpty(historyModel.ErrorMessage), historyModel.ErrorMessage);
+                    Require(historyModel.Page == 1 && grid.Items.Count == expectedCount, "刷新后页码或记录错误");
+                });
+                File.WriteAllText(Path.Combine(reportDirectory, "history-dialog.json"), JObject.FromObject(new
+                {
+                    quoteId, totalCount = historyModel.TotalCount, pageNumber = pager.CurrentPage,
+                    totalPages = pager.TotalPages, previousEnabled = previous.IsEnabled,
+                    nextEnabled = next.IsEnabled, refreshReloaded = !ReferenceEquals(oldRecords, historyModel.Records)
+                }).ToString());
+                var close = Descendants<Button>(historyWindow).Single(button => button.Command == null && !(button.Parent is StackPanel));
+                await ClickAsync(close);
+                await Until(() => !historyWindow.IsVisible, "报价日志已关闭");
+            }
+            finally
+            {
+                if (historyWindow.IsVisible) historyWindow.Close();
+            }
+        }
+
         private async Task ExecuteRegressionAsync(TestStep step)
         {
             switch (step.Action)
             {
+                case "history.dialog":
+                    await CheckQuoteHistoryDialogAsync();
+                    break;
                 case "filter.prepare":
                     await PrepareFilterCombinationAsync(step);
                     break;

@@ -1,5 +1,12 @@
 # 候选客户端 UI 自动化验收记录（2026-10-18）
 
+## 2026-10-18 新增独立历史分页桌面用例
+
+- 新增 `61-quote-history-paging`，测试管理器路径：`03 报价管理 / 03 变更历史`。通过精确报价识别、确认、修改一次生成一笔本例报价；自动清理。
+- `history.assert` 以每页 1 条核对真实服务的首、次、末页；`history.dialog` 经行情行的报价日志命令打开真实窗口，对照接口校验记录数及最新版本、单页分页摘要、前后按钮禁用、刷新重新加载和关闭按钮。
+- 实际桌面运行通过，耗时 12.19 秒，3 条历史记录，清理通过。报告：`qa_env/client-history-ui/reports/history-small/61-quote-history-paging`。本次验证操作间隔设为 100 ms，用户默认间隔不变。
+- 这是小样本回归：真实服务窗口只有一页，没有把禁用按钮检查称为多页 UI 翻页验证；多页窗口导航仍由前述受控传输 WPF 测试覆盖。未修改业务代码，未进行性能测试。
+
 ## 2026-10-18 报价变更历史分页
 
 - `ficc.quote.history.query` 新增 `pageNumber/pageSize/snapshotRevision`，按版本倒序返回 `records/totalCount/hasMore`。翻页保留版本上界，刷新重新取最新边界；显式 limit/cursor 的旧调用保持兼容。
