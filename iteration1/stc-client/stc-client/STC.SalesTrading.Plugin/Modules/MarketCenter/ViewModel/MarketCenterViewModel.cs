@@ -25,15 +25,22 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     public partial class MarketCenterViewModel : ObservableObject, IDisposable, IProductFilterHost
     {
         private readonly IMarketCenterService _marketCenterService;
+        private readonly IGroupDirectory _groupDirectory;
 
         /// <summary>关注债券/筛选分组弹窗的识别回填取数入口（面板 code-behind 经此传入弹窗）。</summary>
-        public System.Threading.Tasks.Task<STC.SalesTrading.Plugin.Ficc.Protocol.DictionaryData> GetFilterDictionaryAsync()
+        public IMarketCenterService MarketCenterService => _marketCenterService;
+
+        // ============ 侧栏筛选面板接缝（IProductFilterHost）：面板条件编译后转发看板重查 ============
+
+        /// <summary>筛选字典（面板 Configure 候选数据源；字典不分市场，取信用键的缓存即可）。</summary>
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Abstractions.Models.FilterFieldEntry>> GetFilterDictionaryAsync()
         {
-            if (_marketCenterService is IProductFilterCatalog catalog) return catalog.GetFilterDictionaryAsync();
-            throw new InvalidOperationException("当前行情服务未提供筛选字典。");
+            var fields = _groupDirectory.GetFilterFields(FilterProfileService.MarketKind.Credit);
+            return System.Threading.Tasks.Task.FromResult<System.Collections.Generic.IReadOnlyList<Abstractions.Models.FilterFieldEntry>>(fields);
         }
 
-        public void ApplyProductFilter(string scope, STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
+        /// <summary>按市场范围应用面板条件（同市场全部/最优两页一并重查）。</summary>
+        public void ApplyProductFilter(string scope, Abstractions.Queries.ProductFilter filter)
         {
             if (scope == "Credit")
             {
@@ -45,22 +52,41 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 RateAll.ApplyProductFilter(filter);
                 RateBest.ApplyProductFilter(filter);
             }
-            else Alert.ApplyProductFilter(filter);
+            else
+            {
+                // 提醒合并页（Combined）：只刷新提醒看板（通知域无分组过滤）
+                Alert.ApplyProductFilter(filter);
+            }
         }
 
-        public IMarketCenterService MarketCenterService => _marketCenterService;
-
-        public MarketCenterViewModel(IMarketCenterService marketCenterService)
+        public MarketCenterViewModel(IMarketCenterService marketCenterService, IQuoteService quoteService, IQuoteMgmtService mgmtService, IGroupDirectory groupDirectory)
         {
             _marketCenterService = marketCenterService;
+            _groupDirectory = groupDirectory;
 
-            CreditAll = new BoardListViewModel(marketCenterService, BondMarket.Credit);
-            CreditBest = new BoardBestViewModel(marketCenterService, BondMarket.Credit);
-            RateAll = new BoardListViewModel(marketCenterService, BondMarket.Rate);
-            RateBest = new BoardBestViewModel(marketCenterService, BondMarket.Rate);
+            CreditAll = new BoardListViewModel(marketCenterService, BondMarket.Credit, quoteService, mgmtService);
+            CreditBest = new BoardBestViewModel(marketCenterService, BondMarket.Credit, quoteService, mgmtService);
+            RateAll = new BoardListViewModel(marketCenterService, BondMarket.Rate, quoteService, mgmtService);
+            RateBest = new BoardBestViewModel(marketCenterService, BondMarket.Rate, quoteService, mgmtService);
             Intent = new BoardIntentViewModel(marketCenterService);
-            Alert = new BoardAlertViewModel(marketCenterService);
+            Alert = new BoardAlertViewModel(marketCenterService, quoteService, mgmtService);
             Detail = BondDetailViewModel.Empty;
+
+            // 侧栏分组数据源水化：从分组目录（网关）拉一次写入会话缓存（FilterProfileService），
+            // 侧栏 chip、chip 过滤与维护弹窗此后读同一份；失败静默（侧栏暂空，弹窗打开/保存后再刷新）。
+            // 水化放在 DataChanged 订阅前，回写触发的重建不重复执行
+            try
+            {
+                foreach (var market in new[] { FilterProfileService.MarketKind.Credit, FilterProfileService.MarketKind.Rate })
+                {
+                    groupDirectory.GetFavGroups(market);
+                    groupDirectory.GetFilterGroups(market);
+                }
+            }
+            catch
+            {
+                // 网关不可用时侧栏暂空
+            }
 
             SubTabs = new ObservableCollection<SubTabItem>
             {
@@ -68,7 +94,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 new SubTabItem("信用最优", CreditBest, "creditBest"),
                 new SubTabItem("利率全部", RateAll, "rateAll"),
                 new SubTabItem("利率最优", RateBest, "rateBest"),
-                new SubTabItem("模糊报价", Intent, "intent"),
+                // 模糊报价本期不上（R9 后端未实现），二期接入时恢复
                 new SubTabItem("报价提醒", Alert, "alert"),
             };
 
@@ -95,6 +121,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             _selectedSubTab = SubTabs[0];
             _selectedSubPage = CreditAll;
             _filterPanel = MarketFilterPanelType.Credit;
+            ActivateBoard(CreditAll);   // 初始激活态：其余看板隐藏期推送只置脏
 
             // 侧栏分组 chip（原型 _updateSidebarFavBonds/_updateSidebarFilterGroups）：
             // 数据变化（管理弹窗保存/右键建组）重建，激活集变化回填选中态
@@ -349,6 +376,15 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         public ObservableCollection<SubTabItem> SubTabs { get; }
 
+        /// <summary>切换子页激活态：被切走的看板隐藏期推送只置脏，激活的看板带脏补刷（IBoardLifecycle）。</summary>
+        private void ActivateBoard(object target)
+        {
+            foreach (var board in new IBoardLifecycle[] { CreditAll, CreditBest, RateAll, RateBest, Alert })
+            {
+                board.SetBoardActive(ReferenceEquals(board, target));
+            }
+        }
+
         [ObservableProperty]
         private SubTabItem _selectedSubTab;
 
@@ -359,6 +395,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         {
             if (value == null) return;
             SelectedSubPage = value.Target;
+            ActivateBoard(value.Target);
 
             // 联动左侧筛选面板（原型：credit*→filters-credit，rate*→filters-rate，intent→filters-intent，alert→filters-merged）
             switch (value.Key)
@@ -416,7 +453,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         private void UpdateDetailAsync(object row)
         {
-            Detail?.StopRecommendations();
             if (row == null)
             {
                 Detail = BondDetailViewModel.Empty;
@@ -426,19 +462,19 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
             var detail = new BondDetailViewModel();
 
-            if (row is BoardQuoteRow q)
+            if (row is TapeRow q)
             {
-                MapIdentity(detail, q.Code, q.Name, q.Maturity, q.BondLibrary, q.IssuerRating, q.NzYtm, q.NzNetPrice);
+                MapIdentity(detail, q.SecurityId, q.SecurityName, q.Maturity, q.BondLibrary, q.IssuerRating, q.NzYtm, q.NzNetPrice);
                 // 最优条不再用选中行报价预填（看板行是单边报价，冒充市场最优会误导）；
                 // Bid/Ofr/价差由宿主快照（ApplyFeedLevels）填充，无快照时显示 —
             }
-            else if (row is BoardBestRow b)
+            else if (row is BestRow b)
             {
-                MapIdentity(detail, b.Code, b.Name, b.Maturity, b.BondLibrary, b.IssuerRating, b.NzYtm, b.NzNetPrice);
+                MapIdentity(detail, b.SecurityId, b.SecurityName, b.Maturity, b.BondLibrary, b.IssuerRating, b.NzYtm, b.NzNetPrice);
             }
-            else if (row is BoardAlertRow a)
+            else if (row is AlertRow a)
             {
-                MapIdentity(detail, a.Code, a.Name, a.Maturity, a.BondLibrary, a.IssuerRating, a.NzYtm, a.NzNetPrice);
+                MapIdentity(detail, a.SecurityId, a.SecurityName, a.Maturity, a.BondLibrary, a.IssuerRating, a.NzYtm, a.NzNetPrice);
             }
             else
             {
@@ -449,16 +485,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
             detail.HasDetail = true;
             Detail = detail;
-            var dps = _marketCenterService as STC.SalesTrading.Plugin.Ficc.DpsSalesTradingServices;
-            if (dps != null)
-            {
-                var names = STC.SalesTrading.Plugin.Ficc.DpsModelMapper.UserNames(
-                    STC.Common.Handler.Admin.AdminHandler.Instance.GetCachestcUserQuery()?.Datas,
-                    STC.Common.Utils.LocalEnv.UserInfo.UserId, STC.Common.Utils.LocalEnv.UserInfo.FullName,
-                    STC.Common.Utils.LocalEnv.UserInfo.UserName);
-                detail.AttachRecommendations(new STC.SalesTrading.Plugin.Ficc.DpsRecommendationService(dps.Api,
-                    id => id != null && names.TryGetValue(id, out string name) ? name : id));
-            }
+            detail.AttachRecommendations(); // 智能推荐按选中券拉取（服务未上线时面板空态）
             // 行情区块（多档/最优/最新成交/估值）由宿主订阅通道（_quoteFeed）真实数据灌入，不再走 Mock 回填；
             // 无行情债券保持行内已有字段 + 空档表
             if (_quoteFeed != null && _quoteFeed.IsLive) _quoteFeed.Switch(detail.Code);
@@ -481,8 +508,14 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         public void Dispose()
         {
-            Detail?.StopRecommendations();
             EventAggregator.Unsubscribe(this);
+            // 两个静态事件是强引用钉子：不退订则本 VM 及其下全部看板视图/VM/行缓存
+            // 被进程级事件列表永久持有——每次关 tab 漏一整棵对象图（实测反复开关内存涨到 GB 级）
+            FilterProfileService.DataChanged -= OnGroupDataChanged;
+            MarketGroupSelectionService.ActiveGroupsChanged -= OnActiveGroupsChanged;
+            // 宿主行情订阅同样挂在外部单例上（PriceHandler/LastExecution/BaseHandler）
+            _quoteFeed?.Dispose();
+
             CreditAll.PropertyChanged -= OnBoardPropertyChanged;
             CreditBest.PropertyChanged -= OnBoardPropertyChanged;
             RateAll.PropertyChanged -= OnBoardPropertyChanged;

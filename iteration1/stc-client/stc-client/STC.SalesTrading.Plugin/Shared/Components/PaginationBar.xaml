@@ -1,0 +1,26 @@
+<UserControl x:Class="STC.SalesTrading.Plugin.Shared.Components.PaginationBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        统一分页条（原型 rec-pagination 同款交互）：左侧「共 N 条 · 第 x/y 页」摘要，
+        右侧 上一页 / 页码 / 下一页。换页 = 组件直接改 CurrentPage（TwoWay），
+        VM 在属性变化回调里触发重切片/补拉；组件不依赖命令。
+    -->
+    <Grid Height="26">
+        <TextBlock x:Name="SummaryText" Style="{DynamicResource StcTextFaint}"
+                   HorizontalAlignment="Left" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <Button x:Name="PrevButton" Content="上一页" Height="22" MinWidth="44" Padding="6,0"
+                    Style="{DynamicResource StcButtonGhost}" FontSize="11" Margin="0,0,4,0"
+                    Click="OnPrevClick" />
+            <Border Background="{DynamicResource HoverStrongBgBrush}" CornerRadius="3" Padding="8,2"
+                    VerticalAlignment="Center" ToolTip="当前页">
+                <TextBlock x:Name="PageText" Style="{DynamicResource StcTextMono}"
+                           FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Border>
+            <Button x:Name="NextButton" Content="下一页" Height="22" MinWidth="44" Padding="6,0"
+                    Style="{DynamicResource StcButtonGhost}" FontSize="11" Margin="4,0,0,0"
+                    Click="OnNextClick" />
+        </StackPanel>
+    </Grid>
+</UserControl>

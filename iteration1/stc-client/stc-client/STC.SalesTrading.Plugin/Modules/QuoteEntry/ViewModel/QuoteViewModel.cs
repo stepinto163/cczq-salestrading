@@ -23,7 +23,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             {
                 new SubTabItem("报价确认", Confirm, "quote-confirm"),
                 new SubTabItem("精确报价", Precise, "quote-precise"),
-                new SubTabItem("模糊报价", Fuzzy, "quote-fuzzy"),
+                // 模糊报价 tab 隐藏（方案 §3.1.3）：后端无此域（R9），模型与页面保留待后端上线
             };
 
             // 子页角标：报价确认 = 待确认报价数（原型 .subtab .cnt），与导航角标同源

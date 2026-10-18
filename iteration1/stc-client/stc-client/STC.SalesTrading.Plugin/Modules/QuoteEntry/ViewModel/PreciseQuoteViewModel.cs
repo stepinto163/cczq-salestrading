@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -38,9 +38,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             "bid 210210.IB 净价 101.020 1000 T+1\n" +
             "ofr 240210.IB 全价 102.380 2000 T+0";
 
-        public ICrmDirectory CrmDirectory => _quoteService as ICrmDirectory;
-        public CrmBatchEditor CrmBatch { get; }
-
         private readonly IQuoteService _quoteService;
         private readonly HashSet<QuoteConfirmRowViewModel> _hooked = new HashSet<QuoteConfirmRowViewModel>();
         private readonly LatestRequestCoordinator _parseCoordinator = new LatestRequestCoordinator();
@@ -48,7 +45,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         public PreciseQuoteViewModel(IQuoteService quoteService)
         {
             _quoteService = quoteService;
-            CrmBatch = new CrmBatchEditor(() => SelectedRows);
 
             _status.Add("title", "精确识别结果")
                    .Add("count", "共 0 条")
@@ -71,10 +67,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         /// <summary>识别状态（空 = 默认；非空时展示在状态栏首段，原型为浮动状态条）。</summary>
         [ObservableProperty]
         private string _statusMessage = string.Empty;
-
-        /// <summary>提交失败信息持久保留，不随 Toast 自动消失；重试或重新识别时清除。</summary>
-        [ObservableProperty]
-        private string _submissionError = string.Empty;
 
         private readonly StatusSectionBag _status = new StatusSectionBag();
 
@@ -107,7 +99,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         {
             UnhookAll();
             Rows.Clear();
-            SubmissionError = string.Empty;
             RecomputeStats();
         }
 
@@ -192,7 +183,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 var result = await _quoteService.ParsePreciseTextAsync(InputText, lease.Token);
                 if (!lease.IsCurrent) return;
 
-                SubmissionError = string.Empty;
                 UnhookAll();
                 Rows.Clear();
                 foreach (var row in result.Rows)
@@ -202,27 +192,19 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     Rows.Add(rvm);
                 }
 
-                if (!KeepTextAfterParse && result.Rows.Count > 0
-                    && (result.Warnings == null || result.Warnings.Count == 0))
-                {
-                    InputText = string.Empty;
-                }
+                if (!KeepTextAfterParse) InputText = string.Empty;
 
-                StatusMessage = string.Format("识别返回 {0} 条 · 请核对原文及报价 · 耗时 {1}ms",
-                    result.Rows.Count, (int)result.Elapsed.TotalMilliseconds);
+                StatusMessage = string.Format("识别完成 · 成功 {0} 条 · 失败 {1} 条 · 耗时 {2}ms",
+                    result.SucceededCount, result.FailedCount, (int)result.Elapsed.TotalMilliseconds);
                 if (result.Warnings != null && result.Warnings.Count > 0)
                 {
-                    StatusMessage += " · " + string.Join("；", result.Warnings);
+                    // 首条提示（如"识别服务暂不可用，以下为本地简析结果"）弹泡提醒
+                    ToastService.Show(result.Warnings[0], ToastKind.Warning);
                 }
                 RecomputeStats();
             }
-            catch (OperationCanceledException)
-            {
-                // Disposed or superseded requests must not replace the active preview.
-            }
             catch (Exception ex)
             {
-                com.gateway.log.LogHelper.Error("ParserSvr precise quote recognition failed", ex);
                 StatusMessage = "识别失败：" + ex.Message;
                 RecomputeStats();
             }
@@ -243,32 +225,25 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             var selected = SelectedRows.ToList();
             if (selected.Count == 0)
             {
-                ToastService.Show("请先勾选要确认的报价", ToastKind.Warning);
-                return;
+                ToastService.Show("请先勾选要确认的报价", ToastKind.Warning); return;
             }
 
-            SubmissionError = string.Empty;
-            StatusMessage = "正在提交所选报价…";
+            foreach (var row in selected) row.Commit();
             try
             {
-                foreach (var row in selected)
-                {
-                    row.Commit();
-                }
                 await _quoteService.SubmitQuotesAsync(
                     selected.Select(row => row.Row).ToList(),
                     CancellationToken.None);
-                RemoveRows(selected);
-                StatusMessage = string.Format("已确认 {0} 条报价", selected.Count);
-                ToastService.Show(StatusMessage, ToastKind.Success);
+                ToastService.Show(string.Format("已确认 {0} 条报价", selected.Count), ToastKind.Success);
             }
             catch (Exception ex)
             {
-                com.gateway.log.LogHelper.Error("Precise quote submission failed", ex);
-                SubmissionError = "报价确认未完成：" + ex.Message
-                    + Environment.NewLine + "预览及已填写内容已保留。请修正后重试；同批已创建的报价会复用原记录。";
-                StatusMessage = "报价确认未完成，请查看上方错误详情。";
-                ToastService.Show("报价确认未完成，详情已保留在预览表上方。", ToastKind.Error);
+                ToastService.Show("确认报价失败：" + ex.Message, ToastKind.Error);
+            }
+            finally
+            {
+                // 批次部分成功时，只移除确实 ACTIVE 的行；失败行留在预览中继续修正。
+                RemoveRows(selected.Where(row => row.Row.Status == Abstractions.Models.QuoteStatus.Active).ToList());
             }
         }
 
@@ -302,36 +277,48 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [ObservableProperty]
         private string _amountInput = string.Empty;
 
+        [ObservableProperty]
+        private string _institutionInput = string.Empty;
 
+        /// <summary>机构批量框选中的 CRM Id（CrmSearchBox 回填；null=未选定）。</summary>
+        [ObservableProperty]
+        private string _institutionSelectedId;
 
         [ObservableProperty]
-        private string _toolbarPriceType;
+        private string _traderInput = string.Empty;
+
+        /// <summary>交易员批量框选中的 CRM Id。</summary>
+        [ObservableProperty]
+        private string _traderSelectedId;
+
+        [ObservableProperty]
+        private string _toolbarPriceType = "到期收益率";
 
         partial void OnToolbarPriceTypeChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in RowsForBatchEdit()) row.PriceType = value;
+            foreach (var row in SelectedRows) row.PriceType = value;
         }
 
         [ObservableProperty]
-        private string _toolbarSettlement;
+        private string _toolbarSettlement = "T+1";
 
         partial void OnToolbarSettlementChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in RowsForBatchEdit()) row.Settlement = value;
+            foreach (var row in SelectedRows) row.Settlement = value;
         }
 
         [RelayCommand]
         private void SetDirectionBid()
         {
-            foreach (var row in RowsForBatchEdit()) row.Direction = "Bid";
+            foreach (var row in SelectedRows) row.Direction = "Bid";
         }
 
         [RelayCommand]
         private void SetDirectionOfr()
         {
-            foreach (var row in RowsForBatchEdit()) row.Direction = "Ofr";
+            foreach (var row in SelectedRows) row.Direction = "Ofr";
         }
 
         [RelayCommand]
@@ -343,18 +330,14 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         private void ApplyBp(int sign)
         {
             decimal bp;
-            if (!decimal.TryParse(BpInput, NumberStyles.Number, CultureInfo.InvariantCulture, out bp) || bp < 0)
-            {
-                StatusMessage = "请输入非负 BP 调整值。";
-                return;
-            }
+            if (!decimal.TryParse(BpInput, out bp)) bp = 0;
             var delta = bp * sign;
 
-            foreach (var row in RowsForBatchEdit())
+            foreach (var row in SelectedRows)
             {
                 decimal price;
                 if (!decimal.TryParse(row.Price, out price)) continue;
-                var step = 0.01m;
+                var step = row.PriceType == "净价" || row.PriceType == "全价" ? 0.01m : 0.0001m;
                 row.Price = (price + delta * step).ToString("0.####", CultureInfo.InvariantCulture);
             }
         }
@@ -367,52 +350,55 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void ApplyAmount(int sign)
         {
-            // The buttons are labelled +1k/-1k; quantity is expressed in 万.
-            foreach (var row in RowsForBatchEdit())
-            {
-                decimal volume;
-                if (decimal.TryParse(row.Volume, NumberStyles.Number, CultureInfo.InvariantCulture, out volume))
-                {
-                    row.Volume = Math.Max(0, volume + sign * 1000m).ToString("0.####", CultureInfo.InvariantCulture);
-                }
-            }
-        }
-
-        partial void OnAmountInputChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return;
-            }
             decimal amount;
-            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out amount) || amount < 0)
+            if (!decimal.TryParse(AmountInput, out amount)) amount = 0;
+            var delta = amount * sign * 1000m;
+
+            foreach (var row in SelectedRows)
             {
-                StatusMessage = "报量必须为非负数，单位为万。";
-                return;
-            }
-            foreach (var row in RowsForBatchEdit())
-            {
-                row.Volume = amount.ToString("0.####", CultureInfo.InvariantCulture);
+                decimal vol;
+                if (!decimal.TryParse(row.Volume, out vol)) vol = 0;
+                row.Volume = Math.Max(0, vol + delta).ToString("0.#", CultureInfo.InvariantCulture);
             }
         }
 
-        private List<QuoteConfirmRowViewModel> RowsForBatchEdit()
+        partial void OnInstitutionInputChanged(string value)
         {
-            var selected = SelectedRows.ToList();
-            if (selected.Count == 0)
+            if (string.IsNullOrWhiteSpace(value)) return;
+            foreach (var row in SelectedRows)
             {
-                StatusMessage = "请先勾选要批量修改的报价。";
-                ToastService.Show(StatusMessage, ToastKind.Warning);
+                row.Institution = value.Trim();
+                row.Row.InstitutionId = _institutionSelectedId;
             }
-            return selected;
         }
 
+        partial void OnInstitutionSelectedIdChanged(string value)
+        {
+            // 选中回填的 Text 变化先到，这里补写 Id（两者幂等）
+            if (value == null) return;
+            foreach (var row in SelectedRows) row.Row.InstitutionId = value;
+        }
 
+        partial void OnTraderInputChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return;
+            foreach (var row in SelectedRows)
+            {
+                row.Trader = value.Trim();
+                row.Row.ContactId = _traderSelectedId;
+            }
+        }
+
+        partial void OnTraderSelectedIdChanged(string value)
+        {
+            if (value == null) return;
+            foreach (var row in SelectedRows) row.Row.ContactId = value;
+        }
 
         [RelayCommand]
         private void ToggleFlag(string flag)
         {
-            foreach (var row in RowsForBatchEdit())
+            foreach (var row in SelectedRows)
             {
                 switch (flag)
                 {
@@ -432,13 +418,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(QuoteConfirmRowViewModel.IsSelected))
-            {
-                // A new selection must be able to apply any choice, including the previous value.
-                ToolbarPriceType = null;
-                ToolbarSettlement = null;
-                RecomputeStats();
-            }
-            else if (e.PropertyName == nameof(QuoteConfirmRowViewModel.Direction))
             {
                 RecomputeStats();
             }

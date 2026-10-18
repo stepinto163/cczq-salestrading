@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -15,24 +15,27 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     /// 关注债券管理弹窗 VM（原型 showFavBondModal/_fbmRender 及 _fbmIdentify/_fbmAutoAdd/_fbmToggleAll）。
     /// 左列 = 分组列表（双击重命名、hover 删除、+ 新建）+ 选中分组的债券列表；
     /// 右侧 = 粘贴代码文本框（清空/识别）+ 识别结果表（勾选即加入/移出当前分组）。
-    /// 识别回填：经 <see cref="IMarketCenterService.LookupBondAsync"/> 从服务端基础资料按代码精确查询
-    /// ；未命中行 Found=false 半透明展示。
+    /// 识别回填：经 <see cref="IMarketCenterService.LookupBondAsync"/> 在 Mock 债券库中查询
+    /// （原型 POST /parse 的本地 MVP），未命中行 Found=false 半透明展示。
     /// </summary>
     public class FavBondManagerViewModel : INotifyPropertyChanged
     {
+        /// <summary>分组目录服务（组合根装配时注入；未注入回退静态内存 Mock）。</summary>
+        public static IGroupDirectory Directory { get; set; }
+
         private readonly FilterProfileService.MarketKind _market;
-        private readonly List<FavBondGroup> originalGroups;
         private readonly IMarketCenterService _lookupService;
+        private readonly IGroupDirectory _directory;
 
         public FavBondManagerViewModel(FilterProfileService.MarketKind market, IMarketCenterService lookupService = null)
         {
             _market = market;
-            originalGroups = FilterProfileService.GetFavGroups(market).ToList();
             _lookupService = lookupService;
+            _directory = Directory ?? throw new System.InvalidOperationException("分组目录服务未装配（组合根初始化异常）");
             // 深拷贝工作副本：取消不落库，保存才整体替换
-            foreach (var g in FilterProfileService.GetFavGroups(market))
+            foreach (var g in _directory.GetFavGroups(market))
             {
-                var copy = new FavBondGroup { Name = g.Name, Id = g.Id, Revision = g.Revision };
+                var copy = new FavBondGroup { Name = g.Name, Id = g.Id };
                 foreach (var b in g.Bonds)
                 {
                     copy.Bonds.Add(new FavBondEntry { Code = b.Code, Name = b.Name, Tenor = b.Tenor, BondLib = b.BondLib, Valuation = b.Valuation, Found = b.Found, Market = b.Market });
@@ -154,7 +157,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                     var hit = await _lookupService.LookupBondAsync(code, System.Threading.CancellationToken.None);
                     if (hit != null)
                     {
-                        entry.Code = hit.Code ?? code;
                         entry.Found = hit.Found;
                         entry.Name = hit.Found ? (hit.Name ?? string.Empty) : string.Empty;
                         entry.Tenor = hit.Found ? (hit.Tenor ?? "—") : "—";
@@ -302,10 +304,11 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             }
         }
 
-        /// <summary>保存：整体替换回服务存储。</summary>
-        public async System.Threading.Tasks.Task SaveAsync()
+        /// <summary>保存：整体替换回分组目录。网络等待可在线程池执行（窗口包 Task.Run，UI 不冻结）；
+        /// 成功后由调用方回 UI 线程 RaiseDataChanged（订阅方重建侧栏 chip，非 UI 线程发会炸集合）。</summary>
+        public void Save()
         {
-            await FilterProfileService.SaveFavGroupsAsync(_market, Groups, originalGroups);
+            _directory.SaveFavGroups(_market, Groups);
         }
     }
 }

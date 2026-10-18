@@ -8,19 +8,49 @@ using System.Windows.Media;
 
 namespace STC.SalesTrading.Plugin.Shared.Converters
 {
-    /// <summary>转换器画刷解析：优先取主题资源（可换肤），缺失时用原型色值兜底（Freeze 后只读共享）。</summary>
+    /// <summary>转换器画刷解析：优先取主题资源（可换肤），缺失时用原型色值兜底（Freeze 后只读共享）。
+    /// 结果按 key 缓存——转换器是按单元格求值的，22 列宽表滚动时原先每个单元格都查一次资源树。</summary>
     internal static class ConverterBrushes
     {
+        private static readonly System.Collections.Generic.Dictionary<string, SolidColorBrush> Cache =
+            new System.Collections.Generic.Dictionary<string, SolidColorBrush>(StringComparer.Ordinal);
+
+        private static readonly object Gate = new object();
+
         internal static SolidColorBrush Resolve(string key, string fallbackHex)
         {
+            var cacheKey = (key ?? string.Empty) + "|" + fallbackHex;
+            lock (Gate)
+            {
+                SolidColorBrush cached;
+                if (Cache.TryGetValue(cacheKey, out cached)) return cached;
+            }
+
             // key 为空 = 调用方只想要兜底色，不能进 TryFindResource
             // ——Application 资源表对 null 键会抛 ArgumentNullException（键不能为 null）
             var brush = string.IsNullOrEmpty(key) ? null : Application.Current?.TryFindResource(key) as Brush;
-            if (brush != null) return (SolidColorBrush)brush;
-            var color = (Color)ColorConverter.ConvertFromString(fallbackHex);
-            var frozen = new SolidColorBrush(color);
-            frozen.Freeze();
-            return frozen;
+            var result = brush as SolidColorBrush;
+            if (result == null)
+            {
+                var color = (Color)ColorConverter.ConvertFromString(fallbackHex);
+                result = new SolidColorBrush(color);
+                result.Freeze();
+            }
+
+            lock (Gate)
+            {
+                Cache[cacheKey] = result;
+            }
+            return result;
+        }
+
+        /// <summary>换肤后清空缓存（ThemeManager 应用主题时调用）。</summary>
+        internal static void Invalidate()
+        {
+            lock (Gate)
+            {
+                Cache.Clear();
+            }
         }
     }
 
@@ -190,18 +220,38 @@ namespace STC.SalesTrading.Plugin.Shared.Converters
         }
     }
 
-    /// <summary>报价方式 → 画刷：QT 绿 / ideal 蓝 / 手工录入 橙（原型语义）。</summary>
-    public class ModeBrushConverter : IValueConverter
+    /// <summary>报价状态 → 中文（原型 mgmt 状态列：有效/已撤销，普通文本）。</summary>
+    public class QuoteStatusTextConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is QuoteMode mode)) return ConverterBrushes.Resolve("TextSecondaryBrush", "#C9D1D9");
-            switch (mode)
+            switch (value as QuoteStatus?)
             {
-                case QuoteMode.Qt: return ConverterBrushes.Resolve("SuccessBrush", "#3FB950");
-                case QuoteMode.Ideal: return ConverterBrushes.Resolve("OfrBrush", "#3B82F6");
-                case QuoteMode.Manual: return ConverterBrushes.Resolve("BidBrush", "#F59E0B");
-                default: return ConverterBrushes.Resolve("TextSecondaryBrush", "#C9D1D9");
+                case QuoteStatus.Active: return "有效";
+                case QuoteStatus.Referred: return "已撤销";
+                case QuoteStatus.PendingConfirm: return "待确认";
+                case QuoteStatus.Deleted: return "已删除";
+                default: return "—";
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    /// <summary>报价来源 → 中文（原型「报价方式」列 tag：QT / ideal / 手工录入）。</summary>
+    public class SourceTypeTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            switch (value as SourceType?)
+            {
+                case SourceType.Qt: return "QT";
+                case SourceType.Ideal: return "ideal";
+                case SourceType.Manual: return "手工录入";
+                default: return "—";
             }
         }
 
@@ -216,8 +266,15 @@ namespace STC.SalesTrading.Plugin.Shared.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is QuoteStatus s && s == QuoteStatus.Revoked)
-                return ConverterBrushes.Resolve("TextDisabledBrush", "#7D8590");
+            if (value is QuoteStatus s)
+            {
+                switch (s)
+                {
+                    case QuoteStatus.Referred: return ConverterBrushes.Resolve("TextDisabledBrush", "#7D8590");
+                    case QuoteStatus.PendingConfirm: return ConverterBrushes.Resolve("WarnBrush", "#F59E0B");
+                    case QuoteStatus.Deleted: return ConverterBrushes.Resolve("TextDisabledBrush", "#7D8590");
+                }
+            }
             return ConverterBrushes.Resolve("TextSecondaryBrush", "#C9D1D9");
         }
 
@@ -353,13 +410,14 @@ namespace STC.SalesTrading.Plugin.Shared.Converters
         public static readonly EmptyToDashConverter EmptyToDash = new EmptyToDashConverter();
         public static readonly IntToVisibilityConverter IntToVis = new IntToVisibilityConverter();
         public static readonly MoreThanOneToVisibilityConverter MoreThanOneToVis = new MoreThanOneToVisibilityConverter();
+        public static readonly QuoteStatusTextConverter QuoteStatusText = new QuoteStatusTextConverter();
+        public static readonly SourceTypeTextConverter SourceTypeText = new SourceTypeTextConverter();
         public static readonly DirectionBrushConverter DirBrush = new DirectionBrushConverter();
         public static readonly UpDownBrushConverter UpDownBrush = new UpDownBrushConverter();
         public static readonly ToastKindBrushConverter ToastKindBrush = new ToastKindBrushConverter();
         public static readonly Price4Converter Price4 = new Price4Converter();
         public static readonly AlertTypeBrushConverter AlertTypeBrush = new AlertTypeBrushConverter();
         public static readonly TradeDirectionBrushConverter TradeDirectionBrush = new TradeDirectionBrushConverter();
-        public static readonly ModeBrushConverter ModeBrush = new ModeBrushConverter();
         public static readonly StatusBrushConverter StatusBrush = new StatusBrushConverter();
         public static readonly EnumEqualsConverter EnumEquals = new EnumEqualsConverter();
         public static readonly StringEqualsConverter StringEquals = new StringEqualsConverter();

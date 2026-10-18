@@ -59,7 +59,9 @@ namespace STC.SalesTrading.Plugin.Shared.Services
                 group = new AlertPopupGroup(item.TypeLabel, item.AlertType);
                 group.PropertyChanged += OnGroupChanged;
                 Groups.Insert(0, group);
-                new Timer(OnExpired, group, DurationMs, Timeout.Infinite);
+                // 到期 Timer 自行 Dispose（对齐 ToastService 写法；不 Dispose 会积攒终了的 Timer 对象）
+                Timer expiry = null;
+                expiry = new Timer(_ => { expiry.Dispose(); OnExpired(group); }, null, DurationMs, Timeout.Infinite);
             }
 
             group.Append(item);
@@ -75,9 +77,8 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             UpdateWindow();
         }
 
-        private static void OnExpired(object state)
+        private static void OnExpired(AlertPopupGroup group)
         {
-            var group = (AlertPopupGroup)state;
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null) return;
 

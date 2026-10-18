@@ -30,19 +30,35 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
         Forward
     }
 
-    /// <summary>报价方式。对应原型：QT/ideal/手工录入。</summary>
-    public enum QuoteMode
+    /// <summary>收益率类型（后端 yieldType："1"/"2"）。仅收益率计价报价需要，净价/全价为 null。</summary>
+    public enum YieldType
     {
-        Qt,
-        Ideal,
-        Manual
+        /// <summary>到期收益率。</summary>
+        ToMaturity,
+
+        /// <summary>行权收益率。</summary>
+        ToExercise
     }
 
-    /// <summary>报价状态。对应原型：active/revoked（有效/撤销）。</summary>
+    /// <summary>来源类型（后端 source.type）。</summary>
+    public enum SourceType
+    {
+        Manual,
+        Qt,
+        Ideal
+    }
+
+    /// <summary>
+    /// 报价生命周期状态（后端 status）。
+    /// PENDING_CONFIRM 可 update/confirm/delete；ACTIVE 可 update/refer；
+    /// REFERRED 可 unrefer/delete；DELETED 为终态只读。
+    /// </summary>
     public enum QuoteStatus
     {
+        PendingConfirm,
         Active,
-        Revoked
+        Referred,
+        Deleted
     }
 
     /// <summary>待确认批次状态。对应原型：待确认/部分识别失败/识别失败/部分确认。</summary>

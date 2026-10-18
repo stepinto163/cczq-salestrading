@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $pluginDir = if ($env:MOCK_STORE_DLL_DIR) { $env:MOCK_STORE_DLL_DIR } else { Join-Path $repoRoot 'client\plugin' }

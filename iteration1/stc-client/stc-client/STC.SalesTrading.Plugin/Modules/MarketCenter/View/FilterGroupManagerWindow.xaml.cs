@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -13,12 +13,12 @@ using Vm = STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel;
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 {
     /// <summary>
-    /// 筛选分组管理弹窗（原型 showFilterGroupModal/_fgmRender）。遮罩铺满宿主，点空白关闭；
-    /// 保存时整体替换 <see cref="FilterProfileService"/> 中该市场的筛选分组。
+    /// 筛选分组管理弹窗（原型 showFilterGroupModal/_fgmRender）。普通模态窗口（无遮罩浮层，Esc/✕ 关闭）；
+    /// 保存时同步后端并回写 <see cref="FilterProfileService"/> 会话缓存。
     /// 右栏目录用 code-behind 动态构建（勾选态 = 当前激活子分组的内容，切换子分组后需刷新）；
     /// 自定义条件行（文本/下拉/区间）整行排列，添加按钮为原型 tb-btn-primary 红底。
     /// </summary>
-    public partial class FilterGroupManagerWindow : Shared.Components.ModalWindowBase
+    public partial class FilterGroupManagerWindow
     {
         private readonly Vm.FilterGroupManagerViewModel _vm;
 
@@ -43,34 +43,16 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             InitializeComponent();
             _vm = new Vm.FilterGroupManagerViewModel(market);
             DataContext = _vm;
-            ModalTitle = _vm.MarketTitle; // 头部由 ModalWindowBase 渲染
+            TitleText.Text = _vm.MarketTitle; // 标题按市场（信用/利率筛选分组管理）
             BuildCatalog();
-            Loaded += OnLoaded;
-            Closing += (sender, args) => { if (!IsEnabled) args.Cancel = true; };
         }
 
-        /// <summary>弹窗入口：先读取当前账户分组，再创建独立工作副本；合并页由用户选择市场。</summary>
-        public static async void Show(Window owner, FilterProfileService.MarketKind market)
+        /// <summary>弹窗入口。merged（提醒合并页）原型无独立存储，暂按信用口径（待确认）。</summary>
+        public static void Show(Window owner, FilterProfileService.MarketKind market)
         {
-            try
-            {
-                await FilterProfileService.ReloadAsync();
-            }
-            catch (System.Exception error)
-            {
-                com.gateway.log.LogHelper.Error(error);
-                ToastService.Show("分组加载失败：" + error.Message, ToastKind.Error);
-                return;
-            }
             var dlg = new FilterGroupManagerWindow(market);
             dlg.Owner = owner;
-            OverlayBackdrop.CoverOwner(dlg);
             dlg.ShowDialog();
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            OverlayBackdrop.CoverOwner(this);
         }
 
 
@@ -106,9 +88,28 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         /// <summary>弹窗主滚动区（目录 / 识别结果表）。</summary>
         private ScrollViewer MainScrollViewer() => CatalogScroll;
 
-        private void OnBackdropMouseDown(object sender, MouseButtonEventArgs e)
+        // ============ 标题栏 / 关闭（普通弹窗，无遮罩；与 QuoteEntryDialog 同款） ============
+
+        private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) return;
+            try { DragMove(); }
+            catch (Exception) { }
+        }
+
+        private void OnCloseClick(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        /// <summary>Esc 关闭（原遮罩版为点空白关闭）。</summary>
+        private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                Close();
+                e.Handled = true;
+            }
         }
 
         // ============ 右栏目录构建（原型 _fgmRender 的目录部分） ============
@@ -183,15 +184,15 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
                         Tag = item,
                     };
                     var capturedGroup = cg;
-                    var capturedLabel = item.Label;
-                    btn.Click += (s, e) => OnCatalogCheckClick(capturedGroup, capturedLabel);
+                    var capturedItem = item;
+                    btn.Click += (s, e) => OnCatalogCheckClick(capturedGroup, capturedItem);
                     if (!item.Enabled || !cg.Enabled)
                     {
                         btn.IsEnabled = false;
                         btn.Opacity = 0.55;
                     }
                     itemsPanel.Children.Add(btn);
-                    view.CheckButtons.Add(new KeyValuePair<string, Button>(item.Label, btn));
+                    view.CheckButtons.Add(new KeyValuePair<string, Button>(item.Value, btn));
                 }
                 outer.Children.Add(itemsPanel);
                 chipsAdded = true;
@@ -409,7 +410,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
                 {
                     foreach (var pair in cg.CheckButtons)
                     {
-                        var active = _vm.IsConditionActive(cg.Group, pair.Key);
+                        var active = _vm.IsConditionActive(cg.Group, pair.Key);   // Key = item.Value（条件落库值）
                         // 原型 .fbm-check.checked{background:rgba(59,130,246,.08);color:#79c0ff;border-color:rgba(59,130,246,.4)}
                         pair.Value.Background = active
                             ? new SolidColorBrush(Color.FromArgb(0x14, 0x3B, 0x82, 0xF6))
@@ -496,9 +497,9 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             return null;
         }
 
-        private void OnCatalogCheckClick(CatalogConditionGroup group, string label)
+        private void OnCatalogCheckClick(CatalogConditionGroup group, Shared.ViewModel.CatalogItem item)
         {
-            _vm.ToggleCatalogCondition(group, label);
+            _vm.ToggleCatalogCondition(group, item);
             RefreshChecks();
         }
 
@@ -525,20 +526,24 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         private async void OnSaveClick(object sender, RoutedEventArgs e)
         {
             CommitNewGroup();
-            IsEnabled = false;
+            // 后台保存（条件编译含字段目录网络读取 + 逐组网关请求）：
+            // 按钮禁用防重复提交；成功才关窗，失败恢复按钮留窗重试
+            var button = (System.Windows.Controls.Button)sender;
+            button.IsEnabled = false;
+            button.Content = "保存中…";
             try
             {
-                await _vm.SaveAsync();
-                ToastService.Show("筛选分组已保存到账户", ToastKind.Success);
-                IsEnabled = true;
+                await System.Threading.Tasks.Task.Run(() => _vm.Save());
+                Shared.Services.FilterProfileService.RaiseDataChanged();   // 回 UI 线程再发（订阅方改集合）
+                ToastService.Show("筛选分组已保存（已同步后端）");
                 Close();
             }
-            catch (System.Exception error)
+            catch (Exception ex)
             {
-                com.gateway.log.LogHelper.Error(error);
-                ToastService.Show("保存未完成：" + error.Message + "。请保留编辑内容并重试；如版本冲突请重新打开。", ToastKind.Error);
+                ToastService.Show("分组保存失败：" + ex.Message, ToastKind.Error);
+                button.IsEnabled = true;
+                button.Content = "保存";
             }
-            finally { IsEnabled = true; }
         }
 
         private void OnGroupListDoubleClick(object sender, MouseButtonEventArgs e)
@@ -649,6 +654,34 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
                 _vm.SelectedSubgroupIndex = SubgroupList.SelectedIndex;
             }
             RefreshChecks();
+        }
+
+        /// <summary>子分组点击显式选中：默认「点容器切换」与 SelectedIndex 脱节（点已选变取消、
+        /// 点空白选到别的卡——实测探针 POST 证据），子分组语义要求恒有一张激活卡，这里直接定选中。
+        /// ✕ 删除按钮豁免（否则吞掉它的 Click）。</summary>
+        private void OnSubgroupListPreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var source = e.OriginalSource as System.Windows.DependencyObject;
+            for (var n = source; n != null; n = System.Windows.Media.VisualTreeHelper.GetParent(n))
+            {
+                if (n is System.Windows.Controls.Button) return;
+            }
+            var container = source;
+            while (container != null && !(container is System.Windows.Controls.ListBoxItem))
+            {
+                container = System.Windows.Media.VisualTreeHelper.GetParent(container);
+            }
+            if (container is System.Windows.Controls.ListBoxItem clicked)
+            {
+                var index = SubgroupList.ItemContainerGenerator.IndexFromContainer(clicked);
+                if (index >= 0)
+                {
+                    SubgroupList.SelectedIndex = index;
+                    _vm.SelectedSubgroupIndex = index;
+                    RefreshChecks();
+                }
+                e.Handled = true;   // 拦掉默认容器切换，选中状态完全由这里管
+            }
         }
 
         private void OnAddSubgroupClick(object sender, RoutedEventArgs e)

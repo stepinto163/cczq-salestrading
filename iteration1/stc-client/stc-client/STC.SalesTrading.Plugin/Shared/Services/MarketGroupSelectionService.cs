@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
+using System;
 using System.Collections.Generic;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
@@ -70,10 +68,20 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             RaiseChanged();
         }
 
-        /// <summary>是否有激活分组；数据变更时用于触发服务端重查。</summary>
-        public static bool HasActiveGroups
+        /// <summary>取指定市场激活的分组 Id（关注组、筛选组）——查询下推时注入 filter（服务端过滤）。</summary>
+        public static (System.Collections.Generic.List<string> favorites, System.Collections.Generic.List<string> filters) ActiveGroupIds(FilterProfileService.MarketKind market)
         {
-            get { return _activeFavoriteIds.Count > 0 || _activeFilterIds.Count > 0; }
+            var favorites = new System.Collections.Generic.List<string>();
+            var filters = new System.Collections.Generic.List<string>();
+            foreach (var g in FilterProfileService.GetFavGroups(market))
+            {
+                if (_activeFavoriteIds.Contains(g.Id)) favorites.Add(g.Id);
+            }
+            foreach (var g in FilterProfileService.GetFilterGroups(market))
+            {
+                if (_activeFilterIds.Contains(g.Id)) filters.Add(g.Id);
+            }
+            return (favorites, filters);
         }
 
         /// <summary>
@@ -117,20 +125,7 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             return changed;
         }
 
-        /// <summary>组内 OR、两类分组与临时条件 AND；服务端在分页之前执行。</summary>
-        public static Newtonsoft.Json.Linq.JObject ApplyTo(Newtonsoft.Json.Linq.JObject filter, string market)
-        {
-            var result = filter == null ? new Newtonsoft.Json.Linq.JObject() : (Newtonsoft.Json.Linq.JObject)filter.DeepClone();
-            var markets = market == "RATE" ? new[] { FilterProfileService.MarketKind.Rate }
-                : market == "CREDIT" ? new[] { FilterProfileService.MarketKind.Credit }
-                : new[] { FilterProfileService.MarketKind.Credit, FilterProfileService.MarketKind.Rate };
-            result["watchlistIds"] = new Newtonsoft.Json.Linq.JArray(markets.SelectMany(FilterProfileService.GetFavGroups)
-                .Where(group => _activeFavoriteIds.Contains(group.Id)).Select(group => group.Id));
-            result["filterGroupIds"] = new Newtonsoft.Json.Linq.JArray(markets.SelectMany(FilterProfileService.GetFilterGroups)
-                .Where(group => _activeFilterIds.Contains(group.Id)).Select(group => group.Id));
-            return result;
-        }
-
+        /// <summary>原型 normalizeBondCode：去空白、大写、去掉交易所后缀。</summary>
         public static string NormalizeCode(string code)
         {
             var value = (code ?? string.Empty).Trim().ToUpperInvariant();
@@ -144,15 +139,16 @@ namespace STC.SalesTrading.Plugin.Shared.Services
         // ============ 右键「添加到分组」（原型 addToContextFavorite / confirmNewGroup） ============
 
         /// <summary>把债券加入关注分组；已在组里返回 false（原型静默跳过）。</summary>
-        public static async Task<bool> AddBondToFavoriteGroupAsync(FavBondGroup group, string code, string name)
+        public static bool AddBondToFavoriteGroup(FavBondGroup group, string code, string name)
         {
             if (group == null || string.IsNullOrWhiteSpace(code)) return false;
-            if (group.Bonds.Any(bond => NormalizeCode(bond.Code) == NormalizeCode(code))) return false;
-            var market = FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Contains(group)
-                ? FilterProfileService.MarketKind.Rate : FilterProfileService.MarketKind.Credit;
-            var editor = new Modules.MarketCenter.ViewModel.FavBondManagerViewModel(market);
-            editor.Groups.Single(item => item.Id == group.Id).Bonds.Add(new FavBondEntry { Code = code.Trim(), Name = name });
-            await editor.SaveAsync();
+            var normalized = NormalizeCode(code);
+            foreach (var bond in group.Bonds)
+            {
+                if (NormalizeCode(bond.Code) == normalized) return false;
+            }
+            group.Bonds.Add(new FavBondEntry { Code = code.Trim(), Name = name ?? string.Empty });
+            FilterProfileService.RaiseDataChanged();
             return true;
         }
 
@@ -174,7 +170,7 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             var changed = false;
             changed |= _activeFavoriteIds.RemoveWhere(id => FindFavoriteGroup(id) == null) > 0;
             changed |= _activeFilterIds.RemoveWhere(id => FindFilterGroup(id) == null) > 0;
-            if (changed || HasActiveGroups) RaiseChanged();
+            if (changed) RaiseChanged();
         }
 
         private static FilterNamedGroup FindFilterGroup(string groupId)

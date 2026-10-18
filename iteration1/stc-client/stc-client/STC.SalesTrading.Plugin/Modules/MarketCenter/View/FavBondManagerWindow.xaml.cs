@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,11 +12,11 @@ using Vm = STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel;
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 {
     /// <summary>
-    /// 关注债券管理弹窗（原型 showFavBondModal）。遮罩铺满宿主（OverlayBackdrop），点空白关闭；
-    /// 保存时整体替换 <see cref="FilterProfileService"/> 中该市场的关注分组，取消不落库。
+    /// 关注债券管理弹窗（原型 showFavBondModal）。普通模态窗口（无遮罩浮层，Esc/✕ 关闭）；
+    /// 保存时同步后端并回写 <see cref="FilterProfileService"/> 会话缓存，取消不落库。
     /// 删除非空分组经 <see cref="ConfirmDialog"/> 二次确认（原型 _fbmConfirm）。
     /// </summary>
-    public partial class FavBondManagerWindow : Shared.Components.ModalWindowBase
+    public partial class FavBondManagerWindow
     {
         /// <summary>结果表空态骨架行数（原型：无结果时画 12 行 32px 空行）。</summary>
         private const int SkeletonRows = 12;
@@ -35,35 +36,15 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             }
             EmptySkeleton.ItemsSource = rows;
             UpdateSkeleton();
-            Loaded += OnLoaded;
-            Closing += (sender, args) => { if (!IsEnabled) args.Cancel = true; };
         }
 
-        /// <summary>弹窗入口：对齐宿主尺寸 → 模态显示。lookupService 用于识别回填（可空，空则不回填）。</summary>
-        public static async void Show(Window owner, FilterProfileService.MarketKind market,
+        /// <summary>弹窗入口（普通模态，居中于宿主）。lookupService 用于识别回填（可空，空则不回填）。</summary>
+        public static void Show(Window owner, FilterProfileService.MarketKind market,
             IMarketCenterService lookupService = null)
         {
-            try
-            {
-                await FilterProfileService.ReloadAsync();
-                await FilterProfileService.RefreshBondDetailsAsync(market);
-            }
-            catch (System.Exception error)
-            {
-                com.gateway.log.LogHelper.Error(error);
-                ToastService.Show("分组加载失败：" + error.Message, ToastKind.Error);
-                return;
-            }
-            var dlg = new FavBondManagerWindow(market, lookupService ?? FilterProfileService.LookupService);
+            var dlg = new FavBondManagerWindow(market, lookupService);
             dlg.Owner = owner;
-            // ShowDialog 前先对齐，避免窗口先出现在默认位置再跳动
-            OverlayBackdrop.CoverOwner(dlg);
             dlg.ShowDialog();
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            OverlayBackdrop.CoverOwner(this);
         }
 
 
@@ -99,9 +80,28 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         /// <summary>弹窗主滚动区（目录 / 识别结果表）。</summary>
         private ScrollViewer MainScrollViewer() => ResultScroll;
 
-        private void OnBackdropMouseDown(object sender, MouseButtonEventArgs e)
+        // ============ 标题栏 / 关闭（普通弹窗，无遮罩；与 QuoteEntryDialog 同款） ============
+
+        private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) return;
+            try { DragMove(); }
+            catch (Exception) { }
+        }
+
+        private void OnCloseClick(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        /// <summary>Esc 关闭（原遮罩版为点空白关闭）。</summary>
+        private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                Close();
+                e.Handled = true;
+            }
         }
 
         // ---- 顶部按钮 ----
@@ -115,20 +115,24 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         {
             // 新建行未确认的内容一并提交
             CommitNewGroup();
-            IsEnabled = false;
+            // 后台保存（逐组网关请求，同步等会冻结 UI 最坏到请求超时）：
+            // 按钮禁用防重复提交；成功才关窗，失败恢复按钮留窗重试
+            var button = (System.Windows.Controls.Button)sender;
+            button.IsEnabled = false;
+            button.Content = "保存中…";
             try
             {
-                await _vm.SaveAsync();
-                ToastService.Show("关注债券分组已保存到账户", ToastKind.Success);
-                IsEnabled = true;
+                await System.Threading.Tasks.Task.Run(() => _vm.Save());
+                Shared.Services.FilterProfileService.RaiseDataChanged();   // 回 UI 线程再发（订阅方改集合）
+                ToastService.Show("关注债券分组已保存（已同步后端）");
                 Close();
             }
-            catch (System.Exception error)
+            catch (Exception ex)
             {
-                com.gateway.log.LogHelper.Error(error);
-                ToastService.Show("保存未完成：" + error.Message + "。请保留编辑内容并重试；如版本冲突请重新打开。", ToastKind.Error);
+                ToastService.Show("分组保存失败：" + ex.Message, ToastKind.Error);
+                button.IsEnabled = true;
+                button.Content = "保存";
             }
-            finally { IsEnabled = true; }
         }
 
         // ---- 分组列表 ----

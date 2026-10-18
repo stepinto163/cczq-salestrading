@@ -1,0 +1,57 @@
+<Window x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteLogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="报价日志" Width="640" Height="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        WindowStyle="None" Background="{DynamicResource PageBgBrush}"
+        ResizeMode="NoResize" FontFamily="Segoe UI" UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+    <!--
+        报价日志弹窗（原型 quote-log-modal）：单条报价的变更历史
+        （ficc.quote.history.query，H10，按 revision 升序）。
+    -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏 -->
+            <Border Grid.Row="0" Padding="16,8" Background="Transparent"
+                    BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="OnTitleBarMouseDown">
+                <Grid>
+                    <TextBlock x:Name="TitleText" Text="报价日志" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    <Button Content="✕" Width="26" Height="26" FontSize="12" HorizontalAlignment="Right"
+                            VerticalAlignment="Center" Style="{DynamicResource StcModalCloseButton}" Click="OnCloseClick" />
+                </Grid>
+            </Border>
+
+            <!-- 历史记录 -->
+            <DataGrid Grid.Row="1" x:Name="LogGrid" Margin="8"
+                      AutoGenerateColumns="False" IsReadOnly="True"
+                      HeadersVisibility="Column" CanUserAddRows="False" CanUserDeleteRows="False"
+                      Background="Transparent" BorderThickness="0"
+                      RowBackground="Transparent" AlternatingRowBackground="{DynamicResource PageBgBrush}"
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource BorderStdBrush}"
+                      FontSize="12">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="时间" Binding="{Binding OperationTimeText}" Width="150" />
+                    <DataGridTextColumn Header="动作" Binding="{Binding Action}" Width="90" />
+                    <DataGridTextColumn Header="版本" Binding="{Binding Revision}" Width="70" />
+                    <DataGridTextColumn Header="操作人" Binding="{Binding OperatorUserId}" Width="110" />
+                    <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Border>
+</Window>

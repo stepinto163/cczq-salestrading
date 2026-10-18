@@ -1,5 +1,4 @@
-﻿using System;
-using STC.SalesTrading.Plugin.Ficc;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using STC.SalesTrading.Plugin.Abstractions.Queries;
@@ -23,25 +22,27 @@ namespace STC.SalesTrading.Plugin.Shared.Services
         /// 否则回填行并返回 Rows 是否非空。
         /// </param>
         /// <param name="failToastTitle">失败 toast 前缀（各 VM 的 Title）。</param>
+        /// <param name="silent">静默刷新（推送/轮询触发的自动重查）：不进 Loading 态（行原地刷新），
+        /// 失败也只 toast、保留旧数据不打断当前视图。</param>
         public static async Task RunAsync(
             LatestRequestCoordinator coordinator,
             IQueryLoadContext context,
             Func<LatestRequestCoordinator.Lease, Task<bool?>> loadAsync,
-            string failToastTitle)
+            string failToastTitle,
+            bool silent = false)
         {
             var lease = coordinator.Begin();
-            context.LoadState = QueryLoadState.Loading;
-            context.ErrorMessage = null;
+            if (!silent)
+            {
+                context.LoadState = QueryLoadState.Loading;
+                context.ErrorMessage = null;
+            }
             try
             {
                 var hasRows = await loadAsync(lease);
                 if (hasRows == null || !lease.IsCurrent) return;
-                long stateStarted = ClientPerformanceTrace.Start();
                 context.LoadState = hasRows.Value ? QueryLoadState.Loaded : QueryLoadState.Empty;
-                ClientPerformanceTrace.End("query.state:" + context.GetType().Name, stateStarted);
-                long afterStarted = ClientPerformanceTrace.Start();
                 context.AfterQuery();
-                ClientPerformanceTrace.End("query.after:" + context.GetType().Name, afterStarted);
             }
             catch (OperationCanceledException)
             {
@@ -49,17 +50,21 @@ namespace STC.SalesTrading.Plugin.Shared.Services
             }
             catch (Exception ex)
             {
-                if (!(ex is NotSupportedException))
-                {
-                    com.gateway.log.LogHelper.Error(ex);
-                }
                 if (lease.IsCurrent)
                 {
-                    context.ResetForFailure();
-                    context.ErrorMessage = ex.Message;
-                    context.LoadState = QueryLoadState.Error;
-                    context.AfterQuery();
-                    ToastService.Show(failToastTitle + " 查询失败：" + ex.Message, ToastKind.Error);
+                    if (silent)
+                    {
+                        // 静默刷新失败：保留旧数据，只提示
+                        ToastService.Show(failToastTitle + " 查询失败：" + ex.Message, ToastKind.Error);
+                    }
+                    else
+                    {
+                        context.ResetForFailure();
+                        context.ErrorMessage = ex.Message;
+                        context.LoadState = QueryLoadState.Error;
+                        context.AfterQuery();
+                        ToastService.Show(failToastTitle + " 查询失败：" + ex.Message, ToastKind.Error);
+                    }
                 }
             }
             finally

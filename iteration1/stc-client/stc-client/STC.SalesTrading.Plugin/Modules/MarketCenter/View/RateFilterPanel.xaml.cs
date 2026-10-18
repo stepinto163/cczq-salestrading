@@ -12,7 +12,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             InitializeComponent();
         }
 
-        // 顶部「关注债券 / 筛选分组」区：管理弹窗已按原型实现（数据会话内保存，后端同步待接）
+        // 顶部「关注债券 / 筛选分组」区：管理弹窗已按原型实现（分组经 IGroupDirectory 同步后端）
         // 面板 DataContext = MarketCenterViewModel，经其 MarketCenterService 提供识别回填取数
         private void OnFavBondAddClick(object sender, RoutedEventArgs e)
             => FavBondManagerWindow.Show(Window.GetWindow(this), FilterProfileService.MarketKind.Rate,

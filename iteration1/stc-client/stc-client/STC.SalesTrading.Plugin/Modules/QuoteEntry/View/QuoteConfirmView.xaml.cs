@@ -17,16 +17,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.View
             InitializeComponent();
         }
 
-        private void AdjustmentInput_OnPreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Enter || !(DataContext is QuoteConfirmViewModel model)) return;
-            var input = (TextBox)sender;
-            input.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-            e.Handled = true;
-            if (Equals(input.Tag, "price")) model.ApplyBpInputCommand.Execute(null);
-            else model.ApplyAmountInputCommand.Execute(null);
-        }
-
         /// <summary>
         /// 主表加载后，按各批次的 IsExpanded 同步每行明细展开态。
         /// （RowDetailsVisibilityMode=Collapsed 时 DataGrid 不管理明细显隐，需代码精确控制。）

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,16 +14,16 @@ namespace STC.SalesTrading.Plugin.Abstractions
     public interface IMarketCenterService
     {
         /// <summary>服务端语义的全部看板查询（Mock 阶段在进程内模拟）。</summary>
-        Task<PagedResult<BoardQuoteRow>> QueryBoardRowsAsync(MarketBoardQuery query, CancellationToken ct);
+        Task<PagedResult<TapeRow>> QueryBoardRowsAsync(MarketBoardQuery query, CancellationToken ct);
 
         /// <summary>服务端语义的最优看板查询（Mock 阶段先筛选再聚合）。</summary>
-        Task<PagedResult<BoardBestRow>> QueryBestRowsAsync(MarketBoardQuery query, CancellationToken ct);
+        Task<PagedResult<BestRow>> QueryBestRowsAsync(MarketBoardQuery query, CancellationToken ct);
 
         /// <summary>加载"全部"看板行（原型：live_quotes 投影 board_credit_all/board_rate_all）。</summary>
-        Task<IReadOnlyList<BoardQuoteRow>> LoadBoardRowsAsync(BondMarket market, CancellationToken ct);
+        Task<IReadOnlyList<TapeRow>> LoadBoardRowsAsync(BondMarket market, CancellationToken ct);
 
         /// <summary>加载"最优"看板行（按 代码|价格类型|清算速度 聚合双向最优）。</summary>
-        Task<IReadOnlyList<BoardBestRow>> LoadBestRowsAsync(BondMarket market, CancellationToken ct);
+        Task<IReadOnlyList<BestRow>> LoadBestRowsAsync(BondMarket market, CancellationToken ct);
 
         /// <summary>加载模糊报价（原型 0910 改名；接口仍为 GET /api/board-intents?start_date=...）。</summary>
         Task<IReadOnlyList<BoardIntentRow>> LoadIntentRowsAsync(DateTime start, DateTime end, CancellationToken ct);
@@ -32,7 +32,19 @@ namespace STC.SalesTrading.Plugin.Abstractions
         Task SetIntentStatusAsync(IReadOnlyCollection<string> intentIds, IntentStatus status, CancellationToken ct);
 
         /// <summary>加载报价提醒（原型：board_alert 投影）。</summary>
-        Task<IReadOnlyList<BoardAlertRow>> LoadAlertRowsAsync(CancellationToken ct);
+
+        /// <summary>带侧栏筛选条件的提醒查询（通知域 view.open 条件下推；null=不过滤）。
+        /// page/pageSize 客户端分页（服务端视图补拉支撑深页）。</summary>
+        Task<IReadOnlyList<AlertRow>> LoadAlertRowsAsync(Queries.ProductFilter filter, int page, int pageSize, CancellationToken ct);
+
+        /// <summary>标记提醒已读（后端 ficc.notification.read；弹窗"查看"与提醒页工具栏上报）。</summary>
+        Task MarkAlertReadAsync(string notificationId, CancellationToken ct);
+
+        /// <summary>最近一轮推送实际变更的报价 Id（全部页增量闪烁判定）。</summary>
+        IReadOnlyList<string> SnapshotTouchedQuoteIds();
+
+        /// <summary>最近一轮推送实际变更的券 Id（最优页增量闪烁判定）。</summary>
+        IReadOnlyList<string> SnapshotTouchedSecurityIds();
 
         /// <summary>加载右侧债券详情（含多档行情与成交行情）。</summary>
 

@@ -8,7 +8,6 @@ using STC.SalesTrading.Plugin.Shared.Messages;
 using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
 using System;
-using STC.SalesTrading.Plugin.Ficc;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -22,13 +21,11 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 {
     /// <summary>
     /// 报价确认页 VM：分批分组折叠主从表 + 批量工具栏 + 状态栏统计。
-    /// 加载待确认行 → 按原始消息批次分组 → 行内编辑 → 确认/删除入库。
+    /// 数据流（原型语义）：加载待确认行 → 按 批次|机构|来源 分组 → 行内编辑 → 确认/删除入库。
+    /// 开发期走 Mock；真实后端接入后仅替换 IQuoteService 实现。
     /// </summary>
     public partial class QuoteConfirmViewModel : ObservableObject, IDisposable
     {
-        public ICrmDirectory CrmDirectory => _quoteService as ICrmDirectory;
-        public CrmBatchEditor CrmBatch { get; }
-
         private readonly IQuoteService _quoteService;
         private readonly HashSet<QuoteConfirmRowViewModel> _hookedRows = new HashSet<QuoteConfirmRowViewModel>();
         private readonly HashSet<QuoteConfirmBatchViewModel> _hookedBatches = new HashSet<QuoteConfirmBatchViewModel>();
@@ -38,11 +35,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         public QuoteConfirmViewModel(IQuoteService quoteService)
         {
             _quoteService = quoteService;
-            CrmBatch = new CrmBatchEditor(() => SelectedRows);
-            if (quoteService is ISalesTradingUpdates updates)
-            {
-                updates.QuotesChanged += OnBackendChanged;
-            }
 
             _status.Add("group", "共 0 组 / 0 条报价")
                    .Add("source", "IDEAL: 0组 | QT: 0组")
@@ -51,6 +43,30 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                    .Add("sync", "模拟数据");
 
             EventAggregator.Subscribe<DataSourceResetMessage>(this, OnDataSourceReset);
+
+            // 推送刷新（方案 §3.1.1）：待确认集合变化 → 重查；行勾选/编辑中先置脏，
+            // 释放勾选后补刷（同今日页策略，回调线程经 Dispatcher 调度）
+            _quoteService.QuotesChanged += OnQuotesChanged;
+
+            _ = InitializeAsync();
+        }
+
+
+        private void OnQuotesChanged()
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(OnQuotesChangedUi));
+                return;
+            }
+            OnQuotesChangedUi();
+        }
+
+        private void OnQuotesChangedUi()
+        {
+            // 有勾选行时不打断当前视图（原 _pendingPushRefresh 标志从未被消费，一并清理）
+            if (SelectedRows.Any()) return;
             _ = InitializeAsync();
         }
 
@@ -102,13 +118,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         #region 加载与分组
 
-        /// <summary>按服务端原始消息批次分组，缺少批次时保持独立报价。</summary>
+        /// <summary>加载待确认行并分组（原型 renderQuoteGrouped 语义）。</summary>
         private async Task InitializeAsync()
         {
             var lease = _loadCoordinator.Begin();
             try
             {
-                IReadOnlyList<QuoteConfirmRow> rows;
+                IReadOnlyList<QuoteRow> rows;
                 try
                 {
                     rows = await _quoteService.LoadPendingRowsAsync(lease.Token);
@@ -117,35 +133,26 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 {
                     return;
                 }
-                catch (Exception error)
+                catch (Exception)
                 {
-                    com.gateway.log.LogHelper.Error(error);
-                    SyncState = "加载失败：" + error.Message;
-                    ToastService.Show(SyncState, ToastKind.Error);
-                    return;
+                    rows = new QuoteRow[0];
                 }
 
                 if (!lease.IsCurrent) return;
 
-                var selectedRows = Batches.SelectMany(batch => batch.Rows)
-                    .Where(row => row.IsSelected)
-                    .ToDictionary(row => row.RecognitionId);
-                var expandedGroups = Batches.ToDictionary(batch => batch.BatchId, batch => batch.IsExpanded);
                 UnhookAllRows();
                 Batches.Clear();
 
-                var groups = new Dictionary<string, List<QuoteConfirmRow>>();
+                var groups = new Dictionary<string, List<QuoteRow>>();
                 foreach (var row in rows)
                 {
-                    var key = !string.IsNullOrWhiteSpace(row.BatchId)
-                        ? row.BatchId
-                        : row.RecognitionId ?? row.ClientQuoteId;
-                    List<QuoteConfirmRow> list;
-                    if (!groups.TryGetValue(key, out list))
-                    {
-                        list = new List<QuoteConfirmRow>();
-                        groups[key] = list;
-                    }
+                    // 后端以 sourceMessageId 标识来源消息，一条消息可对应多条报价；
+                    // 纯手工录入行没有该键，回退按 机构|来源 分组（与 Mock 时代观感一致）。
+                    var key = !string.IsNullOrEmpty(row.SourceMessageId)
+                        ? row.SourceMessageId
+                        : (row.InstitutionName ?? string.Empty) + "|" + row.SourceTypeText;
+                    List<QuoteRow> list;
+                    if (!groups.TryGetValue(key, out list)) { list = new List<QuoteRow>(); groups[key] = list; }
                     list.Add(row);
                 }
 
@@ -155,27 +162,16 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     var batch = new QuoteConfirmBatchViewModel(new QuoteConfirmBatch
                     {
                         BatchId = kv.Key,
-                        SourceType = first.SourceType,
-                        Institution = first.BatchInstitution ?? first.Institution,
-                        Trader = first.BatchTrader ?? first.Trader,
-                        ReceivedAt = first.ReceivedAt,
-                        Status = first.BatchStatus,
+                        SourceType = first.SourceTypeText,
+                        Institution = first.InstitutionName,
+                        Trader = first.ContactName,
+                        ReceivedAt = first.CreateTime,
+                        Status = BatchStatus.PendingReview,
                         RowCount = kv.Value.Count,
                     });
-                    bool expanded;
-                    if (expandedGroups.TryGetValue(kv.Key, out expanded))
-                    {
-                        batch.IsExpanded = expanded;
-                    }
                     foreach (var row in kv.Value)
                     {
-                        // 推送仍须移除已确认/删除的报价；仅复用版本未变的选中行，保留未提交编辑。
-                        QuoteConfirmRowViewModel rvm;
-                        if (!selectedRows.TryGetValue(row.RecognitionId, out rvm)
-                            || rvm.Row.Revision != row.Revision)
-                        {
-                            rvm = new QuoteConfirmRowViewModel(row);
-                        }
+                        var rvm = new QuoteConfirmRowViewModel(row);
                         HookRow(rvm);
                         batch.Rows.Add(rvm);
                     }
@@ -183,7 +179,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                     var captured = batch;
                     batch.Rows.CollectionChanged += (s, e) => OnBatchRowsChanged(captured, e);
                     Batches.Add(batch);
-                    UpdateBatchChecked(batch);
                 }
 
                 RecomputeStats();
@@ -252,7 +247,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
                 foreach (var row in batch.Rows) row.IsSelected = batch.IsGroupChecked.Value;
             }
             finally { _isUpdatingSelectionState = false; }
-            ResetToolbarSelection();
             RecomputeStats();
         }
 
@@ -274,9 +268,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            RefreshToolbarFlags();
             if (_isUpdatingSelectionState || e.PropertyName != nameof(QuoteConfirmRowViewModel.IsSelected)) return;
-            ResetToolbarSelection();
 
             // 行选择变化 → 刷新所属批次的组级三态与整体统计
             foreach (var batch in Batches)
@@ -315,7 +307,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
             GroupStats = string.Format("共 {0} 组 / {1} 条报价", Batches.Count, rows.Count);
             SourceStats = string.Format("IDEAL: {0}组 | QT: {1}组", ideal, qt);
-            SyncState = _quoteService is DpsSalesTradingServices ? "DPS实时订阅" : "模拟数据";
+            SyncState = "模拟数据";
 
             _status.Set("group", GroupStats);
             _status.Set("source", SourceStats);
@@ -324,7 +316,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
             _status.Set("sync", SyncState);
             var allSelected = rows.Count > 0 && rows.All(r => r.IsSelected);
             IsSelectAllChecked = allSelected ? (bool?)true : (rows.Any(r => r.IsSelected) ? null : false);
-            RefreshToolbarFlags();
         }
 
         private void PublishPendingBadge()
@@ -343,39 +334,34 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         #region 工具栏命令
 
         [RelayCommand]
-        private void CompleteQuote()
-        {
-            var selected = SelectedRows.ToArray();
-            if (!(_quoteService is DpsSalesTradingServices services) || selected.Length != 1)
-            {
-                ToastService.Show("请勾选一条报价，以补全CRM机构、联系人并确认。", ToastKind.Warning);
-                return;
-            }
-            STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog.ShowForQuote(
-                System.Windows.Application.Current.MainWindow, services.Api, selected[0].RecognitionId);
-            _ = InitializeAsync();
-        }
-
-        [RelayCommand]
         private async Task ConfirmSelected()
         {
             var selected = SelectedRows.ToList();
             if (selected.Count == 0) { ToastService.Show("请先勾选要确认的报价", ToastKind.Warning); return; }
 
+            foreach (var row in selected) row.Commit();
+
+            var unresolved = selected.FirstOrDefault(row => !row.HasCounterpartyId);
+            if (unresolved != null)
+            {
+                // 后端 confirm 只认 CRM 内部 ID，仅有名称时会被 UNRESOLVED_COUNTERPARTY 拒绝。
+                ToastService.Show(
+                    string.Format("报价 {0} 机构或联系人未选定（诊断：instId={1} instName={2} contactId={3} contactName={4} VM机构={5}）",
+                        unresolved.Code,
+                        unresolved.Row.InstitutionId ?? "null",
+                        unresolved.Row.InstitutionName ?? "null",
+                        unresolved.Row.ContactId ?? "null",
+                        unresolved.Row.ContactName ?? "null",
+                        unresolved.Institution ?? "null"),
+                    ToastKind.Warning);
+                return;
+            }
+
             try
             {
-                foreach (var row in selected)
-                {
-                    row.Commit();
-                }
-                if (_quoteService is DpsSalesTradingServices services)
-                {
-                    await services.ConfirmRowsAsync(selected.Select(row => row.Row).ToArray(), CancellationToken.None);
-                }
-                else
-                {
-                    await _quoteService.ConfirmQuotesAsync(selected.Select(row => row.RecognitionId).ToList(), CancellationToken.None);
-                }
+                await _quoteService.ConfirmQuotesAsync(
+                    selected.Select(row => row.Row).ToList(),
+                    CancellationToken.None);
                 RemoveRows(selected);
                 ToastService.Show(string.Format("已确认 {0} 条报价", selected.Count), ToastKind.Success);
             }
@@ -393,15 +379,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 
             try
             {
-                if (_quoteService is DpsSalesTradingServices backend)
-                {
-                    await backend.DeletePendingAsync(selected.Select(row => row.Row), CancellationToken.None);
-                }
-                else
-                {
-                    await _quoteService.DeleteQuotesAsync(
-                        selected.Select(row => row.RecognitionId).ToList(), CancellationToken.None);
-                }
+                await _quoteService.DeleteQuotesAsync(
+                    selected.Select(row => row.Row).ToList(),
+                    CancellationToken.None);
                 RemoveRows(selected);
                 ToastService.Show(string.Format("已删除 {0} 条报价", selected.Count), ToastKind.Success);
             }
@@ -433,13 +413,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [RelayCommand]
         private void SetDirectionBid()
         {
-            foreach (var row in RowsForBatchEdit()) row.Direction = "Bid";
+            foreach (var row in SelectedRows) row.Direction = "Bid";
         }
 
         [RelayCommand]
         private void SetDirectionOfr()
         {
-            foreach (var row in RowsForBatchEdit()) row.Direction = "Ofr";
+            foreach (var row in SelectedRows) row.Direction = "Ofr";
         }
 
         [ObservableProperty]
@@ -448,237 +428,180 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         [ObservableProperty]
         private string _amountInput = string.Empty;
 
+        [ObservableProperty]
+        private string _institutionInput = string.Empty;
 
+        /// <summary>机构批量框选中的 CRM Id（CrmSearchBox 回填；null=未选定）。</summary>
+        [ObservableProperty]
+        private string _institutionSelectedId;
 
-        private int lastBpSign;
-        private int lastAmountSign;
-        private bool updatingAdjustmentInput;
+        [ObservableProperty]
+        private string _traderInput = string.Empty;
 
-        partial void OnBpInputChanged(string value)
-        {
-            if (!updatingAdjustmentInput) lastBpSign = 0;
-        }
-
-        partial void OnAmountInputChanged(string value)
-        {
-            if (!updatingAdjustmentInput) lastAmountSign = 0;
-        }
+        /// <summary>交易员批量框选中的 CRM Id。</summary>
+        [ObservableProperty]
+        private string _traderSelectedId;
 
         [RelayCommand]
-        private void AdjustBpUp()
-        {
-            ApplyAdjustment(true, 1);
-        }
+        private void AdjustBpUp() { ApplyBp(1); }
 
         [RelayCommand]
-        private void AdjustBpDown()
-        {
-            ApplyAdjustment(true, -1);
-        }
+        private void AdjustBpDown() { ApplyBp(-1); }
 
-        [RelayCommand]
-        private void AdjustAmountUp()
-        {
-            ApplyAdjustment(false, 1);
-        }
-
-        [RelayCommand]
-        private void AdjustAmountDown()
-        {
-            ApplyAdjustment(false, -1);
-        }
-
-        [RelayCommand]
-        private void ApplyBpInput()
-        {
-            ApplyAdjustment(true, 0);
-        }
-
-        [RelayCommand]
-        private void ApplyAmountInput()
-        {
-            ApplyAdjustment(false, 0);
-        }
-
-        private List<QuoteConfirmRowViewModel> RowsForBatchEdit()
+        private void ApplyBp(int sign)
         {
             var selected = SelectedRows.ToList();
             if (selected.Count == 0)
             {
-                ToastService.Show("请先勾选要批量修改的报价", ToastKind.Warning);
+                ToastService.Show("请先勾选要调整的报价", ToastKind.Warning);
+                return;
             }
-            return selected;
-        }
 
-        /// <summary>按钮固定调整1BP/1000万；输入框按 Enter 应用有符号增量，与产品原型一致。</summary>
-        private void ApplyAdjustment(bool priceAdjustment, int buttonSign)
-        {
-            var selected = RowsForBatchEdit();
-            if (selected.Count == 0) return;
-            string input = priceAdjustment ? BpInput : AmountInput;
-            decimal delta;
-            decimal step = priceAdjustment ? 1m : 1000m;
-            if (buttonSign == 0)
+            decimal bp;
+            if (!TryParseNonNegative(BpInput, out bp))
             {
-                if (!decimal.TryParse(input, NumberStyles.Number, CultureInfo.InvariantCulture, out delta) || delta == 0)
-                {
-                    ToastService.Show("请输入非零数字调整值，然后按 Enter", ToastKind.Warning);
-                    return;
-                }
+                ToastService.Show("BP 调整值必须是非负数字", ToastKind.Warning);
+                return;
             }
-            else
-            {
-                delta = step * buttonSign;
-                int lastSign = priceAdjustment ? lastBpSign : lastAmountSign;
-                decimal previous;
-                decimal display = lastSign == buttonSign && decimal.TryParse(input, NumberStyles.Number,
-                    CultureInfo.InvariantCulture, out previous) ? Math.Abs(previous) + step : step;
-                updatingAdjustmentInput = true;
-                try
-                {
-                    if (priceAdjustment)
-                    {
-                        BpInput = (display * buttonSign).ToString(CultureInfo.InvariantCulture);
-                        lastBpSign = buttonSign;
-                    }
-                    else
-                    {
-                        AmountInput = (display * buttonSign).ToString(CultureInfo.InvariantCulture);
-                        lastAmountSign = buttonSign;
-                    }
-                }
-                finally
-                {
-                    updatingAdjustmentInput = false;
-                }
-            }
-            int skipped = 0;
+
+            var delta = bp * sign;
+            var skipped = 0;
+
             foreach (var row in selected)
             {
-                decimal current;
-                if (!decimal.TryParse(priceAdjustment ? row.Price : row.Volume, NumberStyles.Number,
-                    CultureInfo.InvariantCulture, out current))
+                decimal price;
+                if (!decimal.TryParse(row.Price, out price))
                 {
                     skipped++;
                     continue;
                 }
-                // 收益率以百分数展示，1BP=0.01；净价/全价按原型使用价格单位增量。
-                decimal unit = priceAdjustment && row.PriceType != "净价" && row.PriceType != "全价" ? 0.01m : 1m;
-                string adjusted = Math.Max(0, current + delta * unit).ToString("0.####", CultureInfo.InvariantCulture);
-                if (priceAdjustment) row.Price = adjusted;
-                else row.Volume = adjusted;
+
+                // 收益率口径 1BP=0.0001；净价/全价口径 1BP=0.01（原型 adjustBP 语义）
+                var step = row.PriceType == "净价" || row.PriceType == "全价" ? 0.01m : 0.0001m;
+                row.Price = (price + delta * step).ToString("0.####", CultureInfo.InvariantCulture);
             }
+
             if (skipped > 0)
             {
-                ToastService.Show(string.Format("有 {0} 条报价数值无效，已跳过", skipped), ToastKind.Warning);
+                ToastService.Show(string.Format("有 {0} 条报价价格无效，已跳过", skipped), ToastKind.Warning);
             }
         }
 
-        private void ResetToolbarSelection()
+        [RelayCommand]
+        private void AdjustAmountUp() { ApplyAmount(1); }
+
+        [RelayCommand]
+        private void AdjustAmountDown() { ApplyAmount(-1); }
+
+        private void ApplyAmount(int sign)
         {
-            // 新一组勾选行仍能应用上次选择的类型/清算，避免默认值无 SelectionChanged 事件。
-            ToolbarPriceType = null;
-            ToolbarSettlement = null;
-            RefreshToolbarFlags();
+            var selected = SelectedRows.ToList();
+            if (selected.Count == 0)
+            {
+                ToastService.Show("请先勾选要调整的报价", ToastKind.Warning);
+                return;
+            }
+
+            decimal amount;
+            if (!TryParseNonNegative(AmountInput, out amount))
+            {
+                ToastService.Show("报量调整值必须是非负数字", ToastKind.Warning);
+                return;
+            }
+
+            var delta = amount * sign * 1000m;   // 原型 +1k = 加 1000 万
+            var skipped = 0;
+
+            foreach (var row in selected)
+            {
+                decimal vol;
+                if (!decimal.TryParse(row.Volume, out vol))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                row.Volume = Math.Max(0, vol + delta).ToString("0.#", CultureInfo.InvariantCulture);
+            }
+
+            if (skipped > 0)
+            {
+                ToastService.Show(string.Format("有 {0} 条报价报量无效，已跳过", skipped), ToastKind.Warning);
+            }
+        }
+
+        private static bool TryParseNonNegative(string input, out decimal value)
+        {
+            return decimal.TryParse(input, out value) && value >= 0;
         }
 
         /// <summary>工具栏价格类型下拉（变化即批量应用到选中行，原型 batchSetPriceType）。</summary>
         [ObservableProperty]
-        private string _toolbarPriceType;
+        private string _toolbarPriceType = "到期收益率";
 
         partial void OnToolbarPriceTypeChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in RowsForBatchEdit()) row.PriceType = value;
+            foreach (var row in SelectedRows) row.PriceType = value;
         }
 
         /// <summary>工具栏清算速度下拉（变化即批量应用，原型 batchSetSettlement）。</summary>
         [ObservableProperty]
-        private string _toolbarSettlement;
+        private string _toolbarSettlement = "T+1";
 
         partial void OnToolbarSettlementChanged(string value)
         {
             if (string.IsNullOrEmpty(value)) return;
-            foreach (var row in RowsForBatchEdit()) row.Settlement = value;
+            foreach (var row in SelectedRows) row.Settlement = value;
         }
 
-
-
-        public bool ToolbarUrgent => AllSelectedFlag("urgent");
-        public bool ToolbarRecommended => AllSelectedFlag("rec");
-        public bool ToolbarWhole => AllSelectedFlag("whole");
-        public bool ToolbarOco => AllSelectedFlag("oco");
-        public bool ToolbarPacking => AllSelectedFlag("packing");
-
-        private bool AllSelectedFlag(string flag)
+        [RelayCommand]
+        private void ApplyInstitution()
         {
-            var selected = SelectedRows.ToList();
-            return selected.Count > 0 && selected.All(row => FlagValue(row, flag));
-        }
-
-        private static bool FlagValue(QuoteConfirmRowViewModel row, string flag)
-        {
-            switch (flag)
+            if (string.IsNullOrWhiteSpace(InstitutionInput)) return;
+            foreach (var row in SelectedRows)
             {
-                case "urgent": return row.IsUrgent;
-                case "rec": return row.IsRec;
-                case "whole": return row.IsWhole;
-                case "oco": return row.IsOco;
-                case "packing": return row.IsPacking;
-                default: throw new ArgumentException("Unknown quote flag: " + flag);
+                row.Institution = InstitutionInput.Trim();
+                // CRM Id 随批量应用回填；未从联想选定（null）时由确认前置校验拦截
+                row.Row.InstitutionId = InstitutionSelectedId;
             }
         }
 
-        private void RefreshToolbarFlags()
+        [RelayCommand]
+        private void ApplyTrader()
         {
-            OnPropertyChanged(nameof(ToolbarUrgent));
-            OnPropertyChanged(nameof(ToolbarRecommended));
-            OnPropertyChanged(nameof(ToolbarWhole));
-            OnPropertyChanged(nameof(ToolbarOco));
-            OnPropertyChanged(nameof(ToolbarPacking));
+            if (string.IsNullOrWhiteSpace(TraderInput)) return;
+            foreach (var row in SelectedRows)
+            {
+                row.Trader = TraderInput.Trim();
+                row.Row.ContactId = TraderSelectedId;
+            }
         }
 
-        /// <summary>混合状态统一打开；全选中时统一关闭；OCO与打包互斥。</summary>
+        /// <summary>批量旗标切换（oco/packing/urgent/rec/whole）。</summary>
         [RelayCommand]
         private void ToggleFlag(string flag)
         {
-            var selected = RowsForBatchEdit();
-            bool enabled = selected.Any(row => !FlagValue(row, flag));
-            foreach (var row in selected)
+            foreach (var row in SelectedRows)
             {
                 switch (flag)
                 {
-                    case "oco":
-                        row.IsOco = enabled;
-                        if (enabled) row.IsPacking = false;
-                        break;
-                    case "packing":
-                        row.IsPacking = enabled;
-                        if (enabled) row.IsOco = false;
-                        break;
-                    case "urgent": row.IsUrgent = enabled; break;
-                    case "rec": row.IsRec = enabled; break;
-                    case "whole": row.IsWhole = enabled; break;
+                    case "oco": row.IsOco = !row.IsOco; break;
+                    case "packing": row.IsPacking = !row.IsPacking; break;
+                    case "urgent": row.IsUrgent = !row.IsUrgent; break;
+                    case "rec": row.IsRec = !row.IsRec; break;
+                    case "whole": row.IsWhole = !row.IsWhole; break;
                 }
             }
-            RefreshToolbarFlags();
         }
 
         #endregion
 
         #region 释放
 
-        private void OnBackendChanged()
-        {
-            _ = InitializeAsync();
-        }
-
         public void Dispose()
         {
-            if (_quoteService is ISalesTradingUpdates updates)
-            {
-                updates.QuotesChanged -= OnBackendChanged;
-            }
+            _quoteService.QuotesChanged -= OnQuotesChanged;
             _loadCoordinator.Dispose();
             EventAggregator.Unsubscribe(this);
             UnhookAllRows();

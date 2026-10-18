@@ -1,4 +1,4 @@
-﻿using STC.SalesTrading.Plugin.Shared.Services;
+using STC.SalesTrading.Plugin.Shared.Services;
 using System;
 using System.ComponentModel;
 using System.Windows;
@@ -61,11 +61,11 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             }
             var menu = (sender as DataGrid).ContextMenu;
             menu.DataContext = row.DataContext;
-            // BoardAlertRow 没有市场字段：按原型 merged 侧栏口径合并列出两个市场的分组
-            var alert = row.DataContext as Abstractions.Models.BoardAlertRow;
+            // AlertRow 没有市场字段：按原型 merged 侧栏口径合并列出两个市场的分组
+            var alert = row.DataContext as Abstractions.Models.AlertRow;
             if (alert != null)
             {
-                BoardRowGroupMenu.Populate(menu, alert.Code, alert.Name, Window.GetWindow(this),
+                BoardRowGroupMenu.Populate(menu, alert.SecurityId, alert.SecurityName, Window.GetWindow(this),
                     FilterProfileService.MarketKind.Credit, FilterProfileService.MarketKind.Rate);
             }
         }

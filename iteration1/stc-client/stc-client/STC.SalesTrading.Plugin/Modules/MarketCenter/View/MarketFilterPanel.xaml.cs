@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using STC.SalesTrading.Plugin.Modules.MarketCenter.Model;
 using STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel;
+using STC.SalesTrading.Plugin.Shared.Components;
 
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 {
@@ -25,11 +26,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
         {
             var scope = ResolveActivePanel();
             if (scope == null) return;
-            if (scope != IntentHost)
-            {
-                STC.SalesTrading.Plugin.Shared.Components.SidebarFilter.Reset((FrameworkElement)scope);
-                return;
-            }
 
             foreach (var toggle in FindChildren<ToggleButton>(scope))
             {
@@ -55,6 +51,10 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
                     }
                 }
             }
+
+            // 面板条件下推后，「清除」要同时把编译条件清空并触发一次空条件重查
+            // （信用/利率面板挂有 SidebarFilter 收集器；意向/提醒页无收集器时内部直接返回）
+            SidebarFilter.Reset((System.Windows.FrameworkElement)scope);
         }
 
         /// <summary>当前子页对应的筛选面板（四套常驻，按 VM.FilterPanel 选择）。</summary>

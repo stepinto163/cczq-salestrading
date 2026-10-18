@@ -8,11 +8,9 @@ using System.Windows.Input;
 namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 {
     /// <summary>
-    /// 报价录入模块浮窗（原型 0910）：
-    /// 遮罩 .quote-entry-overlay{background:rgba(0,0,0,.68);padding:20px 居中} +
-    /// 外壳 .quote-entry-shell{width:min(1970px,96vw);height:min(840px,92vh);bg #0d1117;border 1px #30363d}。
-    /// 遮罩用「窗口铺满宿主 + 内部半透明黑 Border」实现（见 <see cref="OverlayBackdrop"/>）。
-    /// DataContext 为独立新建的 QuoteViewModel。
+    /// 报价录入模块窗（原型 0910）：普通模态窗口（无遮罩浮层，居中于宿主、可拖动标题栏），
+    /// 承载报价录入整模块（报价确认/精确报价/模糊报价三子页）。
+    /// DataContext 为独立新建的 QuoteViewModel；窗口尺寸按宿主 96%/92% 收敛。
     /// </summary>
     public partial class QuoteEntryOverlayWindow : Window
     {
@@ -34,29 +32,21 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             InitializeComponent();
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             ContentView.DataContext = _viewModel;
-            Loaded += OnLoaded;
             Closed += OnClosed;
+            _active = this;
         }
 
-        /// <summary>铺满宿主，并按 96vw/92vh（含 20px 内距）收敛外壳尺寸。</summary>
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            ApplyHostGeometry();
-        }
-
-        /// <summary>对齐宿主尺寸与外壳尺寸；在 ShowDialog 之前调用可避免窗口先出现在默认位置再跳动。</summary>
+        /// <summary>按宿主 96%/92% 收敛窗口尺寸（基准 1970×840）；在 ShowDialog 之前调用避免跳动。</summary>
         private void ApplyHostGeometry()
         {
             try
             {
-                OverlayBackdrop.CoverOwner(this);
-
-                var host = OverlayBackdrop.OwnerSize(this);
+                var host = Owner != null ? new Size(Owner.ActualWidth, Owner.ActualHeight) : SystemParameters.WorkArea.Size;
                 var availableWidth = Math.Max(320d, host.Width - OverlayPadding * 2d);
                 var availableHeight = Math.Max(240d, host.Height - OverlayPadding * 2d);
 
-                Shell.Width = Math.Min(ShellWidth, Math.Min(availableWidth, host.Width * ShellWidthRatio));
-                Shell.Height = Math.Min(ShellHeight, Math.Min(availableHeight, host.Height * ShellHeightRatio));
+                Width = Math.Min(ShellWidth, Math.Min(availableWidth, host.Width * ShellWidthRatio));
+                Height = Math.Min(ShellHeight, Math.Min(availableHeight, host.Height * ShellHeightRatio));
             }
             catch (Exception)
             {
@@ -64,16 +54,45 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
             }
         }
 
-        /// <summary>打开浮窗（模态）。任何失败以 toast 呈现，避免"点击没反应"。</summary>
+        /// <summary>标题栏拖动。</summary>
+        private void OnTitleBarMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) return;
+            try { DragMove(); }
+            catch (Exception) { }
+        }
+
+        private static QuoteEntryOverlayWindow _active;
+
+        /// <summary>tab 关闭时关闭已打开的浮窗（VM 随 Closed 释放）。
+        /// 浮窗持有本 tab 的 QuoteViewModel/服务引用，tab 关闭后继续开着会走已释放的服务。</summary>
+        public static void CloseActive()
+        {
+            _active?.Close();
+        }
+
+        /// <summary>
+        /// 打开窗口（**非模态、全局唯一**）：已打开时仅激活置前，不重复创建；
+        /// 每次打开都新建独立 QuoteViewModel（旧窗口关闭时已释放自己的 VM）。
+        /// 任何失败以 toast 呈现，避免"点击没反应"。
+        /// </summary>
         public static void Show(Window owner, QuoteViewModel viewModel)
         {
             try
             {
+                if (_active != null)
+                {
+                    if (_active.WindowState == WindowState.Minimized) _active.WindowState = WindowState.Normal;
+                    _active.Activate();
+                    return;
+                }
+
                 var w = new QuoteEntryOverlayWindow(viewModel);
                 var host = owner ?? Application.Current?.MainWindow;
                 if (host != null) w.Owner = host;
+                w.WindowStartupLocation = host != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen;
                 w.ApplyHostGeometry();
-                w.ShowDialog();
+                w.Show();
             }
             catch (Exception ex)
             {
@@ -83,13 +102,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.View
 
         private void OnClosed(object sender, EventArgs e)
         {
+            if (ReferenceEquals(_active, this)) _active = null;
             _viewModel.Dispose();
-        }
-
-        /// <summary>遮罩空白处点击关闭（原型 .quote-entry-overlay 点击遮罩关闭）。</summary>
-        private void OnBackdropMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            Close();
         }
 
         private void OnCloseClick(object sender, RoutedEventArgs e)

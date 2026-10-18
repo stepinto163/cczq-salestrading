@@ -1,118 +1,67 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using STC.SalesTrading.Plugin.Abstractions.Models;
-using CommunityToolkit.Mvvm.Input;
-using STC.SalesTrading.Plugin.Abstractions;
 using System;
-using System.Globalization;
 using PriceTypeEnum = STC.SalesTrading.Plugin.Abstractions.Models.PriceType;
 
 namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
 {
     /// <summary>
-    /// 报价确认行 VM：包装 QuoteConfirmRow DTO，承载行内编辑状态（原型 18 列）。
+    /// 报价确认行 VM：包装 QuoteRow DTO，承载行内编辑状态（原型 18 列）。
     /// 可编辑列：方向/报价/价格类型/报量/机构/交易员/交易日期/清算速度 + 5 个旗标；
     /// 其余列（期限/代码/简称/估值/偏离/文本内容）只读直通 DTO。
     /// </summary>
     public partial class QuoteConfirmRowViewModel : ObservableObject
     {
-        public QuoteConfirmRowViewModel(QuoteConfirmRow row)
+        public QuoteConfirmRowViewModel(QuoteRow row)
         {
-            Row = row ?? new QuoteConfirmRow();
+            Row = row ?? new QuoteRow();
 
-            _direction = Row.Direction == QuoteDirection.Bid ? "Bid" : Row.Direction == QuoteDirection.Ofr ? "Ofr" : string.Empty;
-            _price = Row.Price?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-            _priceType = PriceTypeDisplay(Row.PriceType);
-            _volume = Row.Volume?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-            _institution = Row.Institution ?? string.Empty;
-            _trader = Row.Trader ?? string.Empty;
+            // 未识别方向在预览表里显示为空串；DTO 默认值按后端约定落在 Bid。
+            _direction = Row.Side == QuoteDirection.Ofr ? "Ofr"
+                : Row.Side == QuoteDirection.Bid && Row.QuoteId != null ? "Bid"
+                : string.Empty;
+            _price = Row.Price?.ToString("0.####") ?? string.Empty;
+            _priceType = PriceTypeDisplay(Row.QuoteType);
+            _volume = Row.Quantity?.ToString("0.#") ?? string.Empty;
+            _institution = Row.InstitutionName ?? string.Empty;
+            _trader = Row.ContactName ?? string.Empty;
             _tradeDate = Row.TradeDate?.ToString("MM-dd") ?? string.Empty;
-            _settlement = SettlementDisplay(Row.Settlement);
-            _isOco = Row.Flags.HasFlag(QuoteFlag.Oco);
-            _isPacking = Row.Flags.HasFlag(QuoteFlag.Packing);
-            _isUrgent = Row.Flags.HasFlag(QuoteFlag.Urgent);
-            _isRec = Row.Flags.HasFlag(QuoteFlag.Recommend);
-            _isWhole = Row.Flags.HasFlag(QuoteFlag.Whole);
+            _settlement = SettlementDisplay(Row.SettlType);
+            _isOco = Row.Oco;
+            _isPacking = Row.Packing;
+            _isUrgent = Row.Urgent;
+            _isRec = Row.Recommended;
+            _isWhole = Row.Whole;
         }
 
         /// <summary>原始 DTO（提交时回写）。</summary>
-        public QuoteConfirmRow Row { get; }
+        public QuoteRow Row { get; }
 
-        public string InstitutionId => Row.InstitutionId;
-        private bool selectingCrmParty;
+        /// <summary>报价 Id。识别来源行在提交前用它关联候选。</summary>
+        public string QuoteId { get { return Row.QuoteId; } }
 
-        // 自由输入会使旧 ID 失效；下拉选择期间由 selectingCrmParty 防止联动赋值被当成手工修改。
-        partial void OnInstitutionChanged(string value)
+        /// <summary>
+        /// CRM 机构与联系人是否都已选定。后端 confirm 只认 ID——只有名称没有 ID 时
+        /// 会被 UNRESOLVED_COUNTERPARTY 拒绝，故提交前先据此拦截并提示。
+        /// </summary>
+        public bool HasCounterpartyId
         {
-            if (selectingCrmParty) return;
-            Row.InstitutionId = null;
-            Row.ContactId = null;
-            Trader = string.Empty;
-            OnPropertyChanged(nameof(InstitutionId));
+            // 只有名称、没有 Id 才算未选定；两者都空（后端也允许无对手的报价）不算。
+            get { return (string.IsNullOrWhiteSpace(Row.InstitutionName) || !string.IsNullOrWhiteSpace(Row.InstitutionId))
+                && (string.IsNullOrWhiteSpace(Row.ContactName) || !string.IsNullOrWhiteSpace(Row.ContactId)); }
         }
-
-        partial void OnTraderChanged(string value)
-        {
-            if (!selectingCrmParty) Row.ContactId = null;
-        }
-
-        [RelayCommand]
-        public void SelectInstitution(CrmChoice choice)
-        {
-            if (choice == null || string.IsNullOrWhiteSpace(choice.InstitutionId)) return;
-            selectingCrmParty = true;
-            try
-            {
-                if (Row.InstitutionId != choice.InstitutionId)
-                {
-                    Row.ContactId = null;
-                    Row.Trader = string.Empty;
-                    Trader = string.Empty;
-                }
-                Row.InstitutionId = choice.InstitutionId;
-                Row.Institution = choice.InstitutionName;
-                Institution = choice.InstitutionName;
-                OnPropertyChanged(nameof(InstitutionId));
-            }
-            finally
-            {
-                selectingCrmParty = false;
-            }
-        }
-
-        /// <summary>选中交易员时先填所属机构，再填联系人 ID/姓名；机构与联系人必须来自同一候选项。</summary>
-        [RelayCommand]
-        public void SelectContact(CrmChoice choice)
-        {
-            if (choice == null || string.IsNullOrWhiteSpace(choice.ContactId)
-                || string.IsNullOrWhiteSpace(choice.InstitutionId)) return;
-            SelectInstitution(choice);
-            selectingCrmParty = true;
-            try
-            {
-                Row.ContactId = choice.ContactId;
-                Row.Trader = choice.ContactName;
-                Trader = choice.ContactName;
-            }
-            finally
-            {
-                selectingCrmParty = false;
-            }
-        }
-
-        /// <summary>识别主键（recognitionId）。</summary>
-        public string RecognitionId { get { return Row.RecognitionId; } }
 
         #region 只读显示列
 
         public string Maturity { get { return Row.Maturity ?? string.Empty; } }
-        public string Code { get { return Row.Code ?? string.Empty; } }
-        public string Name { get { return Row.Name ?? string.Empty; } }
-        public string NzValuation { get { return Format(Row.NzValuation, "0.0000"); } }
+        public string Code { get { return Row.SecurityId ?? string.Empty; } }
+        public string Name { get { return Row.SecurityName ?? string.Empty; } }
+        public string NzYtm { get { return Format(Row.NzYtm, "0.0000"); } }
         public string NzNetPrice { get { return Format(Row.NzNetPrice, "0.0000"); } }
         public string NzDeviation { get { return Format(Row.NzDeviation, "0.00"); } }
-        public string CsPriceBasis { get { return Row.CsPriceBasis ?? "—"; } }
-        public string TextContent { get { return Row.TextContent ?? string.Empty; } }
-        public string SourceType { get { return Row.SourceType ?? string.Empty; } }
+        public string CsYtm { get { return Format(Row.CsYtm, "0.0000"); } }
+        public string Remark { get { return Row.Remark ?? string.Empty; } }
+        public string SourceType { get { return Row.SourceTypeText; } }
 
         private static string Format(decimal? value, string fmt)
         {
@@ -184,47 +133,27 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         /// <summary>把编辑状态回写到 DTO。</summary>
         public void Commit()
         {
-            Row.Direction = _direction == "Ofr" ? QuoteDirection.Ofr
-                : _direction == "Bid" ? QuoteDirection.Bid
-                : Row.Direction;
+            Row.Side = Direction == "Ofr" ? QuoteDirection.Ofr : QuoteDirection.Bid;
 
             decimal parsed;
-            if (!decimal.TryParse(_price, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
-            {
-                throw new InvalidOperationException("请输入有效的报价价格：" + Row.Code);
-            }
-            Row.Price = parsed;
+            if (decimal.TryParse(Price, out parsed)) Row.Price = parsed;
 
-            Row.PriceType = ParsePriceType(_priceType);
-            if (!decimal.TryParse(_volume, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed) || parsed <= 0)
-            {
-                throw new InvalidOperationException("请输入有效的报价数量：" + Row.Code);
-            }
-            Row.Volume = parsed;
+            Row.QuoteType = ParsePriceType(PriceType);
+            if (decimal.TryParse(Volume, out parsed)) Row.Quantity = parsed;
 
-            if (Row.Institution != _institution)
-            {
-                Row.InstitutionId = null;
-                Row.ContactId = null;
-            }
-            if (Row.Trader != _trader)
-            {
-                Row.ContactId = null;
-            }
-            Row.Institution = _institution;
-            Row.Trader = _trader;
+            Row.InstitutionName = string.IsNullOrWhiteSpace(Institution) ? null : Institution.Trim();
+            Row.ContactName = string.IsNullOrWhiteSpace(Trader) ? null : Trader.Trim();
 
             DateTime date;
-            if (DateTime.TryParse(_tradeDate, out date)) Row.TradeDate = date;
+            if (DateTime.TryParse(TradeDate, out date)) Row.TradeDate = date;
 
-            Row.Settlement = ParseSettlement(_settlement);
+            Row.SettlType = ParseSettlement(Settlement);
 
-            Row.Flags = QuoteFlag.None
-                | (_isOco ? QuoteFlag.Oco : QuoteFlag.None)
-                | (_isPacking ? QuoteFlag.Packing : QuoteFlag.None)
-                | (_isUrgent ? QuoteFlag.Urgent : QuoteFlag.None)
-                | (_isRec ? QuoteFlag.Recommend : QuoteFlag.None)
-                | (_isWhole ? QuoteFlag.Whole : QuoteFlag.None);
+            Row.Oco = IsOco;
+            Row.Packing = IsPacking;
+            Row.Urgent = IsUrgent;
+            Row.Recommended = IsRec;
+            Row.Whole = IsWhole;
         }
 
         #endregion

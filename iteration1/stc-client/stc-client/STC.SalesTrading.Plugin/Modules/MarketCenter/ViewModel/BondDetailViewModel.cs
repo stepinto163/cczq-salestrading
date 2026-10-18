@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     {
         /// <summary>无选中时的空实例。</summary>
         public static readonly BondDetailViewModel Empty = new BondDetailViewModel { HasDetail = false };
+
+        /// <summary>推荐服务（组合根装配例外，同 QuoteEntryDialog.QuoteService 模式）；null=推荐不启用。</summary>
+        public static IRecommendationService RecommendationService { get; set; }
+
+        private System.Threading.CancellationTokenSource _recCts;
+        private int _recRequestId;
+        private System.Windows.Threading.DispatcherTimer _recDebounce;
 
         public BondDetailViewModel()
         {
@@ -113,9 +121,9 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         /// <summary>最新成交展示（0918：收益率%优先，无收益率回退净价）。</summary>
         [ObservableProperty]
-        private string _lastExecDisplay = "—";
+        private string _lastExecDisplay = string.Empty;
 
-        /// <summary>最新成交收益率；不能直接与昨收净价比较。</summary>
+        /// <summary>最新成交收益率（与昨收比较定涨跌色）。</summary>
         [ObservableProperty]
         private decimal? _lastYield;
 
@@ -171,7 +179,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         {
             get
             {
-                return LastPrice.HasValue && PrevClose.HasValue && LastPrice.Value >= PrevClose.Value;
+                var reference = LastYield ?? LastPrice;
+                return reference.HasValue && PrevClose.HasValue && reference.Value >= PrevClose.Value;
             }
         }
 
@@ -200,7 +209,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         [ObservableProperty]
         private RecommendationScope _selectedRecScope = RecommendationScope.Combined;
 
-        /// <summary>时间窗口（7d/30d/90d）；变化时重新请求真实证据。</summary>
+        /// <summary>时间窗口（7d/30d/90d；Mock 阶段不影响数据）。</summary>
         [ObservableProperty]
         private string _selectedRecWindow = "30d";
 
@@ -239,9 +248,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         [ObservableProperty]
         private int _recTotalPages = 1;
 
-        /// <summary>分页摘要。</summary>
-        [ObservableProperty]
-        private string _recPageSummary = "共0条 · 第1/1页";
+        /// <summary>过滤后推荐总数（分页摘要）。</summary>
+        public int RecFilteredCount
+        {
+            get { return _recFilteredCount; }
+            private set { if (_recFilteredCount != value) { _recFilteredCount = value; OnPropertyChanged(nameof(RecFilteredCount)); } }
+        }
+        private int _recFilteredCount;
 
         public bool CanPreviousRecPage { get { return RecCurrentPage > 1; } }
 
@@ -275,7 +288,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 }
             }
             RecCurrentPage = 1;
-            RefreshRec();
             ScheduleRecommendations();
         }
 
@@ -283,7 +295,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         {
             if (!_resettingRecDates && (value.HasValue || RecEndDate.HasValue)) SelectedRecWindow = "custom";
             RecCurrentPage = 1;
-            RefreshRec();
             ScheduleRecommendations();
         }
 
@@ -291,7 +302,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         {
             if (!_resettingRecDates && (value.HasValue || RecStartDate.HasValue)) SelectedRecWindow = "custom";
             RecCurrentPage = 1;
-            RefreshRec();
             ScheduleRecommendations();
         }
 
@@ -299,6 +309,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         {
             OnPropertyChanged(nameof(CanPreviousRecPage));
             OnPropertyChanged(nameof(CanNextRecPage));
+            RefreshRec();
         }
 
         partial void OnRecTotalPagesChanged(int value)
@@ -307,19 +318,79 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             OnPropertyChanged(nameof(CanNextRecPage));
         }
 
-        [RelayCommand]
-        private void PreviousRecPage()
+
+
+
+
+        // ============ 推荐数据加载（ficc.recommendation.query） ============
+
+        /// <summary>选债时挂接：重置请求代次并防抖拉取（150ms，防快速切换连发）。</summary>
+        public void AttachRecommendations()
         {
-            if (!CanPreviousRecPage) return;
-            RecCurrentPage--;
-            RefreshRec();
+            _recRequestId++;
+            ScheduleRecommendations();
         }
 
-        [RelayCommand]
-        private void NextRecPage()
+        private void ScheduleRecommendations()
         {
-            if (!CanNextRecPage) return;
-            RecCurrentPage++;
+            if (_recDebounce == null)
+            {
+                _recDebounce = new System.Windows.Threading.DispatcherTimer { Interval = System.TimeSpan.FromMilliseconds(150) };
+                _recDebounce.Tick += (s, e) =>
+                {
+                    _recDebounce.Stop();
+                    _ = ReloadRecommendationsAsync();
+                };
+            }
+            _recDebounce.Stop();
+            _recDebounce.Start();
+        }
+
+        /// <summary>窗口（7d/30d/90d/custom）换算起止并查询；防过期响应覆盖、1-365 天校验；
+        /// 服务未装配/无券/异常时清空（面板空态提示，后端未上线静默）。</summary>
+        private async System.Threading.Tasks.Task ReloadRecommendationsAsync()
+        {
+            var service = RecommendationService;
+            if (service == null || !HasDetail || string.IsNullOrEmpty(Code))
+            {
+                Recommendations.Clear();
+                RefreshRec();
+                return;
+            }
+
+            var end = System.DateTime.Today;
+            System.DateTime start;
+            var window = (SelectedRecWindow ?? string.Empty).ToLowerInvariant();
+            if (window == "custom")
+            {
+                if (!RecStartDate.HasValue || !RecEndDate.HasValue) return;
+                start = RecStartDate.Value;
+                end = RecEndDate.Value;
+            }
+            else
+            {
+                var days = window == "7d" ? 7 : window == "90d" ? 90 : 30;
+                start = end.AddDays(-days);
+            }
+            if ((end - start).Days < 1 || (end - start).Days > 365) return;
+
+            var id = ++_recRequestId;
+            var cts = _recCts = new System.Threading.CancellationTokenSource();
+            try
+            {
+                var rows = await service.QueryAsync(Code, start, end, cts.Token);
+                if (id != _recRequestId) return; // 过期响应（已切券/已换窗口）
+                Recommendations.Clear();
+                foreach (var row in rows) Recommendations.Add(row);
+            }
+            catch (OperationCanceledException) { }
+            catch
+            {
+                if (id == _recRequestId)
+                {
+                    Recommendations.Clear(); // 后端未上线/查询失败：空态容错
+                }
+            }
             RefreshRec();
         }
 
@@ -348,6 +419,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 : new System.Collections.Generic.List<RecommendationRow>();
 
             HasRecommendations = filtered.Count > 0;
+            RecFilteredCount = filtered.Count;
             RecTotalPages = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)RecPageSize));
             if (RecCurrentPage > RecTotalPages) RecCurrentPage = RecTotalPages;
             if (RecCurrentPage < 1) RecCurrentPage = 1;
@@ -356,7 +428,6 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             foreach (var row in filtered.Skip((RecCurrentPage - 1) * RecPageSize).Take(RecPageSize))
                 RecPageItems.Add(row);
 
-            RecPageSummary = string.Format("共{0}条 · 第{1}/{2}页", filtered.Count, RecCurrentPage, RecTotalPages);
             OnPropertyChanged(nameof(CanPreviousRecPage));
             OnPropertyChanged(nameof(CanNextRecPage));
         }
@@ -386,19 +457,24 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         /// <summary>宿主 CT 快照：Bid/Ofr 分侧按档位排序后按行配对，覆盖多档表与最优报价条。</summary>
         public void ApplyFeedLevels(QuoteFeedLevel[] levels)
         {
-            if (!HasDetail || levels == null) return;
+            if (!HasDetail || levels == null || levels.Length == 0) return;
             // Bid/Ofr 是两条独立报价流：分侧排序缓存，表格行 = 当前筛选下两侧按序拉链
             _bidLevels = levels.Where(l => l.Side == QuoteFeedSide.Bid).OrderByDescending(l => l.Price).ToList();
             _ofrLevels = levels.Where(l => l.Side == QuoteFeedSide.Ofr).OrderBy(l => l.Price).ToList();
-            // 空快照表示盘口清空，必须移除旧档位和最优价。
+            if (_bidLevels.Count == 0 && _ofrLevels.Count == 0) return;
             RefreshTapeRows();
-            // 盘口价格不是中债估值，估值仅由行内参考数据及债券主数据更新。
+
+            // 快照的收益率/净价刷新中债双值（全量最优档；快照未携带的段保持原值）
+            var best = _bidLevels.Count > 0 ? _bidLevels[0] : _ofrLevels[0];
+            SetNzParts(
+                best.Yield?.ToString("0.0000"),
+                best.NetPrice?.ToString("0.0000"));
         }
 
         /// <summary>宿主最新成交：覆盖最新价与时间。</summary>
         public void ApplyFeedLastExec(QuoteFeedLastExec exec)
         {
-            if (!HasDetail || exec == null || (!exec.Price.HasValue && !exec.Yield.HasValue)) return;
+            if (!HasDetail || exec == null || !exec.Price.HasValue) return;
             LastPrice = exec.Price;
             LastYield = exec.Yield;
             LastExecDisplay = exec.Yield.HasValue
@@ -411,7 +487,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         /// <summary>宿主债券主数据：简称/剩余期限/中债估值收益率（仅覆盖有值字段）。</summary>
         public void ApplyFeedBondInfo(QuoteFeedBondInfo info)
         {
-            if (!HasDetail || info == null || info.Code != Code) return;
+            if (!HasDetail || info == null) return;
             if (!string.IsNullOrEmpty(info.ShortName)) Name = info.ShortName;
             if (!string.IsNullOrEmpty(info.RemainingTime)) Maturity = info.RemainingTime;
             if (!string.IsNullOrEmpty(info.ValuationShow)) SetNzParts(info.ValuationShow, null);

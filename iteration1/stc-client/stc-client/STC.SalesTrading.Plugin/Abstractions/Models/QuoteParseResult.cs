@@ -7,7 +7,7 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
     public class QuoteParseResult
     {
         /// <summary>识别出的结构化报价行。</summary>
-        public IReadOnlyList<QuoteConfirmRow> Rows { get; set; }
+        public IReadOnlyList<QuoteRow> Rows { get; set; }
 
         /// <summary>识别警告（字段缺失、候选不确定等）。</summary>
         public IReadOnlyList<string> Warnings { get; set; }

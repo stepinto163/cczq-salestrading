@@ -18,6 +18,9 @@ namespace STC.SalesTrading.Plugin.Themes
         {
             if (root == null) return;
 
+            // 主题字典即将（重新）合并：清掉转换器画刷缓存，避免缓存住合并前的兜底色
+            Shared.Converters.ConverterBrushes.Invalidate();
+
             var uri = new Uri(DarkThemeUri, UriKind.RelativeOrAbsolute);
             foreach (var dictionary in root.Resources.MergedDictionaries)
             {

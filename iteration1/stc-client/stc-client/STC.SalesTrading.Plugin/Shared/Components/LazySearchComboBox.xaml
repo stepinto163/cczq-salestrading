@@ -1,0 +1,218 @@
+<UserControl x:Class="STC.SalesTrading.Plugin.Shared.Components.LazySearchComboBox"
+             x:Name="Root"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/STC.SalesTrading.Plugin;component/Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <!--
+        公共懒加载搜索下拉（参考 stc-client-lite LazySearchComboBox 定位与模板结构）：
+        一体式外框（rootBorder 画边框，输入框/清空/下拉按钮内嵌其中，不占额外宽度、单元格内不外溢）+
+        输入防抖 → SearchCommand(LazySearchArgs) 取数（业务在命令实现方）→
+        候选 DataGrid（列按 ColumnMembers 生成）+ 页码步进分页（args.HasMore）+
+        键盘导航（↑↓/Enter/Esc）+ 关闭时名称/Id 一致性还原。
+        选中/清空一律显式 UpdateSource 推源（DataGrid 模板列编辑管道吞自动推源，实测踩坑）。
+        行形状由 ColumnMembers/DisplayMember/ValueMember 声明。用法：
+          <components:LazySearchComboBox Placeholder="机构"
+              SearchCommand="{Binding InstitutionSearch}"
+              ColumnMembers="Name,SubText" DisplayMember="Name" ValueMember="Id"
+              Text="{Binding Institution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+              SelectedValue="{Binding Row.InstitutionId, Mode=TwoWay}" />
+    -->
+    <Border x:Name="rootBorder" Background="{DynamicResource PageBgBrush}"
+            BorderBrush="{DynamicResource BorderStdBrush}" BorderThickness="1" CornerRadius="6">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="InputBox" Grid.Column="0" Height="24" MinHeight="24" Margin="8,0,0,0"
+                     Background="Transparent" BorderThickness="0" Padding="0"
+                     Foreground="{DynamicResource TextPrimaryBrush}" CaretBrush="{DynamicResource TextPrimaryBrush}"
+                     VerticalContentAlignment="Center" FontSize="12"
+                     ToolTip="{Binding Text, ElementName=Root}"
+                     Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     KeyDown="OnInputKeyDown" KeyUp="OnInputKeyUp" TextChanged="OnInputTextChanged" />
+            <!-- 水印：文本空且未聚焦时显示（cs 控制，仅此一层） -->
+            <TextBlock x:Name="WaterText" Text="{Binding Placeholder, ElementName=Root}"
+                       Foreground="{DynamicResource TextMutedBrush}" FontSize="12"
+                       Margin="9,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" />
+
+            <Button x:Name="ClearButton" Grid.Column="1" Content="✕" Width="14" Height="14" FontSize="9"
+                    Margin="2,0,0,0" Cursor="Hand" Click="OnClearClick" ToolTip="清空"
+                    Visibility="Collapsed">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#F85149" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <ToggleButton x:Name="DropDownButton" Grid.Column="2" Content="▾" Width="14" Height="16" FontSize="9"
+                          Margin="2,0,4,0" Cursor="Hand" Focusable="False"
+                          IsChecked="{Binding IsDropDownOpen, ElementName=Root, Mode=TwoWay}"
+                          ToolTip="展开候选">
+                <ToggleButton.Style>
+                    <Style TargetType="ToggleButton">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ToggleButton.Style>
+            </ToggleButton>
+
+            <Popup x:Name="SuggestPopup" PlacementTarget="{Binding ElementName=rootBorder}" Placement="Bottom"
+                   StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+                   FocusManager.IsFocusScope="True"
+                   IsOpen="{Binding IsDropDownOpen, ElementName=Root, Mode=TwoWay}">
+                <!-- 宽度随内容自适应：不窄于控件（rootBorder.ActualWidth）、上限 520；
+                     列全部按内容期望宽，超上限时辅助列（Star）被压缩触发省略号 -->
+                <Border Background="#161B22" BorderBrush="#30363D" BorderThickness="1" CornerRadius="4"
+                        MaxHeight="280" Margin="0,2,8,0"
+                        MinWidth="{Binding ActualWidth, ElementName=rootBorder}" MaxWidth="520">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 候选列由 ColumnMembers 动态生成（见 code-behind RebuildColumns）。
+                             样式全部内联（不用 StcDataGrid/StcCell）：弹层场景列对齐即可，渲染链自包含可控 -->
+                        <DataGrid x:Name="CandidateGrid" Grid.Row="0" ItemsSource="{Binding Candidates, ElementName=Root}"
+                                  AutoGenerateColumns="False" HeadersVisibility="None" RowHeight="26"
+                                  EnableRowVirtualization="False" EnableColumnVirtualization="False"
+                                  CanUserSortColumns="False" CanUserReorderColumns="False" CanUserResizeColumns="True"
+                                  Focusable="False"
+                                  CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow"
+                                  Background="Transparent" RowBackground="Transparent" BorderThickness="0"
+                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#21262D"
+                                  MinWidth="240" MaxHeight="230"
+                                  PreviewMouseLeftButtonUp="OnCandidateClicked">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <!-- 自定义行模板：hover/选中写在模板内 Trigger——
+                                                 DataGrid 会把 RowBackground 写成行的本地值，压制 Style Trigger（实测踩坑） -->
+                                            <ControlTemplate TargetType="DataGridRow">
+                                                <Border x:Name="bd" Background="Transparent"
+                                                        BorderThickness="3,0,0,0" BorderBrush="Transparent"
+                                                        SnapsToDevicePixels="True">
+                                                    <SelectiveScrollingGrid>
+                                                        <SelectiveScrollingGrid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </SelectiveScrollingGrid.ColumnDefinitions>
+                                                        <DataGridCellsPresenter Grid.Column="1"
+                                                                                ItemsPanel="{TemplateBinding ItemsPanel}"
+                                                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                    </SelectiveScrollingGrid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="bd" Property="Background" Value="#2A3441" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="bd" Property="Background" Value="#2D4359" />
+                                                        <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridCell">
+                                                <Border Background="Transparent" Padding="8,3">
+                                                    <ContentPresenter VerticalAlignment="Center" />
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
+
+                        <!-- 分页：带描边的小按钮（深色弹层上可辨识），hasMore 页码步进 -->
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,3,6,3">
+                            <Button x:Name="PrevPageButton" Content="‹" Width="24" Height="20" FontSize="12"
+                                    Focusable="False" Click="OnPrevPageClick" ToolTip="上一页">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                                        <Setter Property="BorderThickness" Value="1" />
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                                                <Setter Property="Opacity" Value="0.35" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBlock x:Name="PageText" Text="第 1 页" FontSize="11" VerticalAlignment="Center"
+                                       Margin="8,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <Button x:Name="NextPageButton" Content="›" Width="24" Height="20" FontSize="12"
+                                    Focusable="False" Click="OnNextPageClick" ToolTip="下一页">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource BorderStdBrush}" />
+                                        <Setter Property="BorderThickness" Value="1" />
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                                                <Setter Property="Opacity" Value="0.35" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Popup>
+        </Grid>
+    </Border>
+</UserControl>

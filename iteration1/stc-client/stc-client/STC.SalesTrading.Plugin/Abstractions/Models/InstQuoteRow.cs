@@ -1,4 +1,4 @@
-﻿namespace STC.SalesTrading.Plugin.Abstractions.Models
+namespace STC.SalesTrading.Plugin.Abstractions.Models
 {
     /// <summary>多档行情行（详情面板 C5 多档报价表：来源Bid/Vol.Bid/Bid/Ofr/Vol.Ofr/来源Ofr）。</summary>
     public class InstQuoteRow

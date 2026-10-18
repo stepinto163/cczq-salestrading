@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Windows.Controls;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel;
@@ -23,14 +23,14 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
             }
         }
 
-        private static void SyncSelection(HashSet<MgmtQuoteRow> target, SelectionChangedEventArgs e)
+        private static void SyncSelection(HashSet<QuoteRow> target, SelectionChangedEventArgs e)
         {
             target.Clear();
             if (e.AddedItems != null)
             {
                 foreach (var item in e.AddedItems)
                 {
-                    if (item is MgmtQuoteRow r) target.Add(r);
+                    if (item is QuoteRow r) target.Add(r);
                 }
             }
         }

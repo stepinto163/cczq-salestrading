@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using STC.SalesTrading.Plugin.Abstractions.Models;
@@ -7,8 +7,8 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
 {
     /// <summary>
     /// 关注债券管理（原型 fbm）与筛选分组管理（原型 fgm）的数据模型。
-    /// 数据由 <see cref="STC.SalesTrading.Plugin.Shared.Services.FilterProfileService"/> 缓存，
-    /// 通过 QuoteSvr 分组接口按登录账户持久化；弹窗持有独立编辑副本。
+    /// 数据由 <see cref="STC.SalesTrading.Plugin.Shared.Services.FilterProfileService"/> 会话内保存；
+    /// 后端契约到位后由服务层落库（原型字段：favBondGroupsCredit/Rate、filterGroupsCredit/Rate）。
     /// </summary>
 
     /// <summary>
@@ -29,7 +29,7 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
         public string Code { get { return _code; } set { if (_code != value) { _code = value; OnPropertyChanged(nameof(Code)); } } }
         /// <summary>债券简称。</summary>
         public string Name { get { return _name; } set { if (_name != value) { _name = value; OnPropertyChanged(nameof(Name)); } } }
-        /// <summary>剩余期限；基础资料缺失时显示 —。</summary>
+        /// <summary>剩余期限（原型表格列，识别接口待接时显示 —）。</summary>
         public string Tenor { get { return _tenor; } set { if (_tenor != value) { _tenor = value; OnPropertyChanged(nameof(Tenor)); } } }
         /// <summary>债券库（同上）。</summary>
         public string BondLib { get { return _bondLib; } set { if (_bondLib != value) { _bondLib = value; OnPropertyChanged(nameof(BondLib)); } } }
@@ -57,7 +57,6 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
         private bool _isEditing;
 
         /// <summary>稳定标识（侧栏 chip 激活集 / 右键子菜单按 id 定位；保存整体替换时同名沿用旧 id）。</summary>
-        public string Revision { get; set; }
         public string Id { get; set; } = "g" + Guid.NewGuid().ToString("N").Substring(0, 12);
 
         public string Name
@@ -81,18 +80,34 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
     /// <summary>一条筛选条件（原型 fgm-condition-chip：key+label+value 三元组，展示用 label:value）。</summary>
     public class FilterCondition
     {
-        public FilterCondition(string key, string label, string value)
+        public FilterCondition(string key, string label, string value, string displayValue = null)
         {
             Key = key;
             Label = label;
             Value = value;
+            DisplayValue = displayValue;
         }
-
-        public STC.SalesTrading.Plugin.Ficc.Protocol.FilterCondition Protocol { get; set; }
 
         public string Key { get; }
         public string Label { get; }
+
+        /// <summary>条件落库的值（后端代码；本地目录 value 为空时沿用 label）。</summary>
         public string Value { get; }
+
+        /// <summary>chip 值部分的显示文本（点选目录时为中文 label；后端读回经字典翻译）。null 时显示 Value。</summary>
+        public string DisplayValue { get; }
+
+        /// <summary>
+        /// 结构化协议条件（<see cref="Abstractions.Models.FilterConditionPayload"/>）：保存直接透传、读回直接显示。
+        /// null 时保存走旧编码回退（EQ/IN）。区间/文本/布尔条件必须携带。
+        /// </summary>
+        public object Protocol { get; set; }
+
+        /// <summary>chip 本体显示的值文本（DisplayValue 优先，回退落库值）。</summary>
+        public string ValueText
+        {
+            get { return DisplayValue ?? Value; }
+        }
 
         /// <summary>条件唯一标识（原型 marketGroupConditionIdentity）：同组内去重/反选用。</summary>
         public string Identity
@@ -100,10 +115,10 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
             get { return Key + "|" + Value; }
         }
 
-        /// <summary>已选 chip 只显示条件值，如「1-3Y」。</summary>
+        /// <summary>chip 显示文本（原型 chip 内 span）：如「剩余期限:1-3Y」。值部分优先显示中文。</summary>
         public string DisplayText
         {
-            get { return Value; }
+            get { return Label + ":" + (DisplayValue ?? Value); }
         }
     }
 
@@ -119,8 +134,7 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
         private string _name = string.Empty;
         private bool _isEditing;
 
-        /// <summary>服务端版本号，用于并发修改检查；新建草稿为空。</summary>
-        public string Revision { get; set; }
+        /// <summary>稳定标识（侧栏 chip 激活集按 id 定位；保存整体替换时同名沿用旧 id）。</summary>
         public string Id { get; set; } = "f" + Guid.NewGuid().ToString("N").Substring(0, 12);
 
         public string Name
@@ -183,13 +197,20 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
     /// <summary>条件目录项（原型 .fbm-check）。</summary>
     public class CatalogItem
     {
-        public CatalogItem(string label, bool enabled = true)
+        /// <summary>后端字典候选：显示 label、发送 value；本地目录 value 为空时沿用 label。</summary>
+        public CatalogItem(string label, string value = null, bool enabled = true)
         {
             Label = label;
+            Value = string.IsNullOrEmpty(value) ? label : value;
             Enabled = enabled;
         }
 
         public string Label { get; }
+
+        /// <summary>条件落库的值（后端代码；本地静态目录 = Label）。</summary>
+        public string Value { get; }
+
+        /// <summary>是否可选（静态目录 "!前缀" = 禁用态半透明展示）。</summary>
         public bool Enabled { get; }
     }
 
@@ -207,7 +228,6 @@ namespace STC.SalesTrading.Plugin.Shared.ViewModel
         }
 
         public string Label { get; }
-
         public string Key { get; }
         public ConditionKind Kind { get; }
 

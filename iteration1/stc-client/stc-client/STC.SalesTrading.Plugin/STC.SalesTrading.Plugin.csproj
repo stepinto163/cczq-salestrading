@@ -42,11 +42,10 @@
       <HintPath>..\client\bin\gateway-api.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <ProjectReference Include="..\netapi\netapi\common.netapi.csproj">
-      <Project>{CB40AC1A-81C5-4305-9052-404080109B0B}</Project>
-      <Name>common.netapi</Name>
+    <Reference Include="common.netapi">
+      <HintPath>..\client\bin\common.netapi.dll</HintPath>
       <Private>False</Private>
-    </ProjectReference>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="PresentationFramework.Aero" />
@@ -65,10 +64,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Abstractions\IProductFilterHost.cs" />
-    <Compile Include="Abstractions\IRecommendationService.cs" />
-    <Compile Include="Modules\MarketCenter\ViewModel\BondDetailViewModel.Recommendations.cs" />
-    <Compile Include="Shared\Components\SidebarFilter.cs" />
     <!-- 插件入口 -->
     <Compile Include="SalesTradingPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -89,43 +84,32 @@
     </Compile>
     <!-- Abstractions: 数据接缝(后端未定,先锁契约) -->
     <Compile Include="Abstractions\IQuoteService.cs" />
-    <Compile Include="Abstractions\ICrmDirectory.cs" />
-    <Compile Include="Shared\Components\CrmLookup.cs" />
-    <Compile Include="Modules\QuoteEntry\ViewModel\CrmBatchEditor.cs" />
     <Compile Include="Abstractions\IMarketCenterService.cs" />
     <Compile Include="Abstractions\IHostQuoteFeed.cs" />
     <Compile Include="Abstractions\IQuoteMgmtService.cs" />
     <Compile Include="Abstractions\Models\Enums.cs" />
-    <Compile Include="Abstractions\Models\QuoteConfirmRow.cs" />
-    <Compile Include="Abstractions\Models\QuoteConfirmBatch.cs" />
     <Compile Include="Abstractions\Models\QuoteParseResult.cs" />
-    <Compile Include="Abstractions\Models\BoardQuoteRow.cs" />
-    <Compile Include="Abstractions\Models\BoardBestRow.cs" />
     <Compile Include="Abstractions\Models\BestQuoteDetail.cs" />
     <Compile Include="Abstractions\Models\BoardIntentRow.cs" />
-    <Compile Include="Abstractions\Models\BoardAlertRow.cs" />
+    <Compile Include="Abstractions\Models\QuoteRow.cs" />
+    <Compile Include="Abstractions\Models\TapeRow.cs" />
+    <Compile Include="Abstractions\Models\BestRow.cs" />
+    <Compile Include="Abstractions\Models\AlertRow.cs" />
     <Compile Include="Abstractions\Models\InstQuoteRow.cs" />
     <Compile Include="Abstractions\Models\MarketTradeRow.cs" />
     <Compile Include="Abstractions\Models\QuoteFeedModels.cs" />
     <Compile Include="Abstractions\Models\BondDetail.cs" />
     <Compile Include="Abstractions\Models\BondLookupEntry.cs" />
     <Compile Include="Abstractions\Models\RecommendationRow.cs" />
-    <Compile Include="Abstractions\Models\MgmtQuoteRow.cs" />
     <Compile Include="Abstractions\Models\FuzzyCandidate.cs" />
     <Compile Include="Abstractions\Models\FuzzyQuery.cs" />
     <Compile Include="Abstractions\Models\QuoteEvent.cs" />
     <!-- Mock -->
-    <Compile Include="Mock\MockQuoteService.cs" />
-    <Compile Include="Mock\MockMarketCenterService.cs" />
-    <Compile Include="Mock\MockQuoteMgmtService.cs" />
-    <Compile Include="Mock\MockRequestOptions.cs" />
-    <Compile Include="Mock\MockSalesTradingStore.cs" />
-    <Compile Include="Mock\MockQuoteEventProbe.cs" />
     <!-- Shared -->
     <Compile Include="Shared\Converters\Converters.cs" />
-    <Compile Include="Shared\Converters\VenueBadgeBrushConverter.cs" />
     <Compile Include="Shared\Messages\PendingQuotesChangedMessage.cs" />
     <Compile Include="Shared\Messages\AlertCountChangedMessage.cs" />
+    <Compile Include="Shared\Messages\AlertsChangedMessage.cs" />
     <Compile Include="Shared\Messages\DataSourceResetMessage.cs" />
     <Compile Include="Shared\Messages\OpenQuoteEntryOverlayMessage.cs" />
     <Compile Include="Shared\Messages\LocateQuoteInAllMessage.cs" />
@@ -133,8 +117,10 @@
     <Compile Include="Shared\ViewModel\StatusSectionBag.cs" />
     <Compile Include="Shared\Services\ClipboardHelper.cs" />
     <Compile Include="Shared\Services\QueryFlow.cs" />
+    <Compile Include="Shared\ViewModel\RowsDiff.cs" />
     <Compile Include="Shared\Services\HostQuoteFeed.cs" />
     <Compile Include="Shared\Components\BoardColumns.cs" />
+    <Compile Include="Shared\Components\BoardRowFlash.cs" />
     <Compile Include="Shared\ViewModel\ToastMessage.cs" />
     <Compile Include="Shared\ViewModel\AlertPopupItem.cs" />
     <Compile Include="Shared\ViewModel\AlertPopupGroup.cs" />
@@ -144,14 +130,32 @@
     <Compile Include="Shared\Services\ToastService.cs" />
     <Compile Include="Shared\Services\AlertPopupService.cs" />
     <Compile Include="Shared\Services\MarketGroupSelectionService.cs" />
+    <Compile Include="Shared\Services\GroupConditionCatalog.cs" />
+    <Compile Include="Shared\Components\SidebarFilter.cs" />
+    <Compile Include="Shared\Components\PaginationBar.xaml.cs">
+      <DependentUpon>PaginationBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Abstractions\Models\FilterConditionPayload.cs" />
+    <Compile Include="Abstractions\Queries\ProductFilter.cs" />
+    <Compile Include="Abstractions\IProductFilterHost.cs" />
+    <Compile Include="Gateway\Contracts\View\CalculationIssue.cs" />
+    <Compile Include="Gateway\UserNameMap.cs" />
+    <Compile Include="Abstractions\IRecommendationService.cs" />
+    <Compile Include="Abstractions\Models\RecommendationEvidenceRow.cs" />
+    <Compile Include="Gateway\GatewayRecommendationService.cs" />
+    <Compile Include="Gateway\Contracts\Recommendation\RecommendationQueryRequest.cs" />
+    <Compile Include="Gateway\Contracts\Recommendation\RecommendationQueryData.cs" />
+    <Compile Include="Gateway\Contracts\Recommendation\RecommendationRecord.cs" />
+    <Compile Include="Gateway\Contracts\Recommendation\RecommendationEvidence.cs" />
+    <Compile Include="Gateway\Contracts\Recommendation\RecommendationFeedbackRequest.cs" />
+    <Compile Include="Gateway\Contracts\Recommendation\RecommendationFeedbackData.cs" />
     <Compile Include="Shared\Services\IntentMutexService.cs" />
     <Compile Include="Shared\Services\FilterProfileService.cs" />
-    <Compile Include="Shared\Services\GroupConditionCatalog.cs" />
     <Compile Include="Shared\Services\ColumnLayoutManager.cs" />
     <Compile Include="Shared\Services\LatestRequestCoordinator.cs" />
     <Compile Include="Shared\Services\OverlayBackdrop.cs" />
     <Compile Include="Shared\Services\DebouncedRequestScheduler.cs" />
-    <Compile Include="Shared\Gateway\ApiManagerGatewayClient.cs" />
+    <Compile Include="Gateway\ApiManagerGatewayClient.cs" />
     <Compile Include="Shared\Components\StatusBar.xaml.cs">
       <DependentUpon>StatusBar.xaml</DependentUpon>
     </Compile>
@@ -173,7 +177,6 @@
     <Compile Include="Shared\Components\FilterSectionHeader.xaml.cs">
       <DependentUpon>FilterSectionHeader.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Shared\Components\ModalWindowBase.cs" />
     <Compile Include="Shared\Components\KeepAliveContentControl.cs" />
     <Compile Include="Shared\Components\FilterRangeRow.xaml.cs">
       <DependentUpon>FilterRangeRow.xaml</DependentUpon>
@@ -196,6 +199,111 @@
     </Compile>
     <!-- Themes -->
     <Compile Include="Themes\ThemeManager.cs" />
+    <!-- Gateway: FICC 后端适配（传输封装 / topic 路由 / 信封校验） -->
+    <Compile Include="Gateway\GatewayTopics.cs" />
+    <Compile Include="Gateway\GatewayApiException.cs" />
+    <Compile Include="Gateway\GatewayRequester.cs" />
+    <Compile Include="Gateway\GatewayReportStream.cs" />
+    <Compile Include="Gateway\QuoteLiveView.cs" />
+    <Compile Include="Gateway\ViewSnapshotBuffer.cs" />
+    <Compile Include="Gateway\GatewayModelMapper.cs" />
+    <Compile Include="Gateway\GatewayQuoteMgmtService.cs" />
+    <Compile Include="Gateway\GatewayQuoteService.cs" />
+    <Compile Include="Gateway\PriceLiveView.cs" />
+    <Compile Include="Gateway\NotificationLiveView.cs" />
+    <Compile Include="Gateway\GatewayMarketCenterService.cs" />
+    <Compile Include="Abstractions\IGroupDirectory.cs" />
+    <Compile Include="Gateway\GatewayGroupDirectory.cs" />
+    <Compile Include="Modules\MarketCenter\View\QuoteLogWindow.xaml.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\BoardRowQuoteResolver.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteLogRequest.cs" />
+    <Compile Include="Gateway\Contracts\Parser\ParserRequest.cs" />
+    <Compile Include="Gateway\Contracts\Dictionary\DictionaryRequest.cs" />
+    <Compile Include="Gateway\Contracts\Dictionary\DictionaryData.cs" />
+    <Compile Include="Gateway\Contracts\Dictionary\FilterFieldDto.cs" />
+    <Compile Include="Gateway\Contracts\Dictionary\DictionaryOption.cs" />
+    <Compile Include="Abstractions\Models\FilterFieldEntry.cs" />
+    <Compile Include="Gateway\Contracts\Parser\ParserReply.cs" />
+    <Compile Include="Gateway\Contracts\Parser\ParserQuote.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteLogRecord.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteLogData.cs" />
+    <Compile Include="Abstractions\Models\QuoteLogEntry.cs" />
+    <Compile Include="Gateway\Contracts\Group\WatchlistSaveRequest.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterGroupSaveRequest.cs" />
+    <Compile Include="Gateway\Contracts\Group\WatchlistDeleteRequest.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterGroupDeleteRequest.cs" />
+    <Compile Include="Gateway\Contracts\Group\WatchlistSaveData.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterGroupSaveData.cs" />
+    <Compile Include="Gateway\Contracts\Group\WatchlistDeleteData.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterGroupDeleteData.cs" />
+    <Compile Include="Gateway\GatewayReferenceFill.cs" />
+    <Compile Include="Abstractions\IBaseDirectory.cs" />
+    <Compile Include="Abstractions\Models\CrmDirectoryEntry.cs" />
+    <Compile Include="Abstractions\Models\LazySearch.cs" />
+    <Compile Include="Abstractions\Models\QuoteConfirmBatch.cs" />
+    <Compile Include="Gateway\GatewayBaseDirectory.cs" />
+    <Compile Include="Shared\Components\CrmSearchBox.xaml.cs" />
+    <Compile Include="Shared\Components\LazySearchCommand.cs" />
+    <Compile Include="Shared\Components\LazySearchComboBox.xaml.cs" />
+    <Compile Include="Shared\Services\CrmLazySearch.cs" />
+    <Compile Include="Shared\Services\PreciseTextParser.cs" />
+    <Compile Include="Gateway\Contracts\Quote\RecognizeRequest.cs" />
+    <Compile Include="Gateway\Contracts\Quote\RecognizeContext.cs" />
+    <Compile Include="Gateway\Contracts\Quote\RecognizeQuote.cs" />
+    <Compile Include="Gateway\Contracts\Quote\RecognizeIssue.cs" />
+    <Compile Include="Gateway\Contracts\Quote\RecognizeData.cs" />
+    <Compile Include="Gateway\Contracts\View\ApiEnvelope.cs" />
+    <Compile Include="Gateway\Contracts\Base\BaseGetRequest.cs" />
+    <Compile Include="Gateway\Contracts\Base\BaseQueryData.cs" />
+    <Compile Include="Gateway\Contracts\Base\BaseQueryRequest.cs" />
+    <Compile Include="Gateway\Contracts\Base\BaseRecord.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterGroupCondition.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterGroupDto.cs" />
+    <Compile Include="Gateway\Contracts\Group\FilterSubgroupDto.cs" />
+    <Compile Include="Gateway\Contracts\Group\GroupQueryData.cs" />
+    <Compile Include="Gateway\Contracts\Group\WatchlistDto.cs" />
+    <Compile Include="Gateway\Contracts\Group\WatchlistItem.cs" />
+    <Compile Include="Gateway\Contracts\Notification\NotificationPreference.cs" />
+    <Compile Include="Gateway\Contracts\Notification\NotificationReadData.cs" />
+    <Compile Include="Gateway\Contracts\Notification\NotificationReadRequest.cs" />
+    <Compile Include="Gateway\Contracts\Notification\NotificationReadResult.cs" />
+    <Compile Include="Gateway\Contracts\Notification\NotificationReason.cs" />
+    <Compile Include="Gateway\Contracts\Notification\NotificationRecord.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteChangeItem.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteChangeRequest.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteCreateRequest.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteError.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteGetData.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteGetRequest.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteHistoryData.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteHistoryRecord.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteHistorySearchRequest.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteInput.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteOperationResult.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteRecord.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteSource.cs" />
+    <Compile Include="Gateway\Contracts\Quote\QuoteWriteData.cs" />
+    <Compile Include="Gateway\Contracts\View\FilterCondition.cs" />
+    <Compile Include="Gateway\Contracts\View\MarketDataEntry.cs" />
+    <Compile Include="Gateway\Contracts\View\MarketDataSnapshot.cs" />
+    <Compile Include="Gateway\Contracts\View\NotificationStreamBatch.cs" />
+    <Compile Include="Gateway\Contracts\View\NotificationViewData.cs" />
+    <Compile Include="Gateway\Contracts\View\PriceBookRow.cs" />
+    <Compile Include="Gateway\Contracts\View\PriceStreamBatch.cs" />
+    <Compile Include="Gateway\Contracts\View\PriceViewData.cs" />
+    <Compile Include="Gateway\Contracts\View\QuoteFilter.cs" />
+    <Compile Include="Gateway\Contracts\View\QuoteRef.cs" />
+    <Compile Include="Gateway\Contracts\View\QuoteReference.cs" />
+    <Compile Include="Gateway\Contracts\View\QuoteStreamBatch.cs" />
+    <Compile Include="Gateway\Contracts\View\QuoteViewData.cs" />
+    <Compile Include="Gateway\Contracts\View\StreamMessage.cs" />
+    <Compile Include="Gateway\Contracts\View\StreamOpenData.cs" />
+    <Compile Include="Gateway\Contracts\View\StreamReportItem.cs" />
+    <Compile Include="Gateway\Contracts\View\ViewCloseRequest.cs" />
+    <Compile Include="Gateway\Contracts\View\ViewDelta.cs" />
+    <Compile Include="Gateway\Contracts\View\ViewOpenRequest.cs" />
+    <Compile Include="Gateway\Contracts\View\ViewPage.cs" />
+    <Compile Include="Gateway\Contracts\View\ViewQueryRequest.cs" />
     <Compile Include="Abstractions\Gateway\GatewayModels.cs" />
     <Compile Include="Abstractions\Gateway\IGatewayClient.cs" />
     <Compile Include="Abstractions\Queries\PagedResult.cs" />
@@ -227,6 +335,7 @@
     <Compile Include="Modules\MarketCenter\Model\MarketFilterPanelType.cs" />
     <Compile Include="Modules\MarketCenter\ViewModel\MarketCenterViewModel.cs" />
     <Compile Include="Modules\MarketCenter\ViewModel\BoardListViewModel.cs" />
+    <Compile Include="Modules\MarketCenter\ViewModel\IBoardLifecycle.cs" />
     <Compile Include="Modules\MarketCenter\ViewModel\BoardBestViewModel.cs" />
     <Compile Include="Modules\MarketCenter\ViewModel\BoardIntentViewModel.cs" />
     <Compile Include="Modules\MarketCenter\ViewModel\IntentRowViewModel.cs" />
@@ -256,6 +365,9 @@
     <Compile Include="Modules\MarketCenter\View\AlertFilterPanel.xaml.cs">
       <DependentUpon>AlertFilterPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Modules\MarketCenter\View\QuoteEntryOverlayWindow.xaml.cs">
+      <DependentUpon>QuoteEntryOverlayWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Modules\MarketCenter\View\QuoteEntryDialog.xaml.cs">
       <DependentUpon>QuoteEntryDialog.xaml</DependentUpon>
     </Compile>
@@ -267,11 +379,7 @@
     <Compile Include="Modules\MarketCenter\View\FilterGroupManagerWindow.xaml.cs">
       <DependentUpon>FilterGroupManagerWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Modules\MarketCenter\View\QuoteEntryDialog.Live.cs" />
     <Compile Include="Modules\MarketCenter\View\QuoteFormMode.cs" />
-    <Compile Include="Modules\MarketCenter\View\QuoteEntryOverlayWindow.xaml.cs">
-      <DependentUpon>QuoteEntryOverlayWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Modules\MarketCenter\View\BondDetailPanel.xaml.cs">
       <DependentUpon>BondDetailPanel.xaml</DependentUpon>
     </Compile>
@@ -339,6 +447,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Shared\Components\PaginationBar.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Shared\Components\FilterTagRow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -374,6 +486,18 @@
     <Page Include="Shared\Components\SearchBox.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\MarketCenter\View\QuoteLogWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Shared\Components\CrmSearchBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Shared\Components\LazySearchComboBox.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Shared\Components\AlertPopupWindow.xaml">
       <SubType>Designer</SubType>
@@ -431,6 +555,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Modules\MarketCenter\View\QuoteEntryOverlayWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Modules\MarketCenter\View\QuoteEntryDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -440,10 +568,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Modules\MarketCenter\View\FilterGroupManagerWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Modules\MarketCenter\View\QuoteEntryOverlayWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -481,6 +605,11 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <!-- 注意：不要另引 client\bin 的 Newtonsoft.Json。
+         gateway-api 已内联 Newtonsoft.Json 类型（netapi 的 GWApi 也在用），
+         再引宿主 bin 的 11.0 强命名版会触发 CS0433 二义性，且 requestSync<T>
+         的泛型反序列化会发生在我们看不到的那一份上。直接使用 gateway-api
+         内联的类型即可——后端自己的 C# 客户端就是这么做的（只引 gateway-api）。 -->
     <!-- 公共库由宿主 client\bin 提供,Private=False 避免插件目录出现副本(会导致同类型两份 Assembly) -->
     <ProjectReference Include="..\STC.Common\STC.Common.csproj">
       <Project>{756F6622-163E-419A-B853-6F148101979D}</Project>
@@ -492,12 +621,6 @@
       <Name>STC.Frame</Name>
       <Private>False</Private>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Ficc\*.cs" />
-    <Compile Include="Ficc\Protocol\*.cs" />
-    <Compile Include="View\*.cs" />
-    <Page Include="View\ProductTheme.xaml"><Generator>MSBuild:Compile</Generator></Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- CommunityToolkit.Mvvm: PackageReference 显式声明(让 VS 引用树可见) + 构建期逻辑。

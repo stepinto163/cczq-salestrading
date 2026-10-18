@@ -10,7 +10,6 @@ using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
 using MarketView = STC.SalesTrading.Plugin.Modules.MarketCenter.View;
 using System;
-using STC.SalesTrading.Plugin.Ficc;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
@@ -23,26 +22,17 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     /// <summary>
     /// 报价提醒 VM：23 列提醒表 + 4 开关（关注债券/筛选分组/对价提醒/我的最优报价）+ 右下角弹窗推送（待接）。
     /// </summary>
-    public partial class BoardAlertViewModel : ObservableObject, IDisposable, IQueryLoadContext    {
-        private STC.SalesTrading.Plugin.Ficc.Protocol.Filter productFilter;
-
-        public void ApplyProductFilter(STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
-        {
-            productFilter = filter;
-            _loadCoordinator.CancelCurrent();
-            _ = LoadAsync();
-        }
-
+    public partial class BoardAlertViewModel : ObservableObject, IDisposable, IQueryLoadContext, IBoardLifecycle    {
         private readonly IMarketCenterService _marketCenterService;
+        private readonly IQuoteService _quoteService;
+        private readonly IQuoteMgmtService _mgmtService;
         private readonly LatestRequestCoordinator _loadCoordinator = new LatestRequestCoordinator();
 
-        public BoardAlertViewModel(IMarketCenterService marketCenterService)
+        public BoardAlertViewModel(IMarketCenterService marketCenterService, IQuoteService quoteService, IQuoteMgmtService mgmtService)
         {
             _marketCenterService = marketCenterService;
-            if (marketCenterService is ISalesTradingUpdates updates)
-            {
-                updates.NotificationsChanged += OnBackendChanged;
-            }
+            _quoteService = quoteService;
+            _mgmtService = mgmtService;
 
             _status.Add("total", "报价总数: 0")
                    .Add("bid", "Bid: 0", "BidBrush", "#F59E0B")
@@ -53,12 +43,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             View.Filter = FilterRow;
 
             EventAggregator.Subscribe<DataSourceResetMessage>(this, OnDataSourceReset);
+            EventAggregator.Subscribe<Shared.Messages.AlertsChangedMessage>(this, OnAlertsChanged);
             _ = LoadAsync();
         }
 
         public string Title { get; } = "报价提醒";
 
-        public ObservableCollection<BoardAlertRow> Rows { get; } = new ObservableCollection<BoardAlertRow>();
+        public ObservableCollection<AlertRow> Rows { get; } = new ObservableCollection<AlertRow>();
 
         public ICollectionView View { get; }
 
@@ -114,13 +105,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         private bool FilterRow(object o)
         {
-            var r = (BoardAlertRow)o;
+            var r = (AlertRow)o;
             var anyFilter = ShowFavorite || ShowFilterGroup || ShowPriceMatch || ShowBestQuote;
             if (!anyFilter) return true;
-            if (ShowFavorite && r.AlertType == AlertType.FavoriteBond) return true;
-            if (ShowFilterGroup && r.AlertType == AlertType.FilterGroup) return true;
-            if (ShowPriceMatch && r.AlertType == AlertType.PriceMatch) return true;
-            if (ShowBestQuote && r.AlertType == AlertType.MyBestQuote) return true;
+            if (ShowFavorite && r.Types.Contains(AlertType.FavoriteBond)) return true;
+            if (ShowFilterGroup && r.Types.Contains(AlertType.FilterGroup)) return true;
+            if (ShowPriceMatch && r.Types.Contains(AlertType.PriceMatch)) return true;
+            if (ShowBestQuote && r.Types.Contains(AlertType.MyBestQuote)) return true;
             return false;
         }
 
@@ -141,57 +132,123 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             IsPartial = false;
         }
 
-        /// <summary>成功/失败路径末尾的计数回写（QueryFlow 调用）；成功路径追加提醒弹窗检查。</summary>
+        /// <summary>成功/失败路径末尾的计数回写（QueryFlow 调用）。</summary>
         public void AfterQuery()
         {
             RecomputeStats();
-            if (LoadState != QueryLoadState.Error) PushAlertPopups();
         }
 
-                        private async System.Threading.Tasks.Task LoadAsync()
+        /// <summary>侧栏面板条件（Combined）变化：回第 1 页重查（通知域无分组过滤）。</summary>
+        public void ApplyProductFilter(Abstractions.Queries.ProductFilter filter)
         {
+            productFilter = filter;
+            if (Page != 1) Page = 1;
+            else _ = LoadAsync();
+        }
+
+        /// <summary>横幅点击：清零计数并回第 1 页重查。</summary>
+        [CommunityToolkit.Mvvm.Input.RelayCommand]
+        private void RefreshPendingQuotes()
+        {
+            PendingNewQuoteCount = 0;
+            if (Page != 1) Page = 1;
+            else _ = LoadAsync();
+        }
+
+        private Abstractions.Queries.ProductFilter productFilter;
+
+        /// <summary>当前页（1-based；PaginationBar TwoWay）。</summary>
+        [ObservableProperty]
+        private int _page = 1;
+
+        /// <summary>总页数（服务端 TotalCount / 页大小）。</summary>
+        [ObservableProperty]
+        private int _totalPages = 1;
+
+        /// <summary>页大小。</summary>
+        public int PageSize { get; } = 50;
+
+        /// <summary>「有 N 条新提醒」横幅计数（推送订阅二期接入；现仅分页预留）。</summary>
+        [ObservableProperty]
+        private int _pendingNewQuoteCount;
+
+        partial void OnPageChanged(int value)
+        {
+            _ = LoadAsync();
+        }
+
+        /// <summary>已弹过/已见过的提醒 Id（横幅只对推送新到达的提醒弹，历史不弹）。</summary>
+        private readonly HashSet<string> _seenNotificationIds = new HashSet<string>();
+
+        /// <summary>推送触发本轮刷新时新增的提醒行（LoadAsync 内填充，供弹窗）。</summary>
+        private List<AlertRow> _freshRows;
+
+        private async System.Threading.Tasks.Task LoadAsync(bool silent = false)
+        {
+            var previousIds = silent ? new HashSet<string>(_seenNotificationIds) : null;
             await QueryFlow.RunAsync(_loadCoordinator, this, async lease =>
             {
-                var rows = _marketCenterService is DpsSalesTradingServices dps
-                    ? await dps.LoadAlertRowsAsync(productFilter, lease.Token)
-                    : await _marketCenterService.LoadAlertRowsAsync(lease.Token);
+                var rows = await _marketCenterService.LoadAlertRowsAsync(productFilter, Page, PageSize, lease.Token);
                 if (!lease.IsCurrent) return null;
 
-                Rows.Clear();
-                foreach (var row in rows) Rows.Add(row);
+                if (silent)
+                {
+                    // 推送触发的静默刷新：增量应用（移除/移动/原位替换/插入），保滚动位置；
+                    // 整表 Clear+重建会在滚动/交互途中造成布局风暴（提醒表滚动卡顿成因之一）
+                    Shared.ViewModel.RowsDiff.Apply(Rows, rows, r => r.NotificationId, null);
+                }
+                else
+                {
+                    Rows.Clear();
+                    foreach (var row in rows) Rows.Add(row);
+                }
                 TotalCount = Rows.Count;
+                TotalPages = (int)System.Math.Ceiling(TotalCount / (double)PageSize);
                 QueryId = null;
                 IsPartial = false;
+
+                foreach (var row in rows) _seenNotificationIds.Add(row.NotificationId);
+                _freshRows = silent
+                    ? rows.Where(r => !previousIds.Contains(r.NotificationId)).ToList()
+                    : null;
                 return Rows.Count > 0;
-            }, Title);
+            }, Title, silent);
+            // 弹窗在 QueryFlow 结束后执行：静默轮只弹新增，用户操作轮只记入不弹
+            PushAlertPopups(_freshRows);
+            _freshRows = null;
         }
 
         /// <summary>
         /// 加载后推送右下角提醒弹窗 + nav 角标（原型 0910 alert-popup 语义）：
         /// 同类型提醒并入同一个弹窗分组（头部显示类型 + 新增数，正文最多 3 条）。
         /// </summary>
-        private readonly HashSet<string> displayedAlerts = new HashSet<string>();
-
-        private void PushAlertPopups()
+        private void PushAlertPopups(List<AlertRow> freshOnly)
         {
-            foreach (var a in Rows.Where(row => !row.IsRead && displayedAlerts.Add(row.AlertKey + ":" + row.AlertType)).Take(2))
+            IEnumerable<AlertRow> popupSource = freshOnly ?? Enumerable.Empty<AlertRow>();
+            foreach (var a in popupSource)
             {
+                var type = a.Types != null && a.Types.Count > 0 ? a.Types[0] : default(AlertType);
                 var item = new STC.SalesTrading.Plugin.Shared.ViewModel.AlertPopupItem(
-                    a.AlertKey, TypeLabel(a.AlertType), a.AlertType,
-                    a.Code ?? string.Empty, a.Name ?? string.Empty,
-                    a.QuoteTime?.ToString("HH:mm") ?? string.Empty,
-                    () => ToastService.Show("查看提醒：定位提醒页（待接）"))
+                    a.NotificationId, TypeLabel(type), type,
+                    a.SecurityId ?? string.Empty, a.SecurityName ?? string.Empty,
+                    a.UpdateTime?.ToString("HH:mm") ?? string.Empty,
+                    () =>
+                    {
+                        // 弹窗"查看"即已读上报（ficc.notification.read，方案 §3.2.4）
+                        ToastService.Show("已标记提醒已读：" + (a.SecurityId ?? string.Empty), ToastKind.Success);
+                        _ = _marketCenterService.MarkAlertReadAsync(a.NotificationId, System.Threading.CancellationToken.None);
+                    })
                 {
-                    BidTrader = a.TraderBid,
+                    BidTrader = a.ContactName,
                     BidVolume = a.VolBid?.ToString("0"),
                     BidPrice = a.Bid?.ToString("0.0000") ?? "—",
                     OfrPrice = a.Ofr?.ToString("0.0000") ?? "—",
                     OfrVolume = a.VolOfr?.ToString("0"),
-                    OfrTrader = a.TraderOfr,
+                    OfrTrader = a.ContactName,
                 };
                 STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Show(item);
             }
-            EventAggregator.Publish(new AlertCountChangedMessage(Rows.Where(row => !row.IsRead).Select(row => row.AlertKey).Distinct().Count()));
+            EventAggregator.Publish(new AlertCountChangedMessage(Rows.Count));
         }
 
         private static string TypeLabel(AlertType type)
@@ -208,24 +265,67 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         private void OnDataSourceReset(DataSourceResetMessage message)
         {
+            // 复位广播可能来自网关回调线程，同样分流
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => _ = LoadAsync()));
+                return;
+            }
             _ = LoadAsync();
+        }
+
+        /// <summary>提醒域推送到达（notification 流 views.changed）：静默刷新列表，新到达的提醒弹横幅。
+        /// 推送在 netapi 回调线程——CollectionView 拒绝跨线程改源集合，必须分流到 UI 线程。
+        /// 不可见看板只置脏，激活时补静默刷新。</summary>
+        private void OnAlertsChanged(Shared.Messages.AlertsChangedMessage message)
+        {
+            if (!_boardActive)
+            {
+                _dirty = true;
+                return;
+            }
+
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => _ = LoadAsync(silent: true)));
+                return;
+            }
+            _ = LoadAsync(silent: true);
+        }
+
+        // ---- 子页激活态（IBoardLifecycle）：KeepAlive 常驻，不可见时推送置脏不查询 ----
+
+        private bool _boardActive;
+        private bool _dirty;
+
+        public void SetBoardActive(bool active)
+        {
+            var was = _boardActive;
+            _boardActive = active;
+            if (active && !was && _dirty)
+            {
+                _dirty = false;
+                _ = LoadAsync(silent: true);
+            }
         }
 
         /// <summary>复制提醒报价文本。</summary>
         [RelayCommand]
         private void CopyQuoteText(object row)
         {
-            if (!(row is BoardAlertRow r)) return;
-            var text = string.Format("{0} Bid {1} / Ofr {2} {3}", r.Code, r.Bid?.ToString("0.####"), r.Ofr?.ToString("0.####"), r.VolOfr);
+            if (!(row is AlertRow r)) return;
+            var text = string.Format("{0} Bid {1} / Ofr {2} {3}", r.SecurityId, r.Bid?.ToString("0.####"), r.Ofr?.ToString("0.####"), r.VolOfr);
             ClipboardHelper.CopyWithToast(text);
         }
 
-        /// <summary>Refer 单行（待接）。</summary>
+        /// <summary>Refer 单行：引导到「全部」页操作。</summary>
         [RelayCommand]
         private void ReferRow(object row)
         {
-            var r = row as BoardAlertRow;
-            ToastService.Show(string.Format("Refer 待接：{0} {1}", r?.Code, r?.Name));
+            var r = row as AlertRow;
+            ToastService.Show("请到「全部」页对单笔报价操作（提醒行不携带报价版本）");
         }
 
         #region 行右键菜单（原型 #ctxMenu）
@@ -247,39 +347,47 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
         private static void OpenQuoteForm(object row, MarketView.QuoteFormMode mode)
         {
             var owner = System.Windows.Application.Current?.MainWindow;
-            if (row is BoardQuoteRow quoteRow) { MarketView.QuoteEntryDialog.ShowForRow(owner, quoteRow, mode); return; }
-            if (row is BoardBestRow bestRow) { MarketView.QuoteEntryDialog.ShowForRow(owner, bestRow, mode); return; }
-            if (row is BoardAlertRow alertRow) { MarketView.QuoteEntryDialog.ShowForRow(owner, alertRow, mode); return; }
+            if (row is TapeRow quoteRow) { MarketView.QuoteEntryDialog.ShowForRow(owner, quoteRow, mode); return; }
+            if (row is BestRow bestRow) { MarketView.QuoteEntryDialog.ShowForRow(owner, bestRow, mode); return; }
+            if (row is AlertRow alertRow) { MarketView.QuoteEntryDialog.ShowForRow(owner, alertRow, mode); return; }
 
             ToastService.Show("请选择一行行情后再打开报价表单", ToastKind.Warning);
         }
 
-        /// <summary>右键菜单：打包 —— 原型直接更新该报价标签（待接报价编辑接口）。</summary>
+        /// <summary>右键菜单：打包 —— 提醒行无法定位报价版本，引导到「全部」页操作。</summary>
         [RelayCommand]
         private void PackRow(object row)
         {
-            ToastService.Show(string.Format("{0}打包 标签待接（原型直接更新该报价）", RowPrefix(row)));
+            ToastService.Show("请到「全部」页对单笔报价操作（提醒行不携带报价版本）");
         }
 
-        /// <summary>右键菜单：OCO —— 同上。</summary>
+        /// <summary>右键菜单：报价日志（ficc.quote.history.query，H10）。异步拉取——同步等网络会冻结 UI 最坏到请求超时。</summary>
         [RelayCommand]
-        private void OcoRow(object row)
+        private async System.Threading.Tasks.Task QuoteLog(object row)
         {
-            ToastService.Show(string.Format("{0}OCO 标签待接（原型直接更新该报价）", RowPrefix(row)));
-        }
-
-        /// <summary>右键菜单：报价日志（原型 ctxLog → 报价日志弹窗 quote-log-modal，插件暂无该弹窗）。</summary>
-        [RelayCommand]
-        private void QuoteLog(object row)
-        {
-            ToastService.Show(string.Format("{0}报价日志待接（原型 quote-log-modal）", RowPrefix(row)));
+            var quoteId = BoardRowQuoteResolver.ResolveQuoteId(row);
+            if (string.IsNullOrEmpty(quoteId))
+            {
+                ToastService.Show("该行未关联具体报价，无法查看日志");
+                return;
+            }
+            try
+            {
+                var entries = await _quoteService.LoadQuoteLogAsync(quoteId, System.Threading.CancellationToken.None);
+                MarketView.QuoteLogWindow.Show(System.Windows.Application.Current?.MainWindow, quoteId,
+                    BoardRowQuoteResolver.ResolveLabel(row), entries);
+            }
+            catch (Exception ex)
+            {
+                ToastService.Show("报价日志拉取失败：" + ex.Message, ToastKind.Error);
+            }
         }
 
         private static string RowPrefix(object row)
         {
-            if (row is BoardQuoteRow quoteRow) return (quoteRow.Code ?? string.Empty) + " ";
-            if (row is BoardBestRow bestRow) return (bestRow.Code ?? string.Empty) + " ";
-            if (row is BoardAlertRow alertRow) return (alertRow.Code ?? string.Empty) + " ";
+            if (row is TapeRow quoteRow) return (quoteRow.SecurityId ?? string.Empty) + " ";
+            if (row is BestRow bestRow) return (bestRow.SecurityId ?? string.Empty) + " ";
+            if (row is AlertRow alertRow) return (alertRow.SecurityId ?? string.Empty) + " ";
             return string.Empty;
         }
 
@@ -305,37 +413,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             EventAggregator.Publish(new OpenQuoteEntryOverlayMessage());
         }
 
-        private void OnBackendChanged()
-        {
-            _ = LoadAsync();
-        }
-
-        [RelayCommand]
-        private async System.Threading.Tasks.Task MarkRead()
-        {
-            try
-            {
-                if (!(_marketCenterService is DpsSalesTradingServices services) || !(SelectedRow is BoardAlertRow selected))
-                {
-                    throw new InvalidOperationException("请先选择一条提醒。");
-                }
-                await services.MarkNotificationReadAsync(selected.AlertKey);
-                await LoadAsync();
-                ToastService.Show("已标记为已读。", ToastKind.Success);
-            }
-            catch (Exception error)
-            {
-                com.gateway.log.LogHelper.Error(error);
-                ToastService.Show(error.Message, ToastKind.Error);
-            }
-        }
-
         public void Dispose()
         {
-            if (_marketCenterService is ISalesTradingUpdates updates)
-            {
-                updates.NotificationsChanged -= OnBackendChanged;
-            }
             _loadCoordinator.Dispose();
             EventAggregator.Unsubscribe(this);
         }

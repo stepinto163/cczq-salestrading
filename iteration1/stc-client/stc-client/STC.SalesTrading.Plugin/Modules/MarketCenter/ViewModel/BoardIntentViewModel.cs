@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
@@ -30,7 +30,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             _status.Add("count", "当前 0 条 / 区间总数 0 条");
 
             EventAggregator.Subscribe<DataSourceResetMessage>(this, OnDataSourceReset);
-            _ = LoadAsync();
+            // 模糊报价本期不上（R9 后端未实现、tab 已隐藏）：不发起初始查询，避免重进时错误弹窗
         }
 
         public string Title { get; } = "模糊报价";
@@ -156,7 +156,7 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         private void OnDataSourceReset(DataSourceResetMessage message)
         {
-            _ = LoadAsync();
+            // R9 未实现，静默（与构造一致不发查询）
         }
 
         #region 工具栏命令

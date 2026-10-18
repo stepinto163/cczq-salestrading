@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.BoardListView"
+<UserControl x:Class="STC.SalesTrading.Plugin.Modules.MarketCenter.View.BoardListView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:components="clr-namespace:STC.SalesTrading.Plugin.Shared.Components"
@@ -11,14 +11,14 @@
                 <ResourceDictionary Source="BoardRowContextMenu.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <!-- 债券 hover 报价换算 tooltip -->
-            <DataTemplate DataType="{x:Type models:BoardQuoteRow}">
+            <DataTemplate DataType="{x:Type models:TapeRow}">
                 <Border Background="{DynamicResource PanelBgBrush}" BorderBrush="{DynamicResource BorderStdBrush}"
                         BorderThickness="1" CornerRadius="6" Padding="12" MaxWidth="300">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Code}" Style="{DynamicResource StcText}" FontSize="14" FontWeight="Bold"
+                            <TextBlock Text="{Binding SecurityId}" Style="{DynamicResource StcText}" FontSize="14" FontWeight="Bold"
                                        Foreground="{DynamicResource AccentBrush}" />
-                            <TextBlock Text="{Binding Name}" Style="{DynamicResource StcText}" FontSize="13"
+                            <TextBlock Text="{Binding SecurityName}" Style="{DynamicResource StcText}" FontSize="13"
                                        Margin="8,1,0,0" />
                         </StackPanel>
                         <TextBlock Style="{DynamicResource StcTextFaint}" Margin="0,6,0,0">
@@ -31,12 +31,13 @@
                             <Run Text="中债 " /><Run Text="{Binding NzYtm, StringFormat=0.0000, Mode=OneWay}" />
                             <Run Text=" / " /><Run Text="{Binding NzNetPrice, StringFormat=0.0000, Mode=OneWay}" />
                             <Run Text=" · 偏离 " /><Run Text="{Binding NzDeviation, StringFormat=0.00, Mode=OneWay}" />
-                            <Run Text=" · 最新 " /><Run Text="{Binding LastPrice, StringFormat=0.0000, Mode=OneWay}" />
+                            <Run Text=" · 中证 " /><Run Text="{Binding CsYtm, StringFormat=0.0000, Mode=OneWay}" />
+                            <Run Text=" / " /><Run Text="{Binding CsNetPrice, StringFormat=0.0000, Mode=OneWay}" />
                         </TextBlock>
                         <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="0,8" />
-                        <TextBlock Text="行情按统一收益率口径比较：普通债采用到期收益率，含权债采用行权收益率。"
+                        <TextBlock Text="报价换算：收益率↔净价按久期近似（YTM ±0.01% ≈ 净价 ∓久期×0.01）；"
                                    Style="{DynamicResource StcTextFaint}" FontSize="10" TextWrapping="Wrap" />
-                        <TextBlock Text="净价报价换算后参与排序；原始报价可在报价管理查看。" Style="{DynamicResource StcTextFaint}" FontSize="10" TextWrapping="Wrap" />
+                        <TextBlock Text="具体口径以估值表为准。" Style="{DynamicResource StcTextFaint}" FontSize="10" />
                     </StackPanel>
                 </Border>
             </DataTemplate>
@@ -49,6 +50,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -63,11 +65,9 @@
                 <Button Content="导出" Style="{DynamicResource StcButton}" Command="{Binding ExportCommand}" Margin="0,0,14,4" />
                 <ToggleButton Content="Bid" Style="{DynamicResource StcTagBid}" IsChecked="{Binding ShowBid}" Margin="0,0,6,4" />
                 <ToggleButton Content="Ofr" Style="{DynamicResource StcTagOfr}" IsChecked="{Binding ShowOfr}" Margin="0,0,20,4" />
-                <CheckBox Content="我的报价" Style="{DynamicResource StcCheckBox}" IsChecked="{Binding ShowMine}" Margin="0,0,10,4" />
                 <CheckBox Content="紧急" Style="{DynamicResource StcCheckBox}" IsChecked="{Binding ShowUrgent}" Margin="0,0,10,4" />
                 <CheckBox Content="推荐" Style="{DynamicResource StcCheckBox}" IsChecked="{Binding ShowRecommend}" Margin="0,0,10,4" />
                 <CheckBox Content="整量" Style="{DynamicResource StcCheckBox}" IsChecked="{Binding ShowWhole}" Margin="0,0,20,4" />
-                <CheckBox Content="未报价债券" Style="{DynamicResource StcCheckBox}" IsChecked="{Binding ShowUnquoted}" Margin="0,0,6,4" />
             </WrapPanel>
         </Border>
 
@@ -81,7 +81,7 @@
                   FrozenColumnCount="3" AlternationCount="2">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="剩余期限" Binding="{Binding Maturity}" Width="96" HeaderStyle="{StaticResource StcColumnHeaderLeft}" />
-                <DataGridTextColumn Header="代码" Binding="{Binding Code}" Width="132" HeaderStyle="{StaticResource StcColumnHeaderLeft}">
+                <DataGridTextColumn Header="代码" Binding="{Binding SecurityId}" Width="132" HeaderStyle="{StaticResource StcColumnHeaderLeft}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource StcText}">
                             <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
@@ -90,11 +90,11 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="简称" Binding="{Binding Name}" Width="190" HeaderStyle="{StaticResource StcColumnHeaderLeft}" ElementStyle="{StaticResource StcTrimText}" />
+                <DataGridTextColumn Header="简称" Binding="{Binding SecurityName}" Width="190" HeaderStyle="{StaticResource StcColumnHeaderLeft}" ElementStyle="{StaticResource StcTrimText}" CellStyle="{StaticResource StcFrozenEdgeCell}" />
                 <DataGridTemplateColumn Header="方向" Width="72" HeaderStyle="{StaticResource StcColumnHeaderLeft}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Direction}" FontWeight="SemiBold" FontSize="13"
+                            <TextBlock Text="{Binding Side}" FontWeight="SemiBold" FontSize="13"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -104,11 +104,11 @@
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCellLeft}">
                             <Setter Property="FontWeight" Value="Bold" />
-                            <Setter Property="Foreground" Value="{Binding Direction, Converter={x:Static conv:ConverterLocator.DirBrush}}" />
+                            <Setter Property="Foreground" Value="{Binding Side, Converter={x:Static conv:ConverterLocator.DirBrush}}" />
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="报量(万)" Binding="{Binding Volume}" Width="82"
+                <DataGridTextColumn Header="报量(万)" Binding="{Binding Quantity}" Width="82"
                                     HeaderStyle="{StaticResource StcColumnHeaderLeft}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCellLeft}">
@@ -116,18 +116,13 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="报价机构" Binding="{Binding Institution}" Width="120" ElementStyle="{StaticResource StcTrimTextCenter}" />
-                <DataGridTextColumn Header="报价交易员" Binding="{Binding Trader}" Width="105" ElementStyle="{StaticResource StcTrimTextCenter}" />
-                <DataGridTextColumn Header="长城交易员" Binding="{Binding WallTrader}" Width="130" ElementStyle="{StaticResource StcTrimTextCenter}" />
-                <DataGridTextColumn Header="最新成交价" Binding="{Binding LastPrice, StringFormat=0.0000}" Width="92">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCellCenter}" />
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                <DataGridTextColumn Header="报价机构" Binding="{Binding InstitutionName}" Width="120" ElementStyle="{StaticResource StcTrimTextCenter}" />
+                <DataGridTextColumn Header="报价交易员" Binding="{Binding ContactName}" Width="105" ElementStyle="{StaticResource StcTrimTextCenter}" />
+                <DataGridTextColumn Header="长城交易员" Binding="{Binding OwnerUserName}" Width="130" ElementStyle="{StaticResource StcTrimTextCenter}" />
                 <DataGridTextColumn Header="债券库" Binding="{Binding BondLibrary}" Width="100" ElementStyle="{StaticResource StcTrimTextCenter}" />
                 <DataGridTextColumn Header="主体评级" Binding="{Binding IssuerRating}" Width="90" ElementStyle="{StaticResource StcTextCellCenter}" />
                 <DataGridTextColumn Header="债券评级" Binding="{Binding BondRating}" Width="90" ElementStyle="{StaticResource StcTextCellCenter}" />
-                <DataGridTextColumn Header="报价时间" Binding="{Binding QuoteTime, StringFormat=HH:mm}" Width="125">
+                <DataGridTextColumn Header="报价时间" Binding="{Binding UpdateTime, StringFormat=HH:mm:ss}" Width="105">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource StcNumberCellCenter}">
                             <Setter Property="Foreground" Value="{DynamicResource TextFaintBrush}" />
@@ -139,6 +134,11 @@
 
 <components:QueryStateOverlay Grid.Row="2" Panel.ZIndex="3"
                     State="{Binding LoadState}" ErrorMessage="{Binding ErrorMessage}" Retry="{Binding RetryCommand}" />
-        <components:StatusBar Grid.Row="3" Sections="{Binding StatusSections}" />
+        <components:PaginationBar Grid.Row="3" Margin="20,4"
+                                  TotalCount="{Binding TotalCount}"
+                                  CurrentPage="{Binding Page, Mode=TwoWay}"
+                                  TotalPages="{Binding TotalPages}"
+                                  IsLoading="{Binding IsLoading}" />
+        <components:StatusBar Grid.Row="4" Sections="{Binding StatusSections}" />
     </Grid>
 </UserControl>

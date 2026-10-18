@@ -1,4 +1,4 @@
-﻿using com.gateway.log;
+using com.gateway.log;
 using STC.Common.Utils;
 using STC.Common.Utils.Events;
 using STC.Frame.Common;
@@ -89,6 +89,7 @@ namespace STC.SalesTrading.Plugin
 
         /// <summary>tab 关闭事件句柄。缓存以避免重复订阅(EventType.Subscribe 无去重)。</summary>
         private NotifyCloseTabItem _notifyCloseTabItem;
+        private bool _clearSubscribed;
 
         protected override void load()
         {
@@ -108,10 +109,6 @@ namespace STC.SalesTrading.Plugin
                 enabled = false;
                 Application.Subscribe(Consts.Topic_RestartApp, this);
                 LogHelper.Info(LogPrefix + "菜单注册完成, PluginKey=" + PluginKey);
-                if (netapi.Api.LocalIntegrationProfile.Current.Enabled)
-                {
-                    load();
-                }
                 return;
             }
 
@@ -125,7 +122,13 @@ namespace STC.SalesTrading.Plugin
             TabPageHelper.OpenTabPage(this.Description, mainView, PluginKey);
             InstallTraceLogger();
 
-            Application.Subscribe(Consts.Topic_Clear, this);
+            // EventType<T>.Subscribe 无去重且全仓库无人 UnSubscribe——同 _notifyCloseTabItem
+            // 一样靠标志位保证只订阅一次，否则每次重开 tab 回调被重复触发
+            if (!_clearSubscribed)
+            {
+                Application.Subscribe(Consts.Topic_Clear, this);
+                _clearSubscribed = true;
+            }
 
             // tab 关闭时释放 VM。EventType<T>.Subscribe 无去重且全仓库无人 UnSubscribe,
             // 必须靠此空引用判断保证只订阅一次,否则回调会被永久重复触发。
@@ -154,6 +157,15 @@ namespace STC.SalesTrading.Plugin
                     if (!(tabItem.Content is MainView view)) continue;
 
                     (view.DataContext as IDisposable)?.Dispose();
+
+                    // 关 tab 会产生一整棵视图/VM 对象图的垃圾（实测每棵 ~70MB+）。宿主是工作站 GC，
+                    // 无内存压力不做 Gen2 全量回收——垃圾长期滞留，任务管理器表现为"内存一路涨"。
+                    // 关 tab 是低频显式释放动作，此处主动回收一次（dump 分析实证：可达集只剩活 tab，
+                    // 其余均为不可达垃圾，Collect 可立即释放）。
+                    GC.Collect(2, System.GCCollectionMode.Forced);
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect(2, System.GCCollectionMode.Forced);
+
                     LogHelper.Debug(LogPrefix + "页面已关闭并释放: {0}", tabItem.Header);
                     break;
                 }

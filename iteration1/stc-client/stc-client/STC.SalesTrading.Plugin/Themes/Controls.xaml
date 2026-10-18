@@ -282,10 +282,12 @@
                             CornerRadius="6" SnapsToDevicePixels="True">
                         <Grid>
                             <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
-                            <!-- 占位文案（项目约定：TextBox.Tag 即占位文案；Tag 为空时该 TextBlock 也不可见） -->
+                            <!-- 占位文案（项目约定：TextBox.Tag 即占位文案；Tag 为空时该 TextBlock 也不可见）；
+                                 垂直对齐跟随控件（多行输入框设 Top 时水印在左上，单行默认 Center） -->
                             <TextBlock x:Name="ph" Text="{TemplateBinding Tag}" Visibility="Collapsed"
                                        Margin="{TemplateBinding Padding}" IsHitTestVisible="False"
-                                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                        TextTrimming="CharacterEllipsis" />
                         </Grid>
                     </Border>
@@ -419,6 +421,8 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         <Setter Property="Padding" Value="0,2" />
+        <!-- 下拉选项样式：不配会落到宿主默认（浅色黑字），在深色弹层上不可读（原型选项=#c9d1d9/hover 亮） -->
+        <Setter Property="ItemContainerStyle" Value="{StaticResource StcComboBoxItem}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
@@ -494,6 +498,13 @@
         <!-- 虚拟化：行默认开启，列默认关闭。20+ 列宽表首渲染/滚动更快，显式开列虚拟化（本表列宽均固定，安全）。 -->
         <Setter Property="EnableRowVirtualization" Value="True" />
         <Setter Property="EnableColumnVirtualization" Value="True" />
+        <!-- Recycling：滚动复用行容器（Standard 模式每 tick 新建/丢弃整行 ~100+ 元素，宽表拖动滚动条卡顿）。
+             代价：行上的一次性动画（推送闪烁）在容器换数据时要主动终止，见 BoardRowFlash。 -->
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <!-- 布局取整到物理像素：冻结列 × 列虚拟化横向像素滚动时的亚像素漂移会让 WPF 默认模板
+             左上角 SelectAll 按钮的 Width 绑定（CellsPanelHorizontalOffset）算出 -0.0x 而刷
+             "Data Error: 5"（已知无害但吵）；取整后偏移不再变负。顺带暗色下 1px 边线更锐利。 -->
+        <Setter Property="UseLayoutRounding" Value="True" />
         <!-- 注意：被引用样式在本文件后文定义，必须用 DynamicResource（StaticResource 前向引用会在字典加载期
              解析到 MS.Internal.NamedObject 占位对象，强转 Style 抛 InvalidCastException，已实测踩坑） -->
         <Setter Property="ColumnHeaderStyle" Value="{DynamicResource StcColumnHeader}" />
@@ -572,6 +583,24 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <!-- 键盘进入编辑/单元格持焦：12% 蓝底提示（不加边框，避免 1px 内容位移） -->
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource TagAccentBgBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- 冻结区右缘竖线（原型冻结列分隔）：应用于冻结区最后一列的 CellStyle -->
+    <Style x:Key="StcFrozenEdgeCell" TargetType="DataGridCell" BasedOn="{StaticResource StcCell}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border x:Name="bd" Background="Transparent" SnapsToDevicePixels="True"
+                            BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,1,0">
+                        <ContentPresenter Margin="8,3" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource TagAccentBgBrush}" />
                         </Trigger>

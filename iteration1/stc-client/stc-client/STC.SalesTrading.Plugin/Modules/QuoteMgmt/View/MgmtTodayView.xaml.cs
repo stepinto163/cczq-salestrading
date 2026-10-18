@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Windows.Controls;
+using System.Windows.Input;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel;
 
@@ -19,18 +20,29 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
         {
             if (DataContext is MgmtTodayViewModel vm)
             {
-                SyncSelection(vm.SelectedRow);
+                SyncSelection(vm.SelectedRow, e);
+                vm.OnSelectionSynced();
             }
         }
 
-        private void SyncSelection(HashSet<MgmtQuoteRow> target)
+        /// <summary>双击行 → 编辑报价（行模型即完整 Quote，含 Revision 直接回填；方案 §3.1.4 入口矩阵）。</summary>
+        private void TodayGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(DataContext is MgmtTodayViewModel vm)) return;
+            if (!(TodayGrid.SelectedItem is QuoteRow row)) return;
+            if (string.IsNullOrEmpty(row.QuoteId)) return;
+            MarketCenter.View.QuoteEntryDialog.ShowForQuote(
+                System.Windows.Application.Current?.MainWindow, row, MarketCenter.View.QuoteFormMode.Edit);
+        }
+
+        private static void SyncSelection(HashSet<QuoteRow> target, SelectionChangedEventArgs e)
         {
             target.Clear();
-            if (TodayGrid.SelectedItems != null)
+            if (e.AddedItems != null)
             {
-                foreach (var item in TodayGrid.SelectedItems)
+                foreach (var item in e.AddedItems)
                 {
-                    if (item is MgmtQuoteRow r) target.Add(r);
+                    if (item is QuoteRow r) target.Add(r);
                 }
             }
         }

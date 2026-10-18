@@ -11,5 +11,8 @@ namespace STC.SalesTrading.Plugin.Abstractions.Models
 
         /// <summary>状态修订号（stateRevision，缺口&gt;1 触发全量刷新）。</summary>
         public long StateRevision { get; set; }
+
+        /// <summary>本批实际变化的报价数（冻结/隐藏态横幅按此累加；0 视为 1）。</summary>
+        public int ChangedCount { get; set; }
     }
 }

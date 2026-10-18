@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
 
@@ -12,22 +13,34 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
     /// 左列 = 分组列表（双击重命名/删除/+新建）+ 已选区（子分组卡片：条件 chip 可删、卡片 hover 删除、
     /// 底部「+ 新增分组」虚线按钮）；右侧 = 粘贴条件文本识别 + 条件目录（按分区展开、多选 toggle、
     /// 文本/下拉/区间「添加」行、不可用项置灰）。
-    /// 通过 <see cref="FilterProfileService"/> 保存到账户；服务端在分页前执行激活分组。
+    /// 保存整体替换回 <see cref="FilterProfileService"/>；侧栏 chip 与表格数据联动待后端契约。
     /// </summary>
     public class FilterGroupManagerViewModel : INotifyPropertyChanged
     {
+        /// <summary>分组目录服务（组合根装配时注入；未注入回退静态内存 Mock）。</summary>
+        public static IGroupDirectory Directory { get; set; }
+
         private readonly FilterProfileService.MarketKind _market;
-        private readonly List<FilterNamedGroup> originalGroups;
+        private readonly IGroupDirectory _directory;
 
         public FilterGroupManagerViewModel(FilterProfileService.MarketKind market)
         {
             _market = market;
-            originalGroups = FilterProfileService.GetFilterGroups(market).ToList();
-            foreach (var g in FilterProfileService.GetFilterGroups(market))
+            _directory = Directory ?? throw new System.InvalidOperationException("分组目录服务未装配（组合根初始化异常）");
+            foreach (var g in _directory.GetFilterGroups(market))
             {
                 Groups.Add(CloneGroup(g));
             }
-            Catalog = FilterProfileService.GetCatalog(market);
+            // 条件目录：优先后端字段目录按原型侧栏结构合成（GroupConditionCatalog：分区/顺序/形态 = 面板结构，
+            // label/候选/置灰 = dictionary）；不可用时回退 dictionary 直构、再回退本地静态目录（Toast 指明原因）
+            var catalogSections = GroupConditionCatalog.TryGet(market, _directory)?.ForMarket(market);
+            if (catalogSections == null && GroupConditionCatalog.LastFailReason != null)
+            {
+                ToastService.Show("条件目录按本地数据回退：" + GroupConditionCatalog.LastFailReason, ToastKind.Error);
+            }
+            Catalog = catalogSections
+                ?? BuildCatalog(market)
+                ?? FilterProfileService.GetCatalog(market);
             if (Groups.Count > 0)
             {
                 SelectedIndex = 0;
@@ -188,14 +201,21 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
 
         // ---- 右栏条件 toggle（原型 _fgmToggleCatalog） ----
 
-        /// <summary>勾选/取消目录项 → 加入/移出激活子分组；无子分组时自动建一个。返回操作后的勾选态。</summary>
+        /// <summary>文本/识别 chip 场景：直接以文本作为条件值。</summary>
         public bool ToggleCatalogCondition(CatalogConditionGroup group, string value)
         {
-            if (group == null || !group.Enabled || string.IsNullOrEmpty(value))
+            return ToggleCatalogCondition(group, new Shared.ViewModel.CatalogItem(value, value));
+        }
+
+        /// <summary>勾选/取消目录项 → 加入/移出激活子分组；无子分组时自动建一个。返回操作后的勾选态。
+        /// 条件值取 item.Value（后端代码），chip 显示 label。</summary>
+        public bool ToggleCatalogCondition(CatalogConditionGroup group, Shared.ViewModel.CatalogItem item)
+        {
+            if (group == null || item == null || !group.Enabled || !item.Enabled || string.IsNullOrEmpty(item.Value))
             {
                 return false;
             }
-            if (SelectedGroup == null || group.Items.Any(item => item.Label == value && !item.Enabled))
+            if (SelectedGroup == null)
             {
                 return false;
             }
@@ -204,8 +224,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             {
                 return false;
             }
-            var condition = new FilterCondition(group.Key, group.Label, value);
-            var existing = sg.Conditions.FirstOrDefault(c => c.Identity == condition.Identity);
+            // chip Value=目录项代码（H14 enumValues；无字典字段==label）、DisplayValue=中文显示——
+            // Identity 全程按代码对齐：当场亮/读回亮/去重一致/服务端 canonical 校验通过（实测踩坑）
+            var condition = new FilterCondition(group.Key, group.Label, item.Value, item.Label);
+            var existing = sg.Conditions.FirstOrDefault(c => c.Identity == condition.Identity)
+                ?? sg.Conditions.FirstOrDefault(c =>
+                    c.Key == group.Key
+                    && (c.Value == item.Label || (c.DisplayValue != null && c.DisplayValue == item.Label)));
             if (existing != null)
             {
                 sg.Conditions.Remove(existing);
@@ -213,6 +238,15 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             }
             sg.Conditions.Add(condition);
             return true;
+        }
+
+        /// <summary>目录项当前是否已在激活子分组中（按落库值匹配；兼容 label 直传）。</summary>
+        public bool IsConditionActive(CatalogConditionGroup group, Shared.ViewModel.CatalogItem item)
+        {
+            var sg = ActiveSubgroup;
+            if (sg == null || item == null) return false;
+            var value = item.Value;
+            return sg.Conditions.Any(c => c.Key == group.Key && (c.Value == value || c.Value == item.Label));
         }
 
         /// <summary>目录项当前是否已在激活子分组中（勾选态）。</summary>
@@ -224,7 +258,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 return false;
             }
             var identity = group.Key + "|" + value;
-            return sg.Conditions.Any(c => c.Identity == identity);
+            // DisplayValue 兜底：历史数据落库值与目录显示值不同文（旧编码/翻译差异）时仍能点亮
+            return sg.Conditions.Any(c => c.Identity == identity || (c.DisplayValue != null && group.Key + "|" + c.DisplayValue == identity));
         }
 
         // ---- 自定义添加（原型 _fgmAddCatalogValue / _fgmAddCatalogRange） ----
@@ -304,13 +339,13 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                 return null;
             }
             decimal value;
-            return decimal.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out value) ? value : (decimal?)null;
+            return decimal.TryParse(text, out value) ? value : (decimal?)null;
         }
 
         /// <summary>数值格式化：整数不带小数点，小数去尾零（1 → "1"，0.5 → "0.5"）。</summary>
         private static string FormatRangeValue(decimal? value)
         {
-            return value.HasValue ? value.Value.ToString("0.############################", System.Globalization.CultureInfo.InvariantCulture) : string.Empty;
+            return value.HasValue ? value.Value.ToString("0.####") : string.Empty;
         }
 
         // ---- 文本识别（原型 _fgmMatch：MVP 用「与目录项 label 全等」匹配） ----
@@ -361,8 +396,8 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
                             {
                                 matched.Add(token);
                             }
-                            // 原型 _fgmMatch：匹配到的条件直接进激活子分组（已存在条件保持不变）
-                            if (!IsConditionActive(cg, token) && ToggleCatalogCondition(cg, token))
+                            // 原型 _fgmMatch：匹配到的条件直接进激活子分组（Toggle 自带 identity 去重）
+                            if (ToggleCatalogCondition(cg, token))
                             {
                                 added++;
                             }
@@ -385,21 +420,81 @@ namespace STC.SalesTrading.Plugin.Modules.MarketCenter.ViewModel
             MatchedTokens.Clear();
         }
 
-        /// <summary>保存：整体替换回服务存储。</summary>
-        public async System.Threading.Tasks.Task SaveAsync()
+        /// <summary>保存：条件先经目录编译成结构化载荷（文本 CONTAINS/区间 BETWEEN/枚举 IN），整体替换回分组目录。
+        /// 编译含字段目录网络读取、保存为逐组网关请求——窗口包 Task.Run 在线程池执行，UI 不冻结；
+        /// 成功后由调用方回 UI 线程 RaiseDataChanged。</summary>
+        public void Save()
         {
-            await FilterProfileService.SaveFilterGroupsAsync(_market, Groups, originalGroups);
+            // 无载荷的条件（点选/识别/手输）按当前目录编译；个别编译失败（如旧数据的代码值）
+            // 留空走网关旧编码回退，不阻断整体保存
+            var catalog = GroupConditionCatalog.TryGet(_market, _directory);
+            if (catalog != null)
+            {
+                foreach (var group in Groups)
+                {
+                    foreach (var sg in group.Subgroups)
+                    {
+                        foreach (var c in sg.Conditions)
+                        {
+                            if (c.Protocol != null) continue;
+                            try { c.Protocol = catalog.Compile(_market, c); }
+                            catch { /* 留空：网关层回退 EQ/IN 旧编码 */ }
+                        }
+                    }
+                }
+            }
+            _directory.SaveFilterGroups(_market, Groups);
+        }
+
+        /// <summary>
+        /// 条件目录：优先后端字段目录（ficc.quote.dictionary.query，条件可落库的唯一事实源）；
+        /// 网关不可用/无字段时回退本地静态目录（此时保存会被网关拦截提示）。
+        /// 只渲染带枚举候选的字段（Tags 形态）；text/区间字段的录入交互二期接。
+        /// </summary>
+        private List<CatalogSection> BuildCatalog(FilterProfileService.MarketKind market)
+        {
+            System.Collections.Generic.IReadOnlyList<Abstractions.Models.FilterFieldEntry> fields;
+            try
+            {
+                fields = _directory.GetFilterFields(market);
+            }
+            catch
+            {
+                return null;
+            }
+            if (fields == null || fields.Count == 0) return null;
+
+            var sections = new Dictionary<string, CatalogSection>(System.StringComparer.Ordinal);
+            foreach (var field in fields)
+            {
+                if (field.EnumValues == null || field.EnumValues.Count == 0) continue;   // text/区间字段二期接录入 UI
+
+                var sectionTitle = string.IsNullOrEmpty(field.Group) ? "筛选条件" : field.Group;
+                if (!sections.TryGetValue(sectionTitle, out var section))
+                {
+                    section = new CatalogSection(sectionTitle);
+                    sections[sectionTitle] = section;
+                }
+                var group = new CatalogConditionGroup(field.Label, field.Field, CatalogConditionGroup.ConditionKind.Tags);
+                foreach (var option in field.EnumValues)
+                {
+                    // 显示后端中文 label、落库后端 value 代码（对齐 reviewed-market-detail 的双轨做法）
+                    if (!string.IsNullOrEmpty(option.Value)) group.Items.Add(new CatalogItem(option.Label, option.Value));
+                }
+                if (group.Items.Count > 0) section.Groups.Add(group);
+            }
+            return sections.Values.ToList();
         }
 
         private static FilterNamedGroup CloneGroup(FilterNamedGroup src)
         {
-            var copy = new FilterNamedGroup { Name = src.Name, Id = src.Id, Revision = src.Revision };
+            var copy = new FilterNamedGroup { Name = src.Name, Id = src.Id };
             foreach (var sg in src.Subgroups)
             {
                 var sgCopy = new FilterSubgroup();
                 foreach (var c in sg.Conditions)
                 {
-                    sgCopy.Conditions.Add(new FilterCondition(c.Key, c.Label, c.Value) { Protocol = c.Protocol });
+                    sgCopy.Conditions.Add(new FilterCondition(c.Key, c.Label, c.Value, c.DisplayValue) { Protocol = c.Protocol });
                 }
                 copy.Subgroups.Add(sgCopy);
             }

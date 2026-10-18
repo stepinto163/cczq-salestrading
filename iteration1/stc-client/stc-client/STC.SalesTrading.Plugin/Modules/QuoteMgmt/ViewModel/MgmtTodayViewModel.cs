@@ -1,13 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using STC.Common.Utils.Events;
 using STC.SalesTrading.Plugin.Abstractions;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using STC.SalesTrading.Plugin.Abstractions.Queries;
 using STC.SalesTrading.Plugin.Shared.Converters;
+using STC.SalesTrading.Plugin.Shared.Messages;
 using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
 using System;
-using STC.SalesTrading.Plugin.Ficc;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -30,12 +31,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         public MgmtTodayViewModel(IQuoteMgmtService mgmtService)
         {
             _mgmtService = mgmtService;
-            if (mgmtService is ISalesTradingUpdates updates)
-            {
-                updates.QuotesChanged += OnBackendChanged;
-            }
 
-            ModeOptions = new List<string> { "全部", "QT", "ideal", "手工录入" };
             StatusOptions = new List<string> { "全部", "有效", "撤销" };
 
             _status.Add("total", "共 0 条")
@@ -44,12 +40,29 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
 
             View = CollectionViewSource.GetDefaultView(Rows);
 
+            // 推送刷新（方案 §3.3.1）：视图变化由服务端推、客户端按需重查
+            _mgmtService.QuotesChanged += OnQuotesChanged;
+
+            // 数据源复位（断线/重登）：清态重查（Dispatcher 调度见 DispatchRefresh/ReloadImmediate）
+            EventAggregator.Subscribe<DataSourceResetMessage>(this, OnDataSourceReset);
+
             _ = QueryAsync();
+        }
+
+        private void OnDataSourceReset(DataSourceResetMessage message)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(ReloadImmediate));
+                return;
+            }
+            ReloadImmediate();
         }
 
         public string Title { get; } = "今日报价";
 
-        public ObservableCollection<MgmtQuoteRow> Rows { get; } = new ObservableCollection<MgmtQuoteRow>();
+        public ObservableCollection<QuoteRow> Rows { get; } = new ObservableCollection<QuoteRow>();
 
         public ICollectionView View { get; }
 
@@ -57,15 +70,12 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
 
         public ObservableCollection<StatusBarSection> StatusSections { get { return _status.Sections; } }
 
-        public IReadOnlyList<string> ModeOptions { get; }
 
         public IReadOnlyList<string> StatusOptions { get; }
 
         #region 过滤条件
 
         /// <summary>报价方式下拉选中值（全部/QT/ideal/手工录入）。</summary>
-        [ObservableProperty]
-        private string _selectedMode = "全部";
 
         /// <summary>报价状态下拉选中值（全部/有效/撤销）。</summary>
         [ObservableProperty]
@@ -79,10 +89,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         [ObservableProperty]
         private string _institutionSearchText = string.Empty;
 
-        /// <summary>长城交易员联想搜索文本。</summary>
-        [ObservableProperty]
-        private string _traderSearchText = string.Empty;
-
         /// <summary>债券联想候选（从数据提取，接网关后由服务提供）。</summary>
         public ObservableCollection<string> BondSuggestions { get; } = new ObservableCollection<string>();
 
@@ -90,19 +96,29 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         public ObservableCollection<string> InstitutionSuggestions { get; } = new ObservableCollection<string>();
 
         /// <summary>长城交易员联想候选。</summary>
-        public ObservableCollection<string> TraderSuggestions { get; } = new ObservableCollection<string>();
 
-        partial void OnSelectedModeChanged(string value) => ReloadImmediate();
-        partial void OnSelectedStatusChanged(string value) => ReloadImmediate();
-        partial void OnBondSearchTextChanged(string value) => ReloadText();
-        partial void OnInstitutionSearchTextChanged(string value) => ReloadText();
-        partial void OnTraderSearchTextChanged(string value) => ReloadText();
+        /// <summary>当前页（1-based；PaginationBar TwoWay）。</summary>
+        [ObservableProperty]
+        private int _page = 1;
+
+        /// <summary>总页数（TotalCount / 50）。</summary>
+        [ObservableProperty]
+        private int _totalPages = 1;
+
+        partial void OnPageChanged(int value)
+        {
+            _ = QueryAsync();
+        }
+
+        partial void OnSelectedStatusChanged(string value) { Page = 1; ReloadImmediate(); }
+        partial void OnBondSearchTextChanged(string value) { Page = 1; ReloadText(); }
+        partial void OnInstitutionSearchTextChanged(string value) { Page = 1; ReloadText(); }
 
         private void RecomputeStats()
         {
             _status.Set("total", string.Format("共 {0} 条", TotalCount));
-            _status.Set("bid", "Bid: " + Rows.Count(r => r.Direction == QuoteDirection.Bid));
-            _status.Set("ofr", "Ofr: " + Rows.Count(r => r.Direction == QuoteDirection.Ofr));
+            _status.Set("bid", "Bid: " + Rows.Count(r => r.Side == QuoteDirection.Bid));
+            _status.Set("ofr", "Ofr: " + Rows.Count(r => r.Side == QuoteDirection.Ofr));
         }
 
         /// <summary>失败路径清空（QueryFlow 调用）：清行并复位结果字段。</summary>
@@ -118,18 +134,6 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         public void AfterQuery()
         {
             RecomputeStats();
-        }
-
-        /// <summary>报价方式显示文本（供列渲染与联想）。</summary>
-        public static string ModeLabel(QuoteMode mode)
-        {
-            switch (mode)
-            {
-                case QuoteMode.Qt: return "QT";
-                case QuoteMode.Ideal: return "ideal";
-                case QuoteMode.Manual: return "手工录入";
-                default: return string.Empty;
-            }
         }
 
         #endregion
@@ -174,58 +178,28 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
             _textQueryScheduler.Schedule(TextQueryDebounce, token => QueryAsync());
         }
 
-        private STC.SalesTrading.Plugin.Ficc.Protocol.Filter productFilter;
-
-        public void ApplyProductFilter(STC.SalesTrading.Plugin.Ficc.Protocol.Filter filter)
-        {
-            productFilter = filter;
-            _queryCoordinator.CancelCurrent();
-            _ = QueryAsync();
-        }
-
-        private async System.Threading.Tasks.Task QueryAsync()
+                        private async System.Threading.Tasks.Task QueryAsync(bool silent = false)
         {
             await QueryFlow.RunAsync(_queryCoordinator, this, async lease =>
             {
                 var result = await _mgmtService.QueryTodayRowsAsync(new QuoteMgmtQuery
                 {
-                    ProductFilter = productFilter,
                     Today = true,
-                    Mode = SelectedMode,
                     Status = SelectedStatus,
                     BondSearchText = BondSearchText,
                     InstitutionSearchText = InstitutionSearchText,
-                    TraderSearchText = TraderSearchText,
+                    Page = Page,
+                    PageSize = 50,
                 }, lease.Token);
                 if (!lease.IsCurrent) return null;
 
-                long collectionStarted = ClientPerformanceTrace.Start();
-                // 保持集合非空，避免 Clear 导致整张表的行容器被销毁后重新创建。
-                // 替换整条展示记录，仍由 WPF 更新绑定；不能仅比较 revision 跳过基础数据变化。
-                for (int index = 0; index < result.Items.Count; index++)
-                {
-                    if (index < Rows.Count)
-                    {
-                        Rows[index] = result.Items[index];
-                    }
-                    else
-                    {
-                        Rows.Add(result.Items[index]);
-                    }
-                }
-                while (Rows.Count > result.Items.Count)
-                {
-                    Rows.RemoveAt(Rows.Count - 1);
-                }
-                ClientPerformanceTrace.End("today.collection", collectionStarted);
-                long propertiesStarted = ClientPerformanceTrace.Start();
+                Rows.Clear();
+                foreach (var row in result.Items) Rows.Add(row);
                 TotalCount = result.TotalCount;
+                TotalPages = (int)Math.Ceiling(result.TotalCount / 50.0);
                 QueryId = result.QueryId;
                 IsPartial = result.IsPartial;
-                ClientPerformanceTrace.End("today.properties", propertiesStarted);
-                long suggestionsStarted = ClientPerformanceTrace.Start();
                 BuildSuggestions();
-                ClientPerformanceTrace.End("today.suggestions", suggestionsStarted);
                 return Rows.Count > 0;
             }, Title);
         }
@@ -233,11 +207,9 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         private void BuildSuggestions()
         {
             BondSuggestions.Clear();
-            foreach (var s in Rows.Select(r => r.Code).Concat(Rows.Select(r => r.Name)).Where(x => !string.IsNullOrEmpty(x)).Distinct()) BondSuggestions.Add(s);
+            foreach (var s in Rows.Select(r => r.SecurityId).Concat(Rows.Select(r => r.SecurityName)).Where(x => !string.IsNullOrEmpty(x)).Distinct()) BondSuggestions.Add(s);
             InstitutionSuggestions.Clear();
-            foreach (var s in Rows.Select(r => r.Institution).Where(x => !string.IsNullOrEmpty(x)).Distinct()) InstitutionSuggestions.Add(s);
-            TraderSuggestions.Clear();
-            foreach (var s in Rows.Select(r => r.WallTrader).Where(x => !string.IsNullOrEmpty(x)).Distinct()) TraderSuggestions.Add(s);
+            foreach (var s in Rows.Select(r => r.InstitutionName).Where(x => !string.IsNullOrEmpty(x)).Distinct()) InstitutionSuggestions.Add(s);
         }
 
         #endregion
@@ -245,45 +217,59 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         #region 工具栏命令
 
         [RelayCommand]
-        private void EditQuote()
-        {
-            if (!(_mgmtService is DpsSalesTradingServices services) || SelectedRow.Count != 1)
-            {
-                ToastService.Show("请选择一条报价。", ToastKind.Warning);
-                return;
-            }
-            STC.SalesTrading.Plugin.Modules.MarketCenter.View.QuoteEntryDialog.ShowForQuote(
-                System.Windows.Application.Current.MainWindow, services.Api, SelectedRow.First().QuoteId);
-        }
-
-        [RelayCommand]
         private async System.Threading.Tasks.Task Refer()
         {
-            await OperateSelectedAsync("refer");
+            var actionable = SelectedActionable(QuoteStatus.Active, "仅有效（ACTIVE）报价可 Refer");
+            if (actionable == null) return;
+            try
+            {
+                await _mgmtService.ReferQuotesAsync(actionable, CancellationToken.None);
+                await QueryAsync();
+                ToastService.Show(string.Format("已 Refer {0} 条报价", actionable.Count), ToastKind.Success);
+            }
+            catch (Exception ex)
+            {
+                ToastService.Show("Refer 失败：" + ex.Message, ToastKind.Error);
+            }
         }
 
         [RelayCommand]
         private async System.Threading.Tasks.Task Unrefer()
         {
-            await OperateSelectedAsync("unrefer");
-        }
-
-        private async System.Threading.Tasks.Task OperateSelectedAsync(string operation)
-        {
+            var actionable = SelectedActionable(QuoteStatus.Referred, "仅已撤销（REFERRED）报价可 Unrefer");
+            if (actionable == null) return;
             try
             {
-                if (!(_mgmtService is DpsSalesTradingServices services))
-                {
-                    throw new InvalidOperationException("当前数据源不支持真实报价操作。");
-                }
-                await services.OperateAsync(operation, SelectedRow.ToArray(), CancellationToken.None);
+                await _mgmtService.UnreferQuotesAsync(actionable, CancellationToken.None);
                 await QueryAsync();
+                ToastService.Show(string.Format("已 Unrefer {0} 条报价", actionable.Count), ToastKind.Success);
             }
-            catch (Exception error)
+            catch (Exception ex)
             {
-                com.gateway.log.LogHelper.Error(error);
-                ToastService.Show(error.Message, ToastKind.Error);
+                ToastService.Show("Unrefer 失败：" + ex.Message, ToastKind.Error);
             }
+        }
+
+        /// <summary>取勾选行并校验生命周期状态；含不满足状态的行时提示并剔除，全部不满足返回 null。</summary>
+        private List<QuoteRow> SelectedActionable(QuoteStatus required, string mismatchHint)
+        {
+            var selected = Rows.Where(r => SelectedRow?.Contains(r) == true).ToList();
+            if (selected.Count == 0)
+            {
+                ToastService.Show("请先勾选报价行");
+                return null;
+            }
+            var actionable = selected.Where(r => r.Status == required).ToList();
+            if (actionable.Count == 0)
+            {
+                ToastService.Show(mismatchHint, ToastKind.Warning);
+                return null;
+            }
+            if (actionable.Count < selected.Count)
+            {
+                ToastService.Show(mismatchHint + "，已跳过 " + (selected.Count - actionable.Count) + " 条", ToastKind.Warning);
+            }
+            return actionable;
         }
 
         [RelayCommand]
@@ -297,14 +283,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
             }
             try
             {
-                if (_mgmtService is DpsSalesTradingServices services)
-                {
-                    await services.OperateAsync("delete", selected, CancellationToken.None);
-                }
-                else
-                {
-                    await _mgmtService.DeleteQuotesAsync(selected.Select(row => row.QuoteId).ToList(), false, CancellationToken.None);
-                }
+                await _mgmtService.DeleteQuotesAsync(selected, false, CancellationToken.None);
                 SelectedRow.Clear();
                 await QueryAsync();
                 ToastService.Show(string.Format("已删除 {0} 条报价", selected.Count), ToastKind.Success);
@@ -325,7 +304,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
                 return;
             }
             var text = string.Join(Environment.NewLine, selected.Select(r =>
-                $"{ModeLabel(r.Mode)} {r.Code} {r.Direction} {r.Price?.ToString("0.####")} {r.Volume}"));
+                $"{r.SourceTypeText} {r.SecurityId} {r.Side} {r.Price?.ToString("0.####")} {r.Quantity}"));
             ClipboardHelper.CopyWithToast(text);
         }
 
@@ -346,21 +325,56 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.ViewModel
         #region 行选择（多选）
 
         /// <summary>当前选中报价 Id 集合（DataGrid SelectedItems 由 View 代码同步）。</summary>
-        public HashSet<MgmtQuoteRow> SelectedRow { get; } = new HashSet<MgmtQuoteRow>();
+        public HashSet<QuoteRow> SelectedRow { get; } = new HashSet<QuoteRow>();
+
+        /// <summary>View 同步选中集合后调用：释放选择时补一次被推送推迟的刷新。</summary>
+        internal void OnSelectionSynced()
+        {
+            if (!_pendingRefresh || SelectedRow.Count > 0) return;
+            _pendingRefresh = false;
+            DispatchRefresh();
+        }
 
         #endregion
 
-        private void OnBackendChanged()
+        #region 推送刷新
+
+        private bool _disposed;
+        private bool _pendingRefresh;
+
+        /// <summary>
+        /// 服务端报价集合变化：无选中直接重查；有选中（用户正在查看/操作）先置脏，
+        /// 待释放选择后统一刷新（与看板"手动态不打断"语义一致）。
+        /// </summary>
+        private void OnQuotesChanged()
         {
-            _ = QueryAsync();
+            if (_disposed) return;
+            if (SelectedRow.Count > 0)
+            {
+                _pendingRefresh = true;
+                return;
+            }
+            DispatchRefresh();
         }
+
+        private void DispatchRefresh()
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => _ = QueryAsync(true)));
+                return;
+            }
+            _ = QueryAsync(true);
+        }
+
+        #endregion
 
         public void Dispose()
         {
-            if (_mgmtService is ISalesTradingUpdates updates)
-            {
-                updates.QuotesChanged -= OnBackendChanged;
-            }
+            _disposed = true;
+            EventAggregator.Unsubscribe(this);
+            _mgmtService.QuotesChanged -= OnQuotesChanged;
             _textQueryScheduler.Dispose();
             _queryCoordinator.Dispose();
             SelectedRow.Clear();
