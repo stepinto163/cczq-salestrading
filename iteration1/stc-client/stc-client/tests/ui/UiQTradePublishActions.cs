@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 using STC.SalesTrading.Plugin.Shared.Components;
 
@@ -100,7 +100,7 @@ namespace SalesTrading.UiTests
                 };
             }
             await NavigateAsync("entry");
-            QTradePublishData result = await model.Backend.Api.RequestAsync(SalesTradingApi.QTradeQuotePublish, request);
+            QTradePublishData result = await api.RequestAsync(SalesTradingApi.QTradeQuotePublish, request);
             File.WriteAllText(Path.Combine(reportDirectory, "qtrade-publish-ack.json"), result.ToJson().ToString());
             Emit("QTrade 发布回执", result.Status, messageId);
             Require(result.MessageId == messageId && result.Status == "ACKNOWLEDGED" && result.ApplicationCode == "0",
@@ -108,25 +108,25 @@ namespace SalesTrading.UiTests
             await Until(() =>
             {
                 var received = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                    .Where(row => (row.TextContent ?? "").Contains(marker)).ToList();
+                    .Where(row => (row.Remark ?? "").Contains(marker)).ToList();
                 // 部分到达后超时，也必须清理已经收到的本例报价。
                 foreach (var row in received)
                 {
-                    Track(row.RecognitionId);
+                    Track(row.QuoteId);
                 }
                 return received.Count >= expected;
             },
                 "QTrade 已受理，但未收到预期 FIX→QuoteSvr→STC 待确认行；检查 FIX 权限、inf1 及收件账号", 30);
             var rows = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                .Where(row => (row.TextContent ?? "").Contains(marker)).ToList();
+                .Where(row => (row.Remark ?? "").Contains(marker)).ToList();
             Require(rows.Count == expected, "真实接收报价数量与预期不一致");
             var evidence = new JArray();
             foreach (var row in rows)
             {
-                string id = row.RecognitionId;
+                string id = row.QuoteId;
                 Track(id);
                 publishedQuoteIds.Add(id);
-                QuoteRecord quote = await model.Backend.Api.GetQuoteModelAsync(id);
+                QuoteRecord quote = await api.GetQuoteModelAsync(id);
                 Require(quote.Status == "PENDING_CONFIRM" && quote.Source != null && quote.Source.Type == "QT", "未经过真实 QT 待确认通路");
                 Require(quote.Source.SourceUserId == receiverQtAccount && quote.OwnerUserId == login.UserId, "收到的不是目标接收账号报价");
                 if (groupId.Length > 0)
@@ -147,7 +147,7 @@ namespace SalesTrading.UiTests
             }
             if (expected > 1)
             {
-                Require(rows.Select(row => row.Row.BatchId).Distinct().Count() == 1,
+                Require(rows.Select(row => row.Row.SourceMessageId).Distinct().Count() == 1,
                     "一条原始消息拆出的报价应同组");
             }
             File.WriteAllText(Path.Combine(reportDirectory, "qtrade-received-quotes.json"), evidence.ToString());
@@ -167,23 +167,23 @@ namespace SalesTrading.UiTests
             var page = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
             foreach (var row in pendingRows)
             {
-                bool shouldSelect = publishedQuoteIds.Contains(row.RecognitionId);
+                bool shouldSelect = publishedQuoteIds.Contains(row.QuoteId);
                 if (row.IsSelected != shouldSelect)
                 {
                     await SelectPendingRowAsync(page, row, shouldSelect);
                 }
             }
             var toolbar = (Border)page.FindName("BatchToolbar");
-            var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
-            var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
+            var institution = Descendants<LazySearchComboBox>(toolbar).Single(input => input.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Institution);
+            var contact = Descendants<LazySearchComboBox>(toolbar).Single(input => input.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Contact);
             await SetTextAsync(institution, "");
             string contactName = Parameter(step, "contactName");
             Require(!string.IsNullOrWhiteSpace(contactName), "请配置发送人的真实 CRM 联系人名称");
             var selected = await SelectToolbarCrmAsync(contact, contactName);
             Require(selected.ContactName == contactName && selected.InstitutionName == Parameter(step, "institutionName"),
                 "CRM 候选不匹配指定发送人及机构，不能选择其他联系人代替");
-            Require(pendingRows.Where(row => publishedQuoteIds.Contains(row.RecognitionId))
-                .All(row => row.Row.ContactId == selected.ContactId && row.InstitutionId == selected.InstitutionId),
+            Require(pendingRows.Where(row => publishedQuoteIds.Contains(row.QuoteId))
+                .All(row => row.Row.ContactId == selected.ContactId && row.Row.InstitutionId == selected.InstitutionId),
                 "CRM 工具栏没有更新本例报价的联系人和机构 ID");
             Capture("qtrade-counterparty-selected");
             // 一次确认本批，避免逐条确认后服务端刷新覆盖其他行尚未提交的 CRM 编辑。
@@ -191,10 +191,10 @@ namespace SalesTrading.UiTests
             await AwaitCommand(model.QuotePage.Confirm.ConfirmSelectedCommand.ExecutionTask);
             foreach (string id in publishedQuoteIds)
             {
-                QuoteRecord quote = await model.Backend.Api.GetQuoteModelAsync(id);
+                QuoteRecord quote = await api.GetQuoteModelAsync(id);
                 Require(quote.Status == "ACTIVE", "界面确认未生效：" + id);
                 await Until(() => !model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                    .Any(row => row.RecognitionId == id), "已确认报价退出待确认页面");
+                    .Any(row => row.QuoteId == id), "已确认报价退出待确认页面");
                 await AssertNegotiationPriceAsync(id, decimal.Parse(quote.Price, CultureInfo.InvariantCulture));
                 quoteId = id;
             }

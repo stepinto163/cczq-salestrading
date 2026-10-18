@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -263,9 +263,9 @@ namespace STC.SalesTrading.Plugin.Gateway
         public Task DeleteQuotesAsync(IReadOnlyCollection<QuoteRow> rows, CancellationToken ct)
         {
             if (rows == null || rows.Count == 0) return Task.CompletedTask;
-            var request = new QuoteChangeRequest
+            var request = new QuoteLifecycleRequest
             {
-                Quotes = rows.Select(r => new QuoteChangeItem
+                Quotes = rows.Select(r => new QuoteLifecycleItem
                 {
                     QuoteId = r.QuoteId,
                     ExpectedRevision = r.Revision,
@@ -481,9 +481,10 @@ namespace STC.SalesTrading.Plugin.Gateway
             return value.HasValue ? value.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : null;
         }
 
-        private async Task ExecuteWriteAsync(string topic, QuoteChangeRequest request, CancellationToken ct)
+        private async Task ExecuteWriteAsync<TRequest>(string topic, TRequest request, CancellationToken ct)
+            where TRequest : class
         {
-            var data = await requester.RequestAsync<QuoteChangeRequest, QuoteWriteData>(topic, request, ct).ConfigureAwait(false);
+            var data = await requester.RequestAsync<TRequest, QuoteWriteData>(topic, request, ct).ConfigureAwait(false);
             RequireAllSuccess(data);
         }
 

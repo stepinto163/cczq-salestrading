@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using STC.SalesTrading.Plugin.Abstractions.Models;
 using System;
 using PriceTypeEnum = STC.SalesTrading.Plugin.Abstractions.Models.PriceType;
@@ -16,10 +16,8 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel
         {
             Row = row ?? new QuoteRow();
 
-            // 未识别方向在预览表里显示为空串；DTO 默认值按后端约定落在 Bid。
-            _direction = Row.Side == QuoteDirection.Ofr ? "Ofr"
-                : Row.Side == QuoteDirection.Bid && Row.QuoteId != null ? "Bid"
-                : string.Empty;
+            // 识别预览尚无持久化 ID；方向取已校验的业务字段，不能用是否入库判断。
+            _direction = Row.Side == QuoteDirection.Ofr ? "Ofr" : "Bid";
             _price = Row.Price?.ToString("0.####") ?? string.Empty;
             _priceType = PriceTypeDisplay(Row.QuoteType);
             _volume = Row.Quantity?.ToString("0.#") ?? string.Empty;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Windows.Controls;
 using System.Windows.Input;
 using STC.SalesTrading.Plugin.Abstractions.Models;
@@ -20,7 +20,7 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
         {
             if (DataContext is MgmtTodayViewModel vm)
             {
-                SyncSelection(vm.SelectedRow, e);
+                SyncSelection(vm.SelectedRow, TodayGrid.SelectedItems);
                 vm.OnSelectionSynced();
             }
         }
@@ -35,15 +35,13 @@ namespace STC.SalesTrading.Plugin.Modules.QuoteMgmt.View
                 System.Windows.Application.Current?.MainWindow, row, MarketCenter.View.QuoteFormMode.Edit);
         }
 
-        private static void SyncSelection(HashSet<QuoteRow> target, SelectionChangedEventArgs e)
+        // SelectionChanged 仅包含增量；读取完整选中集合，避免 Ctrl 多选丢失旧行。
+        private static void SyncSelection(HashSet<QuoteRow> target, System.Collections.IList selectedItems)
         {
             target.Clear();
-            if (e.AddedItems != null)
+            foreach (var item in selectedItems)
             {
-                foreach (var item in e.AddedItems)
-                {
-                    if (item is QuoteRow r) target.Add(r);
-                }
+                if (item is QuoteRow row) target.Add(row);
             }
         }
     }

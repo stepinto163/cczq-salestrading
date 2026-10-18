@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 using STC.SalesTrading.Plugin.Shared.Components;
 
@@ -20,7 +20,7 @@ namespace SalesTrading.UiTests
             Require(quoteId != null, "先通过精确报价确认本例归属报价");
             string token = Environment.GetEnvironmentVariable("STC_UI_INTAKE_TOKEN");
             Require(!string.IsNullOrEmpty(token), "设置本机测试环境 STC_UI_INTAKE_TOKEN");
-            JObject manual = await model.Backend.Api.GetQuoteAsync(quoteId);
+            JObject manual = await api.GetQuoteAsync(quoteId);
             string owner = (string)manual["ownerUserId"];
             string security = (string)manual["securityId"];
             string intention = "UI-INTENTION-" + Guid.NewGuid().ToString("N");
@@ -52,12 +52,12 @@ namespace SalesTrading.UiTests
                         }
                     }
                 };
-                QuoteWriteData result = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteCreate, request);
-                FiccApiClient.RequireQuoteResults(result);
+                QuoteWriteData result = await api.RequestAsync(SalesTradingApi.QuoteCreate, request);
+                TestApiClient.RequireQuoteResults(result);
                 string id = result.Results.Single().QuoteId;
                 Track(id);
                 await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                    .Any(row => row.RecognitionId == id && decimal.Parse(row.Price, CultureInfo.InvariantCulture)
+                    .Any(row => row.QuoteId == id && decimal.Parse(row.Price, CultureInfo.InvariantCulture)
                         == decimal.Parse(price, CultureInfo.InvariantCulture)),
                     "真实待确认推送及价格 " + conversation);
                 Require(!model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == id), "未确认提案进入行情");
@@ -101,7 +101,7 @@ namespace SalesTrading.UiTests
             }
             await Until(() => !model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == second),
                 "旧 A-C 价格退出真实行情表");
-            JObject retired = await model.Backend.Api.GetQuoteAsync(second);
+            JObject retired = await api.GetQuoteAsync(second);
             Require((string)retired["status"] == "REFERRED", "旧报价未撤出正式价池");
             Capture("qt-confirmed-replacement");
             Emit("QT 业务键替换", "PASSED", mergeDifferentConversations
@@ -114,7 +114,7 @@ namespace SalesTrading.UiTests
             await NavigateAsync("market");
             await Until(() => !model.MarketCenterPage.RateAll.Rows.Any(row => row.QuoteId == id),
                 "被替换报价退出行情 " + id);
-            JObject retired = await model.Backend.Api.GetQuoteAsync(id);
+            JObject retired = await api.GetQuoteAsync(id);
             Require((string)retired["status"] == "REFERRED", "被替换报价应保留为 REFERRED");
         }
 
@@ -125,22 +125,22 @@ namespace SalesTrading.UiTests
             await Until(() => Descendants<QuoteConfirmView>(view).Any(control => control.IsVisible), "报价确认页显示");
             var rows = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).ToList();
             var confirmation = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
-            foreach (var row in rows.Where(row => row.IsSelected || row.RecognitionId == id))
+            foreach (var row in rows.Where(row => row.IsSelected || row.QuoteId == id))
             {
-                await SelectPendingRowAsync(confirmation, row, row.RecognitionId == id);
+                await SelectPendingRowAsync(confirmation, row, row.QuoteId == id);
             }
             if (completeCounterparty)
             {
                 var toolbar = (Border)confirmation.FindName("BatchToolbar");
-                var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
-                var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
+                var institution = Descendants<LazySearchComboBox>(toolbar).Single(input => input.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Institution);
+                var contact = Descendants<LazySearchComboBox>(toolbar).Single(input => input.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Contact);
                 await SetTextAsync(institution, "");
                 var selected = await SelectToolbarCrmAsync(contact, "李继存");
                 Require(selected.ContactName == "李继存" && !string.IsNullOrEmpty(selected.InstitutionId),
                     "测试联系人必须有已匹配的机构");
-                JObject incoming = await model.Backend.Api.GetQuoteAsync(id);
+                JObject incoming = await api.GetQuoteAsync(id);
                 // 不能为了验证去重而撤掉测试开始前已有的业务报价。
-                QuoteQueryData existing = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteQuery,
+                QuoteQueryData existing = await api.RequestAsync(SalesTradingApi.QuoteQuery,
                     new QuoteQueryRequest
                     {
                         Limit = 100,
@@ -160,10 +160,10 @@ namespace SalesTrading.UiTests
             }
             await ClickAsync(Button(confirmation, "确认报价"));
             await AwaitCommand(model.QuotePage.Confirm.ConfirmSelectedCommand.ExecutionTask);
-            JObject stored = await model.Backend.Api.GetQuoteAsync(id);
+            JObject stored = await api.GetQuoteAsync(id);
             Require((string)stored["status"] == "ACTIVE", "界面确认未生效：" + id);
             await Until(() => !model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                .Any(row => row.RecognitionId == id), "已确认提案退出报价确认");
+                .Any(row => row.QuoteId == id), "已确认提案退出报价确认");
             Emit("UI 确认", "PASSED", id);
         }
 

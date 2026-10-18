@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -214,12 +214,12 @@ namespace STC.SalesTrading.Plugin.Gateway
             return ExecuteLifecycleAsync(GatewayTopics.QuoteUnrefer, ToLifecycleRequest(rows), ct);
         }
 
-        private static QuoteChangeRequest ToLifecycleRequest(IReadOnlyCollection<QuoteRow> rows)
+        private static QuoteLifecycleRequest ToLifecycleRequest(IReadOnlyCollection<QuoteRow> rows)
         {
             if (rows == null || rows.Count == 0) return null;
-            return new QuoteChangeRequest
+            return new QuoteLifecycleRequest
             {
-                Quotes = rows.Select(r => new QuoteChangeItem
+                Quotes = rows.Select(r => new QuoteLifecycleItem
                 {
                     QuoteId = r.QuoteId,
                     ExpectedRevision = r.Revision,
@@ -236,10 +236,10 @@ namespace STC.SalesTrading.Plugin.Gateway
         }
 
         /// <summary>生命周期写操作公共路径：requestId 由 GatewayRequester 注入，批量结果逐条校验。</summary>
-        private async Task ExecuteLifecycleAsync(string topic, QuoteChangeRequest request, CancellationToken ct)
+        private async Task ExecuteLifecycleAsync(string topic, QuoteLifecycleRequest request, CancellationToken ct)
         {
             if (request == null) return;
-            var data = await requester.RequestAsync<QuoteChangeRequest, QuoteWriteData>(topic, request, ct).ConfigureAwait(false);
+            var data = await requester.RequestAsync<QuoteLifecycleRequest, QuoteWriteData>(topic, request, ct).ConfigureAwait(false);
             var failures = CollectFailures(data);
             if (failures.Count > 0)
             {

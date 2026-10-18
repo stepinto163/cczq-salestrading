@@ -1,4 +1,4 @@
-﻿param([string]$OutputRoot)
+﻿param([string]$OutputRoot, [string]$NativeRoot)
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
 if (!$OutputRoot) { $OutputRoot = Join-Path $clientRoot 'runtime/ui-test-client' }
@@ -7,7 +7,8 @@ $source = Join-Path $clientRoot 'tests/ui'
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 $compiler = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\Roslyn\csc.exe' | Select-Object -First 1
 if (!$compiler) { throw 'Visual Studio Build Tools (Roslyn) is required to build the tests.' }
-$native = Join-Path $clientRoot 'runtime/native-client'
+$native = if ($NativeRoot) { [IO.Path]::GetFullPath($NativeRoot) } else { Join-Path $clientRoot 'runtime/native-client' }
+if ([string]::Equals($native.TrimEnd('\', '/'), $OutputRoot.TrimEnd('\', '/'), [StringComparison]::OrdinalIgnoreCase)) { throw 'NativeRoot and OutputRoot must be separate directories.' }
 if (!(Test-Path "$native/STC.exe")) { throw 'Build the STC client first: build-native-client.ps1' }
 New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 foreach ($folder in @('bin', 'control', 'config')) {
@@ -22,7 +23,8 @@ $common = @('/r:System.dll', '/r:System.Core.dll', "/r:$OutputRoot/bin/gateway-a
 $worker = $common + @('/r:System.Configuration.dll', "/r:$OutputRoot/STC.exe", "/r:$framework/Facades/netstandard.dll")
 foreach ($name in @('WindowsBase', 'PresentationFramework', 'PresentationCore', 'System.Xaml')) { $worker += "/r:$framework/$name.dll" }
 foreach ($name in @('common.netapi', 'STC.Common', 'STC.Frame', 'STC.SalesTrading.Plugin', 'CommunityToolkit.Mvvm')) { $worker += "/r:$OutputRoot/bin/$name.dll" }
-& $compiler /nologo /debug:full /target:exe "/out:$OutputRoot/UiScenarioWorker.exe" $worker "$source/CaseDefinition.cs" "$source/QTradeTestConfiguration.cs" "$source/OperationInterval.cs" "$source/UiScenarioWorker.cs" "$source/UserNoticeAutomation.cs" "$source/DemoCaptionWindow.cs" "$source/ControlHighlight.cs" "$source/UiRegressionActions.cs" "$source/UiQuoteWorkflowActions.cs" "$source/UiNegotiationActions.cs" "$source/UiQTradePublishActions.cs" "$source/UiRealtimeActions.cs" "$source/UiFilterLatencyActions.cs" "$source/UiFilterCombinationActions.cs" "$source/UiPendingToolbarActions.cs" "$source/UiGroupManagementActions.cs" "$source/UiPageCoverageActions.cs"
+$assertionSources = @(Get-ChildItem "$source/Contracts/*.cs" | ForEach-Object { $_.FullName }) + @("$source/TestApiClient.cs", "$source/TestGatewayTransport.cs", "$source/ClientPerformanceTrace.cs", "$source/UiClientAdapter.cs")
+& $compiler /nologo /debug:full /target:exe "/out:$OutputRoot/UiScenarioWorker.exe" $worker $assertionSources "$source/CaseDefinition.cs" "$source/QTradeTestConfiguration.cs" "$source/OperationInterval.cs" "$source/UiScenarioWorker.cs" "$source/UserNoticeAutomation.cs" "$source/DemoCaptionWindow.cs" "$source/ControlHighlight.cs" "$source/UiRegressionActions.cs" "$source/UiQuoteWorkflowActions.cs" "$source/UiNegotiationActions.cs" "$source/UiQTradePublishActions.cs" "$source/UiRealtimeActions.cs" "$source/UiFilterLatencyActions.cs" "$source/UiFilterCombinationActions.cs" "$source/UiPendingToolbarActions.cs" "$source/UiGroupManagementActions.cs" "$source/UiPageCoverageActions.cs"
 if ($LASTEXITCODE -ne 0) { throw 'UI worker compilation failed.' }
 $runner = $common + @('/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.Xml.dll', '/r:System.Xml.Linq.dll')
 & $compiler /nologo /debug:full /target:winexe "/out:$OutputRoot/SalesTradingUiTests.exe" $runner "$source/CaseDefinition.cs" "$source/QTradeTestConfiguration.cs" "$source/OperationInterval.cs" "$source/CaseEditor.cs" "$source/SuiteRunner.cs" "$source/ObserverSession.cs" "$source/RunnerWindow.cs" "$source/PlaybackWindow.cs"

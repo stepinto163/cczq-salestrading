@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,6 +19,27 @@ namespace SalesTrading.UiTests
 {
     internal sealed partial class UiScenarioWorker
     {
+        private async Task CheckPreciseCrmAsync(string traderName)
+        {
+            var row = model.QuotePage.Precise.Rows.Single();
+            Require(string.IsNullOrEmpty(row.Row.InstitutionId) && string.IsNullOrEmpty(row.Row.ContactId),
+                "跨机构搜索用例必须从未匹配机构和交易员的预览开始");
+            var page = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
+            var grid = Descendants<DataGrid>(page).Single(control => control.Items.Contains(row));
+            grid.ScrollIntoView(row, grid.Columns.Single(column => Convert.ToString(column.Header) == "报价交易员"));
+            grid.UpdateLayout();
+            var trader = Descendants<LazySearchComboBox>(grid).Single(control => ReferenceEquals(control.DataContext, row)
+                && control.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Contact);
+            await SetTextAsync(trader, traderName);
+            Require(string.IsNullOrEmpty(row.Row.ContactId), "仅输入交易员姓名不得当作已匹配联系人");
+            var selected = await SelectToolbarCrmAsync(trader, traderName);
+            await Until(() => row.Row.ContactId == selected.ContactId && row.Row.InstitutionId == selected.InstitutionId,
+                "选择交易员后回填联系人及机构 ID");
+            Require(row.Institution == selected.InstitutionName && row.Trader == selected.ContactName,
+                "选择交易员后机构与交易员显示名称必须同时回填");
+            Capture("precise-crm-selection");
+        }
+
         private async Task CheckPendingToolbarAsync()
         {
             await CloseEditorAsync();
@@ -26,12 +47,12 @@ namespace SalesTrading.UiTests
             var confirm = model.QuotePage.Confirm;
             Require(ownedQuotes.Count == 2, "工具栏用例必须创建且仅创建两条报价");
             await Until(() => ownedQuotes.All(id => confirm.Batches.SelectMany(batch => batch.Rows)
-                .Any(row => row.RecognitionId == id)), "两条待确认报价到达");
+                .Any(row => row.QuoteId == id)), "两条待确认报价到达");
             var page = Descendants<QuoteConfirmView>(view).Single(item => item.IsVisible);
             var toolbar = (Border)page.FindName("BatchToolbar");
-            var selected = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == quoteId);
-            var untouched = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => ownedQuotes.Contains(row.RecognitionId) && row != selected);
-            var original = await model.Backend.Api.GetQuoteAsync(untouched.RecognitionId);
+            var selected = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.QuoteId == quoteId);
+            var untouched = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => ownedQuotes.Contains(row.QuoteId) && row != selected);
+            var original = await api.GetQuoteAsync(untouched.QuoteId);
             decimal initialPrice = Number(selected.Price);
             decimal initialVolume = Number(selected.Volume);
             var checks = new JArray();
@@ -128,17 +149,17 @@ namespace SalesTrading.UiTests
             await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "急"));
             await ClickAsync(Descendants<ToggleButton>(toolbar).Single(button => Convert.ToString(button.Content) == "打包"));
 
-            var contact = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "CONTACT");
-            var institution = Descendants<CrmLookup>(toolbar).Single(input => input.Kind == "INSTITUTION");
+            var contact = Descendants<LazySearchComboBox>(toolbar).Single(input => input.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Contact);
+            var institution = Descendants<LazySearchComboBox>(toolbar).Single(input => input.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Institution);
             await SetTextAsync(institution, "");
             var choice = await SelectToolbarCrmAsync(contact, "王");
-            check(selected.Row.ContactId == choice.ContactId && selected.InstitutionId == choice.InstitutionId
+            check(selected.Row.ContactId == choice.ContactId && selected.Row.InstitutionId == choice.InstitutionId
                 && institution.Text == choice.InstitutionName, "跨机构交易员搜索选择后回填机构和两个ID");
             check(untouched.Row.ContactId == (string)original["contactId"], "CRM工具栏不修改未勾选行");
             await SelectToolbarCrmAsync(contact, choice.ContactName);
             check(selected.Row.ContactId != null, "已选机构下交易员搜索可选择");
             var changedInstitution = await SelectToolbarCrmAsync(institution, "长城");
-            check(selected.InstitutionId == changedInstitution.InstitutionId, "机构输入框可搜索并应用选择");
+            check(selected.Row.InstitutionId == changedInstitution.InstitutionId, "机构输入框可搜索并应用选择");
             if (changedInstitution.InstitutionId != choice.InstitutionId)
             {
                 check(string.IsNullOrEmpty(selected.Row.ContactId) && string.IsNullOrEmpty(selected.Trader), "更换机构清除不相容交易员");
@@ -153,25 +174,25 @@ namespace SalesTrading.UiTests
             string expectedInstitution = selected.Row.InstitutionId;
             await ClickAsync(Button(toolbar, "确认报价"));
             await AwaitCommand(confirm.ConfirmSelectedCommand.ExecutionTask);
-            var saved = await model.Backend.Api.GetQuoteAsync(selected.RecognitionId);
+            var saved = await api.GetQuoteAsync(selected.QuoteId);
             check((string)saved["status"] == "ACTIVE" && (string)saved["side"] == "1"
                 && (decimal)saved["quantity"] == 1000 && (string)saved["settlType"] == "2", "工具栏修改经确认写入服务端");
             check((bool)saved["urgent"] && (bool)saved["recommended"] && (bool)saved["whole"]
                 && (bool)saved["packing"] && !(bool)saved["oco"], "五个旗标正确持久化");
             check((string)saved["contactId"] == expectedContact && (string)saved["institutionId"] == expectedInstitution,
                 "CRM机构和交易员ID持久化");
-            var unmodified = await model.Backend.Api.GetQuoteAsync(untouched.RecognitionId);
+            var unmodified = await api.GetQuoteAsync(untouched.QuoteId);
             check(JToken.DeepEquals(original, unmodified), "未勾选报价的服务端记录完整保持不变");
-            await Until(() => !confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.RecognitionId == selected.RecognitionId), "已确认行退出待确认列表");
-            untouched = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == untouched.RecognitionId);
+            await Until(() => !confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.QuoteId == selected.QuoteId), "已确认行退出待确认列表");
+            untouched = confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.QuoteId == untouched.QuoteId);
             await SelectPendingRowAsync(page, untouched, true);
             await ClickAsync(Button(toolbar, "删除"));
             await AwaitCommand(confirm.DeleteSelectedCommand.ExecutionTask);
-            var deleted = await model.Backend.Api.GetQuoteAsync(untouched.RecognitionId);
+            var deleted = await api.GetQuoteAsync(untouched.QuoteId);
             check((string)deleted["status"] == "DELETED", "删除按钮仅删除勾选的测试报价");
-            check(confirm.SelectedCount == 0 && !confirm.ToolbarUrgent && !confirm.ToolbarPacking,
+            check(confirm.SelectedCount == 0 && Descendants<ToggleButton>(toolbar).All(flag => flag.IsChecked != true),
                 "移除选择后工具栏清除已选数量和旗标状态");
-            Track(selected.RecognitionId);
+            Track(selected.QuoteId);
             await VerifyManagementEditorAsync(saved);
             check(true, "产品编辑表单保留CRM身份与报价旗标，变更历史可查看");
         }
@@ -225,38 +246,55 @@ namespace SalesTrading.UiTests
             if (checkbox.IsChecked != selected) await ClickAsync(checkbox);
         }
 
-        private async Task<CrmChoice> SelectToolbarCrmAsync(CrmLookup input, string text)
+        private sealed class CrmChoice
         {
+            public string ContactId;
+            public string ContactName;
+            public string InstitutionId;
+            public string InstitutionName;
+        }
+
+        private Task SetTextAsync(LazySearchComboBox control, string text)
+        {
+            return SetTextAsync((TextBox)control.FindName("InputBox"), text);
+        }
+
+        private async Task<CrmChoice> SelectToolbarCrmAsync(LazySearchComboBox control, string text)
+        {
+            var input = (TextBox)control.FindName("InputBox");
             shell.Activate();
             input.BringIntoView();
             input.Focus();
-            Keyboard.Focus(input);
-            await Task.Delay(100);
             await SetTextAsync(input, text);
-            input.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-            // 已选文字未变化时，按下箭头重新打开候选（与控件的用户操作一致）。
-            await BeforeUiActionAsync(input, "键盘/鼠标输入");
+            await BeforeUiActionAsync(input, "展开 CRM 候选");
             input.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(input), Environment.TickCount, Key.Down)
-                { RoutedEvent = Keyboard.PreviewKeyDownEvent });
-            var suggestions = (ListBox)typeof(CrmLookup).GetField("suggestions", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(input);
-            try
+                { RoutedEvent = Keyboard.KeyDownEvent });
+            var suggestions = (DataGrid)control.FindName("CandidateGrid");
+            await Until(() => control.IsDropDownOpen && suggestions.Items.Count > 0, "CRM 下拉返回：" + text);
+            var selected = suggestions.Items[0];
+            bool contact = control.SearchCommand == STC.SalesTrading.Plugin.Shared.Services.CrmLazySearch.Contact;
+            var choice = new CrmChoice
             {
-                await Until(() => suggestions.Items.Count > 0, "CRM下拉返回：" + text);
-            }
-            catch
+                ContactId = contact ? ReadMember(selected, "Id") : null,
+                ContactName = contact ? ReadMember(selected, "Name") : null,
+                InstitutionId = ReadMember(selected, contact ? "InstitutionId" : "Id"),
+                InstitutionName = ReadMember(selected, contact ? "InstitutionName" : "Name")
+            };
+            Require(!string.IsNullOrWhiteSpace(choice.InstitutionName), "CRM 候选缺少机构信息");
+            if (contact)
             {
-                var status = (TextBlock)typeof(CrmLookup).GetField("status", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(input);
-                File.WriteAllText(Path.Combine(reportDirectory, "crm-search-diagnostic.txt"),
-                    "focus=" + input.IsKeyboardFocusWithin + "; text=" + input.Text + "; status=" + status.Text);
-                throw;
+                Require(control.ColumnMembers.Split(',').Contains("InstitutionName"), "交易员候选未展示所属机构");
             }
-            var selected = (CrmChoice)suggestions.Items[0];
-            Require(!string.IsNullOrWhiteSpace(selected.InstitutionName) && selected.DisplayName.Contains(selected.InstitutionName), "CRM候选缺少机构信息");
             await SelectItemAsync(suggestions, selected);
-            await BeforeUiActionAsync(input, "键盘/鼠标输入");
+            await BeforeUiActionAsync(input, "选择 CRM 候选");
             input.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(input), Environment.TickCount, Key.Enter)
-                { RoutedEvent = Keyboard.PreviewKeyDownEvent });
-            return selected;
+                { RoutedEvent = Keyboard.KeyDownEvent });
+            return choice;
+        }
+
+        private static string ReadMember(object item, string name)
+        {
+            return Convert.ToString(item.GetType().GetProperty(name)?.GetValue(item));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using STC.SalesTrading.Plugin.Ficc.Protocol;
+﻿using SalesTrading.UiTests.Contracts;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,12 +15,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc;
 using STC.SalesTrading.Plugin.Shell;
 using STC.SalesTrading.Plugin.Shell.View;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel;
-using STC.SalesTrading.Plugin.View;
 
 namespace SalesTrading.UiTests
 {
@@ -31,9 +29,11 @@ namespace SalesTrading.UiTests
     {
         private static string reportDirectory;
         private static CaseDefinition definition;
+        private static string recoveryManifest;
         private static readonly List<JObject> events = new List<JObject>();
         private readonly HashSet<string> ownedQuotes = new HashSet<string>();
         private readonly List<QuoteConfirmRowViewModel> submittedPreview = new List<QuoteConfirmRowViewModel>();
+        private readonly TestApiClient api = new TestApiClient(new TestGatewayTransport());
         private MainView view;
         private MainViewModel model;
         private Window shell;
@@ -49,7 +49,8 @@ namespace SalesTrading.UiTests
         [STAThread]
         public static int Main(string[] args)
         {
-            if (args.Length != 2) return 2;
+            if (args.Length != 2 && args.Length != 3) return 2;
+            recoveryManifest = args.Length == 3 ? Path.GetFullPath(args[2]) : null;
             reportDirectory = Path.GetFullPath(args[1]);
             Directory.CreateDirectory(reportDirectory);
             definition = CaseDefinition.Read(args[0]);
@@ -115,29 +116,47 @@ namespace SalesTrading.UiTests
                 Emit("登录", "RUNNING", "启动正式 STC 登录窗口，连接真实服务");
                 await LoginAsync();
                 Emit("登录", "PASSED", "已登录并加载报价、行情及提醒页面");
-                foreach (TestStep step in definition.Steps)
+                if (recoveryManifest != null)
                 {
-                    ThrowIfCancelled();
-                    stepNumber++;
-                    highlight.SetSuspended(step.Action == "filter.latency");
-                    if (step.Action == "filter.latency")
+                    Require(Path.GetFileName(recoveryManifest) == "owned-quotes.json",
+                        "恢复仅接受自动化生成的 owned-quotes.json");
+                    var sourceCase = CaseDefinition.Read(Path.Combine(Path.GetDirectoryName(recoveryManifest), "case.json"));
+                    Require(sourceCase.Id == definition.Id, "恢复清单与原用例不匹配");
+                    foreach (string id in JArray.Parse(File.ReadAllText(recoveryManifest)).Values<string>())
                     {
-                        captions.Suspend();
+                        JObject record = await api.GetQuoteAsync(id);
+                        Require((string)record["ownerUserId"] == STC.Common.Utils.LocalEnv.UserInfo.UserId,
+                            "恢复清单包含其他账号的报价：" + id);
+                        Track(id);
                     }
-                    else
+                    Emit("恢复范围", "PASSED", "仅清理原报告列出的本账号报价；不宣称恢复丢失的分组或偏好快照");
+                }
+                else
+                {
+                    foreach (TestStep step in definition.Steps)
                     {
-                        await ShowCaptionAsync("正在执行", step.Name);
+                        ThrowIfCancelled();
+                        stepNumber++;
+                        highlight.SetSuspended(step.Action == "filter.latency");
+                        if (step.Action == "filter.latency")
+                        {
+                            captions.Suspend();
+                        }
+                        else
+                        {
+                            await ShowCaptionAsync("正在执行", step.Name);
+                        }
+                        if (editDialog != null && step.Action != "management.edit" && step.Action != "management.save"
+                            && step.Action != "management.reject" && step.Action != "quote.assert") await CloseEditorAsync();
+                        Emit(step.Name, "RUNNING", step.Action);
+                        Stopwatch duration = Stopwatch.StartNew();
+                        await ExecuteAsync(step);
+                        await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                        Capture(stepNumber.ToString("D2") + "-passed");
+                        duration.Stop();
+                        Emit(step.Name, "PASSED", duration.ElapsedMilliseconds + " ms");
+                        await ShowCaptionAsync("已完成", step.Name);
                     }
-                    if (editDialog != null && step.Action != "management.edit" && step.Action != "management.save"
-                        && step.Action != "management.reject" && step.Action != "quote.assert") await CloseEditorAsync();
-                    Emit(step.Name, "RUNNING", step.Action);
-                    Stopwatch duration = Stopwatch.StartNew();
-                    await ExecuteAsync(step);
-                    await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-                    Capture(stepNumber.ToString("D2") + "-passed");
-                    duration.Stop();
-                    Emit(step.Name, "PASSED", duration.ElapsedMilliseconds + " ms");
-                    await ShowCaptionAsync("已完成", step.Name);
                 }
             }
             catch (OperationCanceledException)
@@ -234,7 +253,7 @@ namespace SalesTrading.UiTests
                 view = frame?.Panel.Items.OfType<TabItem>().Select(item => item.Content).OfType<MainView>().FirstOrDefault();
                 model = view?.DataContext as MainViewModel;
                 shell = frame;
-                return model?.Backend != null;
+                return model != null;
             }, "登录完成及销售交易模块加载", 60);
             shell.WindowState = WindowState.Normal;
             shell.Width = 1440;
@@ -287,7 +306,7 @@ namespace SalesTrading.UiTests
             {
                 case "quote.assert":
                     Require(quoteId != null, "本例尚未创建报价");
-                    JObject quote = await model.Backend.Api.GetQuoteAsync(quoteId);
+                    JObject quote = await api.GetQuoteAsync(quoteId);
                     Require((string)quote["status"] == Parameter(step, "status"), "服务端状态不匹配：" + quote["status"]);
                     Require((decimal)quote["price"] == decimal.Parse(Parameter(step, "price"), CultureInfo.InvariantCulture), "服务端价格不匹配");
                     File.WriteAllText(Path.Combine(reportDirectory, stepNumber.ToString("D2") + "-quote.json"), quote.ToString());
@@ -295,15 +314,15 @@ namespace SalesTrading.UiTests
                 case "pending.assert":
                     await CloseEditorAsync();
                     await NavigateAsync("entry");
-                    await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.RecognitionId == quoteId), "报价确认页接收本例报价");
+                    await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Any(row => row.QuoteId == quoteId), "报价确认页接收本例报价");
                     var pendingPage = Descendants<QuoteConfirmView>(view).Single(control => control.IsVisible);
-                    var pendingRow = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.RecognitionId == quoteId);
+                    var pendingRow = model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows).Single(row => row.QuoteId == quoteId);
                     // 分组表保持虚拟化；先滚动并展开本例行，再判断实际控件是否呈现。
                     await SelectPendingRowAsync(pendingPage, pendingRow, false);
                     await VerifyAsync(FindVerificationRow(pendingRow), "报价确认 · 报价 " + quoteId + " 已显示",
-                        () => Require(pendingRow.RecognitionId == quoteId, "待确认报价标识不匹配"));
+                        () => Require(pendingRow.QuoteId == quoteId, "待确认报价标识不匹配"));
                     await Until(() => Descendants<DataGrid>(view).Any(grid => grid.Items.OfType<QuoteConfirmRowViewModel>()
-                        .Any(row => row.RecognitionId == quoteId)), "报价确认表呈现本例报价");
+                        .Any(row => row.QuoteId == quoteId)), "报价确认表呈现本例报价");
                     break;
                 case "management.assert":
                     await CloseEditorAsync();
@@ -326,7 +345,7 @@ namespace SalesTrading.UiTests
                     Require(Descendants<DataGrid>(view).Any(grid => grid.IsVisible && grid.Items.Cast<object>().Any(item => (string)item.GetType().GetProperty("QuoteId")?.GetValue(item) == quoteId)), "行情表未显示本例报价");
                     break;
                 case "history.assert":
-                    JObject history = await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = quoteId, ["limit"] = 100 }));
+                    JObject history = await api.RequestProjectionAsync(SalesTradingApi.QuoteHistoryQuery, ProtocolCodec.Decode<QuoteHistoryRequest>(new JObject { ["quoteId"] = quoteId, ["limit"] = 100 }));
                     Require(((JArray)history["records"]).Count >= int.Parse(Parameter(step, "minimumCount")), "持久化变更历史条数不足");
                     File.WriteAllText(Path.Combine(reportDirectory, "history.json"), history.ToString());
                     break;
@@ -378,9 +397,7 @@ namespace SalesTrading.UiTests
                     }.ToString());
                     Require(model.QuotePage.Precise.Rows.Count == int.Parse(Parameter(step, "expectedRows")), "识别数量不匹配：" + model.QuotePage.Precise.StatusMessage);
                     var previewClientIds = new HashSet<string>(model.QuotePage.Precise.Rows.Select(row => row.Row.ClientQuoteId));
-                    var pendingAfterParse = await model.Backend.LoadPendingRowsAsync(System.Threading.CancellationToken.None);
-                    Require(!pendingAfterParse.Any(row => previewClientIds.Contains(row.ClientQuoteId)),
-                        "仅识别不得创建待确认报价");
+                    await VerifyPreviewRemainsLocalAsync(previewClientIds);
                     break;
                 case "parse.assert":
                     QuoteConfirmRowViewModel parsed = model.QuotePage.Precise.Rows.Single();
@@ -411,12 +428,12 @@ namespace SalesTrading.UiTests
                     CollectCreatedQuotes();
                     foreach (QuoteConfirmRowViewModel submitted in selectedPreview)
                     {
-                        Require(submitted.Row.Revision > 0 && !model.QuotePage.Precise.Rows.Contains(submitted), "确认未完成；查看 Toast 及 DPS 日志");
-                        JObject stored = await model.Backend.Api.GetQuoteAsync(submitted.RecognitionId);
+                        Require(!string.IsNullOrEmpty(submitted.Row.Revision) && !model.QuotePage.Precise.Rows.Contains(submitted), "确认未完成；查看 Toast 及 DPS 日志");
+                        JObject stored = await api.GetQuoteAsync(submitted.QuoteId);
                         Require((string)stored["status"] == "ACTIVE", "识别报价未持久化为 ACTIVE");
                     }
                     await Until(() => !model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                        .Any(row => selectedPreview.Any(submitted => submitted.RecognitionId == row.RecognitionId)),
+                        .Any(row => selectedPreview.Any(submitted => submitted.QuoteId == row.QuoteId)),
                         "已确认识别报价从报价确认页移除");
                     break;
                 default:
@@ -441,13 +458,15 @@ namespace SalesTrading.UiTests
 
         private async Task SelectTabAsync(string key)
         {
-            object item = model.QuotePage.SubTabs.Single(tab => tab.Key == key);
+            object item = model.QuotePage.SubTabs.SingleOrDefault(tab => tab.Key == key);
+            Require(item != null, "集成客户端缺少要求的报价录入页签：" + key);
             await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(item)), item);
         }
 
         private async Task SelectMarketTabAsync(string key)
         {
-            object item = model.MarketCenterPage.SubTabs.Single(tab => tab.Key == key);
+            object item = model.MarketCenterPage.SubTabs.SingleOrDefault(tab => tab.Key == key);
+            Require(item != null, "集成客户端缺少要求的行情页签：" + key);
             await SelectItemAsync(Descendants<ListBox>(view).First(list => list.Items.Contains(item)), item);
         }
 
@@ -461,7 +480,7 @@ namespace SalesTrading.UiTests
 
         private void CollectCreatedQuotes()
         {
-            foreach (QuoteConfirmRowViewModel row in submittedPreview.Where(row => row.Row.Revision > 0)) Track(row.RecognitionId);
+            foreach (QuoteConfirmRowViewModel row in submittedPreview.Where(row => !string.IsNullOrEmpty(row.Row.Revision))) Track(row.QuoteId);
         }
 
         private async Task CleanupAsync()
@@ -500,21 +519,21 @@ namespace SalesTrading.UiTests
             await CloseEditorAsync();
             await CleanupLatencyQuotesAsync();
             if (ownedQuotes.Count == 0) return;
-            Require(model?.Backend != null, "无法连接服务执行清理");
+            Require(model != null, "无法连接服务执行清理");
             List<string> failures = new List<string>();
             foreach (string id in ownedQuotes)
             {
                 try
                 {
-                    JObject quote = await model.Backend.Api.GetQuoteAsync(id);
+                    JObject quote = await api.GetQuoteAsync(id);
                     if ((string)quote["status"] == "DELETED") continue;
                     if ((string)quote["status"] == "ACTIVE")
                     {
-                        FiccApiClient.RequireQuoteResults(await model.Backend.Api.OperateAsync("refer", new[] { quote }));
-                        quote = await model.Backend.Api.GetQuoteAsync(id);
+                        TestApiClient.RequireQuoteResults(await api.OperateAsync("refer", new[] { quote }));
+                        quote = await api.GetQuoteAsync(id);
                     }
-                    FiccApiClient.RequireQuoteResults(await model.Backend.Api.OperateAsync("delete", new[] { quote }));
-                    Require((string)(await model.Backend.Api.GetQuoteAsync(id))["status"] == "DELETED", "清理后仍未删除");
+                    TestApiClient.RequireQuoteResults(await api.OperateAsync("delete", new[] { quote }));
+                    Require((string)(await api.GetQuoteAsync(id))["status"] == "DELETED", "清理后仍未删除");
                 }
                 catch (Exception error) { failures.Add(id + ": " + error.Message); }
             }
@@ -590,7 +609,9 @@ namespace SalesTrading.UiTests
 
         private static Button Button(DependencyObject root, string caption)
         {
-            return Descendants<Button>(root).First(button => button.IsVisible && (string)(button.Content as string) == caption);
+            var target = Descendants<Button>(root).FirstOrDefault(button => button.IsVisible && button.Content as string == caption);
+            Require(target != null, "界面缺少可见按钮：" + caption + "，页面：" + root.GetType().Name);
+            return target;
         }
 
         // 每次真实输入前等待，而不是在包含多个输入的业务步骤之间等待。

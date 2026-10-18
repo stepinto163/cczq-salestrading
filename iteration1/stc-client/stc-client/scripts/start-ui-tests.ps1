@@ -1,8 +1,8 @@
-param([switch]$Build, [string]$StcConfig)
+﻿param([switch]$Build, [string]$StcConfig, [string]$RuntimeRoot, [string]$NativeRoot)
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
-if ($Build) { & (Join-Path $PSScriptRoot 'build-ui-tests.ps1') }
-$runtime = Join-Path $clientRoot 'runtime/ui-test-client'
+$runtime = if ($RuntimeRoot) { [IO.Path]::GetFullPath($RuntimeRoot) } else { Join-Path $clientRoot 'runtime/ui-test-client' }
+if ($Build) { & (Join-Path $PSScriptRoot 'build-ui-tests.ps1') -OutputRoot $runtime -NativeRoot $NativeRoot }
 $executable = Join-Path $runtime 'SalesTradingUiTests.exe'
 if (!(Test-Path -LiteralPath $executable)) { throw 'Build first: .\build-ui-tests.ps1' }
 $cases = Join-Path $clientRoot 'tests/ui/cases'

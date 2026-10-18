@@ -1,16 +1,17 @@
-param(
+﻿param(
     [ValidateSet('Local', 'Stc')]
     [string]$Mode = 'Local',
     [string]$StcConfig,
+    [string]$OutputRoot,
     [int]$GatewayPort = 18600,
     [switch]$Build,
     [switch]$PrepareOnly
 )
 $ErrorActionPreference = 'Stop'
 $clientRoot = Split-Path $PSScriptRoot -Parent
-$outputRoot = Join-Path $clientRoot 'runtime/native-client'
+if (!$OutputRoot) { $OutputRoot = Join-Path $clientRoot 'runtime/native-client' }
 if ($Build) {
-    & (Join-Path $PSScriptRoot 'build-native-client.ps1')
+    & (Join-Path $PSScriptRoot 'build-native-client.ps1') -OutputRoot $OutputRoot
 }
 $executable = Join-Path $outputRoot 'STC.exe'
 if (!(Test-Path -LiteralPath $executable)) {

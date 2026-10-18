@@ -10,7 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Modules.MarketCenter.View;
 using STC.SalesTrading.Plugin.Modules.QuoteMgmt.View;
 using STC.SalesTrading.Plugin.Shared.Components;
@@ -26,7 +26,7 @@ namespace SalesTrading.UiTests
         {
             Require(filterFixtures.Count == 0, "组合筛选夹具只能准备一次");
             string security = Parameter(step, "securityId");
-            var existing = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteQuery, new QuoteQueryRequest
+            var existing = await api.RequestAsync(SalesTradingApi.QuoteQuery, new QuoteQueryRequest
             {
                 Limit = 1,
                 Status = new List<string> { "ACTIVE", "REFERRED" },
@@ -58,7 +58,7 @@ namespace SalesTrading.UiTests
             Require(ownedQuotes.Count == 6, "必须创建六笔独立报价，不能用空列表验证过滤");
             foreach (string id in ownedQuotes)
             {
-                JObject quote = await model.Backend.Api.GetQuoteAsync(id);
+                JObject quote = await api.GetQuoteAsync(id);
                 int index = Array.FindIndex(prices, price => decimal.Parse(price, CultureInfo.InvariantCulture) == (decimal)quote["price"]);
                 Require(index >= 0 && !filterFixtures.ContainsKey(aliases[index]), "夹具价格重复或识别错误");
                 Require((string)quote["securityId"] == security && (string)quote["side"] == (index < 3 ? "1" : "2")
@@ -126,8 +126,9 @@ namespace SalesTrading.UiTests
                     }
                 }
             }
-            var search = Descendants<TextBox>(panel).Single(input => input.IsVisible
+            var search = Descendants<TextBox>(panel).SingleOrDefault(input => input.IsVisible
                 && BindingOperations.GetBinding(input, TextBox.TextProperty)?.Path?.Path == "FilterSearchText");
+            Require(search != null, "当前侧栏缺少已绑定 FilterSearchText 的搜索输入：" + page);
             string searchText = Parameter(step, "search");
             await SetTextAsync(search, searchText == "<empty>" ? "" : searchText);
             // 等待文本控件自身的 300ms 防抖；随后显式点击筛选并等待本次查询完成。
@@ -191,7 +192,7 @@ namespace SalesTrading.UiTests
                             string priceProperty = side == "B" ? "Bid" : "Ofr";
                             Require((decimal?)row.GetType().GetProperty(priceProperty).GetValue(row) == expectedPrice,
                                 "最优价格错误：" + priceProperty + "，预期 " + expectedPrice);
-                            Require((decimal?)row.GetType().GetProperty("Vol" + priceProperty).GetValue(row) == expectedQuantity,
+                            Require((decimal?)row.GetType().GetProperty(priceProperty + "Volume").GetValue(row) == expectedQuantity,
                                 "最优报量错误：" + priceProperty + "，预期 " + expectedQuantity);
                         }
                     }

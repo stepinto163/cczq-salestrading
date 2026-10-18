@@ -22,13 +22,15 @@ namespace SalesTrading.UiTests
             object target;
             if (page == "entry")
             {
-                var entryTab = model.QuotePage.SubTabs.Single(item => item.Key == tabKey);
+                var entryTab = model.QuotePage.SubTabs.SingleOrDefault(item => item.Key == tabKey);
+                Require(entryTab != null, "集成客户端缺少要求的报价录入页签：" + tabKey);
                 tab = entryTab;
                 target = entryTab.Target;
             }
             else if (page == "market")
             {
-                var marketTab = model.MarketCenterPage.SubTabs.Single(item => item.Key == tabKey);
+                var marketTab = model.MarketCenterPage.SubTabs.SingleOrDefault(item => item.Key == tabKey);
+                Require(marketTab != null, "集成客户端缺少要求的行情页签：" + tabKey);
                 tab = marketTab;
                 target = marketTab.Target;
             }
@@ -156,7 +158,7 @@ namespace SalesTrading.UiTests
             await ClickAsync(Button(preciseView, "清空"));
             highlight?.Show(input);
             Require(input.Text == "" && model.QuotePage.Precise.Rows.Contains(originalRow), "清空应只影响输入框");
-            Require(originalRow.Row.Revision == 0, "输入检查不得持久化未确认预览");
+            Require(string.IsNullOrEmpty(originalRow.Row.Revision), "输入检查不得持久化未确认预览");
         }
 
         private static TextBox BoundTextBox(DependencyObject root, string property)

@@ -28,7 +28,15 @@ namespace SalesTrading.UiTests
             var focus = args.StagingItem.Input as KeyboardFocusChangedEventArgs;
             if (!VerificationPinned && focus != null && focus.RoutedEvent == Keyboard.GotKeyboardFocusEvent)
             {
-                Show(focus.NewFocus as FrameworkElement);
+                var target = focus.NewFocus as FrameworkElement;
+                // 提交后焦点可能退回页面根节点；保留当前操作目标，不能扩大为整页红框。
+                if (target is System.Windows.Controls.Primitives.ButtonBase
+                    || target is System.Windows.Controls.Primitives.TextBoxBase
+                    || target is System.Windows.Controls.Primitives.Selector
+                    || target is PasswordBox || target is DataGridCell || target is DataGridRow)
+                {
+                    Show(target);
+                }
             }
         }
 

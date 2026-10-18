@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -163,7 +164,12 @@ namespace SalesTrading.UiTests
 
         private static Task Invoke(object worker, string name, params object[] arguments)
         {
-            return (Task)worker.GetType().GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(worker, arguments);
+            var method = worker.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Single(candidate => candidate.Name == name
+                    && candidate.GetParameters().Length == arguments.Length
+                    && candidate.GetParameters().Select((parameter, index) =>
+                        arguments[index] == null || parameter.ParameterType.IsInstanceOfType(arguments[index])).All(matches => matches));
+            return (Task)method.Invoke(worker, arguments);
         }
 
         private static void Assert(bool condition, string message)

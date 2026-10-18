@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 
 namespace SalesTrading.UiTests
@@ -137,13 +137,13 @@ namespace SalesTrading.UiTests
                     }
                 }
             };
-            QuoteWriteData response = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteCreate, request);
-            FiccApiClient.RequireQuoteResults(response);
+            QuoteWriteData response = await api.RequestAsync(SalesTradingApi.QuoteCreate, request);
+            TestApiClient.RequireQuoteResults(response);
             quoteId = response.Results.Single().QuoteId;
             Track(quoteId);
             await Until(() => model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                .Any(row => row.RecognitionId == quoteId), "QT 待确认推送至所属账号");
-            Require((string)(await model.Backend.Api.GetQuoteAsync(quoteId))["status"] == "PENDING_CONFIRM",
+                .Any(row => row.QuoteId == quoteId), "QT 待确认推送至所属账号");
+            Require((string)(await api.GetQuoteAsync(quoteId))["status"] == "PENDING_CONFIRM",
                 "QT 输入必须等待人工确认");
             return eventId;
         }
@@ -179,7 +179,7 @@ namespace SalesTrading.UiTests
                 previewInput = BoundTextBox(entryView, "InputText");
                 await SetTextAsync(previewInput, localText);
             }
-            var initialAlerts = new HashSet<string>(model.MarketCenterPage.Alert.Rows.Select(row => row.AlertKey));
+            var initialAlerts = new HashSet<string>(model.MarketCenterPage.Alert.Rows.Select(row => row.NotificationId));
             var observedAlerts = new HashSet<string>();
             Signal("observer-ready", new JObject { ["user"] = STC.Common.Utils.LocalEnv.UserInfo.UserName, ["tab"] = tab });
             foreach (string phase in new[] { "preview", "active", "referred", "restored", "referred-again", "deleted" })
@@ -193,7 +193,7 @@ namespace SalesTrading.UiTests
                     bool denied = false;
                     try
                     {
-                        await model.Backend.Api.GetQuoteAsync(id);
+                        await api.GetQuoteAsync(id);
                     }
                     catch (InvalidOperationException error)
                     {
@@ -204,10 +204,10 @@ namespace SalesTrading.UiTests
                 }
                 if (phase == "active")
                 {
-                    JObject confirmed = await model.Backend.Api.GetQuoteAsync(id);
-                    JObject rejected = await model.Backend.Api.OperateAsync("refer", new[] { confirmed });
+                    JObject confirmed = await api.GetQuoteAsync(id);
+                    JObject rejected = await api.OperateAsync("refer", new[] { confirmed });
                     Require((string)rejected["results"][0]["Code"] == "1003", "共享读取不能授予他人 Refer 权限");
-                    JObject unchanged = await model.Backend.Api.GetQuoteAsync(id);
+                    JObject unchanged = await api.GetQuoteAsync(id);
                     Require((string)unchanged["status"] == "ACTIVE"
                         && JToken.DeepEquals(unchanged["revision"], confirmed["revision"]), "权限拒绝后报价发生变化");
                     Emit("共享报价操作权限", "PASSED", "其他账号 Refer 被拒绝，状态及版本未变");
@@ -217,7 +217,7 @@ namespace SalesTrading.UiTests
                 if (tab == "quote-confirm" || previewInput != null || tab == "history")
                 {
                     matches = () => !model.QuotePage.Confirm.Batches.SelectMany(batch => batch.Rows)
-                        .Any(row => row.Row.ClientQuoteId == clientId || (id != null && row.RecognitionId == id))
+                        .Any(row => row.Row.ClientQuoteId == clientId || (id != null && row.QuoteId == id))
                         && (previewInput == null || previewInput.Text == localText)
                         && (tab != "history" || !model.QuoteMgmtPage.History.Rows.Any(row => row.QuoteId == id));
                 }
@@ -225,14 +225,14 @@ namespace SalesTrading.UiTests
                 {
                     matches = () =>
                     {
-                        var found = model.MarketCenterPage.Alert.Rows.Where(row => row.Code == security && !initialAlerts.Contains(row.AlertKey)).ToList();
+                        var found = model.MarketCenterPage.Alert.Rows.Where(row => row.SecurityId == security && !initialAlerts.Contains(row.NotificationId)).ToList();
                         if (active)
                         {
-                            foreach (var row in found) observedAlerts.Add(row.AlertKey);
+                            foreach (var row in found) observedAlerts.Add(row.NotificationId);
                             return found.Count > 0;
                         }
                         return phase == "preview" ? found.Count == 0
-                            : !model.MarketCenterPage.Alert.Rows.Any(row => observedAlerts.Contains(row.AlertKey));
+                            : !model.MarketCenterPage.Alert.Rows.Any(row => observedAlerts.Contains(row.NotificationId));
                     };
                 }
                 else if (tab == "today")
@@ -247,7 +247,7 @@ namespace SalesTrading.UiTests
                         }
                         if (phase == "referred" || phase == "referred-again")
                         {
-                            return row != null && row.Status.ToString() == "Revoked";
+                            return row != null && row.Status.ToString() == "Referred";
                         }
                         return row == null;
                     };
@@ -280,7 +280,7 @@ namespace SalesTrading.UiTests
                 if (expectsRow)
                 {
                     Func<object, bool> matchesRow = row => tab == "alert"
-                        ? observedAlerts.Contains((string)row.GetType().GetProperty("AlertKey")?.GetValue(row))
+                        ? observedAlerts.Contains((string)row.GetType().GetProperty("NotificationId")?.GetValue(row))
                         : RowIncludesQuote(row, id);
                     var grid = grids.FirstOrDefault(candidate => candidate.Items.Cast<object>().Any(matchesRow));
                     Require(grid != null, "验证目标缺失：目标报价尚未呈现在当前页面");

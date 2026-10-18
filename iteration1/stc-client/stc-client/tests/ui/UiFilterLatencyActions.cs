@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,8 +14,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Shared.Components;
 
 namespace SalesTrading.UiTests
@@ -38,7 +38,7 @@ namespace SalesTrading.UiTests
             string recovery = Environment.GetEnvironmentVariable("STC_UI_LATENCY_RECOVERY");
             if (!string.IsNullOrWhiteSpace(recovery)) {
                 foreach (string id in JArray.Parse(File.ReadAllText(recovery)).Values<string>()) {
-                    JObject quote = await model.Backend.Api.GetQuoteAsync(id);
+                    JObject quote = await api.GetQuoteAsync(id);
                     Require(((string)quote["remark"] ?? "").StartsWith("FILTER-LATENCY-"), "拒绝清理非本测试报价");
                     if ((string)quote["status"] == "DELETED") continue;
                     Track(id);
@@ -53,7 +53,7 @@ namespace SalesTrading.UiTests
                 new FilterCondition { Field = "bidPrice", Operator = "BETWEEN", Value = new JArray(12.001m, 12.010m) }
             }};
             // 价格区间用于隔离本轮数据；有既存记录则停止，不能混入其他人的数据。
-            QuoteQueryData baseline = await model.Backend.Api.RequestAsync(SalesTradingApi.QuoteQuery,
+            QuoteQueryData baseline = await api.RequestAsync(SalesTradingApi.QuoteQuery,
                 new QuoteQueryRequest { Filter = broadFilter, Limit = 1, Status = new List<string> { "ACTIVE", "REFERRED" } });
             Require(baseline.TotalCount == 0, "测试价格区间已有报价，请先检查，禁止覆盖");
             string prefix = "FILTER-LATENCY-" + Guid.NewGuid().ToString("N");
@@ -74,7 +74,7 @@ namespace SalesTrading.UiTests
                         TradeDate = DateTime.Today.ToString("yyyy-MM-dd"), Remark = prefix
                     });
                 }
-                QuoteWriteData created = await model.Backend.Api.CreateQuotesAsync(inputs);
+                QuoteWriteData created = await api.CreateQuotesAsync(inputs);
                 foreach (QuoteOperationResult result in created.Results.Where(item => item.Code == "0000"))
                 {
                     Track(result.QuoteId);
@@ -82,7 +82,7 @@ namespace SalesTrading.UiTests
                     int index = int.Parse(result.ClientQuoteId.Substring(prefix.Length + 1), CultureInfo.InvariantCulture);
                     fixtures.Add(Tuple.Create(result.QuoteId, index));
                 }
-                FiccApiClient.RequireQuoteResults(created);
+                TestApiClient.RequireQuoteResults(created);
                 await ChangeLatencyQuotesAsync("confirm", created.Results.Select(item => item.QuoteId).ToArray());
                 Emit("准备过滤夹具", "RUNNING", fixtures.Count + "/" + count + "; batch=" + seedTimer.ElapsedMilliseconds + "ms");
                 Require(seedTimer.Elapsed.TotalSeconds < 3, "单批准备超过3秒，停止继续加压并清理");
@@ -291,7 +291,7 @@ namespace SalesTrading.UiTests
         private async Task ChangeLatencyQuotesAsync(string operation, string[] ids)
         {
             if (ids.Length == 0) return;
-            JObject reply = await model.Backend.Api.OperateAsync(operation, ids.Select(id => latencyQuotes[id]));
+            JObject reply = await api.OperateAsync(operation, ids.Select(id => latencyQuotes[id]));
             foreach (JObject result in ((JArray)reply["results"]).OfType<JObject>().Where(item => (string)item["Code"] == "0000"))
             {
                 string id = (string)result["quoteId"];
@@ -310,7 +310,7 @@ namespace SalesTrading.UiTests
                     latencyQuotes.Remove(id);
                 }
             }
-            FiccApiClient.RequireQuoteResults(reply);
+            TestApiClient.RequireQuoteResults(reply);
             File.WriteAllText(Path.Combine(reportDirectory, "owned-quotes.json"), new JArray(ownedQuotes).ToString());
         }
 
@@ -318,12 +318,20 @@ namespace SalesTrading.UiTests
         {
             // 测量前后隔离夹具写入与 UI 推送；测量本身由正式筛选控件重新打开真实服务视图。
             // 反射仅存在于测试，不为生产适配器增加测试 API。
-            var sessions = (IDictionary)typeof(DpsSalesTradingServices).GetField("sessions",
-                BindingFlags.Instance | BindingFlags.NonPublic).GetValue(model.Backend);
-            foreach (object session in sessions.Values.Cast<object>().ToArray()) {
-                var page = (LivePage)session.GetType().GetProperty("Page").GetValue(session);
-                await page.WaitForIdleAsync();
-                await page.CloseAsync();
+            var services = typeof(STC.SalesTrading.Plugin.Shell.MainViewModel).GetField("_services", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(model);
+            foreach (string serviceName in new[] { "Quote", "Market", "Mgmt" })
+            {
+                object service = services.GetType().GetField(serviceName).GetValue(services);
+                foreach (var field in service.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    object value = field.GetValue(service);
+                    var targets = value is IDictionary dictionary ? dictionary.Values.Cast<object>().ToArray() : new[] { value };
+                    foreach (object target in targets)
+                    {
+                        var close = target?.GetType().GetMethod("CloseAsync", Type.EmptyTypes);
+                        if (close != null) await (Task)close.Invoke(target, null);
+                    }
+                }
             }
         }
 

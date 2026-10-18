@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
@@ -7,7 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Shared.Services;
 using STC.SalesTrading.Plugin.Shared.Components;
 using STC.SalesTrading.Plugin.Shared.ViewModel;
@@ -32,10 +32,10 @@ namespace SalesTrading.UiTests
             await NavigateAsync("market");
             var market = model.MarketCenterPage;
             await SelectMarketTabAsync("rateAll");
-            await FilterProfileService.EnsureLoadedAsync();
+            await ReloadGroupsAsync();
             await Until(() => Descendants<RateFilterPanel>(view).Any(panel => panel.IsVisible), "利率侧栏可见");
             var panel = Descendants<RateFilterPanel>(view).Single(item => item.IsVisible);
-            await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理关注债券分组"));
+            await OpenModalAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理关注债券分组"));
             await Until(() => Application.Current.Windows.OfType<FavBondManagerWindow>().Any(), "关注管理弹窗");
             var favorites = Application.Current.Windows.OfType<FavBondManagerWindow>().Single();
             await CreateGroupThroughUiAsync(favorites, groupTestPrefix);
@@ -49,16 +49,16 @@ namespace SalesTrading.UiTests
             await ClickAsync(Button(favorites, "保存"));
             await Until(() => !favorites.IsVisible, "关注分组保存关闭");
             var watchlist = FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Single(group => group.Name == groupTestPrefix);
-            check(watchlist.Id.StartsWith("W-") && watchlist.Revision != null, "关注分组采用服务端ID和版本");
-            await FilterProfileService.ReloadAsync();
+            check(watchlist.Id.StartsWith("W-") && (await api.RequestAsync(SalesTradingApi.WatchlistQuery, new WatchlistQueryRequest())).Watchlists.Any(group => group.WatchlistId == watchlist.Id && !string.IsNullOrEmpty(group.Revision)), "关注分组采用服务端ID和版本");
+            await ReloadGroupsAsync();
             check(FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Single(group => group.Id == watchlist.Id).Bonds.Count == 1, "重读服务端保留关注债券");
             view.UpdateLayout();
             await ClickAsync(Descendants<ToggleButton>(panel).Single(button => Convert.ToString(button.Content) == groupTestPrefix));
             await Until(() => !market.RateAll.IsLoading && market.RateAll.Rows.Any(row => row.QuoteId == quoteId), "关注组激活后行情命中");
-            string security = (string)(await model.Backend.Api.GetQuoteAsync(quoteId))["securityId"];
-            check(market.RateAll.Rows.All(row => row.Code == security), "关注组由服务端过滤完整行情");
+            string security = (string)(await api.GetQuoteAsync(quoteId))["securityId"];
+            check(market.RateAll.Rows.All(row => row.SecurityId == security), "关注组由服务端过滤完整行情");
 
-            await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理筛选分组"));
+            await OpenModalAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理筛选分组"));
             await Until(() => Application.Current.Windows.OfType<FilterGroupManagerWindow>().Any(), "筛选管理弹窗");
             var filters = Application.Current.Windows.OfType<FilterGroupManagerWindow>().Single();
             await CreateGroupThroughUiAsync(filters, groupTestPrefix);
@@ -73,40 +73,40 @@ namespace SalesTrading.UiTests
             await ClickAsync(Button(filters, "保存"));
             await Until(() => !filters.IsVisible, "筛选分组保存关闭");
             var filterGroup = FilterProfileService.GetFilterGroups(FilterProfileService.MarketKind.Rate).Single(group => group.Name == groupTestPrefix);
-            await FilterProfileService.ReloadAsync();
+            await ReloadGroupsAsync();
             var reloaded = FilterProfileService.GetFilterGroups(FilterProfileService.MarketKind.Rate).Single(group => group.Id == filterGroup.Id);
             check(reloaded.ConditionCount == 3 && reloaded.Subgroups.SelectMany(sub => sub.Conditions).All(condition => condition.Protocol != null), "条件类型和值从服务端无损恢复");
             view.UpdateLayout();
             await ClickAsync(Descendants<ToggleButton>(panel).Single(button => Convert.ToString(button.Content) == groupTestPrefix && button.DataContext is MarketGroupChip chip && !chip.IsFavorite));
             await Until(() => !market.RateAll.IsLoading && market.RateAll.Rows.All(row => row.QuoteId != quoteId), "组合分组查询结束");
-            var combined = MarketGroupSelectionService.ApplyTo(new JObject(), "RATE");
+            var combined = ActiveGroupFilter();
             check(((JArray)combined["watchlistIds"]).Count == 1 && ((JArray)combined["filterGroupIds"]).Count == 1, "关注组与筛选组同时传给服务端");
             // 当前240205剩余期限约7年：两个不命中的期限区间应排除，不能被客户端近似匹配放行。
             check(market.RateAll.Rows.All(row => row.QuoteId != quoteId), "组合条件排除不匹配报价");
             MarketGroupSelectionService.ClearActive();
             await Until(() => !market.RateAll.IsLoading && market.RateAll.Rows.Any(row => row.QuoteId == quoteId), "清除激活后恢复行情");
             check(FilterProfileService.GetFilterGroups(FilterProfileService.MarketKind.Rate).Any(group => group.Id == filterGroup.Id), "清除过滤不删除保存分组");
-            await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理筛选分组"));
+            await OpenModalAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理筛选分组"));
             await Until(() => Application.Current.Windows.OfType<FilterGroupManagerWindow>().Any(), "再次打开筛选分组");
             filters = Application.Current.Windows.OfType<FilterGroupManagerWindow>().Single();
             await CreateGroupThroughUiAsync(filters, groupTestPrefix + "X");
             await ClickAsync(Button(filters, "取消"));
-            await FilterProfileService.ReloadAsync();
+            await ReloadGroupsAsync();
             check(!FilterProfileService.GetFilterGroups(FilterProfileService.MarketKind.Rate).Any(group => group.Name == groupTestPrefix + "X"), "取消新建不落库");
             await NavigateAsync("mgmt");
-            check(model.QuoteMgmtPage.MergedFavChips.Any(chip => chip.GroupId == watchlist.Id)
-                && model.QuoteMgmtPage.MergedFilterChips.Any(chip => chip.GroupId == filterGroup.Id), "报价管理共用账户分组");
+            check(ManagementChips(true).Any(chip => chip.GroupId == watchlist.Id)
+                && ManagementChips(false).Any(chip => chip.GroupId == filterGroup.Id), "报价管理共用账户分组");
 
             // 两个编辑副本：后提交的旧版本必须冲突，不能覆盖已完成的重命名。
             var firstEditor = new FavBondManagerViewModel(FilterProfileService.MarketKind.Rate);
             var staleEditor = new FavBondManagerViewModel(FilterProfileService.MarketKind.Rate);
             firstEditor.Groups.Single(group => group.Id == watchlist.Id).Name = groupTestPrefix + "A";
-            await firstEditor.SaveAsync();
+            await Task.Run(() => firstEditor.Save());
             staleEditor.Groups.Single(group => group.Id == watchlist.Id).Name = groupTestPrefix + "B";
             bool conflict = false;
             try
             {
-                await staleEditor.SaveAsync();
+                await Task.Run(() => staleEditor.Save());
             }
             catch (InvalidOperationException error)
             {
@@ -119,7 +119,7 @@ namespace SalesTrading.UiTests
             await SelectMarketTabAsync("rateAll");
             await Until(() => Descendants<RateFilterPanel>(view).Any(item => item.IsVisible), "返回利率侧栏");
             panel = Descendants<RateFilterPanel>(view).Single(item => item.IsVisible);
-            await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理关注债券分组"));
+            await OpenModalAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理关注债券分组"));
             await Until(() => Application.Current.Windows.OfType<FavBondManagerWindow>().Any(), "重新打开关注管理");
             favorites = Application.Current.Windows.OfType<FavBondManagerWindow>().Single();
             favoriteModel = (FavBondManagerViewModel)favorites.DataContext;
@@ -144,7 +144,7 @@ namespace SalesTrading.UiTests
             var edited = FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Single(group => group.Id == watchlist.Id);
             check(edited.Name == groupTestPrefix + "R" && edited.Bonds.Count == 0, "界面重命名与移除债券保存成功且ID不变");
 
-            await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理关注债券分组"));
+            await OpenModalAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理关注债券分组"));
             await Until(() => Application.Current.Windows.OfType<FavBondManagerWindow>().Any(), "打开关注组删除");
             favorites = Application.Current.Windows.OfType<FavBondManagerWindow>().Single();
             favorites.UpdateLayout();
@@ -153,7 +153,7 @@ namespace SalesTrading.UiTests
             await Until(() => !favorites.IsVisible, "关注组删除保存");
             check(!FilterProfileService.GetFavGroups(FilterProfileService.MarketKind.Rate).Any(group => group.Id == watchlist.Id), "界面删除关注组已落库");
 
-            await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理筛选分组"));
+            await OpenModalAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.ToolTip) == "管理筛选分组"));
             await Until(() => Application.Current.Windows.OfType<FilterGroupManagerWindow>().Any(), "打开筛选组删除");
             filters = Application.Current.Windows.OfType<FilterGroupManagerWindow>().Single();
             filters.UpdateLayout();
@@ -187,13 +187,13 @@ namespace SalesTrading.UiTests
             if (groupTestPrefix == null) return;
             foreach (var window in Application.Current.Windows.OfType<Window>().Where(window => window is FavBondManagerWindow || window is FilterGroupManagerWindow).ToArray()) window.Close();
             MarketGroupSelectionService.ClearActive();
-            var watches = await model.Backend.Api.RequestAsync(SalesTradingApi.WatchlistQuery, new WatchlistQueryRequest());
+            var watches = await api.RequestAsync(SalesTradingApi.WatchlistQuery, new WatchlistQueryRequest());
             foreach (var group in watches.Watchlists.Where(group => group.Name.StartsWith(groupTestPrefix)))
-                await model.Backend.Api.RequestAsync(SalesTradingApi.WatchlistDelete, new WatchlistDeleteRequest { WatchlistId = group.WatchlistId, ExpectedRevision = group.Revision });
-            var filters = await model.Backend.Api.RequestAsync(SalesTradingApi.FilterGroupQuery, new FilterGroupQueryRequest());
+                await api.RequestAsync(SalesTradingApi.WatchlistDelete, new WatchlistDeleteRequest { WatchlistId = group.WatchlistId, ExpectedRevision = group.Revision });
+            var filters = await api.RequestAsync(SalesTradingApi.FilterGroupQuery, new FilterGroupQueryRequest());
             foreach (var group in filters.FilterGroups.Where(group => group.Name.StartsWith(groupTestPrefix)))
-                await model.Backend.Api.RequestAsync(SalesTradingApi.FilterGroupDelete, new FilterGroupDeleteRequest { FilterGroupId = group.FilterGroupId, ExpectedRevision = group.Revision });
-            await FilterProfileService.ReloadAsync();
+                await api.RequestAsync(SalesTradingApi.FilterGroupDelete, new FilterGroupDeleteRequest { FilterGroupId = group.FilterGroupId, ExpectedRevision = group.Revision });
+            await ReloadGroupsAsync();
         }
     }
 }

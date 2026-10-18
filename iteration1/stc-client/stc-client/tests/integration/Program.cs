@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -150,6 +150,35 @@ namespace SalesTrading.IntegrationTests
             }).ToList();
             return Reply(new { results });
         }
+        private static async Task LifecyclePayload()
+        {
+            var gateway = new ControlledGateway
+            {
+                Respond = request =>
+                {
+                    var item = (JObject)JObject.Parse((string)request.Payload)["quotes"][0];
+                    var allowed = new[] { "quoteId", "expectedRevision", "reason" };
+                    Equal(true, item.Properties().All(property => allowed.Contains(property.Name)),
+                        "lifecycle cannot contain edit fields, including explicit nulls");
+                    Equal("q1", (string)item["quoteId"], "lifecycle identity");
+                    Equal("7", (string)item["expectedRevision"], "optimistic revision");
+                    return Task.FromResult(WriteReply(request));
+                }
+            };
+            var requester = new GatewayRequester(gateway);
+            using (var stream = new GatewayReportStream<QuoteStreamBatch>(requester, GatewayTopics.QuoteStreamOpen))
+            using (var management = new GatewayQuoteMgmtService(requester, stream))
+            using (var quotes = new GatewayQuoteService(requester, stream))
+            {
+                var rows = new[] { new QuoteRow { QuoteId = "q1", Revision = "7" } };
+                await management.ReferQuotesAsync(rows, Token);
+                await management.UnreferQuotesAsync(rows, Token);
+                await management.DeleteQuotesAsync(rows, false, Token);
+                await quotes.DeleteQuotesAsync(rows, Token);
+                Equal(4, gateway.Requests.Count, "all lifecycle paths exercised");
+            }
+        }
+
         private static async Task Submission(string mode)
         {
             var gateway = new ControlledGateway();
@@ -346,6 +375,19 @@ namespace SalesTrading.IntegrationTests
             foreach (var mode in new[] { "blank", "unresolved", "partial-create", "partial-confirm", "create-timeout", "confirm-timeout" })
                 await Run("submission-" + mode, () => Submission(mode));
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
+            await Run("lifecycle-payload-excludes-edit-fields", LifecyclePayload);
+            await Run("preview-direction-does-not-require-persisted-id", () =>
+            {
+                foreach (var side in new[] { QuoteDirection.Bid, QuoteDirection.Ofr })
+                {
+                    var row = new STC.SalesTrading.Plugin.Modules.QuoteEntry.ViewModel.QuoteConfirmRowViewModel(
+                        new QuoteRow { Side = side, QuoteId = null, Revision = null });
+                    Equal(side.ToString(), row.Direction, "解析预览必须显示已识别方向");
+                    row.Commit();
+                    Equal(side, row.Row.Side, "确认不能改变解析方向");
+                }
+                return Task.CompletedTask;
+            });
             await Run("blank-crm-commit-normalizes-null", () =>
             {
                 var row = new QuoteConfirmRowViewModel(Input("a"));

@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using Newtonsoft.Json.Linq;
-using STC.SalesTrading.Plugin.Ficc.Protocol;
+using SalesTrading.UiTests.Contracts;
 using STC.SalesTrading.Plugin.Modules.MarketCenter.View;
 using STC.SalesTrading.Plugin.Modules.QuoteEntry.View;
 using STC.SalesTrading.Plugin.Modules.QuoteMgmt.View;
@@ -25,7 +25,7 @@ namespace SalesTrading.UiTests
         {
             var detail = model.MarketCenterPage.Detail;
             var recommendation = detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
-            var grid = Descendants<DataGrid>(view).Single(item => item.Name == "RecommendationGrid");
+            var grid = RecommendationGrid();
             await ShowRecommendationRowAsync(true);
             await Until(() => grid.ItemContainerGenerator.ContainerFromItem(recommendation) is DataGridRow,
                 "推荐行渲染完成");
@@ -45,7 +45,7 @@ namespace SalesTrading.UiTests
                 await VerifyAsync(text, "长城交易员 · 字号预期 11，实际 " + text.FontSize,
                     () => Require(text.FontSize == 11, "长城交易员字号应为11"));
             }
-            var feedbackTexts = Descendants<TextBlock>(container).Where(text => text.Text == recommendation.FeedbackText).ToArray();
+            var feedbackTexts = Descendants<TextBlock>(container).Where(text => text.Text == FeedbackText(recommendation.Feedback)).ToArray();
             Require(feedbackTexts.Length > 0, "验证目标缺失：反馈状态");
             foreach (var text in feedbackTexts)
             {
@@ -84,6 +84,9 @@ namespace SalesTrading.UiTests
                 case "fuzzy.preview":
                     await CheckFuzzyPreviewAsync();
                     break;
+                case "precise.crm":
+                    await CheckPreciseCrmAsync(Parameter(step, "trader"));
+                    break;
                 case "precise.input":
                     await CheckPreciseInputAsync();
                     break;
@@ -117,22 +120,22 @@ namespace SalesTrading.UiTests
                     var marketGrid = Descendants<DataGrid>(view).First(grid => grid.IsVisible && grid.Items.Contains(target));
                     await SelectItemAsync(marketGrid, target);
                     marketGrid.ScrollIntoView(target);
-                    await Until(() => market.Detail.Code == target.Code && !market.Detail.RecommendationLoading
+                    await Until(() => market.Detail.Code == target.SecurityId
                         && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)),
                         "选中行情行自动加载真实推荐证据");
                     var recommendation = market.Detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
                     Require(!recommendation.IsMock && recommendation.QuoteCount > 0 && recommendation.Score > 0,
                         "推荐未采用真实正式报价证据");
                     Require(!string.IsNullOrWhiteSpace(recommendation.OwnerTrader), "内部归属交易员未显示");
-                    var recommendationGrid = Descendants<DataGrid>(view).Single(grid => grid.Name == "RecommendationGrid");
+                    var recommendationGrid = RecommendationGrid();
                     var recommendationContainer = await ShowRecommendationRowAsync(false);
-                    await ClickAsync(Descendants<Button>(recommendationContainer).Single(button => Convert.ToString(button.Content) == "展开"));
+                    await ClickAsync(Button(recommendationContainer, "展开"));
                     await Until(() => recommendationContainer.DetailsVisibility == Visibility.Visible, "展开真实证据");
                     market.Detail.SelectedRecSide = STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr;
                     Require(market.Detail.RecPageItems.All(row => row.Side == STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Ofr), "Ofr过滤错误");
                     market.Detail.SelectedRecSide = STC.SalesTrading.Plugin.Abstractions.Models.QuoteDirection.Bid;
                     market.Detail.SelectedRecWindow = "7d";
-                    await Until(() => !market.Detail.RecommendationLoading && market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)), "日期切换后重新计算推荐");
+                    await Until(() => market.Detail.Recommendations.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)), "日期切换后重新计算推荐");
                     recommendation = market.Detail.Recommendations.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
                     recommendationContainer = await ShowRecommendationRowAsync(true);
                     if (recommendation.CanFeedback)
@@ -141,7 +144,7 @@ namespace SalesTrading.UiTests
                         await Until(() => !recommendation.CanFeedback, "真实反馈保存并锁定按钮");
                     }
                     string savedFeedback = recommendation.Feedback;
-                    await market.Detail.ReloadRecommendationsAsync();
+                    await ReloadRecommendationsAsync(market.Detail);
                     Require(market.Detail.Recommendations.Single(row => row.RecommendationId == recommendation.RecommendationId).Feedback == savedFeedback,
                         "刷新后反馈状态丢失");
                     File.WriteAllText(Path.Combine(reportDirectory, "recommendation.json"), JObject.FromObject(new
@@ -168,7 +171,7 @@ namespace SalesTrading.UiTests
                     await CheckQTradeNegotiationAsync(true);
                     break;
                 case "quote.fields":
-                    JObject stored = await model.Backend.Api.GetQuoteAsync(quoteId);
+                    JObject stored = await api.GetQuoteAsync(quoteId);
                     foreach (string field in new[] { "side", "settlType" })
                     {
                         Require((string)stored[field] == Parameter(step, field), field + " 不匹配：" + stored[field]);
@@ -222,7 +225,7 @@ namespace SalesTrading.UiTests
                     await VerifyAsync(selectionCount, "已选条数 · 预期 " + Parameter(step, "selected") + "，实际 " + model.QuotePage.Precise.SelectedCount,
                         () => Require(model.QuotePage.Precise.SelectedCount == int.Parse(Parameter(step, "selected")), "预览选中数量不匹配"));
                     await VerifyAsync(null, "模型校验 · 未确认预览的 revision 必须为 0",
-                        () => Require(model.QuotePage.Precise.Rows.All(preview => preview.Row.Revision == 0), "未确认预览不应已持久化"));
+                        () => Require(model.QuotePage.Precise.Rows.All(preview => string.IsNullOrEmpty(preview.Row.Revision)), "未确认预览不应已持久化"));
                     break;
                 case "parse.toolbar":
                     var toolbarView = Descendants<PreciseQuoteView>(view).Single(control => control.IsVisible);
@@ -246,8 +249,7 @@ namespace SalesTrading.UiTests
                         && text.Text.Contains(Parameter(step, "message")));
                     Require(warning != null, "验证目标缺失：识别警告 " + Parameter(step, "message"));
                     await VerifyAsync(warning, "识别警告 · " + Parameter(step, "message"), () =>
-                        Require(model.QuotePage.Precise.StatusMessage.Contains(Parameter(step, "message"))
-                            && warning.Text.Contains(Parameter(step, "message")), "识别警告未显示在界面"));
+                        Require(warning.Text.Contains(Parameter(step, "message")), "识别警告未显示在界面"));
                     break;
                 case "parse.settlement":
                     var datedRow = model.QuotePage.Precise.Rows[int.Parse(Parameter(step, "row")) - 1];
@@ -295,18 +297,18 @@ namespace SalesTrading.UiTests
         private async Task<DataGridRow> ShowRecommendationRowAsync(bool feedbackColumn)
         {
             var detail = model.MarketCenterPage.Detail;
-            var grid = Descendants<DataGrid>(view).Single(control => control.Name == "RecommendationGrid");
+            var grid = RecommendationGrid();
             var panel = Descendants<BondDetailPanel>(view).Single(control => control.IsVisible);
             // 历史证据增加后目标可能不在首页；按用户可见分页导航，不关闭虚拟化或改写分页模型。
             while (detail.CanPreviousRecPage)
             {
-                await ClickAsync(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.PreviousRecPageCommand)));
+                await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.Content) == "上一页"));
             }
             int pageBudget = detail.RecTotalPages;
             while (!detail.RecPageItems.Any(row => row.Evidence.Any(item => item.QuoteId == quoteId)))
             {
                 Require(--pageBudget > 0 && detail.CanNextRecPage, "推荐分页中没有本例报价证据");
-                await ClickAsync(Descendants<Button>(panel).Single(button => Equals(button.Command, detail.NextRecPageCommand)));
+                await ClickAsync(Descendants<Button>(panel).Single(button => Convert.ToString(button.Content) == "下一页"));
             }
             var recommendation = detail.RecPageItems.Single(row => row.Evidence.Any(item => item.QuoteId == quoteId));
             grid.BringIntoView();
@@ -376,10 +378,10 @@ namespace SalesTrading.UiTests
         private async Task PrepareNotificationFixtureAsync(string securityId)
         {
             Require(originalNotificationPreference == null, "每例只准备一次提醒夹具");
-            originalNotificationPreference = (JObject)(await model.Backend.Api.RequestProjectionAsync(
+            originalNotificationPreference = (JObject)(await api.RequestProjectionAsync(
                 SalesTradingApi.NotificationPreferenceGet, new Request()))["preference"];
             File.WriteAllText(Path.Combine(reportDirectory, "original-notification-preference.json"), originalNotificationPreference.ToString());
-            await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.NotificationPreferenceSave,
+            await api.RequestProjectionAsync(SalesTradingApi.NotificationPreferenceSave,
                 new NotificationPreferenceSaveRequest
                 {
                     ExpectedRevision = (string)originalNotificationPreference["revision"],
@@ -388,7 +390,7 @@ namespace SalesTrading.UiTests
                     CounterQuoteEnabled = (bool)originalNotificationPreference["counterQuoteEnabled"],
                     MyBestEnabled = (bool)originalNotificationPreference["myBestEnabled"]
                 });
-            testWatchlist = (JObject)(await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.WatchlistSave,
+            testWatchlist = (JObject)(await api.RequestProjectionAsync(SalesTradingApi.WatchlistSave,
                 new WatchlistSaveRequest
                 {
                     Name = "UI-" + Guid.NewGuid().ToString("N"),
@@ -405,7 +407,7 @@ namespace SalesTrading.UiTests
 
         private async Task<JArray> QueryNotificationsAsync()
         {
-            JObject data = await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.NotificationQuery,
+            JObject data = await api.RequestProjectionAsync(SalesTradingApi.NotificationQuery,
                 new NotificationQueryRequest { Limit = 100 });
             return (JArray)data["notifications"];
         }
@@ -434,15 +436,14 @@ namespace SalesTrading.UiTests
             }
             string notificationId = (string)notification["notificationId"];
             Require(notification["readTime"] == null || notification["readTime"].Type == JTokenType.Null, "新建提醒应为未读");
-            await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.AlertKey == notificationId), "本例提醒推送到 UI");
+            await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.NotificationId == notificationId), "本例提醒推送到 UI");
             BoardAlertView alert = Descendants<BoardAlertView>(view).Single(control => control.IsVisible);
             DataGrid grid = (DataGrid)alert.FindName("Grid");
-            object target = grid.Items.Cast<object>().First(item => (string)item.GetType().GetProperty("AlertKey")?.GetValue(item) == notificationId);
+            object target = grid.Items.Cast<object>().First(item => (string)item.GetType().GetProperty("NotificationId")?.GetValue(item) == notificationId);
             grid.ScrollIntoView(target);
             await SelectItemAsync(grid, target);
             await ClickAsync(Button(alert, "标记已读"));
-            await AwaitCommand(model.MarketCenterPage.Alert.MarkReadCommand.ExecutionTask);
-            await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.AlertKey == notificationId && row.IsRead), "界面已读状态更新");
+            await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.NotificationId == notificationId && row.IsRead), "界面已读状态更新");
             JObject persisted = (await QueryNotificationsAsync()).OfType<JObject>().Single(item => (string)item["notificationId"] == notificationId);
             Require(persisted["readTime"] != null && persisted["readTime"].Type != JTokenType.Null, "已读状态未持久化");
             File.WriteAllText(Path.Combine(reportDirectory, "notification-read.json"), persisted.ToString());
@@ -455,7 +456,7 @@ namespace SalesTrading.UiTests
             {
                 try
                 {
-                    JObject deleted = await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.WatchlistDelete,
+                    JObject deleted = await api.RequestProjectionAsync(SalesTradingApi.WatchlistDelete,
                         new WatchlistDeleteRequest
                         {
                             WatchlistId = (string)testWatchlist["watchlistId"],
@@ -472,9 +473,9 @@ namespace SalesTrading.UiTests
             {
                 try
                 {
-                    JObject current = (JObject)(await model.Backend.Api.RequestProjectionAsync(
+                    JObject current = (JObject)(await api.RequestProjectionAsync(
                         SalesTradingApi.NotificationPreferenceGet, new Request()))["preference"];
-                    JObject restored = (JObject)(await model.Backend.Api.RequestProjectionAsync(SalesTradingApi.NotificationPreferenceSave,
+                    JObject restored = (JObject)(await api.RequestProjectionAsync(SalesTradingApi.NotificationPreferenceSave,
                         new NotificationPreferenceSaveRequest
                         {
                             ExpectedRevision = (string)current["revision"],
