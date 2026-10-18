@@ -83,6 +83,13 @@ namespace SalesTrading.UiTests
             UpdateSpeedText();
         }
 
+        public void DockForRun(Form manager)
+        {
+            Rectangle area = Screen.FromControl(manager).WorkingArea;
+            Location = new Point(Math.Max(area.Left, area.Right - Width - 12),
+                Math.Max(area.Top, area.Bottom - Height - 12));
+        }
+
         // 原生轨道点击默认按 LargeChange 翻页。播放滑条需要像进度条一样直接定位，
         // 在原生翻页处理之前拦截鼠标消息，避免先跳到最快再回调造成瞬间放行动作。
         private sealed class PositionTrackBar : TrackBar

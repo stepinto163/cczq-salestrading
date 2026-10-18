@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -33,7 +34,7 @@ namespace SalesTrading.UiTests
             heading = new TextBlock { FontSize = 13, Foreground = Brushes.LightGray };
             operation = new TextBlock
             {
-                FontSize = 24, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
+                FontSize = 18, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
                 TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 4)
             };
             StackPanel lines = new StackPanel();
@@ -64,10 +65,10 @@ namespace SalesTrading.UiTests
             string phase, string action)
         {
             anchor = target;
-            heading.Text = caseName + (index > 0 ? "  ·  " + index + " / " + count : "");
+            heading.Text = (DesktopPresentation.IsAdvanced ? DesktopPresentation.AccountLabel + " · " : "") + caseName + (index > 0 ? "  ·  " + index + " / " + count : "");
             operation.Text = phase + "：" + action;
             Position();
-            if (!IsVisible) Show();
+            if (OwnsPresentation && !IsVisible) Show();
             positionTimer.Start();
         }
 
@@ -77,17 +78,54 @@ namespace SalesTrading.UiTests
             Hide();
         }
 
+        private string PresentationFile => DesktopPresentation.IsAdvanced
+            ? Path.Combine(Environment.GetEnvironmentVariable("STC_UI_REALTIME_ROOT"), "presentation-owner.txt") : null;
+
+        public void ClaimPresentation()
+        {
+            if (PresentationFile == null) return;
+            string role = DesktopPresentation.IsObserver ? "observer" : "actor";
+            string temporary = PresentationFile + "." + role;
+            File.WriteAllText(temporary, role);
+            if (!MoveFileEx(temporary, PresentationFile, 1))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        private bool OwnsPresentation
+        {
+            get
+            {
+                if (PresentationFile == null || !File.Exists(PresentationFile)) return true;
+                try
+                {
+                    using (var stream = new FileStream(PresentationFile, FileMode.Open, FileAccess.Read,
+                        FileShare.ReadWrite | FileShare.Delete))
+                    using (var reader = new StreamReader(stream))
+                    {
+                        return reader.ReadToEnd() == (DesktopPresentation.IsObserver ? "observer" : "actor");
+                    }
+                }
+                catch (IOException) { return false; }
+            }
+        }
+
         private void Position()
         {
-            Rect area = SystemParameters.WorkArea;
-            if (anchor != null && anchor.IsVisible && anchor.WindowState == WindowState.Normal)
+            if (!OwnsPresentation)
             {
-                area = new Rect(anchor.Left, anchor.Top, anchor.ActualWidth, anchor.ActualHeight);
+                if (IsVisible) Hide();
+                return;
             }
-            Width = Math.Max(240, Math.Min(860, area.Width - 32));
-            Left = area.Left + Math.Max(0, (area.Width - Width) / 2);
-            Top = Math.Max(area.Top, area.Bottom - Math.Max(ActualHeight, 115) - 24);
+            Rect area = DesktopPresentation.WorkArea(anchor ?? this);
+            Rect bounds = DesktopPresentation.CaptionBounds(area);
+            Width = Math.Min(860, bounds.Width);
+            MaxHeight = bounds.Height;
+            Left = bounds.Left;
+            Top = bounds.Top;
         }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool MoveFileEx(string source, string destination, uint flags);
 
         [DllImport("user32.dll")]
         private static extern int GetWindowLong(IntPtr handle, int index);

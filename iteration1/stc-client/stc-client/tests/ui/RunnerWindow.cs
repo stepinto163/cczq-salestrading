@@ -241,6 +241,7 @@ namespace SalesTrading.UiTests
             {
                 LoadCases();
                 playback.Show();
+                playback.DockForRun(this);
             };
         }
 
@@ -444,6 +445,7 @@ namespace SalesTrading.UiTests
             }
             runner = new SuiteRunner
             {
+                LayoutAnchor = Handle,
                 OperationIntervalMilliseconds = playback.DelayMilliseconds,
                 AdvancedMode = advanced.Checked, ObserverUser = observerUser.Text,
                 ObserverPassword = observerPassword.Text
@@ -451,6 +453,7 @@ namespace SalesTrading.UiTests
             report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui-test-reports", DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
             progress.Rows.Clear();
             running = true;
+            playback.DockForRun(this);
             playback.SetRunning(true);
             playback.Show();
             foreach (Button button in lockedButtons) button.Enabled = false;

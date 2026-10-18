@@ -193,6 +193,11 @@ namespace SalesTrading.UiTests
                     && element.DataContext is STC.SalesTrading.Plugin.Shared.ViewModel.AlertPopupItem item && item.AlertKey == key);
                 return itemControl != null;
             }, "真实提醒窗口及本条内容已渲染");
+            DesktopPresentation.PresentTarget(shell, itemControl);
+            await Application.Current.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            string screenBounds = DesktopPresentation.VerifyOnScreen(popup);
+            DesktopPresentation.VerifyUncovered(popup);
+            Emit("提醒弹窗桌面可见性", "VERIFIED", screenBounds);
             var content = (STC.SalesTrading.Plugin.Shared.ViewModel.AlertPopupItem)itemControl.DataContext;
             await VerifyAsync(itemControl, "实际弹窗 · " + type + " · 债券 " + security + " · 触发报价 " + changedQuote,
                 () => Require(content.Code == security && content.AlertKey == key && popup.IsVisible, "弹窗债券/触发版本不符"));
@@ -209,6 +214,11 @@ namespace SalesTrading.UiTests
             string trader = side == "Bid" ? content.BidTrader : content.OfrTrader;
             Require(decimal.Parse(volume, System.Globalization.CultureInfo.InvariantCulture) == (decimal)changed["quantity"], "弹窗报量不符");
             Require(!string.IsNullOrWhiteSpace(trader), "弹窗长城交易员缺失");
+            DesktopPresentation.VerifyOnScreen(popup);
+            DesktopPresentation.VerifyUncovered(popup);
+            Require(captions.IsVisible, "弹窗验证期间字幕未显示");
+            Emit("演示字幕桌面位置", "VERIFIED", DesktopPresentation.VerifyOnScreen(captions));
+            CaptureDesktop(type + "-desktop-popup");
             Capture(type + "-visible-popup", popup);
             File.WriteAllText(Path.Combine(reportDirectory, type + "-trigger.json"), trigger.ToString());
             // 65 保留真实窗口，随后通过关闭开关验证已有弹窗也被撤去；其余例验证关闭按钮。

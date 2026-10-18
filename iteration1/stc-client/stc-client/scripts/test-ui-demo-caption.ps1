@@ -9,7 +9,7 @@ $framework = Join-Path ${env:ProgramFiles(x86)} 'Reference Assemblies/Microsoft/
 $references = @('/r:System.dll', '/r:System.Core.dll', '/r:System.Xaml.dll')
 foreach ($name in @('WindowsBase', 'PresentationFramework', 'PresentationCore')) { $references += "/r:$framework/$name.dll" }
 $executable = Join-Path $output 'DemoCaptionCheck.exe'
-& $compiler /nologo /target:exe "/out:$executable" $references "$source/DemoCaptionWindow.cs" "$source/DemoCaptionCheck.cs"
+& $compiler /nologo /target:exe "/out:$executable" $references "$source/DemoCaptionWindow.cs" "$source/DesktopPresentation.cs" "$source/DemoCaptionCheck.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Caption check compilation failed.' }
 $process = Start-Process -FilePath $executable -WorkingDirectory $output -PassThru -WindowStyle Hidden -RedirectStandardOutput "$output/stdout.log" -RedirectStandardError "$output/stderr.log"
 $null = $process.Handle

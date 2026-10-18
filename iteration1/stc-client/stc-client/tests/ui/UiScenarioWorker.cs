@@ -255,9 +255,8 @@ namespace SalesTrading.UiTests
                 shell = frame;
                 return model != null;
             }, "登录完成及销售交易模块加载", 60);
-            shell.WindowState = WindowState.Normal;
-            shell.Width = 1440;
-            shell.Height = 950;
+            DesktopPresentation.Arrange(shell);
+            Emit("窗口布局", "VERIFIED", DesktopPresentation.AccountLabel + " · " + DesktopPresentation.VerifyOnScreen(shell));
             await SelectItemAsync(frame.Panel, frame.Panel.Items.OfType<TabItem>().Single(item => ReferenceEquals(item.Content, view)));
             shell.UpdateLayout();
             await Until(() => view.IsLoaded && view.IsVisible && model.NavItems.Count > 0, "销售交易界面完成渲染");
@@ -656,6 +655,8 @@ namespace SalesTrading.UiTests
                 label = string.IsNullOrWhiteSpace(target.Name) ? target.GetType().Name : target.Name;
             }
             string detail = action + "：" + label;
+            captions?.ClaimPresentation();
+            DesktopPresentation.PresentTarget(shell, target);
             target.BringIntoView();
             highlight?.Show(target);
             await ShowCaptionAsync("正在执行", step + " · " + detail);
@@ -695,7 +696,8 @@ namespace SalesTrading.UiTests
             target?.BringIntoView();
             if (target != null)
             {
-                Window.GetWindow(target)?.Activate();
+                captions?.ClaimPresentation();
+                DesktopPresentation.PresentTarget(shell, target);
             }
             highlight?.Show(target);
             await ShowCaptionAsync("验证通过，正在展示", detail);
@@ -791,6 +793,8 @@ namespace SalesTrading.UiTests
                 {
                     highlight.VerificationPinned = true;
                 }
+                captions?.ClaimPresentation();
+                DesktopPresentation.PresentTarget(shell, target);
                 target?.BringIntoView();
                 // 虚拟化刚生成的单元格需先完成 Loaded，再绘制红框和进入暂停点。
                 await Application.Current.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
@@ -833,6 +837,39 @@ namespace SalesTrading.UiTests
                 foreach (T descendant in Descendants<T>(child)) yield return descendant;
             }
         }
+
+        private void CaptureDesktop(string name)
+        {
+            var screen = System.Windows.Forms.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(shell).Handle);
+            var bounds = screen.Bounds;
+            using (var bitmap = new System.Drawing.Bitmap(bounds.Width, bounds.Height))
+            using (var graphics = System.Drawing.Graphics.FromImage(bitmap))
+            {
+                // .NET Framework 的 CopyFromScreen 不接受组合枚举；直接调用 BitBlt，
+                // 加 CAPTUREBLT，确保半透明字幕和提醒窗口也进入桌面截图。
+                using (var desktop = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
+                {
+                    IntPtr source = desktop.GetHdc();
+                    IntPtr destination = graphics.GetHdc();
+                    try
+                    {
+                        if (!BitBlt(destination, 0, 0, bounds.Width, bounds.Height, source,
+                            bounds.Left, bounds.Top, 0x40CC0020))
+                            throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error());
+                    }
+                    finally
+                    {
+                        graphics.ReleaseHdc(destination);
+                        desktop.ReleaseHdc(source);
+                    }
+                }
+                bitmap.Save(Path.Combine(reportDirectory, name + ".png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
+        private static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height,
+            IntPtr source, int sourceX, int sourceY, uint operation);
 
         private void Capture(string name, Window target = null)
         {

@@ -15,6 +15,7 @@ namespace SalesTrading.UiTests
     internal sealed class SuiteRunner
     {
         public bool AdvancedMode { get; set; }
+        public IntPtr LayoutAnchor { get; set; }
         public string ObserverUser { get; set; }
         public string ObserverPassword { get; set; }
         private ObserverSession currentObserver;
@@ -133,6 +134,9 @@ namespace SalesTrading.UiTests
                         start.EnvironmentVariables["STC_UI_SECURITY"] = securityId;
                         start.EnvironmentVariables.Remove("STC_UI_REALTIME_ROLE");
                         start.EnvironmentVariables["STC_UI_REALTIME_ROOT"] = CurrentDirectory;
+                        bool paired = definition.Steps.Any(step => step.Action == "realtime.lifecycle" || step.Action == "realtime.notification-switch");
+                        start.EnvironmentVariables["STC_UI_LAYOUT_ADVANCED"] = paired ? "1" : "0";
+                        start.EnvironmentVariables["STC_UI_LAYOUT_ANCHOR"] = LayoutAnchor.ToInt64().ToString();
                         bool needsIntake = definition.Steps.Any(step => step.Action == "qtrade.publish"
                             || step.Action == "qtrade.negotiation"
                             || step.Action == "qtrade.business-key"
@@ -144,7 +148,7 @@ namespace SalesTrading.UiTests
                                 configFile, Environment.GetEnvironmentVariable("ATS_ROOT"));
                         }
                         using (ObserverSession observer = definition.Steps.Any(step => step.Action == "realtime.lifecycle" || step.Action == "realtime.notification-switch")
-                            ? new ObserverSession(runtime, caseFile, CurrentDirectory, ObserverUser, ObserverPassword, securityId) : null)
+                            ? new ObserverSession(runtime, caseFile, CurrentDirectory, ObserverUser, ObserverPassword, securityId, LayoutAnchor) : null)
                         using (StreamWriter console = new StreamWriter(Path.Combine(CurrentDirectory, "console.log"), false, Encoding.UTF8))
                         using (Process process = new Process { StartInfo = start })
                         {

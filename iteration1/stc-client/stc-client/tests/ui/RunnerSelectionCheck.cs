@@ -73,6 +73,8 @@ namespace SalesTrading.UiTests
                     Application.DoEvents();
                     Require(playback.TopMost && !playback.Modal && playback.ClientSize.Width <= 500,
                         "播放控制必须是小型独立置顶浮动窗");
+                    playbackType.GetMethod("DockForRun").Invoke(playback, new object[] { form });
+                    Require(Screen.FromControl(form).WorkingArea.Contains(playback.Bounds), "播放控制超出当前显示器工作区");
                     var speed = (TrackBar)playbackType.GetField("speed", fields).GetValue(playback);
                     speed.Value = 0;
                     Require((int)playbackType.GetProperty("DelayMilliseconds").GetValue(playback) == 8000, "慢速应为8秒");

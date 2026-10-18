@@ -13,7 +13,7 @@ namespace SalesTrading.UiTests
         private readonly Process process;
         public string DirectoryPath { get; }
 
-        public ObserverSession(string runtime, string caseFile, string caseDirectory, string user, string password, string security)
+        public ObserverSession(string runtime, string caseFile, string caseDirectory, string user, string password, string security, IntPtr layoutAnchor)
         {
             DirectoryPath = Path.Combine(caseDirectory, "observer");
             Directory.CreateDirectory(DirectoryPath);
@@ -30,6 +30,8 @@ namespace SalesTrading.UiTests
             {
                 WorkingDirectory = runtime, UseShellExecute = false, CreateNoWindow = true
             };
+            start.EnvironmentVariables["STC_UI_LAYOUT_ADVANCED"] = "1";
+            start.EnvironmentVariables["STC_UI_LAYOUT_ANCHOR"] = layoutAnchor.ToInt64().ToString();
             start.EnvironmentVariables["STC_UI_USER"] = user;
             start.EnvironmentVariables["STC_UI_PASSWORD"] = password;
             start.EnvironmentVariables["STC_UI_SECURITY"] = security;

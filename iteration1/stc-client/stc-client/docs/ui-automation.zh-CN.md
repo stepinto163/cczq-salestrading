@@ -1,4 +1,4 @@
-﻿# STC UI 端到端测试管理
+# STC UI 端到端测试管理
 
 这是独立的测试管理窗口，业务界面复用正式 STC 客户端。测试连接真实 GW、LoginSvr、BaseSvr、CRM、ParserSvr、QuoteSvr、NotificationSvr 及其数据库；不使用模拟报价服务。
 
@@ -519,3 +519,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/stc-client/stc-cl
 2026-10-18：40 项程序集集成检查通过；真实本机 GW / ParserSvr / QuoteSvr / NotificationSvr 链路执行 65–68 四例，两端及清理均通过，四类窗口截图已逐张检查。报告：`D:/workspace/greatewall/ficc/qa_env/client-history-ui/reports/notification-switches-final`。逐项比对原始与清理后的 JSON，四个账户开关均恢复。
 
 默认测试运行目录再执行 62（同券报价变化不误重弹）、46（双账号确认/Refer/Unrefer/删除实时推送）、65（真实刷新按钮重读设置、现存弹窗随关闭开关移除），全部通过，两端清理成功。报告：`runtime/ui-test-client/ui-test-reports/notification-switch-regression-final`。全部桌面运行使用 2000ms 操作间隔；未使用 100ms 加速掩盖弹窗，未做性能压测或 QTrade 外发，未宣称 QA 或真实断网恢复已验证。
+
+
+### 双账号桌面布局与 DPI（2026-10-18）
+
+- 自动化客户端不再固定为 1440 × 950 DIP。从管理器所在显示器取得工作区，按 WPF 当前缩放换算；命令行执行默认使用主显示器。不修改 Windows 缩放或正式客户端配置。
+- 工作区足够宽时两账号左右并排；否则错开 36 DIP 的位置，保留背景账号的顶部和左边缘。输入或验证前将对应客户端及目标窗口前置，不重新打开页面、不点击刷新。
+- 底部保留 172 DIP 的演示区域：左侧显示当前步骤及“操作账号/观察账号”，右侧放置播放控制。双进程通过原子替换的演示归属文件，只显示当前执行方的字幕，避免两个字幕重叠。播放速度、暂停、单步及独立看门狗保持原语义。
+- 正式提醒弹窗修正设备像素与 DIP 混用的问题。普通窗口的提醒跟随所属客户端右下角，最大化时按屏幕工作区停靠；主窗口移动和缩放后重新定位。
+- 提醒开关用例除验证 WPF 内容外，检查 Win32 窗口边界、九个内部采样点的实际顶层窗口，并保存 `*-desktop-popup.png` 桌面截图。窗口在屏幕之外或采样点被其他窗口遮挡时失败；保留原来的窗口渲染截图用于内容核对。九点检查不是逐像素遮挡证明，人工复核以桌面截图为准。
+- 布局回归脚本：`scripts/test-ui-desktop-presentation.ps1`。覆盖 100%、125%、150%、175%、200% 的布局计算、负坐标显示器、并排/交叠、真实遮挡及屏幕外检测。物理桌面验证使用本机 200% 缩放；其他缩放与多屏组合为计算测试，不宣称已在所有物理显示器上实测。
+
+本轮验证：本机 200% 缩放下，`47-realtime-today` 与 `65-notification-switch-watchlist` 双账号桌面用例通过，均确认清理完成；窗口 Z 序修正后重新执行 65。30 组布局组合、字幕、播放控制/选择器、动作等待、精确验证目标及 40 项客户端集成检查通过。桌面报告保存在 `qa_env/client-history-ui/reports/dpi-default-final`、`dpi-zorder-final`；这些是本地服务验证，不是 QA 部署验收或全套桌面用例结论。
+
+补充验证记录：后续 `dpi-desktop-final` 的 65 用例在“重新启用不能弹出存量报价”断言失败，双方清理成功；此前该用例在 `dpi-default-final`、`dpi-zorder-final` 通过。此项是提醒重新启用的间歇性回归，尚未确定根因，不能把本轮结果写成全部提醒场景通过。桌面截图加入 CAPTUREBLT 以包含透明叠加窗口，已通过独立截图执行检查；最近一次真实提醒运行在截图步骤前被上述业务断言阻止。

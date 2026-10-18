@@ -56,12 +56,12 @@ namespace SalesTrading.UiTests
                     double oldLeft = caption.Left;
                     window.Left += 50;
                     await Task.Delay(350);
-                    Require(Math.Abs(caption.Left - oldLeft - 50) < 2, "Caption did not follow host window");
+                    Require(Math.Abs(caption.Left - oldLeft) < 2, "Caption must remain in the monitor footer");
                     caption.Suspend();
                     Require(!caption.IsVisible, "Performance-action suspension failed");
                     caption.Present(window, "精确报价识别与确认", 8, 8, "收尾", "清理本例测试数据");
                     Require(caption.IsVisible && caption.OperationText == "收尾：清理本例测试数据", "Caption did not resume for cleanup");
-                    Console.WriteLine("PASS: current-only captions, completed-step caption, step numbering, input focus, click-through styles, host tracking, suspend/resume; screenshot demo-caption.png");
+                    Console.WriteLine("PASS: current-only captions, completed-step caption, step numbering, input focus, click-through styles, monitor footer, suspend/resume; screenshot demo-caption.png");
                     caption.Close();
                     window.Close();
                     application.Shutdown(0);

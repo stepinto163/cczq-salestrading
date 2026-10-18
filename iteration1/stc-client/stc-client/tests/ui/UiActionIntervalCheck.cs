@@ -139,6 +139,11 @@ namespace SalesTrading.UiTests
                     }
                     Assert(cancelled && text.Text == "changed", "停止请求应取消未执行的输入");
                     timer.Stop();
+                    workerType.GetField("shell", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(worker, window);
+                    workerType.GetMethod("CaptureDesktop", BindingFlags.NonPublic | BindingFlags.Instance)
+                        .Invoke(worker, new object[] { "desktop-capture-check" });
+                    Assert(new FileInfo(Path.Combine(directory, "desktop-capture-check.png")).Length > 1000,
+                        "桌面截图未生成");
                     result = 0;
                     Console.WriteLine("PASS: each click/input/selection waits before mutation; UI responsive; verification hold uses shared interval; live adjustment and cancellation.");
                 }
