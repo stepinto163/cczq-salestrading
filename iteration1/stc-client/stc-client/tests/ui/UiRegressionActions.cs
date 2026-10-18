@@ -147,6 +147,12 @@ namespace SalesTrading.UiTests
         {
             switch (step.Action)
             {
+                case "notification.restore-delete":
+                    await CheckNotificationRestoreDeleteAsync(Parameter(step, "securityId"));
+                    break;
+                case "notification.read-survives-removal":
+                    await CheckNotificationReadSurvivesRemovalAsync(Parameter(step, "securityId"));
+                    break;
                 case "notification.lifecycle":
                     await CheckNotificationLifecycleAsync(Parameter(step, "securityId"));
                     break;
@@ -482,14 +488,23 @@ namespace SalesTrading.UiTests
 
         private async Task CloseReminderPopupsAsync()
         {
-            foreach (var window in Application.Current.Windows.OfType<STC.SalesTrading.Plugin.Shared.Components.AlertPopupWindow>().ToArray())
+            // 分组入队先于 ItemsControl 容器生成；不能因 Close 按钮暂未渲染就跳过。
+            foreach (var group in STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Groups.ToArray())
             {
-                while (window.IsVisible)
+                Button close = null;
+                await Until(() =>
                 {
-                    var close = Descendants<Button>(window).FirstOrDefault(button => button.IsVisible && Convert.ToString(button.Content) == "关闭");
-                    if (close == null) break;
-                    await ClickAsync(close);
-                }
+                    if (!STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Groups.Contains(group)) return true;
+                    var window = Application.Current.Windows.OfType<AlertPopupWindow>().FirstOrDefault(item => item.IsVisible);
+                    if (window == null) return false;
+                    window.UpdateLayout();
+                    close = Descendants<Button>(window).FirstOrDefault(button => button.IsVisible
+                        && ReferenceEquals(button.DataContext, group) && Convert.ToString(button.Content) == "关闭");
+                    return close != null;
+                }, "等待当前提醒分组的关闭按钮渲染");
+                if (close != null) await ClickAsync(close);
+                await Until(() => !STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Groups.Contains(group),
+                    "点击关闭后当前提醒分组确实移除");
             }
         }
 
@@ -549,6 +564,77 @@ namespace SalesTrading.UiTests
                 { firstQuote, secondQuote, firstKey, secondKey, editedKey, unchangedQuoteRepopped = false }).ToString());
         }
 
+        private async Task AssertNoReminderPopupAsync(string key, string message)
+        {
+            // 否定断言持续观察，防止在服务端推送尚未到达时提前通过。
+            DateTime deadline = DateTime.UtcNow.AddSeconds(1);
+            while (DateTime.UtcNow < deadline)
+            {
+                ThrowIfCancelled();
+                Require(!HasPopup(key), message);
+                await Task.Delay(50);
+            }
+        }
+
+        private async Task CheckNotificationRestoreDeleteAsync(string securityId)
+        {
+            await CloseReminderPopupsAsync();
+            await CreateNotificationQuoteAsync(securityId, "2.541");
+            string originalKey = await WatchTriggerAsync(quoteId);
+            await Until(() => HasPopup(originalKey), "确认报价弹出提醒");
+            await CloseReminderPopupsAsync();
+            await ExecuteQuoteWorkflowAsync(Step("management.operate", "button", "Refer"));
+            await WatchTriggerAsync(quoteId, false);
+            await AssertNoReminderPopupAsync(originalKey, "Refer 不应重弹旧版本");
+            await ExecuteQuoteWorkflowAsync(Step("management.operate", "button", "Unrefer"));
+            string restoredKey = await WatchTriggerAsync(quoteId, true, originalKey);
+            await Until(() => HasPopup(restoredKey), "Unrefer 新版本弹出一次提醒");
+            Require(STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Groups
+                .SelectMany(group => group.Items).Count(item => item.AlertKey == restoredKey) == 1,
+                "Unrefer 重复弹窗");
+            await CloseReminderPopupsAsync();
+            await ExecuteQuoteWorkflowAsync(Step("management.operate", "button", "Refer"));
+            await WatchTriggerAsync(quoteId, false);
+            await ExecuteQuoteWorkflowAsync(Step("management.operate", "button", "删除"));
+            await WatchTriggerAsync(quoteId, false);
+            await AssertNoReminderPopupAsync(restoredKey, "删除后旧提醒不能复活");
+            File.WriteAllText(Path.Combine(reportDirectory, "notification-restore-delete.json"),
+                JObject.FromObject(new { quoteId, originalKey, restoredKey }).ToString());
+        }
+
+        private async Task CheckNotificationReadSurvivesRemovalAsync(string securityId)
+        {
+            await CloseReminderPopupsAsync();
+            await CreateNotificationQuoteAsync(securityId, "2.551");
+            string first = quoteId;
+            await WatchTriggerAsync(first);
+            await CreateNotificationQuoteAsync(securityId, "2.552");
+            string second = quoteId;
+            string secondKey = await WatchTriggerAsync(second);
+            await ReadNotificationThroughUiAsync();
+            await CloseReminderPopupsAsync();
+            quoteId = first;
+            await ExecuteQuoteWorkflowAsync(Step("management.operate", "button", "Refer"));
+            await WatchTriggerAsync(first, false);
+            await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.IsRead
+                && row.Triggers.Any(trigger => trigger.AlertKey == secondKey)), "移除 A 后 B 的已读状态保留");
+            JObject remaining = (await QueryNotificationsAsync()).OfType<JObject>().Single(row =>
+                ((JArray)row["triggers"]).OfType<JObject>().Any(trigger => (string)trigger["alertKey"] == secondKey));
+            Require(remaining["readTime"] != null && remaining["readTime"].Type != JTokenType.Null,
+                "B 的已读状态没有持久化");
+            await AssertNoReminderPopupAsync(secondKey, "已读 B 因删除同券成员而重弹");
+            quoteId = second;
+            await ExecuteQuoteWorkflowAsync(Step("management.edit", "securityId", securityId,
+                "price", "2.553", "quantity", "1", "side", "1", "settlType", "2"));
+            await ExecuteQuoteWorkflowAsync(Step("management.save"));
+            await CloseEditorAsync();
+            string changedKey = await WatchTriggerAsync(second, true, secondKey);
+            await Until(() => HasPopup(changedKey), "已读报价修改后，新版本不能被旧已读状态吞掉");
+            await CloseReminderPopupsAsync();
+            File.WriteAllText(Path.Combine(reportDirectory, "notification-read-removal.json"),
+                JObject.FromObject(new { first, second, secondKey, changedKey }).ToString());
+        }
+
         private async Task PrepareNotificationFixtureAsync(string securityId)
         {
             Require(originalNotificationPreference == null, "每例只准备一次提醒夹具");
@@ -600,7 +686,9 @@ namespace SalesTrading.UiTests
             {
                 ThrowIfCancelled();
                 notification = (await QueryNotificationsAsync()).OfType<JObject>().FirstOrDefault(item =>
-                    item["quoteIds"] is JArray quoteIds && quoteIds.Values<string>().Contains(quoteId));
+                    (item["triggers"] as JArray ?? new JArray()).OfType<JObject>().Any(trigger =>
+                        (string)trigger["type"] == "WATCHLIST"
+                        && ((JArray)trigger["quoteIds"]).Values<string>().Contains(quoteId)));
                 if (notification != null)
                 {
                     break;
@@ -610,13 +698,24 @@ namespace SalesTrading.UiTests
             }
             string notificationId = (string)notification["notificationId"];
             Require(notification["readTime"] == null || notification["readTime"].Type == JTokenType.Null, "新建提醒应为未读");
-            await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.NotificationId == notificationId), "本例提醒推送到 UI");
+            await Until(() => !model.MarketCenterPage.Alert.IsLoading
+                && model.MarketCenterPage.Alert.Rows.Any(row => row.NotificationId == notificationId), "本例提醒推送到 UI");
             BoardAlertView alert = Descendants<BoardAlertView>(view).Single(control => control.IsVisible);
             DataGrid grid = (DataGrid)alert.FindName("Grid");
+            // 操作间隔内推送可能替换同 ID 的行对象；按 ID 在实际选择时重新定位。
+            await BeforeUiActionAsync(grid, "选择当前关注提醒");
             object target = grid.Items.Cast<object>().First(item => (string)item.GetType().GetProperty("NotificationId")?.GetValue(item) == notificationId);
             grid.ScrollIntoView(target);
-            await SelectItemAsync(grid, target);
-            await ClickAsync(Button(alert, "标记已读"));
+            grid.SelectedItem = target;
+            grid.UpdateLayout();
+            HighlightRow(target);
+            Require(grid.SelectedItems.Contains(target), "当前关注提醒没有选中");
+            var markRead = Button(alert, "标记已读");
+            await BeforeUiActionAsync(markRead, "点击标记已读");
+            Require(grid.SelectedItems.Cast<object>().Any(item =>
+                (string)item.GetType().GetProperty("NotificationId")?.GetValue(item) == notificationId),
+                "点击已读前提醒选择因刷新丢失");
+            ClickImmediately(markRead);
             await Until(() => model.MarketCenterPage.Alert.Rows.Any(row => row.NotificationId == notificationId && row.IsRead), "界面已读状态更新");
             JObject persisted = (await QueryNotificationsAsync()).OfType<JObject>().Single(item => (string)item["notificationId"] == notificationId);
             Require(persisted["readTime"] != null && persisted["readTime"].Type != JTokenType.Null, "已读状态未持久化");

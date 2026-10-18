@@ -181,6 +181,7 @@ namespace SalesTrading.UiTests
             }
             var initialAlerts = new HashSet<string>(model.MarketCenterPage.Alert.Rows.Select(row => row.NotificationId));
             var observedAlerts = new HashSet<string>();
+            string previousReminderKey = null;
             Signal("observer-ready", new JObject { ["user"] = STC.Common.Utils.LocalEnv.UserInfo.UserName, ["tab"] = tab });
             foreach (string phase in new[] { "preview", "active", "referred", "restored", "referred-again", "deleted" })
             {
@@ -225,14 +226,16 @@ namespace SalesTrading.UiTests
                 {
                     matches = () =>
                     {
-                        var found = model.MarketCenterPage.Alert.Rows.Where(row => row.SecurityId == security && !initialAlerts.Contains(row.NotificationId)).ToList();
+                        var found = model.MarketCenterPage.Alert.Rows.Where(row => row.SecurityId == security
+                            && (id == null ? !initialAlerts.Contains(row.NotificationId)
+                                : (row.Triggers ?? new STC.SalesTrading.Plugin.Abstractions.Models.AlertTrigger[0])
+                                    .Any(trigger => trigger.QuoteIds != null && trigger.QuoteIds.Contains(id)))).ToList();
                         if (active)
                         {
                             foreach (var row in found) observedAlerts.Add(row.NotificationId);
                             return found.Count > 0;
                         }
-                        return phase == "preview" ? found.Count == 0
-                            : !model.MarketCenterPage.Alert.Rows.Any(row => observedAlerts.Contains(row.NotificationId));
+                        return found.Count == 0;
                     };
                 }
                 else if (tab == "today")
@@ -262,6 +265,21 @@ namespace SalesTrading.UiTests
                     await Task.Delay(1000);
                 }
                 await Until(matches, "观察账号页面未实时更新：" + tab + "/" + phase, 20);
+                if (tab == "alert" && active)
+                {
+                    string key = await WatchTriggerAsync(id);
+                    Require(key != previousReminderKey, "恢复报价必须产生新版本提醒键");
+                    await Until(() => HasPopup(key), "观察账号收到当前报价版本弹窗");
+                    Require(STC.SalesTrading.Plugin.Shared.Services.AlertPopupService.Groups
+                        .SelectMany(group => group.Items).Count(item => item.AlertKey == key) == 1,
+                        "观察账号重复弹出同一版本");
+                    previousReminderKey = key;
+                    await CloseReminderPopupsAsync();
+                }
+                else if (tab == "alert" && previousReminderKey != null)
+                {
+                    await AssertNoReminderPopupAsync(previousReminderKey, "撤销或删除导致观察账号重弹旧版本");
+                }
                 view.UpdateLayout();
 
                 DateTime observedAt = DateTime.Now;

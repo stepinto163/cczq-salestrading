@@ -260,6 +260,63 @@ namespace SalesTrading.IntegrationTests
             return Task.CompletedTask;
         }
 
+        private static AlertRow TriggerRow(params string[] keys)
+        {
+            return new AlertRow { NotificationId = Guid.NewGuid().ToString(), Triggers = keys
+                .Select(key => new AlertTrigger { AlertKey = key, Type = AlertType.FavoriteBond }).ToList() };
+        }
+
+        private static Task NotificationCombinedReasons()
+        {
+            var tracker = new AlertTriggerTracker();
+            tracker.Observe(new AlertRow[0], false);
+            Equal(4, tracker.Observe(new[] { TriggerRow("watch:A1", "filter:A1", "best:A1"),
+                TriggerRow("counter:A1:B1") }, true).Count, "four independent reasons remain distinct");
+            Equal(0, tracker.Observe(new[] { TriggerRow("watch:A1", "best:A1"),
+                TriggerRow("counter:A1:B1") }, true).Count, "removing filter reason does not re-pop other reasons");
+            Equal(0, tracker.Observe(new[] { TriggerRow("watch:A1", "filter:A1", "best:A1") }, true).Count,
+                "re-enabled unchanged reason remains deduplicated in this session");
+            var changed = tracker.Observe(new[] { TriggerRow("watch:A2", "filter:A2", "best:A2"),
+                TriggerRow("counter:A2:B1") }, true);
+            Equal(4, changed.Count, "source edit triggers all matching new-version reasons");
+            return Task.CompletedTask;
+        }
+
+        private static Task NotificationSnapshotsAndPaging()
+        {
+            var tracker = new AlertTriggerTracker();
+            tracker.Observe(new[] { TriggerRow("A1") }, false);
+            Equal(0, tracker.Observe(new[] { TriggerRow("B1") }, false).Count, "page navigation establishes baseline");
+            Equal(0, tracker.Observe(new[] { TriggerRow("A1", "B1") }, true).Count, "seen rows moving between pages do not pop");
+            Equal(1, tracker.Observe(new[] { TriggerRow("B2") }, true).Count, "loaded page new version pops");
+            Equal(0, tracker.Observe(new[] { TriggerRow("B2") }, false).Count, "reconnect resnapshot has no popup");
+            var restarted = new AlertTriggerTracker();
+            Equal(0, restarted.Observe(new[] { TriggerRow("B2") }, true).Count, "new client snapshot never replays old popups");
+            Equal(1, restarted.Observe(new[] { TriggerRow("B3") }, true).Count, "new events after restart are not suppressed");
+            return Task.CompletedTask;
+        }
+
+        private static Task NotificationRapidUpdatesAndUsers()
+        {
+            var firstUser = new AlertTriggerTracker();
+            var secondUser = new AlertTriggerTracker();
+            firstUser.Observe(new AlertRow[0], false);
+            secondUser.Observe(new AlertRow[0], false);
+            foreach (string key in new[] { "A1", "A2", "A3" })
+            {
+                Equal(1, firstUser.Observe(new[] { TriggerRow(key) }, true).Count, "ordered new version seen once");
+                Equal(0, firstUser.Observe(new[] { TriggerRow(key) }, true).Count, "duplicate rapid version suppressed");
+            }
+            Equal(1, secondUser.Observe(new[] { TriggerRow("A3") }, true).Count, "one user's tracker cannot consume another's reminder");
+            var read = TriggerRow("A3");
+            read.ReadTime = DateTime.UtcNow;
+            Equal(0, firstUser.Observe(new[] { read }, true).Count, "marking read does not pop");
+            read.ReadTime = null;
+            Equal(0, firstUser.Observe(new[] { read }, true).Count, "marking unread does not create a quote event");
+            Equal(1, firstUser.Observe(new[] { TriggerRow("A4") }, true).Count, "next quote version still pops");
+            return Task.CompletedTask;
+        }
+
         private static Task QuoteHistoryOperatorNames()
         {
             var users = new[]
@@ -793,6 +850,9 @@ namespace SalesTrading.IntegrationTests
             });
             await Run("reference-fill-duplicates-refresh-batching", ReferenceFill);
             await Run("notification-trigger-identity-and-snapshot", NotificationTriggerIdentity);
+            await Run("notification-combined-reasons", NotificationCombinedReasons);
+            await Run("notification-snapshots-paging", NotificationSnapshotsAndPaging);
+            await Run("notification-rapid-updates-users", NotificationRapidUpdatesAndUsers);
             await Run("quote-history-operator-login-names", QuoteHistoryOperatorNames);
             await Run("quote-history-numbered-paging-refresh-and-retry", QuoteHistoryPaging);
             await Run("quote-history-wpf-pagination-controls", QuoteHistoryWindowPaging);

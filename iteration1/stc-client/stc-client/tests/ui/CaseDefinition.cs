@@ -137,6 +137,8 @@ namespace SalesTrading.UiTests
             { "notification.prepare", new[] { "securityId" } },
             { "notification.read", new string[0] },
             { "notification.lifecycle", new[] { "securityId" } },
+            { "notification.restore-delete", new[] { "securityId" } },
+            { "notification.read-survives-removal", new[] { "securityId" } },
             { "qtrade.negotiation", new string[0] },
             { "qtrade.business-key", new string[0] }
         };
@@ -181,6 +183,8 @@ namespace SalesTrading.UiTests
             { "notification.prepare", "准备独立关注分组（自动恢复偏好）" },
             { "notification.read", "核对本例提醒推送并通过界面标记已读" },
             { "notification.lifecycle", "同券报价变更提醒：新增、修改、撤销、刷新不误弹" },
+            { "notification.restore-delete", "提醒生命周期：Refer、Unrefer、删除" },
+            { "notification.read-survives-removal", "移除同券成员保留已读，编辑产生新未读提醒" },
             { "qtrade.negotiation", "QT 双边提案经 GW 入库、UI 确认及行情隔离" },
             { "qtrade.business-key", "QT 不同 NegotiationID 按完整业务键确认替换" }
         };
