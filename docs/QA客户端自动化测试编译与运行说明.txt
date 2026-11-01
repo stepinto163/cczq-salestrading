@@ -1,0 +1,82 @@
+﻿QA客户端自动化测试工具编译与运行说明
+日期：2026年11月1日
+
+一、用途
+
+对已部署的QA客户端执行自动化界面测试。
+使用Visual Studio编译器编译测试工具，将已安装的客户端复制到独立测试目录；不重新编译、不覆盖安装目录中的产品DLL。
+测试会连接真实QA服务，使用专用测试账号。
+
+二、需要准备的内容
+
+1. 已安装并可正常登录的QA客户端，目录内包含STP-QA.exe、对应配置、bin和plugin等运行文件。
+2. 本次源码合并包中的qa-ui-tests完整目录，保留scripts与tests/ui目录结构。
+3. Visual Studio或Build Tools，安装MSBuild、Roslyn编译器及.NET Framework 4.7.2开发包。只有运行时不足以编译测试工具。
+4. 一个尚不存在的测试输出目录；不能与客户端安装目录相同，也不能互相包含。
+
+三、在Visual Studio开发者命令提示符中编译
+
+打开“Developer Command Prompt for Visual Studio”。
+以下是Windows命令提示符命令，不是PowerShell语法。D:\QA下的路径仅为示例，按QA机器实际目录调整。
+
+rem 源码交付包中的测试工具目录
+set "KIT=D:\QA\ficc-source\qa-ui-tests"
+
+rem 已安装的QA客户端目录
+set "CLIENT=D:\QA\STP"
+
+rem 测试输出目录，必须尚不存在
+set "TESTOUT=D:\QA\STP-AutoTest-01"
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%KIT%\scripts\build-ui-tests.ps1" -UseInstalledBinaries -NativeRoot "%CLIENT%" -OutputRoot "%TESTOUT%"
+
+脚本会自动定位Visual Studio编译器，复制客户端文件并编译测试程序。
+成功时输出“Built:”及SalesTradingUiTests.exe的完整路径。
+如果编译报错，先解决错误，不要继续启动不完整的输出目录。重试时使用新的输出目录，例如STP-AutoTest-02。
+
+四、启动测试管理界面
+
+编译成功后，在同一个开发者命令提示符窗口中执行：
+
+set "STC_UI_HOST=STP"
+set "STC_UI_HOST_EXE=STP-QA.exe"
+
+"%TESTOUT%\SalesTradingUiTests.exe" --cases "%KIT%\tests\ui\cases" --config "%TESTOUT%\STP-QA.exe.config"
+
+如果实际客户端文件名为STP.exe，则使用：
+
+set "STC_UI_HOST_EXE=STP.exe"
+
+"%TESTOUT%\SalesTradingUiTests.exe" --cases "%KIT%\tests\ui\cases" --config "%TESTOUT%\STP.exe.config"
+
+两组启动命令按实际文件名选择一组即可，不要同时启动两套测试。
+
+五、运行用例
+
+1. 核对管理界面的配置文件路径指向测试目录内的QA配置，确认服务地址属于QA环境。
+2. 填写QA测试账号、密码和有效测试债券。不要直接沿用工具中的开发环境默认账号。
+3. 先取消全选，选择33、34、35、36四个行情页面冒烟用例，再逐步运行01报价生命周期、22关注债券及筛选分组等用例。
+4. 点击“运行勾选”。工具自动启动客户端、登录并执行操作。
+5. 测试可能创建和清理测试报价、分组等数据；同一测试账号不要同时用于人工操作，以免登录会话互相替换。
+6. 双账号用例需配置两个账号。外部QTrade用例会真实发送消息，需确认收发账号、群及网络后单独执行。不要首次直接运行所有用例或性能用例。
+7. 结束后查看本轮报告，保存结果、失败截图和日志；失败或阻塞不能视为通过。
+
+六、生成的主要文件
+
+SalesTradingUiTests.exe：测试管理界面。
+UiScenarioWorker.exe：测试执行程序，由管理界面启动，不需要手工运行。
+deployed-client-sha256.json：复制的客户端程序、DLL和配置的逐文件校验清单。
+其余文件为客户端运行副本及测试所需文件，运行时需保留完整目录，不能只复制两个测试EXE。
+
+七、与上一封交付邮件的关系
+
+上一封邮件的ficc-qa-source-merge-20261101-184556.zip已包含：
+- qa-ui-tests目录：测试工具源码、构建脚本及69个JSON用例文件。
+- 根目录《合并与QA验证说明.md》：包含部署版本测试工具的编译、启动及验收说明。
+
+本TXT为上述操作的单独说明，使用Windows开发者命令提示符格式整理；它不在上一封邮件附件中，也不表示已再次发送邮件。
+
+八、验证范围
+
+本机已验证测试工具编译成功，复制的104个程序、DLL和配置文件校验一致。
+QA主机仍需按上述步骤实际编译和运行；本机结果不能代替QA验收。
