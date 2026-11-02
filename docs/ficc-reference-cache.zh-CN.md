@@ -4,6 +4,19 @@
 
 # 销售交易基础数据同步
 
+## 剩余期限展示字段（2026-11-02）
+
+FICC参考记录新增可空字符串`remainingTerm`，直接复用原STC `BondInfoView.TimeToMaturity`（原生成逻辑为`Utils.calcTenor`）。例如：
+
+```json
+{"securityId":"示例券.IB","remainingYears":"3.7956","remainingTerm":"3.30Y + 180D"}
+```
+
+- 普通券可显示`180D`或`3.30Y`；行权券的两段分别表示距行权日、行权日至到期日；永续沿用`期限 + N`。
+- 小数精度及日期口径沿用原STC；数据随原STC资料更新后进入FICC快照。缺失为空，不从估值年限猜测行权分段。
+- `remainingYears`保持原值，用于数值筛选和期限排序；`remainingTerm`仅供展示，两者可能采用不同口径，不能相互解析替换。
+- 新字段在`ficc.reference.sync`的`Datas[].FiccReference.remainingTerm`中返回；Common参考DTO/基础查询同时保留。旧STC接口不变，未增加接口。客户端示例仅接入“关注债券管理”的候选列表，其余页面未切换；旧缓存升级后补拉一次完整字段快照，再恢复增量同步。
+
 ## 服务边界
 
 新增独立服务 `FiccBaseSvr`，BaseSvr 仓库分支为 `feature/ficc-reference-data`。现有 STC BaseSvr 的部署、服务名和旧客户端均不修改。新销售交易客户端通过 `Ficc.BaseService=FiccBaseSvr` 连接新服务。

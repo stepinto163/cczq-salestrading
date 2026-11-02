@@ -1,0 +1,54 @@
+﻿FICC 下午补充源码合并包 V1.0
+日期：2026-11-02
+
+一、变更原因与最终范围
+1. 启动性能：QuoteSvr、NotificationSvr启动要装载Base资料和DM快照。原数值索引不断扩容复制、资料反复JSON转换、Base全量分页逐页遍历全表，加上串行初始化和过小初始堆，使启动耗时偏长。本次优化索引扩容、资料转换和固定快照分页，并行加载独立依赖，配套调整JVM；所有依赖成功后才继续就绪，失败保留异常，不改变筛选业务规则或公共接口。
+2. 剩余期限：只有remainingYears数值不足以表达180D或3.30Y + 180D。本次复用原BaseSvr的TimeToMaturity，新增可选字符串remainingTerm；remainingYears保持原值。客户端缓存保存新字段，仅在“关注债券管理”的右侧候选列表演示，其余页面不改。
+3. 范围：Common、QuoteSvr、NotificationSvr、BaseSvr、同事stc-client，以及单独列出的BondSearch Core性能补丁。Core生产改动仅RangeIndex扩容，保留同事接口、中文注释和业务语义；本次不能漏掉该依赖，否则启动优化不完整。
+
+二、如何合并
+1. 沿用上午“完整源码参考快照 + 组件增量patch + changes.json + manifest.json/SHA256”的形式。按差异合并，不要整目录覆盖QA仓库。
+2. 增量基线：Common a276984；QuoteSvr 7a20767（须已合入上午原子提交及排序补充）；NotificationSvr及Core 5d009de；BaseSvr 9912168；同事客户端 a9313daca。目标提交以manifest.json为准：Common/Quote/Notification取下午1fab969快照，Core fb8976e，Base f17a006，客户端64fc3e14f。
+3. 完整源码参考快照已含上午原子创建、价量可空和全部行情排序。尚未合入上午或排序补充的QA分支，应先合入此前包；不要强行套用不同基线的patch。
+4. 同事客户端路径：colleague_20261029/stc-client；不是iteration1/stc-client/stc-client那份产品客户端。BaseSvr来自独立GitLab仓库feature/ficc-reference-data。本包无新的FiccBaseSvr进程。
+5. build-support沿用上午父POM；qa-ui-tests沿用7a20767排序补充中的测试工具及72—77用例，本次未新增大规模桌面自动化。新增remainingTerm测试在sources/stc-client/tests和Base/Common源码测试中，现场单页验收见下文。
+
+三、编译及部署核对
+1. Java按已有QA流水线使用JDK8及原私服依赖，先构建安装Common，再构建安装Core，再构建QuoteSvr/NotificationSvr；BaseSvr按其原工程流水线构建。必须重新打包业务服务，确保包内Common/Core不是Maven缓存中的旧同版本JAR。
+2. 客户端按现有STP构建方式重新编译，配套部署STC.Common.dll、STC.Data.Plugin.dll、STC.SalesTrading.Plugin.dll；不要只替换销售插件。FICC资料同步开关保持开启，服务仍指向BaseSvr。
+3. 配置由Jenkins/Salt自动生成，共享配置仍在$ATS_ROOT/control，不增加手工example或另一套连接配置。核对源码config及Salt adapters中的base.snapshotPageSize=2000，核对最终服务包启动脚本。
+4. 本次提交默认JVM：QuoteSvr -Xms1024m -Xmx3072m，NotificationSvr -Xms512m -Xmx2048m；两者均使用G1和-XX:MetaspaceSize=64m。64MB是触发阈值，不是元空间上限。QA若有环境覆盖，记录实际生效参数及主机内存，不盲目叠加旧参数。
+5. 建议先升级并确认BaseSvr参考快照可用，再依次升级QuoteSvr、NotificationSvr，最后升级客户端。保留部署前整套包及配置便于成套回退，不混用不匹配的Common/Core。
+6. 旧客户端缓存可继续读取；新客户端首次发现旧字段投影会补拉一次完整快照，失败仍保留旧缓存。补拉成功后恢复增量；不是每次启动都全量下载。
+
+四、已执行验证与耗时口径
+1. Java测试报告：Common99项（1项既有跳过，0失败/错误）；Core74项、Quote12项、Notification2项、Base20项全部通过。小样本功能检查：MarketQuoteView346、PriceSearch114、NotificationProtocol55项通过。
+2. 客户端组件回归471条检查通过：452主回归、18 WPF组件、1日志失败传播。含新期限字段、旧缓存升级、同版本补拉、失败保留、恢复增量和候选行真实XAML。它们不是471个真实登录桌面用例。
+3. 相同内部初始化口径，QuoteSvr最初83.035秒→Core优化后21.731秒→最终11.259秒。DM阶段68.356→5.681秒，参考转换缓存7.079→0.958秒。上述为本机单轮记录，不是P95或QA保证值。
+4. 最终QuoteSvr从启动命令到真实DPS只读查询成功为15.592秒，严格15秒目标尚未达到。Notification内部初始化13.655→9.263秒，并已确认报价源同步成功；尚无“启动命令至提醒查询成功”的完成计时，不拿9.263冒充完整可用耗时。
+5. 启动优化已在本机服务验证；remainingTerm后端与客户端完成源码构建/组件验证，但本轮字段尚未部署到本机运行实例、未做真实登录端到端或QA验收。本包请QA升级后执行以下验收。
+
+五、QA验收用例
+用例01：启动性能与实际可用
+- 同一QA机器、同一数据量、同样预热状态，保存升级前的启动时间、依赖行数、内存参数；升级后先单独测Quote，再测Notification，禁止同时起重复实例。
+- 从发出启动命令计时，记录初始化各阶段日志；另记录Quote实际查询成功、Notification完成报价源同步且提醒接口查询成功的时间。只有日志INITIALIZED或端口监听，不能算最终可用。
+- 预期：无初始化ERROR，Base/DM加载完整；查询能返回，数据量与升级前一致。比较同口径耗时并回报实际秒数，不以本机结果代替QA结果，不做大规模压测。
+
+用例02：关注券候选列表期限（本轮重点）
+- 使用已升级客户端登录QA，打开“关注债券管理”，选择或新建本次测试分组。
+- 识别一只有效普通券、一只剩余不足一年券、一只未来有行权日的券。代码应从QA真实资料选择，不能假定示例日期永久有效。
+- 对照同一轮BaseSvr ficc.reference.sync返回的Datas[].FiccReference.remainingTerm，候选列表逐字显示相同期限，例如3.30Y、180D、3.30Y + 180D；鼠标停留可看完整文本。源缺失时不伪造行权段。
+- remainingYears仍是独立数值；其他报价/行情页面不因本演示切换显示。取消窗口并清理本次新建分组。
+- 协议示例（示意值，不代表指定券当前真实期限）：
+  {"securityId":"示例券.IB","remainingYears":"3.7956","remainingTerm":"3.30Y + 180D"}
+
+用例03：旧缓存升级与再次启动
+- 保留一份升级前客户端缓存，升级DLL后首次登录，确认日志projectionRefreshRequired=True触发完整补拉，成功后候选期限可见。
+- 正常退出后再次登录，缓存日志应为False并恢复增量，不因字段升级重复全量下载。网络失败的保留旧缓存行为由组件回归覆盖；不要为验证它中断共享QA服务。
+
+六、自动测试执行
+客户端组件测试（在合并后的客户端源码根目录执行，需原工程依赖、VS Build Tools与.NET Framework 4.7.2 targeting pack）：
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\run-colleague-regression.ps1 -BuildDirectory D:\QA\remaining-term-regression
+输出目录与安装目录分开；脚本编译测试与产品依赖，不替换已部署运行目录。组件测试使用模拟网关，不把它当真实服务器验收。
+后端源码合并后沿用各工程mvn test/流水线：重点RangeIndexGrowthTest、BackgroundInitializationTest、FiccBaseDataClientTest和Base快照/期限测试。保留实际测试结果。
+既有真实桌面测试工具的编译/运行说明见包内QA客户端自动化测试编译与运行说明.txt；72—77可作为上午功能的回归补充，不代替本次用例01—03。
