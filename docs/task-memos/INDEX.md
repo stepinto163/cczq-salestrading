@@ -26,6 +26,6 @@
 
 - 主项目：`D:/workspace/greatewall/ficc/ficc`，当前集成分支 `integration/ficc-client-convergence`。
 - 同事客户端原始记录：`D:/workspace/greatewall/ficc/ficc/colleague_20261029/stc-client/docs/task-memos`；本次归档来源提交 `613ee2947`，分支 `dev_sales_trading_backend`。副本原文保留早期方案和当时验证状态，以后续更正及最终代码为准。
-- BaseSvr：`D:/workspace/greatewall/ficc/stc-cczq/cgws-app-salestrading-basesvr`，分支 `feature/ficc-reference-data`；本轮交付提交 `9912168`，相关工作记录在主仓库10月29日、31日备忘中。
+- BaseSvr：`D:/workspace/greatewall/ficc/stc-cczq/cgws-app-salestrading-basesvr`，分支 `feature/ficc-reference-data`；本轮交付提交 `9912168`；11月2日新增分页优化本地提交 `671b466`，尚未重新交付QA，见[BaseSvr记录](sources/basesvr/2026-11-02.md)及当日主备忘。
 - 对外说明由这些记录汇总；原始任务备忘不等于整项功能已经部署或验收。当前全部交付的远端QA验收仍须单独核对。
 - 较早任务尚未逐项补录到本索引，不宣称这里已覆盖全部历史。继续处理旧任务时补入口，缺证据的内容标为待核实。
