@@ -1,0 +1,85 @@
+前端对接说明：我的报价、剩余期限（V1.2，2026-11-03）
+适用：11月2日下午至晚间最终改动，包含凌晨估值拆分。
+本说明替代此前remainingTerm对接说明中的旧方案。示例值仅用于说明协议。
+
+一、行情中心“我的报价”
+
+适用页面：信用全部、利率全部、信用最优、利率最优。
+没有新增独立接口，在既有 SERVER.QuoteSvr / ficc.price.view.open 请求顶层增加 ownerScope。
+
+勾选："ownerScope":"MINE"，服务端按当前登录用户的报价归属筛选，不需要前端传用户名。
+取消："ownerScope":"VISIBLE"，恢复当前用户可见范围；也可以省略该字段。
+不能把它放进filter.conditions。它只是筛选条件，不是权限开关。
+
+全部行情请求示例（保留原页面filter）：
+{
+  "requestId":"demo-1",
+  "viewId":"credit-all",
+  "mode":"FULL",
+  "rowShape":"QUOTE",
+  "pageSize":50,
+  "ownerScope":"MINE"
+}
+最优行情：沿用原mode="BEST"及返回结构，增加同样的ownerScope即可；不要传rowShape="QUOTE"，该参数只用于FULL。
+切换勾选后，按现有流程重新打开视图；分页、实时推送及基于该视图的导出保持同一筛选范围。
+不要只过滤当前页，也不要改变其他筛选条件。
+
+二、剩余期限：服务端传日期，客户端计算
+
+为什么改：剩余期限每天变化，但到期日和行权日通常不变；不能为了期限变化每天重传所有基础资料。
+
+基础资料同步行示例（省略其他字段）：
+{
+  "Bond_ID":"示例券.IB",
+  "Maturity_Date":"20300502",
+  "Option_Date":20291103,
+  "Option_Type":"PUT",
+  "FiccReference":{
+    "securityId":"示例券.IB",
+    "maturityDate":"2030-05-02"
+  }
+}
+三个源字段Maturity_Date、Option_Date、Option_Type保存在客户端基础资料缓存中。
+ficc.reference.sync不再下发remainingTerm、remainingYears；不要继续依赖旧同步记录中的这两个值。
+
+1. remainingTerm：展示文字
+直接调用已更新的STC.Common：
+  entry.Tenor = FiccBondReferenceCache.CalculateRemainingTerm(record.SecurityId);
+
+复用原STC期限算法，读取本地缓存，不调用base.get。
+普通券显示180D、3.30Y等；行权券显示“距行权期限 + 行权日至到期期限”。
+上述日期在2026-11-03计算，示例为3Y + 180D；ETS沿用原算法的“+ N”。
+缺缓存、缺日期或日期无效：返回"--"并记录WARN；异常记录ERROR及堆栈，不向页面抛出。
+已到期显示"--"。不要再用“?? record.RemainingYears”回退。
+本轮只在关注债券管理的候选列表接入展示，其他页面可按同样方法后续接入。
+
+2. remainingYears：数值年限，用于数值判断、筛选等
+名称保留，但来源改为使用端计算，不是从基础资料接口取得的固定值。
+  var reference = FiccBondReferenceCache.Find(record.SecurityId);
+  double? years = reference == null ? null : (double?)reference["remainingYears"];
+
+Find/FindCode返回的remainingYears由当前日与Maturity_Date即时计算。
+按完整年数加剩余天数/目标年份天数计算，不从展示文字反向解析，也不使用估值年限。
+无有效到期日为null，已到期为0。该派生值不写入SQLite，不推进ReferenceVersion。
+客户端日期使用DateTimeEx.ServerTime；不要在页面把计算结果永久缓存。
+服务端筛选仍由服务端按上海业务日期计算年限，不需要前端上传某只券的remainingYears。
+
+三、同步注意事项（使用新版基础资料插件时已处理）
+
+SERVER.BaseSvr / ficc.reference.sync新增必填DataSet，两组分别保存ReferenceVersion：
+  {"DataSet":"REFERENCE","PageNum":1,"PageSize":1000,"ReferenceVersion":"上次资料版本"}
+  {"DataSet":"VALUATION","PageNum":1,"PageSize":1000,"ReferenceVersion":"上次估值版本"}
+首次各自不传ReferenceVersion，后续分页使用各自首页的SnapshotVersion。
+基础资料只在源字段实际变化时增量更新；跨日、服务重启不强制全量。
+估值单独同步，不再因每日估值变化重传整条债券资料。
+页面仍调用统一缓存Find/FindCode；插件按券关联估值，页面无需另请求估值。
+须配套升级BaseSvr、新版Common及客户端STC.Common/STC.Data.Plugin，不能只替换FICC页面插件。
+
+四、前端最小核对
+
+1. 四个行情页勾选/取消“我的报价”，翻页和导出范围一致。
+2. 普通券、行权券分别检查期限文字；缺日期显示--，不产生空引用异常。
+3. 跨日重新读取时，期限文字和remainingYears重新计算，稳定日期不变。
+4. 仅估值更新时，估值和偏离刷新，基础资料版本不应因此改变。
+
+源码依据：同事客户端dev_sales_trading_backend，cc51aff70、2d891c14d；BaseSvr 08c30a9、8b310b9；主项目Common 5b38cb7。
