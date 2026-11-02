@@ -12,6 +12,8 @@
 - [QA客户端自动化测试说明](../QA客户端自动化测试编译与运行说明.txt)。
 - GitHub归档：[codex/work-records](https://github.com/stepinto163/cczq-salestrading/tree/codex/work-records)。这是工作文档分支，不是产品发布分支。
 
+- 本地待发布：11月2日 `remainingTerm` 后端字段及客户端单页演示，客户端仅“关注债券管理”候选列表接入；471项组件检查通过，未部署/未做QA验收，见[当日备忘](2026-11-02.md)。
+
 ## 每日记录
 
 | 日期 | 主仓库备忘 | 同事客户端备忘归档 |
