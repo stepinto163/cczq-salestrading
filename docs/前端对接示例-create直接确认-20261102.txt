@@ -1,0 +1,55 @@
+前端对接：create直接创建已确认报价
+
+1. 精确报价、“新报价”：仍调用 ficc.quote.create，只增加顶层 confirmOnCreate=true。
+
+请求示例（机构、价格、报量均可不填）：
+{
+  "requestId": "R-唯一请求标识",
+  "confirmOnCreate": true,
+  "quotes": [{
+    "clientQuoteId": "C-唯一行标识",
+    "securityId": "240210.IB",
+    "side": "2",
+    "tradeDate": "2026-11-02",
+    "settlType": "2",
+    "price": null,
+    "quantity": null
+  }]
+}
+side：1=Bid，2=Ofr；settlType：1=T+0，2=T+1。日期按实际业务填写。
+必填业务要素只有券、方向、交易日期、清算速度。空价量传null或不传，不能转成0或空字符串。
+
+2. 成功返回：报价已经确认，不要再调用 ficc.quote.confirm。
+
+{
+  "Code": "0000",
+  "Data": {"results": [{
+    "clientQuoteId": "C-唯一行标识",
+    "quoteId": "Q-服务端生成标识",
+    "revision": "1",
+    "status": "ACTIVE",
+    "Code": "0000",
+    "Msg": "成功"
+  }]}
+}
+保存quoteId/revision；成功行移出输入预览，不进入报价确认页面。
+
+3. 失败示例：缺少方向，整条报价不创建。
+
+{
+  "Code": "0000",
+  "Data": {"results": [{
+    "clientQuoteId": "C-唯一行标识",
+    "Code": "1001",
+    "Msg": "side is required",
+    "error": {"type": "VALIDATION_FAILED", "field": "side"}
+  }]}
+}
+提示该行的Msg及错误字段，保留输入供修改。示例省略外层Msg/requestId等无关字段，错误文案以实际回执为准。
+
+前端注意：
+- 先检查外层Code，再逐条检查results.Code；外层0000不等于每条都成功。成功行还须核对status=ACTIVE。
+- 批量按clientQuoteId对应每一行，允许部分成功；不要重新提交已经成功的行。
+- 通信超时、结果未知：用相同requestId和原请求内容重试，不能换ID盲目创建。明确校验失败后修改内容重提则用新requestId。
+- 不传confirmOnCreate或传false，仍创建待确认报价；原报价确认页面继续调用confirm，QT接入流程不变。
+- 先升级支持此参数的Common/QuoteSvr，再升级客户端；旧服务端报未知字段时不要去掉参数降级提交。
