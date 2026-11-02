@@ -1,0 +1,36 @@
+FICC 源码合并说明（2026年11月2日，V1.0）
+
+一、本次交付与昨天的关系
+1. 本包沿用11月1日邮件的五组件sources目录，是源码比较合并包，不是安装包。
+2. 相对昨天的ficc-qa-source-merge-20261101-184556.zip，只有Common、QuoteSvr和同事STC/STP客户端发生变化。本次后端提交a276984，客户端提交a9313daca。
+3. NotificationSvr、BaseSvr、构建辅助及QA UI工具沿用昨天包中的快照，不要求重复覆盖。BaseSvr来源仍为9912168。各组件准确提交、逐文件校验值见manifest.json。
+4. 不包含BondSearch Core源码；继续使用同事原版a1af7eef51e22f803e9fb57ab20b45343b0c58dc对应产物。不要修改库接口；如同名SNAPSHOT缓存不一致，重新构建安装原版依赖。
+
+二、为什么修改，最终行为是什么
+1. 原精确报价和“新报价”先创建待确认记录，再调用确认；第二步失败会留下待确认。本次在现有ficc.quote.create增加可选confirmOnCreate参数，true时按正式报价规则校验并原子创建ACTIVE报价，不再另发确认请求。
+2. 原子性以单条报价为单位，不是整批全部成功或全部失败。单条的报价、同业务键旧报价替换、历史、事件及回执一起提交；失败则回滚。批量仍允许部分成功，失败行留在客户端输入页面供修改。
+3. 成功行返回quoteId、revision、status=ACTIVE及Code；失败行沿用Code、Msg、error.type和error.field，包含确认校验失败的原因。客户端不能把顶层Code=0000当成所有行成功，不能在通信超时后换requestId重复创建。
+4. 不传confirmOnCreate或传false仍创建PENDING_CONFIRM；QT接入不接受该开关，继续人工确认。已有待确认记录不自动转换，不改变已有确认接口。
+5. 只有券、方向、交易日期、清算速度必填；机构、交易员、价格、报量均非必填。已填写的机构/交易员仍须匹配有效CRM信息。报量填写时必须大于0；空值不等于0。
+6. “新报价”窗口原来忽略数字转换失败，将空价格/报量变成0，引发报量校验失败。本次保留null，并补充真实WPF窗口的空值转换检查；不把业务规则改为价量必填。
+
+三、供QA AI执行的合并步骤
+1. 先读取本说明、changes.json、manifest.json。确认QA已经合并昨天的基础包；没有合并时，先按完整源码对比完成基础合并，不能直接套用增量补丁。
+2. patches目录分别提供Common、QuoteSvr、stc-client的增量补丁，路径相对于各组件仓库根目录；基线分别为昨天后端5d009de及客户端613ee2947。变更清单列明新增/修改文件，本次没有删除文件。
+3. 在各自QA分支先检查git状态并保护已有改动，执行git apply --check <补丁路径>。确认可应用后执行git apply <补丁路径>；存在冲突时用sources中的最终文件逐项人工/AI比较合并。不要整目录强制覆盖，不要删除包中未提供的QA文件，不要执行reset --hard。
+4. 客户端目标是同事STC/STP仓库，不是另一套iteration1/stc-client。同步Gateway契约、GatewayQuoteService、新报价窗口及测试文件。
+5. 构建顺序：现有parent/Common → QuoteSvr → 同事客户端。Common新增请求/结果字段必须进入QuoteSvr实际加载的依赖目录，不能仅替换QuoteSvr主JAR。使用现有Jenkins/Salt及STP流水线；保留QA环境地址、共享$ATS_ROOT/control引用和许可证管理方式，不复制开发机连接配置。
+6. 后端先部署并确认就绪，再更新客户端。旧服务端不识别confirmOnCreate时应明确报错，不通过删除参数退回“先创建再确认”。NotificationSvr/BaseSvr本次没有新增源码改动。
+7. 保留STP的Ficc.ReferenceSyncEnabled=true、Ficc.BaseService=BaseSvr及既有基础数据插件。运行环境要求.NET Framework 4.7.2或兼容更高版本，沿用昨天部署前提。
+
+四、验证与验收
+1. 已完成本机构建及回归：DirectQuoteSubmissionSmoke 60项、OptionalQuoteFieldsSmoke 58项、QtIntakeSmoke 44项；QuoteSvr构建12项JUnit无失败；客户端组件/模拟网关回归450条PASS输出。不是450个桌面测试用例，也不代表QA已验收。
+2. 后端回归源码在QuoteSvr/src/test/java/ficc/quote，客户端执行tests/run-colleague-regression.ps1。数据库Smoke使用独立临时schema并自动清理，需可建schema的专用测试库配置；不得指向生产库。DirectQuoteSubmissionSmoke还注入提交失败验证事务回滚。
+3. 在真实QA客户端分别检查“精确报价”和“新报价”：只填四个必填项，不填机构及价量，应直接成为正式报价，行情/今日报价可见，不出现在报价确认页面。
+4. 分别验证只填价格、只填报量、价量均填写；空值不能变0。缺任一必填项、无效报量或未匹配机构时应报明确错误，不留下待确认记录。
+5. 批量混合有效/无效行，成功行仅生成一次；修正失败行后重试不重复创建成功行。通信超时重试保持原请求幂等。QT正常接入仍进入待确认，确认后成为正式报价。
+6. UI自动化工具仍放在qa-ui-tests，编译及部署版本测试方法见包内《QA客户端自动化测试编译与运行说明.txt》。本次未向69个现有JSON桌面用例新增用例；新增覆盖属于上述服务数据库回归和客户端组件回归。QA需另行执行本节现场验收，不能只看旧套件通过。
+7. 旧QtIntakeSmoke向history注入故障的检查已改到requests回执更新处，因为待确认报价不写业务历史；这是测试修正，没有修改产品QT流程。
+
+五、发布状态
+代码已提交，未在本次替换正在运行的服务或客户端，未完成QA桌面端到端验收。请QA AI反馈合并后的提交号、实际加载的JAR/DLL版本、构建及各项验收结果，不把“合并成功”等同于“部署验证通过”。
