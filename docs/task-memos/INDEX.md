@@ -7,7 +7,7 @@
 - 范围：2026年10月29日至11月2日；本仓库后端及同事 STP 客户端。
 - 最新源码交付：11月2日原子报价提交及价量空值修复，[QA合并说明](../QA源码合并说明-20261102.txt)；沿用昨日五组件结构，本次新增改动限Common、QuoteSvr和同事客户端，已提交163邮件。
 - 补充交付：11月2日信用全部/利率全部时间倒序及72—77桌面专项，[合并与测试说明](../QA排序专项合并说明-20261102.txt)；六例本机通过；7a20767补充包已获163 SMTP接受，详见当日备忘。
-- 前端补充：[remainingTerm缓存与展示示例](../前端对接示例-remainingTerm-20261102.txt)，下午邮件后补充，未另行发送。
+- 前端补充：[remainingTerm缓存与展示示例](../前端对接示例-remainingTerm-20261102.txt)，下午邮件后补充，已更正为本地日期计算，未另行发送。
 - 前端对接：[create直接确认的请求/返回示例](../前端对接示例-create直接确认-20261102.txt)，同日邮件之后补充。
 - 最新对外说明：[交付变更记录 V1.2](../交付变更记录-20261101-V1.2.txt)，共19项；更正了V1.1的中债偏离方向描述。
 - [QA客户端自动化测试说明](../QA客户端自动化测试编译与运行说明.txt)。
@@ -15,7 +15,7 @@
 
 - 下午补充交付：启动性能优化及 `remainingTerm` 单页演示源码包 V1.0，163 SMTP已接受；六组件差异校验通过，附3项QA现场验收用例及自动回归源码。[合并与验收说明](../QA启动性能及剩余期限合并说明-20261102.txt)；待QA升级确认，实际测试与耗时边界见[当日备忘](2026-11-02.md)。
 
-- 设计复核：原STC客户端已按日期计算剩余期限；已发V1.0中服务端 `remainingTerm` 同步方案需调整，当前仅调查、未改代码/重发包，见[当日更正](2026-11-02.md)。
+- 设计复核与增量修复：客户端4e62f586c复用原STC按日期计算；BaseSvr 4138103排除仅展示期限变化引起的无效增量，保留接口。21项Base及475项客户端回归通过；尚未部署/重发QA包，见[当日更正](2026-11-02.md)。
 
 ## 每日记录
 
@@ -30,7 +30,7 @@
 ## 来源与读取注意
 
 - 主项目：`D:/workspace/greatewall/ficc/ficc`，当前集成分支 `integration/ficc-client-convergence`。
-- 同事客户端原始记录：`D:/workspace/greatewall/ficc/ficc/colleague_20261029/stc-client/docs/task-memos`；本次归档来源提交 `613ee2947`，分支 `dev_sales_trading_backend`。副本原文保留早期方案和当时验证状态，以后续更正及最终代码为准。
-- BaseSvr：`D:/workspace/greatewall/ficc/stc-cczq/cgws-app-salestrading-basesvr`，分支 `feature/ficc-reference-data`；本轮交付提交 `9912168`；11月2日新增分页优化 `671b466`、剩余期限展示字段 `f17a006`（本地提交），尚未重新交付QA，见[BaseSvr记录](sources/basesvr/2026-11-02.md)及当日主备忘。
+- 同事客户端原始记录：`D:/workspace/greatewall/ficc/ficc/colleague_20261029/stc-client/docs/task-memos`；最新归档来源提交 `4e62f586c`，分支 `dev_sales_trading_backend`。副本原文保留早期方案和当时验证状态，以后续更正及最终代码为准。
+- BaseSvr：`D:/workspace/greatewall/ficc/stc-cczq/cgws-app-salestrading-basesvr`，分支 `feature/ficc-reference-data`；本轮交付提交 `9912168`；11月2日新增分页优化 `671b466`、剩余期限展示字段 `f17a006`（已含于下午V1.0），增量更正 `4138103` 仅本地提交、尚未发QA，见[BaseSvr记录](sources/basesvr/2026-11-02.md)及当日主备忘。
 - 对外说明由这些记录汇总；原始任务备忘不等于整项功能已经部署或验收。当前全部交付的远端QA验收仍须单独核对。
 - 较早任务尚未逐项补录到本索引，不宣称这里已覆盖全部历史。继续处理旧任务时补入口，缺证据的内容标为待核实。

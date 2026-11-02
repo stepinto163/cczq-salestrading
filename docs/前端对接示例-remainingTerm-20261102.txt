@@ -1,33 +1,32 @@
-﻿前端对接：剩余期限展示字段 remainingTerm
+﻿前端对接：剩余期限本地计算（2026-11-02增量更正）
 
-1. 从已有基础资料同步接口取值，不新增接口。
-服务：SERVER.BaseSvr；接口：ficc.reference.sync。
-返回片段（省略其他字段和分页信息，数值仅为示例）：
+1. 沿用基础资料同步与本地缓存，不新增接口。
+SERVER.BaseSvr / ficc.reference.sync 返回的稳定字段示例：
 {
   "Datas": [{
     "Bond_ID": "示例券.IB",
-    "FiccReference": {
-      "securityId": "示例券.IB",
-      "remainingYears": "3.7956",
-      "remainingTerm": "3.30Y + 180D"
-    }
+    "Maturity_Date": "20300502",
+    "Option_Date": 20291103,
+    "Option_Type": "PUT",
+    "FiccReference": { "securityId": "示例券.IB", "remainingYears": "3.7956" }
   }]
 }
 
-2. 两个字段分工不同。
-- remainingTerm：可空字符串，只用于展示，直接显示服务端原文，例如180D、3.30Y、3.30Y + 180D。
-- 行权示例中的两段分别为距行权日、行权日至到期日；永续券可能为3.30Y + N。
-- remainingYears：保留原值，用于原有数值筛选和排序。不要用remainingTerm替换它，也不要从展示文本反推年限。
+2. 日期留在本地，由客户端原STC算法计算。
+STCHelper.SetShowTenor(SimpleBondsInfoPo) 使用 DateTimeEx.ServerTime。
+例如当前日期为2026-11-03，上述日期显示3Y + 180D。
+普通券显示180D或3.30Y；行权券为距行权日 + 行权日至到期日；ETS沿用 + N。
 
-3. 前端接法。
-基础资料DTO、缓存字段白名单和持久化均保留remainingTerm，页面按券代码从本地缓存读取；不要新增逐条base.get。
-同事客户端的候选列表示例：
-  entry.Tenor = string.IsNullOrWhiteSpace(record.RemainingTerm)
-      ? record.RemainingYears : record.RemainingTerm;
-字段缺失时沿用原显示逻辑，不猜测行权分段。
+3. 同事客户端演示写法（只改关注债券管理右侧候选列表）：
+entry.Tenor = FiccBondReferenceCache.CalculateRemainingTerm(record.SecurityId)
+    ?? record.RemainingYears;
+该函数只读本地日期并调用原算法，不发base.get。无日期时回退原年限；日期已过期或格式无效显示--。
+打开页面重新识别时按当天计算；窗口持续打开时每30秒检查服务器日期，跨日重算候选行，关闭时停止检查。
 
-4. 注意旧缓存。
-旧缓存可能已经保存最新版本号，却没有这个新字段。升级后需补拉一次完整快照（新一轮同步ReferenceVersion为空，后续仍沿用原分页流程）；即使服务端版本号没变，也要保存补齐字段的新快照。
-成功后恢复增量同步，失败保留原缓存，不必每次启动全量下载。
+4. 保持兼容，不回滚接口。
+remainingTerm字段、DTO、缓存列和旧缓存一次升级机制保留。
+服务端remainingTerm/TimeToMaturity仅代表快照形成时的兼容文本，不能当作每日最新值；它们单独变化不增加同步版本。
+到期日、行权日、条款、估值等实际数据变更仍产生增量。
+remainingYears数值筛选/排序口径不变。本地计算无需每日全量下载，也无需等待新增文本字段补齐。
 
-当前演示仅接入“关注债券管理”的右侧候选列表，其他页面无需跟着修改。先升级配套BaseSvr，再升级客户端；旧服务没有该字段时仍按原逻辑显示。
+本说明替代此前“直接显示服务端remainingTerm”的接法。已发V1.0包不会自动更新，须合入本次增量修复。
