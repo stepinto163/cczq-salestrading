@@ -1715,3 +1715,6 @@ Java 类型位于 common 的 `ficc.api`，C# 对应类型位于插件 `Ficc/Prot
 验证入口：Java `RecommendationSmoke` 使用独立 PostgreSQL schema（运行完清理），输出跨语言协议样本；客户端 `scripts/test-recommendations.ps1` 验证真实 XAML、证据展开、反馈按钮、日期校验与迟到应答隔离。`-Live` 额外通过本地 GW/QuoteSvr 读取历史证据，账户从测试进程 `FICC_TEST_USER`、`FICC_TEST_PASSWORD` 读取；不向 QT 外发消息。脚本使用30秒独立进程看门狗，不是性能测试。
 
 2026-11-02期限更正：ficc.reference.sync不再传remainingYears/remainingTerm；只传稳定日期。服务内部ReferenceRecord及既有报价筛选的remainingYears为当前日与到期日派生值，不取估值年限。同步ReferenceVersion持久化，重启不再更换数据集标识；首次旧版本迁移需要一次全量。
+
+
+2026-11-02 V1.2估值拆分：ficc.reference.sync请求必须明确DataSet=REFERENCE或VALUATION；响应回显DataSet。两组各自保存ReferenceVersion及分页SnapshotVersion，不混用。稳定资料不含估值，估值字段见QA基础资料与估值拆分说明-20261102.txt；业务base.get的合并读取结构保留，原STC接口不变。

@@ -4,6 +4,12 @@
 
 # 销售交易基础数据同步
 
+## 估值独立同步（2026-11-02 V1.2）
+
+当前最终协议在同一 icc.reference.sync 中使用 DataSet=REFERENCE/VALUATION；两组独立持久化版本及分页快照。REFERENCE不含估值字段；VALUATION包含中债/中证估值和久期等每日数据。仅估值更新不推进债券资料检查点。两个消费者数据集齐备才发布，失败保留旧组合；原STC接口不变。客户端独立SQLite估值缓存，更新只触发值刷新，不重建债券索引。BaseSvr另自动建立ficc_valuation_checkpoint与ficc_valuation_change，使用同一默认DBPool。
+
+本节替代下文估值混装描述。旧FICC协议须配套升级，不能新旧混跑；首次拆分有一次资料整理增量和估值全量。详见[合并与验收说明](QA基础资料与估值拆分说明-20261102.txt)。
+
 ## 剩余期限与持久化同步（2026-11-02最终更正）
 
 基础资料仅同步稳定的 `Maturity_Date`、`Option_Date`、`Option_Type`（及FICC引用的maturityDate）；不再下发remainingYears、remainingTerm、TimeToMaturity。原STC接口未改。客户端期限展示复用STCHelper，数值年限也按到期日计算；后端适配器按上海当前日计算年限，期限条件由服务侧判定，不改BondSearch Core。跨日刷新派生缓存，不修改基础资料同步版本。估值的真实更新仍正常增量。

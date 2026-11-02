@@ -1,0 +1,45 @@
+FICC QA增量修复包 V1.2：基础资料与估值分离（2026-11-02）
+
+一、修改原因
+原STC已经分开管理债券资料和估值。FICC聚合时将估值装进整条债券资料，导致每日估值更新会重复传输稳定字段。V1.1持久化版本解决了重启续传，但没有解决这个传输量问题。本次在同一个BaseSvr中恢复数据分离，不增加服务或数据库连接，不修改BondSearch Core。
+
+二、最终行为
+1. 基础资料：日期、评级、机构、地区、债券库等，独立版本，只同步实际变化。
+2. 估值：中债/中证价格、收益率、估值日期、行权估值、推荐口径、隐含评级及久期，独立版本。每日估值大批更新时，只传估值；日内更正也可以增量同步。
+3. 两个数据集都支持完整首次下载、分页固定快照、删除和重启续传。不会仅因日期跨日强制下载全部债券资料。
+4. 客户端使用两份结构化SQLite缓存。估值单独更新不写债券缓存、不重建券检索索引；页面按券代码从统一内存入口读取，仍不调用base.get。
+5. QuoteSvr/NotificationSvr通过新版Common读取两组数据。估值变化更新业务缓存版本并通知已有刷新链路，避免估值筛选、行情计算继续使用旧值。
+6. 每组全部分页通过才接受；任何分页失败、批次变化、数据集不符或服务返回STALE，本轮不发布新组合，记录错误并保留上次可用内存缓存。估值字段清空或估值记录删除，不保留旧估值，也不删除债券。
+7. remainingYears/remainingTerm仍由稳定日期在使用端计算；本次不改价格口径、不改筛选业务规则、不改原STC接口。
+
+三、合并与部署
+以23:04的ficc-qa-reference-mine-V1.1-20261102-230419.zip为本次补丁基线；精确提交号见manifest.json。完整源码和增量补丁均提供，不再应用包内旧版本补丁。
+改动组件：BaseSvr、Common、同事stc-client。QuoteSvr/NotificationSvr源码本轮不变，但必须用本包Common重建部署。
+客户端必须同时编译并替换STC.Common、STC.Data.Plugin及FICC插件相关构建输出，不能只换SalesTrading.Plugin.dll。
+原STC的stc.base.search等接口不变；FICC专用同步协议新增DataSet，必须配套升级消费者。旧FICC消费者访问新版BaseSvr会得到明确升级提示；新版消费者不接受旧服务不带DataSet的响应。请在同一维护窗口先升级BaseSvr，再升级两个后端服务和客户端，不承诺新旧FICC混跑。
+BaseSvr沿用现有STC默认DBPool，自动建立ficc_valuation_checkpoint、ficc_valuation_change，与已有ficc_reference_checkpoint、ficc_reference_change分别保存状态。不需手工建表、不增加密码环境变量、不补example。
+第一次从V1.1升级，债券记录去除估值字段会产生一次整理增量，估值数据集首次全量；之后估值变化不推进债券资料版本。客户端旧债券缓存保留，首次新增独立估值缓存；升级后首次须完成估值同步才发布完整可用组合。
+
+四、最短协议示例
+服务：SERVER.BaseSvr；topic：ficc.reference.sync。
+债券请求：{"DataSet":"REFERENCE","PageNum":1,"PageSize":1000,"ReferenceVersion":"上次债券版本"}
+估值请求：{"DataSet":"VALUATION","PageNum":1,"PageSize":1000,"ReferenceVersion":"上次估值版本"}
+首次各自不传ReferenceVersion。响应保留Datas/Total/FullSnapshot/ReferenceVersion/SnapshotVersion，增加相应DataSet。第二页起带首页SnapshotVersion，不混用两个数据集的版本。
+估值行示意：{"Bond_ID":"240210.IB","ExtendedModifyDate":123,"FiccReference":{"referenceSchemaVersion":3,"securityId":"240210.IB","valuationYield":"2.40","valuationDate":"2026-11-02","valuationBasis":"MATURITY"}}
+删除行示意：{"Bond_ID":"240210.IB","delflag":"1","ExtendedModifyDate":124}。
+页面继续使用FiccBondReferenceCache.Find/FindCode，结果已关联估值；业务页面无需另发估值请求。
+
+五、QA最小验收
+1. 登录后核对信用/利率全部、最优、报价录入、今日/历史报价及提醒中的估值和中债偏离；收益率/净价口径按原规则。
+2. 在隔离数据中仅更正估值，等待源数据被BaseSvr加载以及FICC与客户端下一轮同步：REFERENCE版本不变且Total=0；VALUATION返回变化。FICC同步周期为每轮完成后60秒，不能将修改原库等同已经加载。
+3. 页面保持打开：估值、偏离自动更新，报价价格本身不变；关注券识别使用新估值；估值相关筛选重新计算。
+4. 重启BaseSvr且源数据未变：两个检查点均可续传，Total=0，不全量。
+5. 隔离数据清空估值或移除券：清除对应旧值/记录；仅估值删除不能删除债券资料。
+6. 同步失败或分页版本不一致时不显示半批数据，日志记录失败；恢复后从上次成功检查点重试。跨日只由真实数据变更推进各自版本。
+
+六、自动回归及边界
+客户端：tests/run-colleague-regression.ps1；包含独立估值更新、真实SQLite恢复、已有行刷新、中债偏离、全部/最优行情与提醒行及WPF加载回归。
+后端：各模块mvn test；BaseSvr ReferenceCheckpointStoreTest使用临时PostgreSQL schema，验证两个数据集独立版本及重启，不修改业务表。另保留小样本行情数据库回归。
+实际执行结果见包内validation/local-verification.json和当日memo。组件测试、真实数据库测试不等于完整桌面登录E2E或QA升级验收；本轮没有运行全量压力测试，也未替QA部署。
+
+本机最终结果：BaseSvr 28项通过；Common104项中103项通过、1项既有跳过；QuoteSvr12项、NotificationSvr2项通过。客户端480项主组件断言及真实WPF/日志检查通过；行情数据库小样本346项通过。
