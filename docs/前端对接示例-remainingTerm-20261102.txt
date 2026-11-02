@@ -1,32 +1,37 @@
-﻿前端对接：剩余期限本地计算（2026-11-02增量更正）
+前端对接：剩余期限本地计算（2026-11-02 V1.1）
 
-1. 沿用基础资料同步与本地缓存，不新增接口。
-SERVER.BaseSvr / ficc.reference.sync 返回的稳定字段示例：
+1. 基础资料同步只使用稳定日期，不再下发remainingTerm和remainingYears。
+SERVER.BaseSvr / ficc.reference.sync 示例（省略其他字段）：
 {
   "Datas": [{
     "Bond_ID": "示例券.IB",
     "Maturity_Date": "20300502",
     "Option_Date": 20291103,
     "Option_Type": "PUT",
-    "FiccReference": { "securityId": "示例券.IB", "remainingYears": "3.7956" }
+    "FiccReference": { "securityId": "示例券.IB", "maturityDate": "2030-05-02" }
   }]
 }
 
-2. 日期留在本地，由客户端原STC算法计算。
-STCHelper.SetShowTenor(SimpleBondsInfoPo) 使用 DateTimeEx.ServerTime。
-例如当前日期为2026-11-03，上述日期显示3Y + 180D。
-普通券显示180D或3.30Y；行权券为距行权日 + 行权日至到期日；ETS沿用 + N。
+2. 展示：复用原STC算法，只读客户端缓存，不调用base.get。
+entry.Tenor = FiccBondReferenceCache.CalculateRemainingTerm(record.SecurityId);
+当前日为2026-11-03时，上述示例显示3Y + 180D。
+普通券为180D、3.30Y等；行权券为距行权日 + 行权日至到期日；ETS沿用 + N。
+缺缓存、缺日期、无效日期/条款显示--并记WARN；异常记ERROR及堆栈。正常已到期显示--。
+不返回null，不回退估值年限。本次只接关注券候选列表，其他页面没有批量接入。
 
-3. 同事客户端演示写法（只改关注债券管理右侧候选列表）：
-entry.Tenor = FiccBondReferenceCache.CalculateRemainingTerm(record.SecurityId)
-    ?? record.RemainingYears;
-该函数只读本地日期并调用原算法，不发base.get。无日期时回退原年限；日期已过期或格式无效显示--。
-打开页面重新识别时按当天计算；窗口持续打开时每30秒检查服务器日期，跨日重算候选行，关闭时停止检查。
+3. 数值：本地ToReferenceJson/Find返回的remainingYears也是由当前日、到期日计算。
+整年加不足一年天数/目标年份天数，保持筛选精度，不用展示文字反向解析。
+缺少有效到期日返回null，已到期为0；不读取估值的remaining_year。
+该计算值不写入基础资料SQLite，也不作为同步更新条件。
+客户端使用DateTimeEx.ServerTime；服务端筛选使用上海业务日期，并在跨日失效计算缓存。
 
-4. 保持兼容，不回滚接口。
-remainingTerm字段、DTO、缓存列和旧缓存一次升级机制保留。
-服务端remainingTerm/TimeToMaturity仅代表快照形成时的兼容文本，不能当作每日最新值；它们单独变化不增加同步版本。
-到期日、行权日、条款、估值等实际数据变更仍产生增量。
-remainingYears数值筛选/排序口径不变。本地计算无需每日全量下载，也无需等待新增文本字段补齐。
+4. 同步：请求结构不变，继续保存ReferenceVersion，成功完成全部分页才提交检查点。
+BaseSvr持久保存同步标记；重启后只返回实际变化及删除。
+旧的内存版本迁移到持久化版本时会补一次全量，此后重启或跨日不强制全量。
+真实日期、估值、评级、债券库等内容变化仍会产生增量。
 
-本说明替代此前“直接显示服务端remainingTerm”的接法。已发V1.0包不会自动更新，须合入本次增量修复。
+5. 行情中心“我的报价”：信用/利率全部和最优均下推ownerScope=MINE。
+取消勾选恢复默认可见范围；翻页、导出使用同一归属条件。
+这是列表筛选，不是权限开关，也不改变报价归属。
+
+本说明替代下午V1.0及此前保留兼容期限文本的方案。

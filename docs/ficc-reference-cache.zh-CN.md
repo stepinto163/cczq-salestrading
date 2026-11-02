@@ -4,18 +4,15 @@
 
 # 销售交易基础数据同步
 
-## 剩余期限展示字段（2026-11-02）
+## 剩余期限与持久化同步（2026-11-02最终更正）
 
-FICC参考记录新增可空字符串`remainingTerm`，直接复用原STC `BondInfoView.TimeToMaturity`（原生成逻辑为`Utils.calcTenor`）。例如：
+基础资料仅同步稳定的 `Maturity_Date`、`Option_Date`、`Option_Type`（及FICC引用的maturityDate）；不再下发remainingYears、remainingTerm、TimeToMaturity。原STC接口未改。客户端期限展示复用STCHelper，数值年限也按到期日计算；后端适配器按上海当前日计算年限，期限条件由服务侧判定，不改BondSearch Core。跨日刷新派生缓存，不修改基础资料同步版本。估值的真实更新仍正常增量。
 
-```json
-{"securityId":"示例券.IB","remainingYears":"3.7956","remainingTerm":"3.30Y + 180D"}
-```
+现有STC默认数据库自动创建两张表：`ficc_reference_checkpoint(id,namespace,version)` 固定一行；`ficc_reference_change(bond_id,fingerprint,version,deleted)` 保存每券摘要、最后变化版本和删除标记。namespace首次建库生成后持久保留；版本采用单调毫秒值。检查点与逐券变化同事务提交，成功后才发布不可变快照；写库等待不阻塞已有快照查询。并发旧实例提交被拒绝，不覆盖新版本。没有新增数据库连接配置。
 
-- 普通券可显示`180D`或`3.30Y`；行权券的两段分别表示距行权日、行权日至到期日；永续沿用`期限 + N`。
-- 小数精度及日期口径沿用原STC；数据随原STC资料更新后进入FICC快照。缺失为空，不从估值年限猜测行权分段。
-- `remainingYears`保持原值，用于数值筛选和期限排序；`remainingTerm`仅供展示，两者可能采用不同口径，不能相互解析替换。
-- 新字段在`ficc.reference.sync`的`Datas[].FiccReference.remainingTerm`中返回；Common参考DTO/基础查询同时保留。旧STC接口不变，未增加接口。客户端示例仅接入“关注债券管理”的候选列表，其余页面未切换；旧缓存升级后补拉一次完整字段快照，再恢复增量同步。
+服务重启重新聚合源资料，与持久摘要比较，真实变化才提高版本。停机期间删除也保留删除标记；分页协议、客户端检查点格式及SQLite提交方式不变。首次从旧随机内存标识迁移到持久化标识，需要一次全量；以后正常重启和单纯跨日均不强制全量。若人为删除/重建同步元数据表，则视为新数据集，需全量。
+
+本节替代下面历史记录中“服务重启全量”和兼容期限文本的描述。数据库事务、重启续传、失败传播及日志均有小样本回归；并非QA部署验收。
 
 ## 服务边界
 
