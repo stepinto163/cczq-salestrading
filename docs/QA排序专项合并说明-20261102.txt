@@ -1,0 +1,34 @@
+﻿FICC 全部行情排序及专项自动化补充交付 V1.0
+日期：2026-11-02
+
+一、为什么修改
+信用全部、利率全部此前已经改为逐笔报价列表，但仍沿用按券分组、组内按方向和价格排序的旧规则，因此界面报价时间没有整体倒序。
+
+二、本次改动
+1. QuoteSvr 的 FULL + rowShape=QUOTE 视图改为报价 updateTime 倒序，同一时刻按 quoteId 升序稳定排序，与报价管理一致。修改报价后按新的更新时间重新定位。
+2. 最优行情及展开明细的价格优先规则不变。不新增接口或排序参数，不修改 BondSearch Core。
+3. 补充六个桌面专项用例：72/73 验证精确报价和新报价的四种价量空值组合；74/75 验证错误提示、失败不留报价及修正重试；76/77 验证利率全部、信用全部跨券跨方向时间倒序和修改后排序。
+4. 测试工具兼容真实 STP 独立启动配置，并在登录后检查实际使用真实网关，避免把模拟服务当成端到端验证。
+
+三、合并范围
+这是上午源码包的补充增量包，须先合并上午的原子创建确认及价量可空修改：后端 a276984、同事客户端 a9313daca。
+sources/QuoteSvr 为本次提交中的 QuoteSvr 完整源码快照；patches/quotesvr.patch 只包含排序实现和后端测试的增量。请比较合并，不要直接整目录覆盖 QA 分支。
+qa-ui-tests 为测试工具源码和本次六个用例，不是客户端产品源码。应用客户端本次没有新增改动；Common、NotificationSvr、BaseSvr 沿用上午版本，不需因排序重新修改。包中不含筛选库源码。
+源码提交、文件校验值见 manifest.json。编译 QuoteSvr 时继续使用原版筛选库及现有构建依赖。
+
+四、QA 编译和运行专项测试
+前提：部署上述配套服务与客户端；机器安装 VS Build Tools 和 .NET Framework 4.7.2 targeting pack；以下路径按 QA 实际目录替换。
+在 PowerShell 中执行：
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\QA\qa-ui-tests\scripts\build-ui-tests.ps1 -UseInstalledBinaries -NativeRoot D:\QA\STP -OutputRoot D:\QA\ui-test-client
+此方式只编译测试程序，复制已部署客户端到独立目录，并校验产品 DLL 未改动；不要让输出目录和安装目录重叠。
+运行 STP 时设置：
+  $env:STC_UI_HOST = 'STP'
+  $env:STC_UI_HOST_EXE = 'STP.exe'
+  & D:\QA\ui-test-client\SalesTradingUiTests.exe --cases D:\QA\qa-ui-tests\tests\ui\cases --config D:\QA\ui-test-client\STP.exe.config
+在测试管理器里核对 QA 网关配置、测试账号，运行六个专项用例。测试会通过真实界面创建、修改并清理本例报价；需要可操作报价的测试账号。
+利率样本为 240210.IB、210210.IB；信用样本从已加载缓存选取两只有效信用债，参考数据不足会明确阻塞，不伪造通过。使用默认 2 秒操作间隔，可在播放控制窗口调整。
+
+五、本机实际验证
+后端：构建 12 项 JUnit；逐笔排序及分页 346 项；原价格排序 114 项；原子提交 60 项；价量可空 58 项，均通过。
+桌面：真实 STP + 本机真实服务，72—77 六例全部通过且清理成功；核对信用/利率页面实际表格顺序。QA 已部署二进制方式编译测试工具也通过。
+这是本次专项验证，不代表所有历史自动化用例通过，不代表 QA 已部署验收。没有重新运行大规模性能测试。
