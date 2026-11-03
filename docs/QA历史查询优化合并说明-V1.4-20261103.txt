@@ -1,0 +1,56 @@
+历史报价查询优化交付 V1.4（2026-11-03）
+
+一、为什么改
+原history表保存每笔报价的全部操作。历史报价页面每次查询需要重新找出每个报价每日最后版本，再做筛选和分页；记录与候选券数量增大后，扫描、JSON处理及排序成本明显增加。
+
+二、最终保留的改动
+1. 原history保留完整操作审计；新增quote_history_daily，按操作日期＋quote_id保存每日最后快照。报价变更历史仍使用history，不是删除或压缩审计记录。
+2. 历史查询使用每日表；可以安全下推的券集、本人报价及报价条件在SQL中筛选和分页，只读取当前页的完整快照。复杂文本、分组等继续沿用原匹配规则；保留页码、精确总数、排序及可见性。
+3. 大候选券集改为绑定text[]参数；Common防止大数组重复请求采用不合适的通用执行计划。不是客户端逐券请求，也没有改同事搜索库业务逻辑。
+4. 新增两条正式报价部分覆盖索引，减少读取宽JSON行；没有采用实验中的NOT MATERIALIZED SQL改写，没有改变数据库维护参数。
+
+三、合并范围和构建
+基线：上一封V1.3查询修复包，主仓库9f3ca9d。目标源码：7edbcf0（integration/ficc-client-convergence）。
+主要实现提交：83be097（历史预筛与分页）、cf12d75d（每日查询表）、35ea1e2（大券集参数）、7edbcf0（索引升级）。
+只合并Common和QuoteSvr；客户端、NotificationSvr、BaseSvr、BondSearch Core无需本轮修改。此前已部署功能及其配置仍保留。
+sources：两个组件完整已提交源码；changed-files：本轮改动文件；patches：相对V1.3的分组件补丁。
+在各组件仓库根目录先执行git apply --check -p3 <对应补丁>，无冲突后git apply -p3 <对应补丁>；已有QA本地改动时先比对，不能强行覆盖。补丁和完整源码比对二选一，不重复应用。
+先在Common目录执行mvn clean install，再在QuoteSvr目录执行mvn clean package。沿用QA现有父POM、依赖和Jenkins/Salt打包流程，确保部署包内Common也已更新；无需增加连接配置或手工复制example。
+
+四、QA已有历史数据怎么迁移
+1. 先备份QuoteSvr数据库/schema，停止QuoteSvr，安排迁移窗口。核对QA数据库支持部分索引及INCLUDE覆盖索引语法；本机验证为PostgreSQL16，QA数据库兼容性未实测。
+2. 保留原数据库连接和schema；数据库账号须有建表、索引、函数及触发器权限。部署新版并启动，无需手工复制history或执行建表SQL。
+3. 首次启动取得单写锁和history表锁，按2048条事件批量回填、建立索引/触发器，再写metadata键history.daily.version=2。所有批次仍在同一事务中，不是分批提交；失败整体回滚并阻止启动。
+4. 成功日志：HISTORY_DAILY_BACKFILL state=COMMITTED，以及DAILY_QUOTE_HISTORY初始化成功。后续启动只检查，不重复全量回填。已有每日表版本1时仅建新增索引，日志HISTORY_DAILY_INDEX_UPGRADE state=COMMITTED from=1 to=2。
+5. 在配置的QuoteSvr schema中检查：
+   SELECT value FROM metadata WHERE key='history.daily.version';
+   预期2。
+   SELECT count(*) FROM quote_history_daily;
+   SELECT tgname,tgenabled FROM pg_trigger WHERE tgrelid='history'::regclass AND tgname='history_daily_insert';
+   触发器应存在且启用。每日行数通常小于审计行数，不能用二者相等作为验收条件。
+6. 每条新的history INSERT通过触发器同步每日表，二者同事务提交或回滚。直接UPDATE/DELETE旧审计不在同步契约内，不要手工改历史或版本标记。
+7. 升到版本2后旧版只接受版本1的QuoteSvr不能直接换回；如需回退，按事先备份与变更窗口制定恢复方案，不要伪改版本绕过检查。
+
+五、QA回归清单
+1. 同一报价同日创建/确认/修改/撤销：每日表只保留最后版本，变更历史仍保留所有操作；同一债券的不同quote_id不能合并成一条。
+2. 同一报价跨日操作：各操作日分别保留最后版本；无操作日不新增快照。这里按操作日期，不按tradeDate。
+3. 比较原历史查询的日期范围、方向、价格/数量空值及边界、本人报价、DM评级、关注券和筛选分组；核对结果、总数、顺序、首末页及空结果。
+4. 最后状态是删除或私有时不能返回该报价较早的ACTIVE版本；单券缺资料不能导致整页失败。继承V1.3容错规则。
+5. 重启QuoteSvr，确认不重复回填；新增操作后无需重启就能查到每日表更新。
+6. QA桌面验收：历史页面打开、切换日期/条件、翻页、查看变更历史；本轮协议不变，不要求新增客户端代码。
+
+六、附带自动回归与实际验证
+Common：105项中104通过、1项既有CRM环境测试跳过；QuoteSvr：16项通过。
+数据库功能：HistorySearchSmoke 188、HistoryQueryOptimizationSmoke 486、DailyQuoteHistorySmoke 69，共743项通过；涵盖原SQL差分、多批回填、跨日/乱序、双表原子性、迁移失败回滚、版本1到2升级及重启。
+测试源码在QuoteSvr/src/test/java/ficc/quote。合并构建后，Windows可将support/iteration1/scripts中的两个PowerShell脚本放回现有iteration1/scripts，执行：
+  powershell -NoProfile -ExecutionPolicy Bypass -File iteration1/scripts/test-history-search.ps1 -Configuration <QA现有QuoteSvr运行properties绝对路径>
+脚本使用标准Maven target/javalib及target/test-classes；需Java8兼容运行时。使用独立随机schema，不写业务schema；测试数据库账号须有创建/删除schema权限。每进程30秒看门狗，日志输出至iteration1/runtime/history-search-*；超时是测试未完成，不是通过。
+本轮未新增桌面UI用例，未执行QA部署或完整桌面E2E；不能把743项数据库检查称为743个界面用例。
+
+七、性能数据和限制
+固定100万独立报价/100万每日行、10万债券、20天、单客户端；不是100万操作对应少量报价。
+同一实验增加索引前后：广命中中位1937→570ms，第1500页2130→767ms；该数据是配对实验。
+最终源码重新建库迁移后的实际结果：广命中1764ms，第1500页1017ms；无手工VACUUM，不能承诺每次亚秒。小券集8ms，大券集少量命中720ms。
+最终迁移及存储初始化约41秒，非整个服务启动耗时，QA不能直接套用；百万每日行表含索引约613MiB，两条新索引额外约95MiB。原history继续占用空间；部署须预留回填及索引构建空间。
+只测本机Java查询＋数据库，不含真实全量DM匹配、网关和桌面；并发、百万报价多版本及QA环境尚未验证。数据库正常自动维护会影响索引只读扫描效果。
+support附基准脚本及docs/performance数值证据供复核；性能脚本含历史Git基线依赖，补丁合并不自动具备原Git对象，不应在QA业务库直接运行百万压测。先做上述小规模功能与现场回归，再另行授权性能测试。
