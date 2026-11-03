@@ -1,0 +1,28 @@
+QA查询问题修复包 V1.3（2026-11-03）
+
+一、两个修复
+1. 历史报价选择地方债报1001：历史扫描遇到一只当前基础资料缺失的券，原实现会中断整次查询。本次允许查询保留报价自身字段，缺失属性不补造；正常券继续返回，并记录缺失券代码。同步检查并修复今日报价补资料、行情和提醒中的同类路径。创建、确认报价仍严格校验，基础资料服务整体未就绪仍报错。
+2. 今日报价跨日仍显示昨日报价：打开/翻页时锁外创建的筛选器遗漏当天规则。本次补回，按配置营业时区的确认日期归属（旧记录无确认时间时用创建时间）。当天撤销仍在当天可查，次日不再出现在今日页面，历史查询保留。不是按成交/结算日或日终操作时间判断。
+
+二、合并方式
+基线：上一封基础资料与估值拆分V1.2源码包；主仓库对应5b38cb7。
+修复提交：ad95348（缺资料查询隔离）、9f3ca9d（今日视图日期）。
+三个组件：Common、QuoteSvr、NotificationSvr。先构建安装Common，再重建部署两个服务，确保服务运行目录加载更新后的Common依赖。
+客户端、BaseSvr、BondSearch Core本轮不变，不需要重复修改；V1.2的配套升级要求仍然适用。
+sources提供三个组件完整已提交源码；patches提供相对V1.2的分组件补丁；changed-files仅供快速定位。选择源码比对或补丁合并一种方式，不要先覆盖再重复打补丁。
+本包没有新增配置和数据库变更，不要求手动补example或修改连接参数。
+
+三、QA回归
+1. 重现原历史范围和地方债条件，查询不能因单券缺资料整批失败；翻页数量正确。日志可搜Reference query lookup missed定位券代码，不要把缺资料归因于地方债选项本身。
+2. 测试数据中正常券和缺资料券混合：按方向/价格查询仍可返回缺资料报价；无法判断的评级/期限等属性不伪造命中。DM筛选库若独立具备所需属性，仍按原库结果匹配。
+3. 今日报价、全部/最优行情及提醒正常券继续可查；缺资料报价不补造收益率口径，价格簿通过calculationIssues报告REFERENCE_NOT_FOUND。
+4. 今日报价的全部/有效/撤销状态、重新打开及翻页，都只包含当天正式报价；昨日撤销记录只应在历史查询找到。待确认输入不属于该正式报价日终规则。
+5. 在隔离测试环境跨零点检查已打开列表移除昨日记录，次日重新打开也不能带回；Unrefer产生的新报价归属新确认日。不要修改共享QA主机时间，跨日模拟可运行下面的固定时钟用例。
+
+四、已完成本地验证与测试源码
+Common Maven104项：103通过、1既有跳过；QuoteSvr16项及NotificationSvr2项通过。
+真实PostgreSQL独立临时schema：HistorySearchSmoke188项、MarketQuoteViewSmoke346项、NotificationScenarioMatrix310项、QuoteEndOfDaySmoke106项通过；ConcurrentViewBuildSmoke通过。
+新增/扩展源码在各组件src/test/java下：MissingReferenceQueryTest、HistorySearchSmoke、NotificationScenarioMatrix、QuoteEndOfDaySmoke。
+先执行各组件mvn test；上述Smoke主类需使用测试classpath和现有运行properties路径，均创建独立schema并清理，需测试库账号具备相应权限。ConcurrentViewBuildSmoke为少量线程的确定性功能测试，不是压力测试。
+已核对缺资料WARN同时写入控制台和日志文件。详见validation/local-verification.json。
+以上是本机组件/数据库/接口验证，未代替QA部署，未执行完整桌面UI自动化，不将检查项数量作为桌面用例数。
