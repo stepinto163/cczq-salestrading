@@ -1,0 +1,56 @@
+TBase历史报价单索引对照测试 V1.2
+日期：2026-11-03
+
+目的
+V1.1同时移除两条排序索引后，100券查询由约10秒降至8.8–12.7毫秒。
+本轮只临时移除history_daily_formal_order_idx，保留普通history_daily_order_idx，
+验证这一个变化是否足够，并检查其他规模及无券筛选是否退化。不修改产品或业务表。
+
+直接复用数据
+只执行本邮件SQL，使用已保留的ficc_history_100_fixture，不再运行01准备。
+不造数、不建索引、不ANALYZE、不修改全局参数，不清理原百万表。
+脚本先验证数据集标记和原5索引；数据缺失或索引不全时报错，请回传，不要自动重建。
+测试始终单连接、串行；测试期间独占这张测试表，不锁业务表。
+
+测试内容
+A：保留5索引；B：同一事务中仅移除formal_order索引。查询SQL及业务条件保持一致。
+各方案测试：100券首页、1万券首页、10万券首页、无券筛选首页、10万券第1500页。
+无券筛选不带券ID条件，不能用十万券数组冒充；深页offset=74950。
+每场景两次实际查询（精确计数并返回50行JSON）；有成功才再取一次执行计划。
+失败/超时原样记录，全部失败的场景不再追加同方案计划。
+最多20次计时查询、10份计划。每条20秒，整轮外部上限12分钟，不并发。
+大券数组只在计划输出中缩短，真正查询仍带完整ID集合。
+
+如何执行
+可沿用上一轮JDK8/JDBC单连接逐语句执行器：同一物理连接、按脚本BEGIN/ROLLBACK执行，
+普通语句异常即停并回滚，完整保存每条输出；函数内部记录的TIMEOUT/ERROR会正常返回。
+必须启用外部720秒进程看门狗，超时取消并关闭该测试连接，不能提交未完成的事务。
+请确认执行器没有额外DROP SCHEMA或自动清理数据的收尾动作。
+上次输出尾部cleanup: remaining_schema=null未指出schema名，本轮请明确记录实际检查的对象。
+
+若有psql，可用：
+timeout --signal=TERM --kill-after=5s 720s psql -X -v ON_ERROR_STOP=1 -h 数据库地址 -p 端口 -U 用户 -d 测试数据库 -f "QA-TBase历史报价单索引对照-V1.2.sql" > tbase-history-index-v12.txt 2>&1
+连接参数使用QA既有值；密码不写入SQL或回传文件。
+
+结果判断与清理
+同场景比较完整JSON（包括计数、顺序及字段）。两方都成功且指纹一致才是跨方案一致性通过。
+若A超时而B成功，只能说明B完成且计数/行数符合生成数据，不能声称A/B实际结果已经比较。
+输出每轮耗时，不把超时记作20秒成功，不对两次样本计算P95。
+末尾ROLLBACK恢复临时移除的formal_order索引，清除本轮结果表/函数，原百万数据仍在。
+严禁将ROLLBACK改为COMMIT。异常时同连接ROLLBACK或关闭连接；不DROP原数据schema。
+最后dataset_retained、formal_order_restored、order_retained、run_objects_cleaned应全部true。
+可在另一连接核对：
+SELECT * FROM ficc_history_100_fixture.fixture_manifest;
+SELECT indexname FROM pg_indexes WHERE schemaname='ficc_history_100_fixture' AND tablename='quote_history_daily' ORDER BY indexname;
+
+请回传
+完整tbase-history-index-v12.txt（两方案五场景耗时、全部计划、失败及最后保留检查）。
+说明是否中断、其他负载是否变化；数据库CPU/内存/拓扑若仍未知，明确未知即可。
+根据B是否改善100券且其他场景是否退化，再决定正式索引修改，本邮件不是部署指令。
+
+本机实际验证
+仅本机PostgreSQL16：一次准备1000行/1000券，两次复用执行本脚本。
+每轮20次查询及10份计划完成，各场景完整JSON跨方案一致，原数据和索引保留。
+本机将深页offset缩为450验证有效翻页；交付SQL仍为74950。
+小样本中1万/10万请求均按现存1000券裁剪，仅验证流程，不代表大数组性能。
+每轮40秒外部看门狗；验证完只清理本机小样本。QA TBase及百万规模本轮尚未执行。
