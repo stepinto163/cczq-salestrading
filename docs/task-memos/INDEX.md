@@ -64,3 +64,5 @@
 - 11月3日规模更正：用户目标100万独立报价，已实测100万每日行/10万券。原广命中8秒超时；typed-array及重复计划保障后10次中位2.80秒；Common/QuoteSvr最小性能修改，未部署。[更正与最终结果](../history-search-optimization.zh-CN.md)、[三轮摘要](../performance/history-million-quotes-20261103.json)、[当日记录](2026-11-03.md)。
 
 - 百万报价后续仅评估：建议计数/分页独立计划、部分覆盖索引及统计修正；未改实现、未新增压测、未承诺亚秒。[评估记录](../history-search-optimization.zh-CN.md)。
+
+- 11月3日后续优化已试验：仅保留每日历史两条部分覆盖索引，version1自动升2；NOT MATERIALIZED因部分场景回退未采用。配对实验广命中1937→570ms，最终新建数据实测1764ms，区分维护状态与机器波动；16单元及188/486/69检查通过，未部署。[证据及限制](../history-search-optimization.zh-CN.md)。

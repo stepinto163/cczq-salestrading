@@ -1,0 +1,1296 @@
+{
+  "experimentBaseCommit": "35ea1e2",
+  "experimentEvidence": "history-daily-million-20261103-115102",
+  "experiment": {
+    "auditEvents": 1000000,
+    "quoteIds": 1000000,
+    "bonds": 100000,
+    "days": 20,
+    "clients": 1,
+    "scope": "Java + local PostgreSQL; controlled candidate IDs, no DM match or gateway/UI",
+    "auditStorageBytes": 701964288,
+    "preparePhaseMillis": 35303.8816,
+    "dailyRows": 1000000,
+    "dailyStorageBytes": 543023104,
+    "postgresVersion": "16.15",
+    "migratePhaseMillis": 26282.4954,
+    "before0": {
+      "candidateIds": 100,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          2.8446,
+          2.4135,
+          2.2434
+        ],
+        "medianMs": 2.4135,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          2.9398,
+          2.4946,
+          2.4478
+        ],
+        "medianMs": 2.4946,
+        "responseChecked": true
+      }
+    },
+    "before0PhaseMillis": 696.064,
+    "before1": {
+      "candidateIds": 100000,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          1788.5296,
+          1962.5902,
+          1937.0743
+        ],
+        "medianMs": 1937.0743,
+        "responseChecked": true,
+        "plan": {
+          "Node Type": "Aggregate",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Actual Total Time": 1994.932,
+          "Shared Hit Blocks": 2908,
+          "Shared Read Blocks": 49924,
+          "Temp Read Blocks": 3649,
+          "Temp Written Blocks": 3649,
+          "Plans": [
+            {
+              "Node Type": "Gather",
+              "Plan Rows": 14760,
+              "Actual Rows": 1000000,
+              "Actual Loops": 1,
+              "Actual Total Time": 1649.867,
+              "Shared Hit Blocks": 2708,
+              "Shared Read Blocks": 49924,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Plan Rows": 6150,
+                  "Actual Rows": 1000000,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 1554.522,
+                  "Shared Hit Blocks": 2708,
+                  "Shared Read Blocks": 49924,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            {
+              "Node Type": "Aggregate",
+              "Plan Rows": 1,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Actual Total Time": 84.79,
+              "Shared Hit Blocks": 0,
+              "Shared Read Blocks": 0,
+              "Temp Read Blocks": 3649,
+              "Temp Written Blocks": 1,
+              "Plans": [
+                {
+                  "Node Type": "CTE Scan",
+                  "Plan Rows": 14760,
+                  "Actual Rows": 1000000,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 60.614,
+                  "Shared Hit Blocks": 0,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 3649,
+                  "Temp Written Blocks": 1
+                }
+              ]
+            },
+            {
+              "Node Type": "Nested Loop",
+              "Plan Rows": 1,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Actual Total Time": 1908.747,
+              "Shared Hit Blocks": 2908,
+              "Shared Read Blocks": 49924,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 3648,
+              "Plans": [
+                {
+                  "Node Type": "Limit",
+                  "Plan Rows": 50,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 1908.635,
+                  "Shared Hit Blocks": 2708,
+                  "Shared Read Blocks": 49924,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 3648,
+                  "Plans": [
+                    {
+                      "Node Type": "Sort",
+                      "Plan Rows": 14760,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 1908.63,
+                      "Sort Method": "top-N heapsort",
+                      "Sort Space Used": 28,
+                      "Sort Space Type": "Memory",
+                      "Shared Hit Blocks": 2708,
+                      "Shared Read Blocks": 49924,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 3648,
+                      "Plans": [
+                        {
+                          "Node Type": "CTE Scan",
+                          "Plan Rows": 14760,
+                          "Actual Rows": 1000000,
+                          "Actual Loops": 1,
+                          "Actual Total Time": 1860.301,
+                          "Shared Hit Blocks": 2708,
+                          "Shared Read Blocks": 49924,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 3648
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Plan Rows": 1,
+                  "Actual Rows": 1,
+                  "Actual Loops": 50,
+                  "Actual Total Time": 0.002,
+                  "Index Name": "quote_history_daily_pkey",
+                  "Shared Hit Blocks": 200,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "planningMs": 23.267,
+        "executionMs": 1999.699
+      },
+      "independentPlans": {
+        "samplesMs": [
+          1594.4291,
+          1590.687,
+          1591.4357
+        ],
+        "medianMs": 1591.4357,
+        "responseChecked": true,
+        "plan": {
+          "Node Type": "Aggregate",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Actual Total Time": 1565.228,
+          "Shared Hit Blocks": 3083,
+          "Shared Read Blocks": 49764,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Aggregate",
+              "Plan Rows": 1,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Actual Total Time": 1562.031,
+              "Shared Hit Blocks": 2868,
+              "Shared Read Blocks": 49764,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Gather",
+                  "Plan Rows": 2,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 1562.025,
+                  "Shared Hit Blocks": 2868,
+                  "Shared Read Blocks": 49764,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Aggregate",
+                      "Plan Rows": 1,
+                      "Actual Rows": 1,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 1507.669,
+                      "Shared Hit Blocks": 2868,
+                      "Shared Read Blocks": 49764,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0,
+                      "Plans": [
+                        {
+                          "Node Type": "Seq Scan",
+                          "Plan Rows": 6150,
+                          "Actual Rows": 1000000,
+                          "Actual Loops": 1,
+                          "Actual Total Time": 1477.395,
+                          "Shared Hit Blocks": 2868,
+                          "Shared Read Blocks": 49764,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "Node Type": "Nested Loop",
+              "Plan Rows": 3,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Actual Total Time": 2.836,
+              "Shared Hit Blocks": 215,
+              "Shared Read Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Limit",
+                  "Plan Rows": 50,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 2.753,
+                  "Shared Hit Blocks": 15,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Scan",
+                      "Plan Rows": 14760,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 2.748,
+                      "Index Name": "history_daily_order_idx",
+                      "Shared Hit Blocks": 15,
+                      "Shared Read Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Plan Rows": 1,
+                  "Actual Rows": 1,
+                  "Actual Loops": 50,
+                  "Actual Total Time": 0.001,
+                  "Index Name": "quote_history_daily_pkey",
+                  "Shared Hit Blocks": 200,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "planningMs": 48.186,
+        "executionMs": 1565.756
+      }
+    },
+    "before1PhaseMillis": 18503.9044,
+    "before2": {
+      "candidateIds": 100000,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          406.3661,
+          382.807,
+          487.9903
+        ],
+        "medianMs": 406.3661,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          514.4664,
+          515.3286,
+          515.7565
+        ],
+        "medianMs": 515.3286,
+        "responseChecked": true
+      }
+    },
+    "before2PhaseMillis": 5612.8036,
+    "before3": {
+      "candidateIds": 100000,
+      "page": 1500,
+      "materializedKeys": {
+        "samplesMs": [
+          2058.965,
+          2130.349,
+          2144.691
+        ],
+        "medianMs": 2130.349,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          3452.8507,
+          3439.986,
+          3368.6226
+        ],
+        "medianMs": 3439.986,
+        "responseChecked": true
+      }
+    },
+    "before3PhaseMillis": 22686.7781,
+    "indexedStorageBytes": 642342912,
+    "indexesPhaseMillis": 5974.1123,
+    "indexed0": {
+      "candidateIds": 100,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          2.9049,
+          2.6841,
+          2.2862
+        ],
+        "medianMs": 2.6841,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          2.5486,
+          2.4476,
+          2.4808
+        ],
+        "medianMs": 2.4808,
+        "responseChecked": true
+      }
+    },
+    "indexed0PhaseMillis": 944.1227,
+    "indexed1": {
+      "candidateIds": 100000,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          557.454,
+          570.2156,
+          751.8892
+        ],
+        "medianMs": 570.2156,
+        "responseChecked": true,
+        "plan": {
+          "Node Type": "Aggregate",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Actual Total Time": 848.824,
+          "Shared Hit Blocks": 193,
+          "Shared Read Blocks": 41724,
+          "Temp Read Blocks": 3649,
+          "Temp Written Blocks": 3649,
+          "Plans": [
+            {
+              "Node Type": "Index Only Scan",
+              "Plan Rows": 9487,
+              "Actual Rows": 1000000,
+              "Actual Loops": 1,
+              "Actual Total Time": 532.208,
+              "Index Name": "bench_daily_formal_order",
+              "Heap Fetches": 678083,
+              "Shared Hit Blocks": 0,
+              "Shared Read Blocks": 41717,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            },
+            {
+              "Node Type": "Aggregate",
+              "Plan Rows": 1,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Actual Total Time": 86.112,
+              "Shared Hit Blocks": 0,
+              "Shared Read Blocks": 0,
+              "Temp Read Blocks": 3649,
+              "Temp Written Blocks": 1,
+              "Plans": [
+                {
+                  "Node Type": "CTE Scan",
+                  "Plan Rows": 9487,
+                  "Actual Rows": 1000000,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 61.649,
+                  "Shared Hit Blocks": 0,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 3649,
+                  "Temp Written Blocks": 1
+                }
+              ]
+            },
+            {
+              "Node Type": "Nested Loop",
+              "Plan Rows": 1,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Actual Total Time": 762.34,
+              "Shared Hit Blocks": 193,
+              "Shared Read Blocks": 41724,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 3648,
+              "Plans": [
+                {
+                  "Node Type": "Limit",
+                  "Plan Rows": 50,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 762.166,
+                  "Shared Hit Blocks": 0,
+                  "Shared Read Blocks": 41717,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 3648,
+                  "Plans": [
+                    {
+                      "Node Type": "Sort",
+                      "Plan Rows": 9487,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 762.162,
+                      "Sort Method": "top-N heapsort",
+                      "Sort Space Used": 28,
+                      "Sort Space Type": "Memory",
+                      "Shared Hit Blocks": 0,
+                      "Shared Read Blocks": 41717,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 3648,
+                      "Plans": [
+                        {
+                          "Node Type": "CTE Scan",
+                          "Plan Rows": 9487,
+                          "Actual Rows": 1000000,
+                          "Actual Loops": 1,
+                          "Actual Total Time": 719.305,
+                          "Shared Hit Blocks": 0,
+                          "Shared Read Blocks": 41717,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 3648
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Plan Rows": 1,
+                  "Actual Rows": 1,
+                  "Actual Loops": 50,
+                  "Actual Total Time": 0.003,
+                  "Index Name": "quote_history_daily_pkey",
+                  "Shared Hit Blocks": 193,
+                  "Shared Read Blocks": 7,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "planningMs": 22.969,
+        "executionMs": 852.783
+      },
+      "independentPlans": {
+        "samplesMs": [
+          516.8522,
+          496.4189,
+          503.0058
+        ],
+        "medianMs": 503.0058,
+        "responseChecked": true,
+        "plan": {
+          "Node Type": "Aggregate",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Actual Total Time": 494.739,
+          "Shared Hit Blocks": 200,
+          "Shared Read Blocks": 41721,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Aggregate",
+              "Plan Rows": 1,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Actual Total Time": 491.051,
+              "Shared Hit Blocks": 4,
+              "Shared Read Blocks": 41713,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Index Only Scan",
+                  "Plan Rows": 9487,
+                  "Actual Rows": 1000000,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 463.255,
+                  "Index Name": "bench_daily_formal_order",
+                  "Heap Fetches": 678083,
+                  "Shared Hit Blocks": 4,
+                  "Shared Read Blocks": 41713,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            {
+              "Node Type": "Nested Loop",
+              "Plan Rows": 3,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Actual Total Time": 3.282,
+              "Shared Hit Blocks": 196,
+              "Shared Read Blocks": 8,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Limit",
+                  "Plan Rows": 50,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 3.146,
+                  "Shared Hit Blocks": 2,
+                  "Shared Read Blocks": 2,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Only Scan",
+                      "Plan Rows": 9487,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 3.142,
+                      "Index Name": "bench_daily_formal_order",
+                      "Heap Fetches": 0,
+                      "Shared Hit Blocks": 2,
+                      "Shared Read Blocks": 2,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Plan Rows": 1,
+                  "Actual Rows": 1,
+                  "Actual Loops": 50,
+                  "Actual Total Time": 0.002,
+                  "Index Name": "quote_history_daily_pkey",
+                  "Shared Hit Blocks": 194,
+                  "Shared Read Blocks": 6,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "planningMs": 47.567,
+        "executionMs": 494.977
+      }
+    },
+    "indexed1PhaseMillis": 7348.7212,
+    "indexed2": {
+      "candidateIds": 100000,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          352.2917,
+          331.6558,
+          323.7844
+        ],
+        "medianMs": 331.6558,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          350.1028,
+          428.6299,
+          464.153
+        ],
+        "medianMs": 428.6299,
+        "responseChecked": true
+      }
+    },
+    "indexed2PhaseMillis": 3881.5594,
+    "indexed3": {
+      "candidateIds": 100000,
+      "page": 1500,
+      "materializedKeys": {
+        "samplesMs": [
+          766.963,
+          757.7716,
+          1003.4989
+        ],
+        "medianMs": 766.963,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          518.6849,
+          594.139,
+          549.7452
+        ],
+        "medianMs": 549.7452,
+        "responseChecked": true
+      }
+    },
+    "indexed3PhaseMillis": 6313.8958,
+    "vacuumPhaseMillis": 3498.6244,
+    "vacuumed0": {
+      "candidateIds": 100,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          2.3682,
+          2.5019,
+          2.3404
+        ],
+        "medianMs": 2.3682,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          2.4119,
+          2.2682,
+          2.0258
+        ],
+        "medianMs": 2.2682,
+        "responseChecked": true
+      }
+    },
+    "vacuumed0PhaseMillis": 737.5738,
+    "vacuumed1": {
+      "candidateIds": 100000,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          416.7436,
+          392.3378,
+          357.4878
+        ],
+        "medianMs": 392.3378,
+        "responseChecked": true,
+        "plan": {
+          "Node Type": "Aggregate",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Actual Total Time": 417.766,
+          "Shared Hit Blocks": 202,
+          "Shared Read Blocks": 6027,
+          "Temp Read Blocks": 3649,
+          "Temp Written Blocks": 3649,
+          "Plans": [
+            {
+              "Node Type": "Index Only Scan",
+              "Plan Rows": 9557,
+              "Actual Rows": 1000000,
+              "Actual Loops": 1,
+              "Actual Total Time": 158.442,
+              "Index Name": "bench_daily_formal_order",
+              "Heap Fetches": 0,
+              "Shared Hit Blocks": 2,
+              "Shared Read Blocks": 6027,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            },
+            {
+              "Node Type": "Aggregate",
+              "Plan Rows": 1,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Actual Total Time": 81.732,
+              "Shared Hit Blocks": 0,
+              "Shared Read Blocks": 0,
+              "Temp Read Blocks": 3649,
+              "Temp Written Blocks": 1,
+              "Plans": [
+                {
+                  "Node Type": "CTE Scan",
+                  "Plan Rows": 9557,
+                  "Actual Rows": 1000000,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 53.02,
+                  "Shared Hit Blocks": 0,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 3649,
+                  "Temp Written Blocks": 1
+                }
+              ]
+            },
+            {
+              "Node Type": "Nested Loop",
+              "Plan Rows": 1,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Actual Total Time": 335.738,
+              "Shared Hit Blocks": 202,
+              "Shared Read Blocks": 6027,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 3648,
+              "Plans": [
+                {
+                  "Node Type": "Limit",
+                  "Plan Rows": 50,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 335.658,
+                  "Shared Hit Blocks": 2,
+                  "Shared Read Blocks": 6027,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 3648,
+                  "Plans": [
+                    {
+                      "Node Type": "Sort",
+                      "Plan Rows": 9557,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 335.655,
+                      "Sort Method": "top-N heapsort",
+                      "Sort Space Used": 28,
+                      "Sort Space Type": "Memory",
+                      "Shared Hit Blocks": 2,
+                      "Shared Read Blocks": 6027,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 3648,
+                      "Plans": [
+                        {
+                          "Node Type": "CTE Scan",
+                          "Plan Rows": 9557,
+                          "Actual Rows": 1000000,
+                          "Actual Loops": 1,
+                          "Actual Total Time": 299.989,
+                          "Shared Hit Blocks": 2,
+                          "Shared Read Blocks": 6027,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 3648
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Plan Rows": 1,
+                  "Actual Rows": 1,
+                  "Actual Loops": 50,
+                  "Actual Total Time": 0.001,
+                  "Index Name": "quote_history_daily_pkey",
+                  "Shared Hit Blocks": 200,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "planningMs": 24.527,
+        "executionMs": 421.85
+      },
+      "independentPlans": {
+        "samplesMs": [
+          244.8086,
+          226.6663,
+          221.6558
+        ],
+        "medianMs": 226.6663,
+        "responseChecked": true,
+        "plan": {
+          "Node Type": "Aggregate",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Actual Total Time": 192.321,
+          "Shared Hit Blocks": 206,
+          "Shared Read Blocks": 6027,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Aggregate",
+              "Plan Rows": 1,
+              "Actual Rows": 1,
+              "Actual Loops": 1,
+              "Actual Total Time": 188.119,
+              "Shared Hit Blocks": 4,
+              "Shared Read Blocks": 6025,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Index Only Scan",
+                  "Plan Rows": 9557,
+                  "Actual Rows": 1000000,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 161.505,
+                  "Index Name": "bench_daily_formal_order",
+                  "Heap Fetches": 0,
+                  "Shared Hit Blocks": 4,
+                  "Shared Read Blocks": 6025,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            },
+            {
+              "Node Type": "Nested Loop",
+              "Plan Rows": 3,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Actual Total Time": 3.735,
+              "Shared Hit Blocks": 202,
+              "Shared Read Blocks": 2,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Limit",
+                  "Plan Rows": 50,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Actual Total Time": 3.619,
+                  "Shared Hit Blocks": 2,
+                  "Shared Read Blocks": 2,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Index Only Scan",
+                      "Plan Rows": 9557,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Actual Total Time": 3.614,
+                      "Index Name": "bench_daily_formal_order",
+                      "Heap Fetches": 0,
+                      "Shared Hit Blocks": 2,
+                      "Shared Read Blocks": 2,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                {
+                  "Node Type": "Index Scan",
+                  "Plan Rows": 1,
+                  "Actual Rows": 1,
+                  "Actual Loops": 50,
+                  "Actual Total Time": 0.002,
+                  "Index Name": "quote_history_daily_pkey",
+                  "Shared Hit Blocks": 200,
+                  "Shared Read Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "planningMs": 55.097,
+        "executionMs": 192.714
+      }
+    },
+    "vacuumed1PhaseMillis": 4348.3482,
+    "vacuumed2": {
+      "candidateIds": 100000,
+      "page": 1,
+      "materializedKeys": {
+        "samplesMs": [
+          171.4686,
+          154.2855,
+          136.091
+        ],
+        "medianMs": 154.2855,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          187.5045,
+          201.1525,
+          172.8933
+        ],
+        "medianMs": 187.5045,
+        "responseChecked": true
+      }
+    },
+    "vacuumed2PhaseMillis": 2178.9129,
+    "vacuumed3": {
+      "candidateIds": 100000,
+      "page": 1500,
+      "materializedKeys": {
+        "samplesMs": [
+          509.5667,
+          509.2732,
+          504.3266
+        ],
+        "medianMs": 509.2732,
+        "responseChecked": true
+      },
+      "independentPlans": {
+        "samplesMs": [
+          220.8388,
+          220.8044,
+          242.6965
+        ],
+        "medianMs": 220.8388,
+        "responseChecked": true
+      }
+    },
+    "vacuumed3PhaseMillis": 3781.6084,
+    "indexExperiment": true,
+    "dataset": "million-quotes",
+    "baselineCommit": "08d760a",
+    "phaseWatchdogSeconds": 60,
+    "sqlTimeoutSeconds": 8,
+    "jvmHeapMB": 256,
+    "phaseResourceChecks": {
+      "prepare": {
+        "availableMemoryMB": 7205
+      },
+      "migrate": {
+        "availableMemoryMB": 7012
+      },
+      "before0": {
+        "availableMemoryMB": 6849
+      },
+      "before1": {
+        "availableMemoryMB": 6847
+      },
+      "before2": {
+        "availableMemoryMB": 6916
+      },
+      "before3": {
+        "availableMemoryMB": 7090
+      },
+      "indexes": {
+        "availableMemoryMB": 7202
+      },
+      "indexed0": {
+        "availableMemoryMB": 7159
+      },
+      "indexed1": {
+        "availableMemoryMB": 7210
+      },
+      "indexed2": {
+        "availableMemoryMB": 7503
+      },
+      "indexed3": {
+        "availableMemoryMB": 7478
+      },
+      "vacuum": {
+        "availableMemoryMB": 7214
+      },
+      "vacuumed0": {
+        "availableMemoryMB": 6634
+      },
+      "vacuumed1": {
+        "availableMemoryMB": 6671
+      },
+      "vacuumed2": {
+        "availableMemoryMB": 7257
+      },
+      "vacuumed3": {
+        "availableMemoryMB": 7267
+      }
+    },
+    "productionDeployed": false,
+    "schemaCleaned": true,
+    "status": "COMPLETE"
+  },
+  "releaseEvidence": "history-daily-million-20261103-115607",
+  "releaseValidation": {
+    "auditEvents": 1000000,
+    "quoteIds": 1000000,
+    "bonds": 100000,
+    "days": 20,
+    "clients": 1,
+    "scope": "Java + local PostgreSQL; controlled candidate IDs, no DM match or gateway/UI",
+    "auditStorageBytes": 701964288,
+    "preparePhaseMillis": 51423.0249,
+    "dailyRows": 1000000,
+    "dailyStorageBytes": 642334720,
+    "postgresVersion": "16.15",
+    "migratePhaseMillis": 40999.4494,
+    "scenarios": [
+      {
+        "scenario": "small_selective",
+        "candidateIds": 100,
+        "page": 1,
+        "baselineSamples": 1,
+        "dailyMeasuredSamples": 3,
+        "auditQueryTimeout": true,
+        "auditQueryObservedMs": 8228.4992,
+        "independentFixtureChecked": true,
+        "matchedDailyQuotes": 1000,
+        "returnedRows": 50,
+        "fullResponseCompared": false,
+        "dailySamplesMs": [
+          6.382,
+          12.4939,
+          8.2799
+        ],
+        "dailyMedianMs": 8.2799
+      },
+      {
+        "scenario": "large_broad",
+        "candidateIds": 100000,
+        "page": 1,
+        "baselineSamples": 1,
+        "dailyMeasuredSamples": 10,
+        "auditQueryTimeout": true,
+        "auditQueryObservedMs": 8208.7502,
+        "independentFixtureChecked": true,
+        "matchedDailyQuotes": 1000000,
+        "returnedRows": 50,
+        "largeArrayServerPreparedStatements": 0,
+        "fullResponseCompared": false,
+        "dailySamplesMs": [
+          1386.9885,
+          1510.1383,
+          1825.9312,
+          1619.7487,
+          1701.9394,
+          2081.3998,
+          1950.3382,
+          2029.9393,
+          1994.5522,
+          1680.4754
+        ],
+        "dailyMedianMs": 1763.9353
+      },
+      {
+        "scenario": "large_sparse",
+        "candidateIds": 100000,
+        "page": 1,
+        "baselineSamples": 1,
+        "dailyMeasuredSamples": 3,
+        "auditQueryTimeout": true,
+        "auditQueryObservedMs": 8217.8631,
+        "independentFixtureChecked": true,
+        "matchedDailyQuotes": 1000,
+        "returnedRows": 50,
+        "fullResponseCompared": false,
+        "dailySamplesMs": [
+          738.6021,
+          720.2911,
+          574.0748
+        ],
+        "dailyMedianMs": 720.2911
+      },
+      {
+        "scenario": "deep_page",
+        "candidateIds": 100000,
+        "page": 1500,
+        "baselineSamples": 1,
+        "dailyMeasuredSamples": 3,
+        "auditQueryTimeout": true,
+        "auditQueryObservedMs": 8186.859,
+        "independentFixtureChecked": true,
+        "matchedDailyQuotes": 1000000,
+        "returnedRows": 50,
+        "fullResponseCompared": false,
+        "dailySamplesMs": [
+          1059.4211,
+          1016.5783,
+          997.497
+        ],
+        "dailyMedianMs": 1016.5783
+      }
+    ],
+    "query0PhaseMillis": 10506.3994,
+    "broadQueryPlans": {
+      "jsonExpansion": {
+        "Node Type": "Aggregate",
+        "Plan Rows": 1,
+        "Total Cost": 976.34,
+        "Plans": [
+          {
+            "Node Type": "Nested Loop",
+            "Plan Rows": 15,
+            "Total Cost": 848.52,
+            "Plans": [
+              {
+                "Node Type": "Aggregate",
+                "Plan Rows": 100,
+                "Total Cost": 1.77,
+                "Plans": [
+                  {
+                    "Node Type": "ProjectSet",
+                    "Plan Rows": 100,
+                    "Total Cost": 0.52,
+                    "Plans": [
+                      {
+                        "Node Type": "Result",
+                        "Plan Rows": 1,
+                        "Total Cost": 0.01
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Index Only Scan",
+                "Plan Rows": 1,
+                "Total Cost": 8.46,
+                "Index Name": "history_daily_formal_security_idx"
+              }
+            ]
+          },
+          {
+            "Node Type": "Aggregate",
+            "Plan Rows": 1,
+            "Total Cost": 0.35,
+            "Plans": [
+              {
+                "Node Type": "CTE Scan",
+                "Plan Rows": 15,
+                "Total Cost": 0.3
+              }
+            ]
+          },
+          {
+            "Node Type": "Nested Loop",
+            "Plan Rows": 1,
+            "Total Cost": 127.46,
+            "Plans": [
+              {
+                "Node Type": "Limit",
+                "Plan Rows": 15,
+                "Total Cost": 0.63,
+                "Plans": [
+                  {
+                    "Node Type": "Sort",
+                    "Plan Rows": 15,
+                    "Total Cost": 0.63,
+                    "Plans": [
+                      {
+                        "Node Type": "CTE Scan",
+                        "Plan Rows": 15,
+                        "Total Cost": 0.3
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Index Scan",
+                "Plan Rows": 1,
+                "Total Cost": 8.45,
+                "Index Name": "quote_history_daily_pkey"
+              }
+            ]
+          }
+        ]
+      },
+      "typedArray": {
+        "Node Type": "Aggregate",
+        "Plan Rows": 1,
+        "Total Cost": 25451.05,
+        "Plans": [
+          {
+            "Node Type": "Index Only Scan",
+            "Plan Rows": 9519,
+            "Total Cost": 24307.37,
+            "Index Name": "history_daily_formal_order_idx"
+          },
+          {
+            "Node Type": "Aggregate",
+            "Plan Rows": 1,
+            "Total Cost": 214.19,
+            "Plans": [
+              {
+                "Node Type": "CTE Scan",
+                "Plan Rows": 9519,
+                "Total Cost": 190.38
+              }
+            ]
+          },
+          {
+            "Node Type": "Nested Loop",
+            "Plan Rows": 1,
+            "Total Cost": 929.47,
+            "Plans": [
+              {
+                "Node Type": "Limit",
+                "Plan Rows": 50,
+                "Total Cost": 506.72,
+                "Plans": [
+                  {
+                    "Node Type": "Sort",
+                    "Plan Rows": 9519,
+                    "Total Cost": 530.39,
+                    "Plans": [
+                      {
+                        "Node Type": "CTE Scan",
+                        "Plan Rows": 9519,
+                        "Total Cost": 190.38
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Index Scan",
+                "Plan Rows": 1,
+                "Total Cost": 8.45,
+                "Index Name": "quote_history_daily_pkey"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "query1PhaseMillis": 30161.8714,
+    "query2PhaseMillis": 13353.6541,
+    "committedWrites": 20,
+    "auditAndDailyWriteMedianMs": 0.42115,
+    "status": "COMPLETE",
+    "query3PhaseMillis": 14512.2012,
+    "indexExperiment": false,
+    "indexExperimentBaseCommit": null,
+    "dataset": "million-quotes",
+    "baselineCommit": "08d760a",
+    "phaseWatchdogSeconds": 60,
+    "sqlTimeoutSeconds": 8,
+    "jvmHeapMB": 256,
+    "phaseResourceChecks": {
+      "prepare": {
+        "availableMemoryMB": 7328
+      },
+      "migrate": {
+        "availableMemoryMB": 7144
+      },
+      "query0": {
+        "availableMemoryMB": 6984
+      },
+      "query1": {
+        "availableMemoryMB": 7492
+      },
+      "query2": {
+        "availableMemoryMB": 7633
+      },
+      "query3": {
+        "availableMemoryMB": 7584
+      }
+    },
+    "productionDeployed": false,
+    "schemaCleaned": true
+  }
+}

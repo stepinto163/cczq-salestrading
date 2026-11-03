@@ -57,9 +57,18 @@
 同一报价同日多次操作只更新一行；同券不同报价分别保存，跨日同报价增加一行。沿用旧接口：只在有操作的日期产生记录，不为无变化日期补行。日期不是报价的tradeDate；服务生成的操作日期必须与Asia/Shanghai时间一致，异常导入数据不静默改变日期或丢弃。保留最后私有/删除状态，再在查询时按原规则判断正式报价，不能复活旧ACTIVE版本。
 
 - 每条history INSERT由AFTER INSERT触发器history_daily_insert更新每日表；二者天然处于同一数据库事务，触发器失败会使审计INSERT失败。整个业务事务回滚时两表同时回滚。比较操作时间、revision后决定最后版本，旧/乱序事件仍参与最早时间但不覆盖最后快照。
-- PgStore启动自动执行DailyQuoteHistoryMigration：获得单写入者锁及history表锁；每批2048事件回填，建日期/券/owner/展示顺序索引，安装函数/触发器，写metadata键history.daily.version=1；DDL、回填与版本标记在同一事务。后续启动不全量重建，检查表列及触发器可用。
+- PgStore启动自动执行DailyQuoteHistoryMigration：获得单写入者锁及history表锁；每批2048事件回填，建日期/券/owner/展示顺序索引，安装函数/触发器，写metadata键history.daily.version=2；DDL、回填与版本标记在同一事务。后续启动不全量重建，检查表列、触发器及新增索引可用。
 - 继续使用原数据库连接、schema和部署流水线；无需新增服务、配置项或手动复制SQL。现有业务库部署账号需具备本schema的建表、索引及函数/触发器权限。完整原history保留；直接修改/删除审计事件不是此追加式写入契约，修正历史应另行设计同步重建，不允许手工改审计后假设每日表自动纠正。
 - 迁移失败回滚并阻止启动，日志组件DAILY_QUOTE_HISTORY有INFO STARTING/INITIALIZED，失败ERROR与异常栈。回填进度HISTORY_DAILY_BACKFILL可单独检索。禁止手工写版本标记或关闭触发器绕过失败。
 - 查询协议不变，客户端、Common和BondSearch Core不需随此变更升级。根债券条件已由原引擎完整解析、关注券集及支持的报价条件可SQL计数分页；综合文本、动态期限、包含报价条件的分组保留原匹配器。SQL计数物化小键，最终页才加载/编码完整JSON。
 
 本机PostgreSQL16.15：百万审计→10万每日记录回填初始化7.75秒；原审计约652.66MiB，每日表含索引约52.05MiB。该耗时含连接与PgStore初始化，不是服务整体启动时间。功能验证188原历史＋486差分＋54每日迁移检查通过（含跨批/重启/回滚/故障/外部连接原子可见性）；QA数据库及真实服务部署尚未执行。规模测试方法及边界见主仓库docs/history-search-optimization.zh-CN.md。
+
+
+### 每日查询索引升级（history.daily.version=2）
+
+- 新版自动给每日表增加两条正式报价部分覆盖索引：history_daily_formal_security_idx（券＋操作日，包含最早操作时间/报价ID）及history_daily_formal_order_idx（原稳定排序键，包含券代码）。原索引和SQL接口保留。
+- 旧版本1启动时只建索引并ANALYZE，不重跑历史回填；索引与版本更新同事务，失败完整回滚并由DAILY_QUOTE_HISTORY记录ERROR。成功另有HISTORY_DAILY_INDEX_UPGRADE from=1 to=2日志；再次启动只检查，不重复升级。
+- 当前新建百万每日行测试增加约95MiB索引空间；刚回填后与完成VACUUM后的性能不同，依赖数据库正常自动维护。服务不在启动强制VACUUM，也不修改共享数据库维护参数。
+- 旧QuoteSvr仅接受history.daily.version=1；升级至2后不支持直接换回旧二进制。不要手改版本标记，部署/回退按向前升级策略处理。
+- 本次索引只修改QuoteSvr，不替代上一轮Common大数组参数计划优化的配套升级。最终16单元＋188/486/69数据库检查通过；QA升级与维护状态尚待验证。
