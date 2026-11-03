@@ -1,0 +1,58 @@
+FICC QA旧BaseSvr兼容修复 V1.6.1
+日期：2026-11-03
+
+一、为什么修改
+V1.6使用的Common和新版客户端要求BaseSvr返回DataSet，区分基础资料和估值。
+QA尚未发布该BaseSvr版本，仍返回资料、估值合并的快照，因此服务初始化失败。
+本包在V1.6之上增量合并，使后端和客户端同时支持新旧协议。不是完整安装包。
+
+二、合并范围
+1. Common：099fd69 → e49e4fc；修改FiccBaseDataClient及其测试。
+   对成功的REFERENCE响应，未返回DataSet且通过完整性校验时，使用旧合并模式。
+   只下载一次，同时提供资料和估值；新版仍独立同步两组数据。
+2. 同事客户端：78e15e83f → 3b651ea39。
+   修改STC.Common、STC.Data.Plugin及回归测试；本地结构化SQLite保存协议标记，
+   升级旧缓存或切换协议时补一次全量，之后继续增量，不因每次重启重复全量。
+3. QuoteSvr、NotificationSvr：本次没有新增服务源码修改，保留V1.6版本；
+   必须重新构建并部署使用新Common的两个服务包，核对javalib实际加载的是新jar。
+4. BaseSvr回退补丁为可选：8b310b9 → 893efb9，功能源码回到08c30a9。
+   QA如果本来没有发布8b310b9的估值拆分，不应用此补丁、不更换BaseSvr。
+   仅已合入8b310b9且决定撤销拆分的源码仓库使用optional-basesvr下的补丁。
+   保留旧源码/运行包备份；此补丁不应覆盖QA自己的其他修改。
+5. 不修改BondSearch Core，不撤销V1.6历史查询索引修复，不包含运行目录或本机凭据备份。
+
+三、合并方法
+优先由QA合并工具按patches及changed-files审阅合并，保留QA自身改动。
+原始基线一致时，可先执行下列检查，再去掉--check应用：
+  在Common模块根目录：git apply --check -p3 <包目录>/patches/common.patch
+  在同事客户端根目录：git apply --check -p1 <包目录>/patches/stc-client.patch
+  可选BaseSvr根目录：git apply --check -p1 <包目录>/optional-basesvr/patches/basesvr-rollback.patch
+补丁与changed-files是同一修改的两种形式，不要重复应用。
+本包只覆盖本轮增量；尚未合并V1.6的环境，应先完成V1.6合并。
+
+四、构建部署
+先构建安装Common，再构建QuoteSvr和NotificationSvr；由现有Jenkins/Salt流程部署，
+配置继续使用既有ATS_ROOT/control，本包不要求新增连接配置或手工补example文件。
+构建客户端STC.Common及STC.Data.Plugin，按现有发布流程更新对应DLL；
+无需修改销售插件的页面代码。关闭客户端后替换文件，再启动验证。
+BaseSvr可选回退构建使用JDK 8。普通QA旧协议路径不需要构建或发布BaseSvr。
+本包不附百万造数/清理脚本，不删除ficc_history_100_fixture及现有业务数据。
+
+五、已验证及边界
+- Common：108项测试，107通过、1跳过；QuoteSvr：18项全过；NotificationSvr构建成功。
+- 可选BaseSvr回退源码：26项测试，21通过、5项依赖环境的测试跳过。
+- 客户端：494项组件断言及脚本中的WPF控件、日志失败传播检查通过。
+- 本机实际旧BaseSvr：无DataSet、schema2、READY，109296条资料；两个服务均完成同步，
+  后续无变化请求返回0条增量。经网关登录后历史报价、分组、提醒查询均成功。
+- 客户端新旧模式切换、分页协议变化拒绝、STALE拒绝、删除、SQLite恢复已测；
+  新拆分协议由模拟响应覆盖，没有再次部署新版BaseSvr实测。
+- 客户端回归在开发checkout运行，交付只取已提交的本轮改动，不夹带其他页面/模型脏修改。
+- 尚未执行QA部署验收或本轮登录后的桌面E2E；没有执行新的性能压力测试。
+
+六、QA核对
+1. 旧BaseSvr下，两服务BASE_DATA日志应为READY、protocol=LEGACY_COMBINED，不能再报缺DataSet。
+2. 客户端首次同步完成后，确认债券信息和估值均有值；关闭重开，无变化时沿用增量检查点。
+3. 验证报价/行情/提醒、历史报价及关注券识别；核对估值显示，不以--误当正常值。
+4. 新BaseSvr环境应继续分开同步REFERENCE/VALUATION；错误响应或半份快照不能发布为READY。
+5. 此处“旧版”须已有ficc.reference.sync及FiccReference schema2；不包括完全没有FICC接口的原始STC服务。
+6. 旧协议仍把资料和估值放在同一增量中；估值变化会增加该增量，不能宣称旧服务也实现了独立估值更新。

@@ -110,3 +110,5 @@
 - 11月3日双QuoteSvr实测：A游标到B与B游标到A均1007，回原实例均0000，不到1秒、无断库；测试实例/临时schema已清理。仅复现请求落点变化机制，QA实际路由仍待日志核对。[记录](2026-11-03.md)、[6次请求证据](../test-results/cross-instance-cursor-20261103.json)。
 
 - 11月3日后续更正：V1.2 BaseSvr已备份，新分支撤销估值拆分；Common和同事客户端兼容旧合并协议。本机旧BaseSvr下两服务109296条同步及登录查询通过，客户端494组件断言通过，QA/桌面登录未验收。见[主记录](2026-11-03.md)、[BaseSvr](sources/basesvr/2026-11-03.md)、[客户端](sources/colleague-client/2026-11-03.md)。
+
+- V1.6.1旧BaseSvr兼容增量包已发163：Common＋同事客户端补丁，BaseSvr回退可选；QA旧Base保持现状，两服务须重建新Common。补丁/文件/ZIP核对通过，QA验收待执行。[合并说明](../QA旧BaseSvr兼容合并说明-V1.6.1-20261103.txt)、[交付记录](2026-11-03.md)。
