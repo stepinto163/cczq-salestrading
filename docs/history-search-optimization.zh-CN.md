@@ -190,3 +190,18 @@ QuoteSvr构建/16项单元测试通过；188原历史检查、486预筛差分、
 - 构建验证：Common 105测试中104通过、1个原PostgresCrmTest因环境跳过；QuoteSvr16通过；数据库188＋486＋54项通过。新增大数组计划策略单元测试；性能十次重复同时校验结果及计划不复用。
 - 证据：[三轮摘要](performance/history-million-quotes-20261103.json)。最终目录iteration1/runtime/history-daily-million-20261103-113545。脚本命令：python iteration1/scripts/benchmark-daily-history.py --run --dataset million-quotes；必须重新取得性能运行授权，不自动提高规模。
 - 限制：百万报价广命中仍约2.8秒，尚未达到亚秒。第1500页只到第74951条附近，未覆盖百万行尾页；未测百万报价多版本（如千万审计）、并发、QA或完整E2E。不将当前结果解释成这些场景通过。精确计数及匹配键排序仍有进一步优化空间。
+
+
+### 2026-11-03 后续优化评估（仅评估，未改实现/未再压测）
+
+用户询问是否还有进一步提升空间。复核最终百万报价SQL及保存的EXPLAIN：当前CTE先生成全部匹配键，再供精确计数与排序分页重复扫描，完整JSON已只读取最终页；状态/确认时间仍从snapshot JSON读取。最终广命中计划仍估计14923行，实际结果100万，说明候选列表修正后选择率估算仍不准确。保存的是EXPLAIN估算，不是EXPLAIN ANALYZE/BUFFERS；不能把2.80秒按阶段分摊，不能宣称已确认磁盘排序或具体耗时占比。
+
+建议按以下顺序小步验证：
+1. 在同一SQL语句/快照中让精确计数与页数据分别选择计划，避免强制物化并遍历全部匹配键后才取50条；评估CTE NOT MATERIALIZED或等价改写。它可能重复过滤，对选择性高的请求未必更快，需与原SQL差分和实测。
+2. 配合正式报价条件的部分覆盖索引：为计数提供券/日期等窄索引，为分页提供稳定排序键及必要过滤字段，尽量避免扫描宽JSON。可以先不新增业务字段。索引大小、写入成本与刚回填/持续写入后visibility map状态必须同时评估，不能假设index-only必然无需回表。
+3. 核对状态/确认条件表达式及相关列统计，改善14923对100万的低估；以实际计划验证，不把新增统计当作必然提速。
+4. 保持现有页码/精确总数/可见性规则，不擅自改游标、近似计数或缓存。深OFFSET和复杂残余筛选另评；本轮1500页不是百万行尾页。
+
+下一次获授权后先分别量计数、取页及合并SQL的实际计划与缓冲读，保持同一百万报价/10万候选/1客户端，不加并发；再选择最小有效改动。亚秒是可探索目标，不是已有结果或承诺。无需修改同事BondSearch或客户端协议。
+
+依据：PostgreSQL16官方CTE物化 https://www.postgresql.org/docs/16/queries-with.html 、覆盖索引及可见性限制 https://www.postgresql.org/docs/16/indexes-index-only-scans.html 、规划统计 https://www.postgresql.org/docs/16/planner-stats.html 。

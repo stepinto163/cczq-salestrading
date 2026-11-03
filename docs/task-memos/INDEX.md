@@ -62,3 +62,5 @@
 - 11月3日用户批准独立每日历史查询表并完成源码：审计/每日表原子写、自动回填；百万审计＝10万报价/债券/每日行。原查询SQL8秒超时，最终新查询中位3.92/1098.93/298.05/1193.17ms；188＋486＋54功能检查通过。仅本机验证，未部署QA。[实现及性能边界](../history-search-optimization.zh-CN.md)、[存储升级说明](../../iteration1/cgws-ficc-saletrading-quotesvr/deployment/quote-storage.zh-CN.md)、[当日备忘](2026-11-03.md)。
 
 - 11月3日规模更正：用户目标100万独立报价，已实测100万每日行/10万券。原广命中8秒超时；typed-array及重复计划保障后10次中位2.80秒；Common/QuoteSvr最小性能修改，未部署。[更正与最终结果](../history-search-optimization.zh-CN.md)、[三轮摘要](../performance/history-million-quotes-20261103.json)、[当日记录](2026-11-03.md)。
+
+- 百万报价后续仅评估：建议计数/分页独立计划、部分覆盖索引及统计修正；未改实现、未新增压测、未承诺亚秒。[评估记录](../history-search-optimization.zh-CN.md)。
