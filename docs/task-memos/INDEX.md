@@ -108,3 +108,5 @@
 - 11月3日本机真实断库：历史查询持续1099约102秒；原游标5页续传成功，Notification重启全量恢复成功，未复现1007/OOM。人工重启Quote后接口恢复，自动重连用例失败；[测试记录](2026-11-03.md)、[脱敏结果](../test-results/database-disconnect-20261103.json)。
 
 - 11月3日双QuoteSvr实测：A游标到B与B游标到A均1007，回原实例均0000，不到1秒、无断库；测试实例/临时schema已清理。仅复现请求落点变化机制，QA实际路由仍待日志核对。[记录](2026-11-03.md)、[6次请求证据](../test-results/cross-instance-cursor-20261103.json)。
+
+- 11月3日后续更正：V1.2 BaseSvr已备份，新分支撤销估值拆分；Common和同事客户端兼容旧合并协议。本机旧BaseSvr下两服务109296条同步及登录查询通过，客户端494组件断言通过，QA/桌面登录未验收。见[主记录](2026-11-03.md)、[BaseSvr](sources/basesvr/2026-11-03.md)、[客户端](sources/colleague-client/2026-11-03.md)。
