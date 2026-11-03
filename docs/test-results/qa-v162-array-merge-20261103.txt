@@ -1,0 +1,39 @@
+QA V1.6.2回传合并后的本机验证（2026-11-03）
+环境：公开Tencent/TBase v2.5.0，实际PostgreSQL 10.0 TBase V2；非QA的10.23/5.21.10.2.2。
+仅100条合成历史记录；无并发压测，下面耗时不可作为性能指标。
+Java8 / pgjdbc42.7.7；生产JdbcStore.bind从本次构建target/classes加载；历史SQL来自当前同版QuoteSvr。
+每条超时8秒、进程外看门狗60秒、堆64MB、2CPU。
+24项解析/筛选/分页通过；6组数组各连续8次往返通过，含空数组、null、空字符串、NULL文本、中文及特殊字符。
+Common：110项，109通过，CRM环境用例1项跳过；QuoteSvr：18项全部通过。
+
+HISTORY_SQL=WITH filtered AS (SELECT first_operation,operation_date,quote_id FROM quote_history_daily WHERE operation_date>=?::date AND operation_date<=?::date AND (snapshot->>'status' IN ('ACTIVE','REFERRED') OR (snapshot->>'status'='DELETED' AND NULLIF(btrim(snapshot->>'confirmTime'),'') IS NOT NULL)) AND security_id=ANY(?::text[])), page AS (SELECT * FROM filtered ORDER BY first_operation,operation_date,quote_id LIMIT ? OFFSET ?) SELECT jsonb_build_object('totalCount',(SELECT count(*) FROM filtered), 'rows',COALESCE(jsonb_agg(jsonb_build_object('tradeDate',page.operation_date,'quote',details.snapshot) ORDER BY page.first_operation,page.operation_date,page.quote_id),'[]'::jsonb)) FROM page JOIN quote_history_daily details ON details.operation_date=page.operation_date AND details.quote_id=page.quote_id
+PASS mode=DEFAULT count=1 kind=SCALAR returned=1 elapsedMillis=24
+PASS mode=DEFAULT count=1 kind=TABLE returned=1 elapsedMillis=7
+PASS mode=DEFAULT count=1 kind=HISTORY total=1 rows=1 elapsedMillis=188
+PASS mode=DEFAULT count=514 kind=SCALAR returned=514 elapsedMillis=46
+PASS mode=DEFAULT count=514 kind=TABLE returned=100 elapsedMillis=50
+PASS mode=DEFAULT count=514 kind=HISTORY total=100 rows=50 elapsedMillis=60
+PASS mode=BINARY_OFF count=1 kind=SCALAR returned=1 elapsedMillis=2
+PASS mode=BINARY_OFF count=1 kind=TABLE returned=1 elapsedMillis=5
+PASS mode=BINARY_OFF count=1 kind=HISTORY total=1 rows=1 elapsedMillis=21
+PASS mode=BINARY_OFF count=514 kind=SCALAR returned=514 elapsedMillis=45
+PASS mode=BINARY_OFF count=514 kind=TABLE returned=100 elapsedMillis=50
+PASS mode=BINARY_OFF count=514 kind=HISTORY total=100 rows=50 elapsedMillis=55
+PASS mode=TEXT_ARRAY count=1 kind=SCALAR returned=1 elapsedMillis=2
+PASS mode=TEXT_ARRAY count=1 kind=TABLE returned=1 elapsedMillis=4
+PASS mode=TEXT_ARRAY count=1 kind=HISTORY total=1 rows=1 elapsedMillis=8
+PASS mode=TEXT_ARRAY count=514 kind=SCALAR returned=514 elapsedMillis=1
+PASS mode=TEXT_ARRAY count=514 kind=TABLE returned=100 elapsedMillis=3
+PASS mode=TEXT_ARRAY count=514 kind=HISTORY total=100 rows=50 elapsedMillis=11
+PASS ROUND_TRIP sample=0 executions=8 length=0 serverPrepared=true
+PASS ROUND_TRIP sample=1 executions=8 length=1 serverPrepared=true
+PASS ROUND_TRIP sample=2 executions=8 length=2 serverPrepared=true
+PASS ROUND_TRIP sample=3 executions=8 length=4 serverPrepared=true
+PASS ROUND_TRIP sample=4 executions=8 length=7 serverPrepared=true
+PASS ROUND_TRIP sample=5 executions=8 length=512 serverPrepared=false
+PASS mode=JDBC_STORE count=1 kind=SCALAR returned=1 elapsedMillis=1
+PASS mode=JDBC_STORE count=1 kind=TABLE returned=1 elapsedMillis=4
+PASS mode=JDBC_STORE count=1 kind=HISTORY total=1 rows=1 elapsedMillis=10
+PASS mode=JDBC_STORE count=514 kind=SCALAR returned=514 elapsedMillis=5
+PASS mode=JDBC_STORE count=514 kind=TABLE returned=100 elapsedMillis=5
+PASS mode=JDBC_STORE count=514 kind=HISTORY total=100 rows=50 elapsedMillis=63
