@@ -1,5 +1,14 @@
 # 报价持久化与迁移
 
+## 当前部署更正：TBase兼容迁移，history.daily.version=3（2026-11-03）
+
+- V1.4在QA TBase10.23的回填阶段遇到数据修改CTE限制。本次以独立SELECT确定每批2048事件的上下界，再执行顶层INSERT，不再使用WITH applied AS (INSERT ... RETURNING ...)；仍在同一事务和history表锁内，失败整体回滚，原审计不变。第一批全部缺少after快照也继续处理后续批次。
+- 两条正式报价索引改为普通四列复合索引，不再使用INCLUDE。新库直接写版本3；版本1创建索引并升级，版本2同事务替换两条索引并升级；均不重新回填。版本3启动只验证，未知版本仍拒绝启动。后文版本1/2及其耗时属于此前实现记录，以本节为当前部署规则。
+- 若上次迁移失败且事务完整回滚，部署此修复后正常启动即可重试；不要手工写版本标记、删除history或关闭触发器。若现场有人工修改导致表与版本不一致，先核对状态，不自动删除重建已有表。
+- 原生PostgreSQL10支持数据修改CTE，不应把TBase现场限制泛化为PG10限制；INCLUDE则不在PG10索引语法内。保持查询协议、快照口径、触发器原子写及同事搜索库不变。
+- 本机PG16验证：QuoteSvr16单元、188历史/486差分/79迁移检查通过。新索引结构与旧结构不同，未重跑大规模性能测试，不沿用此前数字作为新结构实测结果。QA网络无法直连，本次未在实际TBase运行，需执行现场回归后再认定兼容验收。
+- Linux源码环境可运行：bash src/test/scripts/test-history-search.sh <已有QuoteSvr运行properties路径>。先mvn package，使用target/test-classes、服务jar和target/javalib；每进程128MB、30秒外部看门狗。用独立随机schema，需要创建/删除schema权限；非压力测试。失败/强杀时检查日志中测试schema是否残留，不要删业务schema。
+
 ## 存储边界
 
 `PgStore` 通过 `QuoteColumns` 在数据库列与 `QuoteRecord` 之间映射。当前业务值以列为准，读取时即使 payload 中残留同名键，也不能覆盖列值（包括列为 NULL 的情况）。所有 `QuoteInput` 可编辑字段均有列，外部 JSON 协议不变。

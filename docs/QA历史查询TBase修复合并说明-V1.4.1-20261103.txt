@@ -1,0 +1,44 @@
+历史查询TBase兼容修复 V1.4.1（2026-11-03）
+
+一、原因及范围
+V1.4在QA TBase10.23迁移时报“INSERT/UPDATE/DELETE is not supported in subquery”，对应WITH applied AS (INSERT ... RETURNING ...)写法。本机PG16验证不能代表QA兼容，原V1.4不能视为QA已验收版本。
+本次只修改QuoteSvr的每日历史迁移、索引及相关测试/说明。客户端、Common、NotificationSvr、BaseSvr、BondSearch Core不新增修改；V1.4的Common配套变更仍需保留。
+
+二、修复方式
+1. 分开查询批次上下界与执行顶层INSERT，避开数据修改CTE。所有批次仍在一个事务及history表锁内，不变成分批提交；任何失败整体回滚。
+2. 两条INCLUDE索引改为普通复合索引，查询需要的四个字段保留在索引键中。
+3. 每日存储版本升到3：首次迁移直接创建版本3；已有版本1/2只升级索引，不重复回填；再次启动不重复升级。
+4. 增加空快照整批不漏后续数据、索引结构及版本2升级回归；保留版本1升级、乱序、多批、跨日、触发器、双表原子性与失败回滚检查。
+
+三、合并与部署
+本包是V1.4之后的增量修复，补丁基线为7edbcf0。sources/quotesvr为目标完整源码，patches/quotesvr.patch为本次差异，changed-files供定位。
+已合并V1.4：在QuoteSvr仓库根目录执行git apply --check -p3 <quotesvr.patch>，核对无冲突再git apply -p3 <quotesvr.patch>；有QA本地改动时人工合并，不能覆盖。本包manifest.json记录目标提交。
+尚未合并V1.4：先合并V1.4的Common及QuoteSvr，再应用本修复；不要单独部署本补丁到V1.3基础。
+使用原构建/Jenkins/Salt流程重建QuoteSvr，保留既有数据库连接及schema，不需要新配置或手工执行建表SQL。
+先备份并停止QuoteSvr，确认QA数据库DDL及函数/触发器权限。在源码测试环境优先跑下述独立schema回归，再重启服务完成正式迁移。
+
+四、检查QA失败迁移后的状态
+在实际QuoteSvr schema内执行：
+  SELECT value FROM metadata WHERE key='history.daily.version';
+  SELECT to_regclass('quote_history_daily');
+若V1.4首次迁移完整回滚，应均无结果/NULL；部署新版后自动重试，最终版本为3。
+若已有版本1/2且表与触发器完整，新版自动升级索引至3；不要手工改版本。
+如版本不存在但表仍在，或表/触发器/索引缺失，先定位是否人工变更或回滚异常，不要删除history或强行伪造成功标记。
+日志：首次成功HISTORY_DAILY_BACKFILL state=COMMITTED；旧版升级HISTORY_DAILY_INDEX_UPGRADE state=COMMITTED from=1或2 to=3；组件DAILY_QUOTE_HISTORY必须成功，不得只看进程存在。
+
+五、Linux QA小规模自动回归
+在合并后的QuoteSvr源码目录执行：
+  mvn package
+  bash src/test/scripts/test-history-search.sh /绝对路径/已有运行.properties
+不要使用maven.test.skip=true。脚本使用标准target/test-classes、服务jar、target/javalib，按现有环境设置JAVA_HOME/ATS_ROOT。
+测试读取同一数据库连接，但覆盖为独立随机schema，不写业务schema；需要创建/删除schema权限。每个测试进程128MB、30秒看门狗；失败停止，不自动加压。
+预期输出：History search functional checks passed: 188；History query optimization differential checks passed: 486；Daily history checks passed: 79。
+日志目录target/history-regression-*；用例含故意制造的迁移错误及回滚检查，应以进程成功和最终检查通过判定，而不能看到预期ERROR就认定失败。
+若强杀/超时，请检查日志对应的随机测试schema是否残留，仅清理该测试schema，不清理业务schema。TBase实际错误请保留SQLSTATE、异常栈、版本信息及测试名称。
+Windows仍可使用V1.4附带的test-history-search.ps1，指向本次构建结果。
+
+六、验证结论和现场验收
+本机PG16：构建成功，16单元和753数据库检查通过（188＋486＋79）。Linux脚本经过语法和缺参数保护检查，未在QA执行。
+当前机器无法连接已知QA数据库和SSH地址，实际TBase验证未完成；已修复两处源码兼容问题，不宣称QA全部通过。
+现场需确认首次迁移/升级、重启不重填、新操作触发同步、跨日及多版本历史、筛选/总数/分页与变更历史正常。不要绕过触发器失败或版本检查强行启动。
+本次未重跑百万规模或并发测试，旧V1.4性能数字不能当作新复合索引的实测结果；协议与业务过滤规则不变。
