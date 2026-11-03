@@ -4,6 +4,8 @@
 
 ## 当前交付
 
+- 11月3日计算服务验证更新：已重启Ubuntu CalSvr，收益率/净价/全价×T+0/T+1六组真实调用及最优价格簿投影通过，[结果摘要](../test-results/calculator-price-contract-20261103.json)。行权调用与原MDSvr一致，本机sscalc不支持，QA引擎与含权券仍待验证；见[当日补充](2026-11-03.md)。
+
 - 11月3日最优行情三价：Common/QuoteSvr保留计算器净价、全价及两种收益率，BEST补算原收益率报价；同事客户端`78e15e83f`接入三行浮层。组件/WPF检查通过，真实CalSvr请求超时，未部署或做现场E2E，见[当日记录](2026-11-03.md)和[客户端备忘](sources/colleague-client/2026-11-03.md)。
 
 - QA百万报价性能脚本V1.0：[SQL](../performance/QA-TBase历史报价百万测试-V1.0.sql)、[运行说明](../performance/QA-TBase历史报价百万测试-V1.0-说明.txt)，已发163；本机1000行功能验证通过，百万TBase性能待QA反馈，见[当日记录](2026-11-03.md)。
