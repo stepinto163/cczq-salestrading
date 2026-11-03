@@ -1,0 +1,19 @@
+HISTORY_SQL=WITH filtered AS (SELECT first_operation,operation_date,quote_id FROM quote_history_daily WHERE operation_date>=?::date AND operation_date<=?::date AND (snapshot->>'status' IN ('ACTIVE','REFERRED') OR (snapshot->>'status'='DELETED' AND NULLIF(btrim(snapshot->>'confirmTime'),'') IS NOT NULL)) AND security_id=ANY(?::text[])), page AS (SELECT * FROM filtered ORDER BY first_operation,operation_date,quote_id LIMIT ? OFFSET ?) SELECT jsonb_build_object('totalCount',(SELECT count(*) FROM filtered), 'rows',COALESCE(jsonb_agg(jsonb_build_object('tradeDate',page.operation_date,'quote',details.snapshot) ORDER BY page.first_operation,page.operation_date,page.quote_id),'[]'::jsonb)) FROM page JOIN quote_history_daily details ON details.operation_date=page.operation_date AND details.quote_id=page.quote_id
+PASS mode=DEFAULT count=1 kind=SCALAR returned=1 elapsedMillis=23
+PASS mode=DEFAULT count=1 kind=TABLE returned=1 elapsedMillis=7
+PASS mode=DEFAULT count=1 kind=HISTORY total=1 rows=1 elapsedMillis=171
+PASS mode=DEFAULT count=514 kind=SCALAR returned=514 elapsedMillis=44
+PASS mode=DEFAULT count=514 kind=TABLE returned=100 elapsedMillis=50
+PASS mode=DEFAULT count=514 kind=HISTORY total=100 rows=50 elapsedMillis=70
+PASS mode=BINARY_OFF count=1 kind=SCALAR returned=1 elapsedMillis=2
+PASS mode=BINARY_OFF count=1 kind=TABLE returned=1 elapsedMillis=14
+PASS mode=BINARY_OFF count=1 kind=HISTORY total=1 rows=1 elapsedMillis=17
+PASS mode=BINARY_OFF count=514 kind=SCALAR returned=514 elapsedMillis=46
+PASS mode=BINARY_OFF count=514 kind=TABLE returned=100 elapsedMillis=50
+PASS mode=BINARY_OFF count=514 kind=HISTORY total=100 rows=50 elapsedMillis=60
+PASS mode=TEXT_ARRAY count=1 kind=SCALAR returned=1 elapsedMillis=2
+PASS mode=TEXT_ARRAY count=1 kind=TABLE returned=1 elapsedMillis=4
+PASS mode=TEXT_ARRAY count=1 kind=HISTORY total=1 rows=1 elapsedMillis=21
+PASS mode=TEXT_ARRAY count=514 kind=SCALAR returned=514 elapsedMillis=1
+PASS mode=TEXT_ARRAY count=514 kind=TABLE returned=100 elapsedMillis=5
+PASS mode=TEXT_ARRAY count=514 kind=HISTORY total=100 rows=50 elapsedMillis=12
