@@ -1,0 +1,802 @@
+{
+  "status": "PARTIAL_WATCHDOG_STOPPED",
+  "historyRecords": 100000,
+  "distinctQuoteIds": 20000,
+  "latestDailyQuotes": 20000,
+  "distinctHistoryBonds": 10000,
+  "calendarDays": 20,
+  "revisionsPerQuote": 5,
+  "clients": 1,
+  "pageSize": 50,
+  "warmupsPerPath": 1,
+  "samplesPerPath": 3,
+  "completedScenarios": 4,
+  "plannedScenarios": 5,
+  "incompleteScenario": "100000_ids_deep_page",
+  "completedRequestsIncludingWarmup": 64,
+  "allCompletedScenarioResponsesEqual": true,
+  "scope": "Java+local PostgreSQL, synthetic controlled matching IDs; not DM engine, gateway, UI or QA latency",
+  "workMem": "4MB",
+  "maxJvmHeapMB": 256,
+  "sqlTimeoutSeconds": 5,
+  "wholeRunWatchdogSeconds": 60,
+  "schemaCleanupVerified": true,
+  "cleanupEvidence": "BENCH_COMPLETE schema cleaned with pg_namespace absence assertion",
+  "baselineCommit": "5102821",
+  "optimizedImplementationCommit": "83be097",
+  "prototypeProductionChanges": false,
+  "scenarios": [
+    {
+      "scenario": "100_ids_selective",
+      "candidateIds": 100,
+      "candidateJsonBytes": 1201,
+      "pageNumber": 1,
+      "matchedDailyQuotes": 200,
+      "returnedRows": 50,
+      "resultsEqual": true,
+      "currentSqlExecutionMs": 732.879,
+      "currentSqlPlan": [
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 2,
+          "Actual Rows": 200,
+          "Actual Loops": 1,
+          "Sort Method": "quicksort",
+          "Sort Space Used": 107,
+          "Sort Space Type": "Memory",
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Hash Join",
+          "Plan Rows": 2,
+          "Actual Rows": 200,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 3,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Unique",
+          "Plan Rows": 200,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 37080,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "WindowAgg",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Gather Merge",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 48904,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Seq Scan",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 3236,
+          "Shared Hit Blocks": 3389
+        },
+        {
+          "Node Type": "Hash",
+          "Plan Rows": 100,
+          "Actual Rows": 100,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "ProjectSet",
+          "Plan Rows": 100,
+          "Actual Rows": 100,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "Result",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        }
+      ],
+      "legacy_java": {
+        "medianMs": 917.3091,
+        "minMs": 881.3106,
+        "maxMs": 949.7584,
+        "samplesMs": [
+          917.3091,
+          949.7584,
+          881.3106
+        ]
+      },
+      "current_json_prefilter": {
+        "medianMs": 655.9348,
+        "minMs": 583.6552,
+        "maxMs": 675.7728,
+        "samplesMs": [
+          655.9348,
+          583.6552,
+          675.7728
+        ]
+      },
+      "prototype_json_sql_page": {
+        "medianMs": 616.4319,
+        "minMs": 574.5277,
+        "maxMs": 663.9849,
+        "samplesMs": [
+          574.5277,
+          616.4319,
+          663.9849
+        ]
+      },
+      "prototype_temp_sql_page": {
+        "medianMs": 605.7681,
+        "minMs": 559.4091,
+        "maxMs": 670.8041,
+        "samplesMs": [
+          559.4091,
+          670.8041,
+          605.7681
+        ]
+      }
+    },
+    {
+      "scenario": "10000_ids_broad",
+      "candidateIds": 10000,
+      "candidateJsonBytes": 120001,
+      "pageNumber": 1,
+      "matchedDailyQuotes": 20000,
+      "returnedRows": 50,
+      "resultsEqual": true,
+      "currentSqlExecutionMs": 819.975,
+      "currentSqlPlan": [
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 2,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 8056,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 11755,
+          "Temp Written Blocks": 11780,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Hash Join",
+          "Plan Rows": 2,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 3,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Unique",
+          "Plan Rows": 200,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 37080,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "WindowAgg",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Gather Merge",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 48904,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Seq Scan",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 2708,
+          "Shared Hit Blocks": 3917
+        },
+        {
+          "Node Type": "Hash",
+          "Plan Rows": 100,
+          "Actual Rows": 10000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "ProjectSet",
+          "Plan Rows": 100,
+          "Actual Rows": 10000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "Result",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        }
+      ],
+      "legacy_java": {
+        "medianMs": 944.2532,
+        "minMs": 930.9492,
+        "maxMs": 947.4532,
+        "samplesMs": [
+          944.2532,
+          947.4532,
+          930.9492
+        ]
+      },
+      "current_json_prefilter": {
+        "medianMs": 940.8817,
+        "minMs": 884.2207,
+        "maxMs": 994.4116,
+        "samplesMs": [
+          994.4116,
+          940.8817,
+          884.2207
+        ]
+      },
+      "prototype_json_sql_page": {
+        "medianMs": 778.255,
+        "minMs": 675.1646,
+        "maxMs": 800.4074,
+        "samplesMs": [
+          778.255,
+          800.4074,
+          675.1646
+        ]
+      },
+      "prototype_temp_sql_page": {
+        "medianMs": 856.7469,
+        "minMs": 727.3913,
+        "maxMs": 877.2238,
+        "samplesMs": [
+          727.3913,
+          856.7469,
+          877.2238
+        ]
+      }
+    },
+    {
+      "scenario": "100000_ids_broad",
+      "candidateIds": 100000,
+      "candidateJsonBytes": 1200001,
+      "pageNumber": 1,
+      "matchedDailyQuotes": 20000,
+      "returnedRows": 50,
+      "resultsEqual": true,
+      "currentSqlExecutionMs": 701.43,
+      "currentSqlPlan": [
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 2,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 8056,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 12000,
+          "Temp Written Blocks": 12025,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Hash Join",
+          "Plan Rows": 2,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10993,
+          "Temp Written Blocks": 11016,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 3,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Unique",
+          "Plan Rows": 200,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 37080,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "WindowAgg",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Gather Merge",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 48904,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Seq Scan",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 2633,
+          "Shared Hit Blocks": 3992
+        },
+        {
+          "Node Type": "Hash",
+          "Plan Rows": 100,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 245,
+          "Temp Written Blocks": 245,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "ProjectSet",
+          "Plan Rows": 100,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 245,
+          "Temp Written Blocks": 245,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "Result",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        }
+      ],
+      "legacy_java": {
+        "medianMs": 905.1811,
+        "minMs": 738.9659,
+        "maxMs": 916.9061,
+        "samplesMs": [
+          916.9061,
+          905.1811,
+          738.9659
+        ]
+      },
+      "current_json_prefilter": {
+        "medianMs": 983.853,
+        "minMs": 915.9359,
+        "maxMs": 1140.9243,
+        "samplesMs": [
+          983.853,
+          1140.9243,
+          915.9359
+        ]
+      },
+      "prototype_json_sql_page": {
+        "medianMs": 860.4907,
+        "minMs": 827.9092,
+        "maxMs": 906.1464,
+        "samplesMs": [
+          860.4907,
+          827.9092,
+          906.1464
+        ]
+      },
+      "prototype_temp_sql_page": {
+        "medianMs": 947.6214,
+        "minMs": 881.9604,
+        "maxMs": 979.3744,
+        "samplesMs": [
+          979.3744,
+          947.6214,
+          881.9604
+        ]
+      }
+    },
+    {
+      "scenario": "100000_ids_sparse",
+      "candidateIds": 100000,
+      "candidateJsonBytes": 1210001,
+      "pageNumber": 1,
+      "matchedDailyQuotes": 200,
+      "returnedRows": 50,
+      "resultsEqual": true,
+      "currentSqlExecutionMs": 662.635,
+      "currentSqlPlan": [
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 2,
+          "Actual Rows": 200,
+          "Actual Loops": 1,
+          "Sort Method": "quicksort",
+          "Sort Space Used": 107,
+          "Sort Space Type": "Memory",
+          "Temp Read Blocks": 10994,
+          "Temp Written Blocks": 11017,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Hash Join",
+          "Plan Rows": 2,
+          "Actual Rows": 200,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10994,
+          "Temp Written Blocks": 11017,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 3,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Unique",
+          "Plan Rows": 200,
+          "Actual Rows": 20000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 37080,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 10748,
+          "Temp Written Blocks": 10771,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Subquery Scan",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "WindowAgg",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Gather Merge",
+          "Plan Rows": 500,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Sort",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Sort Method": "external merge",
+          "Sort Space Used": 48904,
+          "Sort Space Type": "Disk",
+          "Temp Read Blocks": 6113,
+          "Temp Written Blocks": 6126,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Seq Scan",
+          "Plan Rows": 208,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Rows Removed by Filter": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 2595,
+          "Shared Hit Blocks": 4030
+        },
+        {
+          "Node Type": "Hash",
+          "Plan Rows": 100,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 246,
+          "Temp Written Blocks": 246,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "ProjectSet",
+          "Plan Rows": 100,
+          "Actual Rows": 100000,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 246,
+          "Temp Written Blocks": 246,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        },
+        {
+          "Node Type": "Result",
+          "Plan Rows": 1,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Hit Blocks": 0
+        }
+      ],
+      "legacy_java": {
+        "medianMs": 844.7731,
+        "minMs": 690.7083,
+        "maxMs": 919.3043,
+        "samplesMs": [
+          690.7083,
+          919.3043,
+          844.7731
+        ]
+      },
+      "current_json_prefilter": {
+        "medianMs": 645.4381,
+        "minMs": 610.9645,
+        "maxMs": 800.9419,
+        "samplesMs": [
+          610.9645,
+          645.4381,
+          800.9419
+        ]
+      },
+      "prototype_json_sql_page": {
+        "medianMs": 635.7689,
+        "minMs": 609.383,
+        "maxMs": 732.1214,
+        "samplesMs": [
+          609.383,
+          635.7689,
+          732.1214
+        ]
+      },
+      "prototype_temp_sql_page": {
+        "medianMs": 707.7225,
+        "minMs": 697.2859,
+        "maxMs": 816.9392,
+        "samplesMs": [
+          707.7225,
+          697.2859,
+          816.9392
+        ]
+      }
+    }
+  ]
+}
