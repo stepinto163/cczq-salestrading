@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-04",
+  "purpose": "日终释放历史报价内存，保留数据库历史及按ID操作",
+  "sourceBranch": "integration/ficc-client-convergence",
+  "builds": {
+    "quotesvr": {
+      "maven": {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "jarSha256": "769d7e7c6a7e710ae19e437d61968d9e1b011adf3284e451779dc58480ef115e"
+    },
+    "notificationsvr": {
+      "maven": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "jarSha256": "2a03c614649d14b2544b1a2c6034358ae95df45c02431cf6becaaa3669d741ce"
+    }
+  },
+  "isolatedDatabaseChecks": {
+    "QuoteEndOfDaySmoke": 135,
+    "UnreferCloneSmoke": 85,
+    "MarketQuoteViewSmoke": 351,
+    "StorageRecoverySmoke": 271,
+    "QtIntakeSmoke": 44,
+    "NotificationWorkingSetSmoke": 9,
+    "NotificationProtocolSmoke": 99
+  },
+  "liveGateway": {
+    "host": "local",
+    "passed": true,
+    "scenario": "真实网关创建ACTIVE和PENDING_CONFIRM各一笔；服务停机时只将本例createTime/confirmTime移至昨日，保持状态和版本不变；重启执行日终；核对今日列表排除、历史列表/审计保留、Unrefer克隆新ID及旧记录版本不变；新克隆已删除",
+    "notification": "重启恢复后真实创建和修改2笔报价，query/view/report共12组标签检查通过；报价和关注组清理、偏好恢复成功",
+    "evidence": [
+      ".tmp/working-set-live-prepare.log",
+      ".tmp/working-set-live-state.json",
+      ".tmp/working-set-live-final.log",
+      ".tmp/working-set-notification-live-final.json",
+      ".tmp/working-set-notification-live-final.log"
+    ]
+  },
+  "limits": [
+    "未修改系统时钟，真实网关使用停机跨日模拟；固定时钟测试另覆盖实际截止边界",
+    "未运行本轮完整WPF桌面套件、QA或长稳/压力测试",
+    "未推送产品代码；历史数据与审计、幂等、已读数据未删除",
+    "既有查询快照按TTL释放，当前工作集不代表瞬时堆内存总量"
+  ]
+}
