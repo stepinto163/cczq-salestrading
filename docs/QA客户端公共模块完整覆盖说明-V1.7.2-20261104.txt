@@ -1,0 +1,40 @@
+FICC 客户端公共模块完整覆盖包 V1.7.2
+日期：2026-11-04
+
+一、为什么重新发完整包
+QA编译报错：FiccBondReferenceCache缺少PublishValuations及Publish双参数重载。
+V1.6.1发的是增量兼容补丁，依赖V1.2客户端缓存代码；本次提供同一提交的两个完整模块，消除漏合并前置版本的问题。
+用户确认QA此分支由我方独占、单向更新，因此本次按完整模块覆盖，不再应用历次增量补丁。
+
+二、完整覆盖范围
+client-source/STC.Common：完整客户端公共模块，不是后端Java Common。
+client-source/STC.Data.Plugin：完整基础资料插件。
+client-source/build/Mvvm.targets、NuGet.config、nuget：配套构建规则及仓库已有离线NuGet包。
+准确提交和文件SHA256见manifest.json。两个模块须作为一组更新，不能混用旧Common。
+本包不是整个客户端、不是独立安装包；沿用QA已有STC.Frame、client/bin第三方依赖及宿主。
+不覆盖STC.SalesTrading.Plugin页面、不覆盖QA登录连接配置、不修改后端。
+
+三、覆盖和编译
+先提交或备份QA现状，再用包内两个完整模块替换QA对应源码目录。
+不要保留旧模块的bin/obj或仅挑几个cs文件更新；保留QA其他模块和环境配置。
+配套构建文件及离线包按client-source中的相对路径复制到客户端源码根目录。
+在VS2022 Developer Command Prompt、客户端源码根目录执行：
+MSBuild.exe STC.Data.Plugin\STC.Data.Plugin.csproj /restore /t:Rebuild /p:Configuration=Debug /p:Platform=AnyCPU /m:1
+该工程通过ProjectReference构建同版本STC.Common和既有STC.Frame。
+按QA原有发布流程同时更新client/bin/STC.Common.dll及client/plugin/STC.Data.Plugin.dll，保留构建生成的配套运行依赖。
+停止客户端后替换，不从其他目录再复制旧Common DLL；按QA既有宿主启动。
+
+四、协议及行权日
+客户端继续兼容旧BaseSvr的LEGACY_COMBINED合并数据以及新版SPLIT_DATASETS。
+这是旧服务协议兼容，并非删除客户端估值缓存；PublishValuations和Publish双参数接口均保留。
+本包已经包含optionDate、maturityDate、optionType的客户端扁平资料输出。
+QA先做的optionDate客户端修复由本包同等功能接替；QA服务端的行权日修复必须保留，本包没有覆盖BaseSvr。
+若上游本身缺日期，客户端不能凭空生成；需核对实际响应、自动缓存和页面。
+
+五、验证与QA复验
+本次用包内完整源码在隔离目录重建两个模块，并用重建产物执行真实STP登录及行权日用例78/79；实际结果见validation目录。
+QA部署尚待执行，不能将本机结果当作QA通过。
+请确认两个编译错误消失；启动后基础资料READY且协议识别正确。
+核对242480004.IB和031771008.IB的响应日期、自动生成缓存及关注券页面期限，不要手工向缓存补字段。
+剩余期限随运行日期变化，不能硬编码本机显示文本为QA预期。
+本包不包含提醒标签的前端绘制；该项由同事自己的分支接入。
