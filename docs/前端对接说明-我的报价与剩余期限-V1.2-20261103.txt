@@ -1,3 +1,13 @@
+【2026-11-04更正，以此段为准】
+1. 当前部署兼容回退后的BaseSvr合并协议；下文DataSet必填及必须配套拆分版BaseSvr的要求已被替代。客户端接受LEGACY_COMBINED，不能据此要求QA升级已回退的拆分方案。
+2. 本次修复BaseSvr的Datas[].FiccReference缺少optionDate：
+   "optionDate":"2029-06-11", "maturityDate":"2029-06-11", "optionType":"ETS"
+   外层Option_Date/Option_Type/Maturity_Date仍保留原STC格式；仅有外层字段不等同内层已下发。
+3. STC.Common缓存Find/FindCode现在也输出上述三个字段，日期为yyyy-MM-dd；期限仍使用本地CalculateRemainingTerm，数值remainingYears仍为使用端派生值，不作为每日源字段下发。
+4. 旧BaseSvr内层未提供optionDate时，共享后端适配器从外层Option_Date补齐；前端若只保存内层，应升级BaseSvr修复或自行从同一响应外层规范映射，不可假定旧版本已有内层字段。
+5. 本机真实服务、客户端SQLite和关注券窗口已验证；QA前端实际部署版本仍须复核。无行权日期保持空，不伪造日期。
+
+以下保留旧版本原说明，涉及DataSet的内容须结合上述更正阅读。
 前端对接说明：我的报价、剩余期限（V1.2，2026-11-03）
 适用：11月2日下午至晚间最终改动，包含凌晨估值拆分。
 本说明替代此前remainingTerm对接说明中的旧方案。示例值仅用于说明协议。
