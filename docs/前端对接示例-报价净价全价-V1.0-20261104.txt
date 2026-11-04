@@ -1,0 +1,56 @@
+报价净价、全价补充说明 V1.0（2026-11-04）
+
+一、这次改什么
+原先只有行情最优价格簿带换算后的完整价格。本次在服务端补齐其他报价列表和提醒快照。
+不新增接口，不改变原price、quoteType、yieldType、业务revision，不修改客户端代码。
+
+二、新字段（可空，数值仍用字符串）
+netPrice：净价。
+dirtyPrice：全价。
+maturityYield：到期收益率，百分数，例如"2.5"代表2.5%。
+exerciseYield：行权收益率，百分数；无有效结果时缺失。
+priceCalculationStatus：换算状态；READY=计算返回成功，PENDING=等待计算，NO_PRICE=未填价格。
+  其他值为计算失败原因，例如CALCULATOR_OFFLINE；字段缺失表示旧记录未保存换算状态。
+priceCalculationTime：本次换算结果保存时间；不替代quoteTime或updateTime。
+
+报价原输入保留原精度。READY也不代表所有可选结果都有值；始终逐字段判断，缺失显示--，不要填0或拿估值代替。
+
+三、字段放在哪里
+1. 信用全部/利率全部：ficc.price.view.open/query，rowShape="QUOTE"，Data.quotes[]。
+2. 今日报价/报价确认：ficc.quote.view.open/query，Data.quotes[]。
+3. 历史报价：ficc.quote.history.search，Data.rows[].quote。
+4. 报价提醒：通知记录的triggers[].quotes[]，查询与列表推送均携带。
+5. 单条报价查询ficc.quote.get：Data.quote。
+
+以上列表的增量推送也带这些字段。新增报价及价格/券/计价类型/交易日/清算条件修改后异步计算，
+首个响应可能尚无换算结果；完成后刷新报价行。仅补算不增加业务revision，前端应处理流序号有更新的同revision行，不能仅凭revision相同丢弃。
+不需要新增create参数，也不需要再调用一次confirm；create/confirm的results仍是操作回执。
+
+四、报价对象示例（只展示相关字段）
+{
+  "quoteId": "Q-示例",
+  "revision": "1",
+  "quoteType": "1",
+  "yieldType": "1",
+  "price": "2.5000",
+  "maturityYield": "2.5000",
+  "netPrice": "101.25",
+  "dirtyPrice": "102.375",
+  "priceCalculationStatus": "READY",
+  "priceCalculationTime": "2026-11-04T09:00:00+08:00"
+}
+此例无行权收益率，exerciseYield省略，界面显示--。
+
+五、历史与提醒
+新报价的换算结果随当前报价、对应版本的审计快照和日报快照保存；读取历史时不重新调用计算器。
+旧历史没有保存过换算结果的，继续显示--，不按今日基础资料回填。
+同一业务版本补充换算字段只刷新已有提醒列表，保留提醒身份及已读状态，不新弹一次提醒。
+
+六、行情最优保持原协议
+mode="BEST"继续使用Data.books[].marketData.NoMDEntries[]中的大写字段：
+NetPrice、DirtyPrice、Yield（到期收益率）、YieldToExecution（行权收益率）。
+本次报价对象使用小写开头字段，不重命名已有最优接口字段。前端可在适配层映射为统一列。
+
+七、部署范围
+Common、QuoteSvr、NotificationSvr须一起构建更新；本次没有新增数据库表或索引，也不改BaseSvr和筛选库。
+客户端由前端同事按此说明自行接入。本说明不代表已完成QA或桌面验收。
