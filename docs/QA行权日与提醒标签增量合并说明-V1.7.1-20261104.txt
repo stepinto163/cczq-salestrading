@@ -1,0 +1,45 @@
+FICC V1.7.1 增量源码合并说明（2026-11-04）
+
+1. 范围
+本包仅包含今天上午V1.7之后的两项修复：行权日资料链路、报价提醒标签。
+Common和NotificationSvr基于已合并V1.7及此前旧BaseSvr兼容补丁的代码；BaseSvr基于回退估值拆分后的combined-reference分支。
+不含QuoteSvr业务源码、BondSearch Core、评级数据源、数据库迁移或新配置。
+components下只有改动文件及独立补丁，不是可直接覆盖部署的完整源码包；准确基线/目标见manifest.json。
+
+2. 重要：QA已经先改了optionDate，可能冲突
+用户确认QA已自行修复行权日。不要盲目套补丁或用changed-files覆盖QA文件。
+请先比较已有实现：相同逻辑保留QA版本、跳过重复补丁；不同处人工合并并保留QA其他修改。
+逐项检查三个位置：
+（1）BaseSvr BondReferencePolicy.reference内层包含optionDate，不只是外层Option_Date；日期为yyyy-MM-dd，0/空保持空。
+（2）Common保留optionDate并声明日期契约；旧Base内层缺字段时可从外层Option_Date补入，不能覆盖已有内层值。
+（3）客户端FiccBondReferenceRow.ToReferenceJson向页面提供optionDate、maturityDate、optionType，仍复用已有结构化缓存字段。
+本包不恢复DataSet拆分，也不改变每日增量同步或剩余期限计算规则。
+
+3. 报价提醒补标签
+NotificationService构造触发报价快照时漏了五个字段，现按每笔报价独立复制，未设置返回false。
+位置：通知的triggers[].quotes[]，不是通知顶层。
+示例：{"quoteId":"示例","side":"1","urgent":true,"recommended":false,"whole":true,"oco":true,"packing":false}
+对应急、荐、整、OCO、打包；普通查询、视图查询、实时推送均带这组字段。
+前端按自己的报价快照读取并绘制；本包未改提醒界面的标签展示代码。
+
+4. 合并与构建
+独立组件目录内先运行git apply --check <补丁路径>，本包补丁路径相对组件根目录，默认-p1。
+QA已先改的optionDate补丁检查失败可能是等效修改，不应强制覆盖；需逐段比对。
+先构建安装Common，再构建QuoteSvr、NotificationSvr，确保两个服务实际部署的新Common一致。
+BaseSvr、客户端仅构建合并后的各自版本。沿用现有Jenkins/Salt配置流程；不要求手工新建配置。
+测试补丁ui-tests应应用到已有tests/ui目录；不要把它当成STC产品插件源码覆盖。
+
+5. 已验证与未验证
+行权日：本机真实BaseSvr响应→STP自动同步SQLite→内存资料→关注券识别界面，两个桌面用例78/79通过。
+242480004.IB：2029-06-11/2029-06-11、ETS；031771008.IB：2029-03-23/2032-03-23、PUT。
+期限显示依赖运行日期，不要把本机当日显示值硬编码为以后日期的预期。
+提醒标签：真实GW→QuoteSvr创建/修改两笔报价→NotificationSvr→客户端查询/订阅，12组检查（60个布尔值）通过；测试报价先Refer再删除，临时关注组删除，偏好恢复。
+STP提醒页面38加载通过。旧69用例因CanChangePreferences测试适配缺失而BLOCKED，不计通过；新标签的界面绘制未接入/验收。
+组件断言及脱敏结果见validation目录。没有QA实际合并部署验证，不表示全部UI验收完成。
+
+6. QA复验
+行权日用例78/79复用现有UI测试构建流程；不得先手工向缓存补日期。
+提醒标签测试工具在tools/api-debugger：用VS MSBuild先构建DpsApiDebugger.csproj（Debug，restore），再运行tests/Run-NotificationFlagsLiveCheck.ps1 -User <专用测试账号> -HostName <QA网关IP> -Port <端口>。
+脚本提示输入密码，使用gzip协议、180秒看门狗；请使用可操作240210.IB的测试账号，运行时不要用同账号另开客户端。
+此测试会创建两笔已确认测试报价并按业务操作清理，审计记录保留；程序被强杀时需核对遗留报价/关注组/偏好。
+最后由前端核对Bid/Ofr各自标签、取消标签后false的刷新、查询与推送一致；完成后反馈QA分支/提交及结果。
