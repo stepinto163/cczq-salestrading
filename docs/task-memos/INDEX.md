@@ -200,3 +200,7 @@
 - V1.7.2客户端Common/Data.Plugin完整源码覆盖包已发163；包含V1.2缓存API、旧Base兼容及行权日输出，包内源码隔离重建和两个真实桌面用例通过，QA待部署。[交付说明](../QA客户端公共模块完整覆盖说明-V1.7.2-20261104.txt)、[记录](2026-11-04.md#v172客户端公共模块完整覆盖交付)。
 
 - 11月17日QT持久群路由试验已暂停：用户指定QuoteSvr承接后又要求复用quotes[].institutionName、群号随每行放置，协议待重审。两轮本机试验及真实链路证据、失败、运行回退、临时权限清理均见[当日记录](2026-11-17.md)。后端草稿源为.tmp/qa-source-mail-20261117/backend的codex/qt-group-routing-20261117，未提交产品/未交付。
+
+- 11月17日QT新设计已批准并实现：每行chatGroupNumber＋既有institutionName，QuoteSvr持久路由/去重，60秒热刷新；4帖真实链路及3次桌面观察通过，组件回归Common125通过1跳过、QuoteSvr45、QtIntake60。产品本地审阅、QA未验收，临时权限恢复、本机FIX接收已停。跨仓源码位置及全部边界见[最终实施记录](2026-11-17.md#qt群路由按报价行协议完成最终批准设计)、[脱敏结果](../test-results/qt-group-routing-live-20261117.json)。
+
+- 本轮后端提交：`1aa15725`（`.tmp/qa-source-mail-20261117/backend`，`codex/qt-group-routing-20261117`）；后端自身记录为该目录下`docs/task-memos/2026-11-17.md`。仅本地提交，未推送产品分支。

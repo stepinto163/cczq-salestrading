@@ -1,0 +1,94 @@
+{
+  "date": "2026-11-17",
+  "scope": "真实QT PRL测试群 → 本机QtIntake → QuoteSvr/PG → GW → 未修改STP客户端",
+  "design": "quotes[].chatGroupNumber + 既有quotes[].institutionName；QuoteSvr路由与去重",
+  "cases": [
+    {
+      "case": "first",
+      "source_posts": 1,
+      "recipient_copies": 4,
+      "stored_quotes": 2,
+      "sides": [
+        "Bid",
+        "Ofr"
+      ],
+      "owner": "A",
+      "source_groups": 1,
+      "status": "PENDING_CONFIRM",
+      "desktop_verified": true,
+      "field_placement_verified": true
+    },
+    {
+      "case": "default",
+      "source_posts": 1,
+      "recipient_copies": 4,
+      "stored_quotes": 2,
+      "sides": [
+        "Bid",
+        "Ofr"
+      ],
+      "owner": "B",
+      "source_groups": 1,
+      "status": "PENDING_CONFIRM",
+      "desktop_verified": false,
+      "field_placement_verified": true
+    },
+    {
+      "case": "specific",
+      "source_posts": 1,
+      "recipient_copies": 4,
+      "stored_quotes": 2,
+      "sides": [
+        "Bid",
+        "Ofr"
+      ],
+      "owner": "A",
+      "source_groups": 1,
+      "status": "PENDING_CONFIRM",
+      "desktop_verified": true,
+      "field_placement_verified": true
+    },
+    {
+      "case": "fallback",
+      "source_posts": 1,
+      "recipient_copies": 4,
+      "stored_quotes": 2,
+      "sides": [
+        "Bid",
+        "Ofr"
+      ],
+      "owner": "A",
+      "source_groups": 1,
+      "status": "PENDING_CONFIRM",
+      "desktop_verified": true,
+      "field_placement_verified": true
+    }
+  ],
+  "visibility": "首次及失效改派：实际归属人get/view成功；非归属人get=1002且view不包含。群默认B：数据库确认B，A通过网关不可见；未使用B登录桌面。",
+  "test_counts": {
+    "common": {
+      "total": 126,
+      "passed": 125,
+      "skipped": 1
+    },
+    "quotesvr": {
+      "passed": 45,
+      "skipped": 0,
+      "new_pg_tests": 12
+    },
+    "qtintake": {
+      "passed": 60,
+      "skipped": 0,
+      "new_tests": 5
+    }
+  },
+  "limits": [
+    "Common一项外部PG/CRM测试未配置而跳过；QuoteSvr外部RequestParserTest未执行。",
+    "无QA/TBase验收，无压力测试；真实多机切换和真实QT同秒重复发帖未测。",
+    "重启持久化、提交后应答丢失与DB异常分流由独立PG组件用例验证，不能称真实故障演练。",
+    "真实样本机构18037有值、18036缺失；全称优先仅由映射组件用例覆盖。",
+    "本次报价均待确认；未确认进入行情，现有计算器离线不属于本次修复。"
+  ],
+  "private_evidence_prefix": ".tmp/qa-source-mail-20261117/qt-row-route-",
+  "public_evidence": "本文件仅保存脱敏断言；原始FIX、账号、数据库回包、截图只存本机私有目录。"
+}
