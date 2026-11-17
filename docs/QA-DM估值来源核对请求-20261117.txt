@@ -1,0 +1,51 @@
+主题：【QA只读核对】DM估值替代STC估值：字段口径、数据覆盖与宽表一致性
+
+QA同事及协作AI，你们好：
+
+我们准备评估：FICC估值改从DM明细估值表整合，继续通过BaseSvr现有接口下发，前端字段保持不变。目前仅调查，请勿修改代码、表结构、数据或部署服务，也不做压力测试。
+
+背景：现有展示估值来自STC；估值筛选来自DM的onshore_bond_filter（cb_ytm、cb_net_price、cs_ytm）。本机dm_data与ibor_dm_20261013中的cb_valuation_domestic_boc、cs_bond_valuation、china_bond_valuation_2026均为空，无法完成实际估值对账。请在QA实际DM数据源核对以下内容并回复本邮件。
+
+一、确认生产可用的估值表
+候选中债表：cb_valuation_domestic_boc；候选中证表：cs_bond_valuation。
+请确认实际schema、是否为最新估值或保留历史、更新频率/完成时点、删除及同日纠错方式，以及是否有更合适的“最新估值”表或视图。china_bond_valuation_2026是另一个已有候选，暂不要求扫描年度历史。
+请附表字段定义、已有索引及来源字典/注释依据。数据量可给系统统计估计值并标明“估计”，不必全表COUNT。勿回传密码、完整连接串或全库数据。
+
+二、核对中债字段定义与选行规则
+本机看到：bond_uni_code、valuation_date、valuation_type、reliability、valuation_yield、valuation_net_price、day_valuation_full_price、end_day_valuation_full_price、valuation_modified_duration。
+请确认：
+1. valuation_type各代码的含义，如何区分到期/行权；同券同日多条时，应如何选择对应估值行？
+2. reliability='推荐'在该表的准确含义，以及是否需要此条件；不能只因IBOR旧SQL这样写就认定适用于FICC。
+3. 收益率是否以百分数保存（例如2.50表示2.50%），价格单位及本金基准是什么？日间/日终全价各是什么口径？
+4. valuation_date是否业务估值日；update_time/update_time_id能否可靠识别新增、纠错及删除？请提供依据，不猜枚举。
+
+三、核对中证字段覆盖
+候选映射：
+valuation_yield_m / valuation_net_price_m / valuation_full_price_m → 到期收益率/净价/全价；
+valuation_yield_e / valuation_net_price_e / valuation_full_price_e → 行权收益率/净价/全价；
+valuation_date → 估值日期。
+请确认上述含义、单位、空值规则、同券同日多条的选行规则，以及bond_uni_code如何通过main_bond映射到带市场后缀的securityId（例如240210.IB）。如涉及combination_code，请说明其作用，避免跨市场重复匹配。
+补充：当前FICC未使用STC recommendation决定展示或计算，推荐枚举对齐不是本次显示功能的硬阻塞；请勿为此新增业务。中证隐含评级是另一问题，本次不修改其来源。
+
+四、小样本对账（约10只券即可）
+优先选择240210.IB、242480004.IB、031771008.IB；若QA无这些券，请明确说明并选择同类型替代。另补普通利率债、信用债、含权债及缺估值券，控制总量。
+请按“同一券、同一估值日、同一到期/行权口径”对照：
+- DM明细中债/中证的收益率、净价、全价；
+- DM宽表cb_ytm、cb_yte、cb_net_price、cs_ytm、cs_yte，以及cb_yield/cs_yield；
+- 如可访问，STC china_bond_valuation_view / sdb_csi_bond_valuation中对应值。
+不要把不同日期的差异判成错误。宽表若没有估值日期，请明确如何确认它与明细是同一批更新；不能以整行update_time直接当估值日期。
+请指出DM明细缺值、宽表有值或相反的样例；若无差异，也请附少量真实样例支持。
+
+五、现有查询条件是否足够
+只检查索引/已有统计，必要时使用普通EXPLAIN，不执行EXPLAIN ANALYZE或全表窗口排序。说明是否已有按bond_uni_code、valuation_date和更新时间取最新记录的索引。我们不在这封邮件中授权建索引、全量数据扫描或百万级压测。
+读取设置短statement_timeout（建议5秒），查询限定少量券和行数。若超时或缺权限，直接报告阻塞，不自动加大查询范围。
+
+请按下面格式回复，附小型TXT/CSV样例即可：
+1. 实际表/schema及是否有数据；最新表/更新方式；
+2. 已确认字段/枚举及证据；无法确认的项；
+3. 样例对账表：券代码｜来源｜估值日｜口径｜收益率｜净价｜全价｜备注；
+4. 宽表与明细是否一致，发现差异的条件；
+5. 现有索引及查询阻塞；
+6. 结论：是否足以支持保持现有FICC字段的DM估值适配，尚缺哪些信息。
+
+本次只需要调查报告，不需要合并或发布代码。我们收到结果后再决定最终映射和实施范围。
