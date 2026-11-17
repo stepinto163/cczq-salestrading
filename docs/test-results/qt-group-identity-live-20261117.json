@@ -1,0 +1,79 @@
+{
+  "date": "2026-11-17",
+  "status": "真实QT PRL单次群消息验证通过；未实现去重",
+  "environment": "本机QtIntakeSvr连接现有PRL FIX，QA QtIntake由用户预先停止",
+  "publishedMessages": 1,
+  "publishMode": "TEXT",
+  "sourceTime": "20261117-15:29:20",
+  "businessAck": "ACKNOWLEDGED/applicationCode=0",
+  "receivedQuotePackets": 4,
+  "recipientAccounts": 2,
+  "perRecipient": {
+    "A": {
+      "Bid": 1,
+      "Ofr": 1
+    },
+    "B": {
+      "Bid": 1,
+      "Ofr": 1
+    }
+  },
+  "fields": {
+    "chatGroupId": {
+      "distinctValues": 1,
+      "presentOnAll": true
+    },
+    "counterpartyId": {
+      "distinctValues": 1,
+      "presentOnAll": true
+    },
+    "sourceTime": {
+      "distinctValues": 1,
+      "presentOnAll": true
+    },
+    "text": {
+      "distinctValues": 1,
+      "presentOnAll": true
+    },
+    "chatType": {
+      "distinctValues": 1,
+      "presentOnAll": true
+    },
+    "transType": {
+      "distinctValues": 1,
+      "presentOnAll": true
+    }
+  },
+  "differentFields": {
+    "sourceUserId": 2,
+    "negotiationId": 4,
+    "originalMessageId": 2,
+    "externalMessageId": 4
+  },
+  "externalQuoteId": "-10000 on all four",
+  "upstreamOriginalMessageId": "No tag18044 in the four inbound S packets; outgoing U41 messageId is not echoed as a usable shared S message identifier",
+  "database": {
+    "created": 4,
+    "owners": 2,
+    "status": "PENDING_CONFIRM",
+    "sourceGroups": 2,
+    "eachOwnerHasBothSides": true
+  },
+  "selectionCheck": "对真实收到的四条记录选定同一接收账号，保留该账号两条Bid/Ofr，排除另一账号两条；仅离线断言，非已部署去重功能",
+  "recommendation": "QT来源范围+chatGroupId+counterpartyId+sourceTime+完整原文（辅以chatType/transType），不含接收账号或NegotiationID。消息键固定归属；事件键仍逐报价去重。",
+  "limitations": [
+    "只验证一次双行群帖，不证明所有QT版本和消息类型",
+    "tag60本次仅秒精度：同一发送人同一秒重复完全相同原文仍有误合并风险；未测试该场景",
+    "没有启动客户端做确认入行情，测试止于真实FIX、QuoteSvr成功应答及真实数据库四条待确认",
+    "四条新测试待确认报价保留供审阅，未确认成正式报价；外部PRL测试群消息保留",
+    "启动时已有七条旧收件箱任务转发成功，其原始日期为11/09、11/12，不属于本次新发布证据，未删除",
+    "本机QtIntake PID6976保持运行，QA恢复前需停止本机实例避免同一FIX身份争用"
+  ],
+  "privateEvidence": [
+    "qt-group-identity-publish.json",
+    "qt-group-identity-received.json",
+    "qt-group-identity-fix-private.txt",
+    "qt-group-identity-created-private.json",
+    "qt-group-identity-db-private.json"
+  ]
+}
