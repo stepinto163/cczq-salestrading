@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-17",
+  "design": "仅按主题配置正整数字节上限；现有DPS日志；无SUMMARY/PREVIEW/FULL模式，无独立报文文件与队列",
+  "supersedes": "topic-payload-logging-20261117.json记录的独立文件方案",
+  "build": {
+    "tests": [
+      {
+        "module": "common",
+        "tests": 139,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      {
+        "module": "quotesvr",
+        "tests": 45,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "notification",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "intake",
+        "tests": 60,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "commonJarSha256": "78eb6ed744f9a17066142fb4ca814e5d986022606f90edc82045c3960098da70"
+  },
+  "saltQAParameterResolution": [
+    {
+      "service": "quotesvr",
+      "saltQAResolved": true,
+      "matchesSourceDefaults": true,
+      "propertyCount": 6
+    },
+    {
+      "service": "notificationsvr",
+      "saltQAResolved": true,
+      "matchesSourceDefaults": true,
+      "propertyCount": 6
+    },
+    {
+      "service": "qtintakesvr",
+      "saltQAResolved": true,
+      "matchesSourceDefaults": true,
+      "propertyCount": 6
+    }
+  ],
+  "smallLimits": [
+    {
+      "service": "QuoteSvr",
+      "configuredBytes": 512,
+      "maxObservedBodyBytes": 512,
+      "requestAndReply": true
+    },
+    {
+      "service": "NotificationSvr",
+      "configuredBytes": 128,
+      "maxObservedBodyBytes": 114,
+      "requestAndReply": true
+    },
+    {
+      "service": "QtIntakeSvr",
+      "configuredBytes": 128,
+      "maxObservedBodyBytes": 105,
+      "requestAndReply": true
+    }
+  ],
+  "largerLimits": [
+    {
+      "service": "QuoteSvr",
+      "maxObservedBodyBytes": 45737,
+      "fullResponseMatchesGateway": true,
+      "hotReloadWithoutRestart": true,
+      "noSeparateFilesAdded": true
+    },
+    {
+      "service": "NotificationSvr",
+      "maxObservedBodyBytes": 114,
+      "fullResponseMatchesGateway": true,
+      "hotReloadWithoutRestart": true,
+      "noSeparateFilesAdded": true
+    },
+    {
+      "service": "QtIntakeSvr",
+      "maxObservedBodyBytes": 105,
+      "fullResponseMatchesGateway": true,
+      "hotReloadWithoutRestart": true,
+      "noSeparateFilesAdded": true
+    }
+  ],
+  "historyClientRows": 50,
+  "smallAndLargeBusinessDataEqual": true,
+  "notificationHeartbeatRealGatewayReceived": true,
+  "qtFixConnected": true,
+  "invalidPublishCode": "1001",
+  "noExternalQuotePublished": true,
+  "utf8MarkerWithinBodyLimit": true,
+  "tenMiBInputBoundedEncodingUnderExisting128MiBTestHeap": true,
+  "runtimeDefaultsRestored": true,
+  "qaJenkinsExecuted": false,
+  "qaRuntimeTested": false,
+  "desktopUiTested": false,
+  "loadTestExecuted": false,
+  "emailSent": false,
+  "notes": [
+    "组件跳过PostgresCrmTest：未设置crm.test.config",
+    "QuoteSvr测试继续排除外部RequestParserTest",
+    "完整日志与网关JSON比较时仅归一化时间字符串毫秒末尾零",
+    "字节限制仅含body正文及截断标记，不含时间戳及关联信息前缀",
+    "旧独立报文文件保留审计，本轮未新建或修改"
+  ]
+}

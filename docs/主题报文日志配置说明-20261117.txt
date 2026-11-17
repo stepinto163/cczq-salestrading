@@ -1,62 +1,57 @@
-主题报文日志配置说明（2026-11-17）
+主题报文日志配置说明（2026-11-17，按用户最新意见修订）
 
-一、用途
-按主题决定记录摘要、预览或完整正文。用于临时排查指定接口，不把基础资料的大响应直接打印成数兆字节的日志行。
-适用：QuoteSvr、NotificationSvr、QtIntakeSvr；覆盖本次接入的DPS请求/响应、推送和QtIntake的FIX收发。
-不改变报文协议、业务处理或现有应用日志/DPS日志的分工；不会控制外部共享框架自己输出的日志。
+一、最终方案
+只配置每个主题的正文大小，不再提供SUMMARY、PREVIEW、FULL类型。
+正文写入原有DPS日志文件；没有独立JSON文件、写入队列、额外目录或独立文件清理策略。
+日志文件滚动与保留沿用现有log4j配置。INFO请求摘要/耗时/异常仍保留；正文通过现有DEBUG级DPS logger输出。
+源码与Salt的DPS logger已启用DEBUG，正文不会因大小参数而改变业务请求/响应。
 
-二、规则
-匹配顺序：精确主题 > 最长匹配前缀 > 全局默认。
-SUMMARY：INFO摘要，不输出正文。
-PREVIEW：INFO摘要；DEBUG启用时附加脱敏预览，正文最多4096字符，数组取前3项等原有规则保持。
-FULL：INFO摘要和保存后的文件路径；完整脱敏JSON异步写到独立文件，不写入普通日志行。
-Logger需允许INFO；PREVIEW还需允许DEBUG。源码及Salt原有DPS logger已设置相应级别。
+二、配置示例
+配置文件：各服务目录下config/payload-log.properties。
 
-例子（服务目录的config/payload-log.properties）：
-payloadLog.default=SUMMARY
-payloadLog.ficc.*=PREVIEW
-payloadLog.ficc.quote.history.search=FULL
-payloadLog.ficc.reference.sync=SUMMARY
-payloadLog.stc.base.*=SUMMARY
-payloadLog.ficc.notification.report.*=FULL
-payloadLog.qt.fix.*=PREVIEW
-payloadLog.qt.fix.S=FULL
-
-最后一项是FIX MsgType=S；QT没有DPS主题，因此使用qt.fix.<MsgType>作为诊断主题。
-旧反射Base调用使用stc.base.bridge.<方法名>，不是新增业务接口。
-推送按实际推送主题匹配；打开某个query/open的FULL，不会自动把另一个report主题也改成FULL。
-密码、token、sid/sessionId等字段继续遮蔽，含登录会话的推送主题也遮蔽；文件不是未脱敏的原始报文。
-
-三、默认容量和更新
-payloadLog.directory=logs/payloads
+payloadLog.default=8192
 payloadLog.reloadSeconds=30
-payloadLog.retentionHours=24
-payloadLog.maxDiskBytes=268435456
-payloadLog.maxFileBytes=16777216
-payloadLog.maxQueuedBytes=33554432
-payloadLog.maxFiles=1000
+payloadLog.heartbeat.enabled=false
+payloadLog.ficc.quote.*=4096
+payloadLog.ficc.quote.history.search=16384
+payloadLog.ficc.notification.report.*=4096
+payloadLog.qt.fix.*=8192
 
-分别表示：服务工作目录下的文件目录、30秒检查配置、保留24小时、目录256MiB、单文件16MiB、待处理字符串约32MiB、最多1000文件。
-队列另有64条硬上限，单线程落盘。先脱敏再分块编码写入临时文件，成功后改名；不保存被截断的伪完整JSON。
-队列满或单条超限时丢弃详细正文，保留摘要并限频提示NOT_SAVED及累计数；解析/写盘失败提示FAILED，业务返回不改变。
-maxQueuedBytes按字符串UTF-16大小估计，不等于整个日志组件的堆上限；FULL仍有序列化/解析成本，建议只对排障主题临时开启。
-只清理该目录下本组件命名的dps-UUID.json文件；不删除其他业务文件。各实例使用自己的目录。
-除directory修改需重启外，其余参数支持热加载。修改无效则报RELOAD_FAILED并沿用旧配置；首次加载缺文件/参数错误则启动失败并打印堆栈。
-临时修改运行文件用于排障；需持久保留的规则同步回Salt配置，避免下次部署覆盖。
+匹配顺序：精确主题 > 最长匹配前缀 > default。缺少default时默认8192字节。
+大小配置值为正整数，单位是正文UTF-8字节；0、负数、UNLIMITED、原来的模式名称等均拒绝。
+超过上限时截断正文，并标记bodyTruncated=true；正文尾部的[TRUNCATED]也计入字节上限。
+极小上限无法容纳尾部标记时，只保留正文外的bodyTruncated=true；不会因此超过限制。
+上限约束body=后的正文，不包含时间戳、topic、requestId等日志前缀。中文通常占3字节，常见emoji占4字节，截断不会拆开完整Unicode字符。
+不再按前三条记录、前32个字段等预览规则省略数据：只要字节预算足够就继续记录。
+例如1000条响应设置8192，日志最多保留8KiB正文；客户端仍收到原来的完整1000条。
+密码、token、会话凭据继续遮蔽；不可解析JSON不直接输出原文，避免泄漏。
+被截断正文不保证是完整JSON，需查看bodyTruncated标记，不能当作可重放的完整报文。
 
-四、Salt/Jenkins交付
-每个服务源码均提供config/payload-log.properties，直接源码启动也能读取。
-各服务salt-formula/<模块>/config.yaml定义以下公共参数：
-payloadLogDefault、payloadLogDirectory、payloadLogReloadSeconds、payloadLogRetentionHours、payloadLogMaxDiskBytes、payloadLogMaxFileBytes、payloadLogMaxQueuedBytes、payloadLogMaxFiles、payloadLogRules。
-payloadLogRules是多行properties文本；QA.APP可以覆盖common值。模板为files/config/payload-log.properties。
+三、动态更新及特殊主题
+正常心跳默认不写日志（INFO摘要和DEBUG正文均跳过）。payloadLog.heartbeat.enabled=true可临时恢复，仍遵守主题大小限制。
+识别发送/接收PUSH的顶层kind=HEARTBEAT且Code=0000，以及QT FIX的qt.fix.0。业务UPDATE、错误响应、连接故障日志保留，不改变心跳传输或订阅。
+默认每30秒检查配置，心跳开关、主题规则、默认上限和检查周期可热更新。无效更新保留旧配置并报错；首次配置缺失或非法则初始化失败。
+推送按实际推送topic独立匹配，query/open与report不是同一个主题。
+QT FIX没有DPS topic，用qt.fix.<MsgType>作为诊断名称；旧Base反射桥使用stc.base.bridge.<方法名>。
+基础资料同步可用payloadLog.ficc.reference.sync及payloadLog.stc.base.*设置更小上限。
+
+四、Salt及源码启动
 三个模块：cgws-ficc-saletrading-quotesvr、cgws-ficc-saletrading-notificationsvr、cgws-ficc-saletrading-qtintakesvr。
-交付需同时合并Common及三个服务的代码、源码配置和Salt文件，重新构建服务依赖，不能只更新服务JAR。
-运行路径不要求人工复制example或补占位值；共享连接配置仍沿用ATS_ROOT/control，未改变部署契约。
+各模块salt-formula/<模块>/config.yaml只保留：
+  payloadLogDefault: "8192"
+  payloadLogReloadSeconds: "30"
+  payloadLogHeartbeatEnabled: "false"
+  payloadLogRules: |  （多行主题=字节数）
+模板为files/config/payload-log.properties；源码启动文件为config/payload-log.properties。
+Jenkins按现有Salt流程生成QA配置，无需手动复制example；QA.APP可覆盖common值。
+必须替换旧方案的完整payload-log配置，不能留下模式名或独立文件参数。旧文件目录中的诊断文件本次不会主动删除。
+Common与三个服务需一起合并/重建依赖；不改客户端或业务接口。共享连接仍用ATS_ROOT/control。
 
-五、本机验证与边界
-Common 139项：138通过、1项外部PG/CRM依赖跳过；QuoteSvr 45通过（沿用排除外部RequestParserTest）；NotificationSvr 2通过；QtIntake 60通过。
-真实GW读取50条历史报价、提醒查询、提醒心跳推送、QtIntake状态；完整文件与实际响应按字段核对一致，时间字符串末尾零位仅按同一时刻归一化比较。
-FULL/SUMMARY/PREVIEW切换后业务Data一致；实际热加载、请求ID关联、脱敏、启动控制台/文件日志均核对。
-真实QT PRL完成FIX登录，脱敏完整登录文件已核对；FIX报价收发另由真实本机loopback socket用例覆盖，本轮没有向外部群发送业务报价。
-单次10MiB报文、中文及代理字符边界、超限、过期/磁盘容量、无效配置均有组件用例；不是压力测试。
-三套Salt QA参数展开后与源码默认值一致。尚未执行QA Jenkins或QA运行验收；客户端无代码变更，本轮未进行桌面页面验收。
+五、验证范围
+本机组件回归与真实GW检查见docs/test-results/topic-payload-byte-limit-20261117.json。
+覆盖小上限截断、大上限完整记录、运行中热改、响应Data不变、提醒推送、QT状态及真实FIX登录；检查无新增独立payload文件。
+覆盖中文/emoji字节边界、嵌套JSON脱敏、10MiB输入的有界日志、无效配置及默认/精确/前缀匹配。
+QA Jenkins、QA现场、桌面界面及压力/长期运行未验；打包与邮件仍保持用户先前暂停状态。
+旧独立文件方案的记录和测试结果仅保留追溯，不再代表最终实现。
+
+心跳开关本机验收：docs/test-results/heartbeat-logging-20261117.json。真实GW执行关闭→开启→关闭，三次均收到心跳及同主题业务UPDATE，只有开启时记录正常心跳；三服务源码/Salt默认false。QT FIX心跳过滤通过组件检查，本轮真实FIX观察窗口未出现心跳，不宣称真实FIX心跳验收通过。

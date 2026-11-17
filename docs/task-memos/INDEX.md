@@ -218,3 +218,9 @@
 - 11月17日DM-VAL-03开发任务已发163（20:18 SMTP接受）：QA独立分支实施BaseSvr FICC估值DM适配，要求真实端到端及完整源码回邮待审；暂保持宽表筛选，不宣称消除日期差异。[任务](../QA-DM估值接入开发任务-DM-VAL-03-20261117.txt)、[记录](2026-11-17.md#分派dm-val-03-basesvr估值来源开发)。
 
 - 11月17日晚主题报文日志完成本机验收：精确/前缀/默认继承，摘要/预览/独立完整文件，热更与容量限制；三服务源码及Salt配置齐全。Common/Quote/Notification位于.tmp/qa-source-mail-20261117/backend的codex/topic-payload-logging-20261117，提交b03c4291；QtIntake与真实GW检查器在主工作树codex/topic-payload-intake-20261117。245项组件通过、1跳过，真实GW查询/提醒推送/Qt状态通过；QA及桌面未验，打包邮件保持暂停。[主记录](2026-11-17.md#主题级报文日志实施与本机验收11月17日晚)、[后端原始备忘归档](sources/backend/2026-11-17.md)、[脱敏结果](../test-results/topic-payload-logging-20261117.json)、[配置说明](../主题报文日志配置说明-20261117.txt)。
+
+- 更正：用户否决上一版模式/独立文件方案，现仅按topic配置正整数UTF-8字节上限（缺省8192），写现有DPS日志；无额外队列/文件策略。三套Salt同步，245组件通过/1跳过，真实GW小大上限热改与50行响应一致已验，QA/桌面未验、邮件暂停。[更正记录](2026-11-17.md#更正主题日志只保留字节上限用户否决独立文件及模式)、[最终验证](../test-results/topic-payload-byte-limit-20261117.json)。
+
+- 11月17日追加正常心跳日志开关：默认false、可热改，双向PUSH/Qt FIX 0过滤，不影响传输；同topic业务UPDATE保留。248组件通过/1跳过；真实GW关→开→关验收通过，QA与真实FIX心跳场景未验。[记录](2026-11-17.md#正常心跳日志开关主题大小限制的追加需求)、[结果](../test-results/heartbeat-logging-20261117.json)。
+
+- 本轮后端本地提交：`f6762c1eb186f40956692349ad7ca847657633fb`（codex/topic-payload-logging-20261117）；包含用户最新字节限制方案及正常心跳开关。产品未推送，后端备忘已归档到sources/backend/2026-11-17.md。
