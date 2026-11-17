@@ -224,3 +224,7 @@
 - 11月17日追加正常心跳日志开关：默认false、可热改，双向PUSH/Qt FIX 0过滤，不影响传输；同topic业务UPDATE保留。248组件通过/1跳过；真实GW关→开→关验收通过，QA与真实FIX心跳场景未验。[记录](2026-11-17.md#正常心跳日志开关主题大小限制的追加需求)、[结果](../test-results/heartbeat-logging-20261117.json)。
 
 - 本轮后端本地提交：`f6762c1eb186f40956692349ad7ca847657633fb`（codex/topic-payload-logging-20261117）；包含用户最新字节限制方案及正常心跳开关。产品未推送，后端备忘已归档到sources/backend/2026-11-17.md。
+
+- 11月17日晚再更正：用户要求诊断原值，Common与QT删除字段/topic遮蔽和非法JSON替换，仅保留字节限制及心跳开关；249组件通过/1跳过，真实GW请求/响应/发布/订阅数据一致。规则写入AGENTS，QA未验、邮件暂停。[记录](2026-11-17.md#更正诊断日志记录实际字段值不再擅自遮蔽)、[验证](../test-results/raw-payload-logging-20261117.json)。
+
+- 原值日志后端本地提交：`9fd59da9bae554b9fa4b2a05cf3d88f8b537774d`，分支codex/topic-payload-logging-20261117；产品未推送，后端memo已归档。
