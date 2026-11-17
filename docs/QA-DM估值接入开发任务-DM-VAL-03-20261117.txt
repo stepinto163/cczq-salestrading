@@ -1,0 +1,41 @@
+【开发任务 DM-VAL-03】BaseSvr FICC估值切换DM明细，保持接口；验收后回邮完整源码
+
+用户已授权开始实施或交由QA实施。请由QA侧开发AI在独立分支实现以下明确范围，完成后通过163回复源码和证据，由Codex复核，不能把自测完成等同于已批准合并。
+
+一、目的、基线及范围
+1. 当前BaseSvr的FICC输出从STC估值缓存取中债/中证值；QA这两张STC估值表停更。改为从DM中债、中证明细获取估值，继续由BaseSvr统一供给FICC。
+2. 只改cgws-app-salestrading-basesvr的FICC资料适配、必要现有部署配置/测试/文档。原STC基础资料和普通STC估值消费者不变；不改BondSearch Core、QuoteSvr、NotificationSvr、客户端及公共API。保持现行LEGACY_COMBINED兼容，不重新启用估值/基础资料拆分协议。
+3. 本机参考基线：D:/workspace/greatewall/ficc/stc-cczq/cgws-app-salestrading-basesvr，codex/basesvr-combined-reference，ce872dc2fcc21a804d06206e49e41a771e3cd302。QA可能已有optionDate等后续修复，不能用本机旧基线覆盖QA。以QA实际最新已合并BaseSvr源码为sourceBranch，先记录该分支和完整HEAD SHA，再创建codex/dm-valuation-source-20261117分支。不要猜main，不丢现有改动。
+4. 优先阅读src/main/java/sc/app/stc/base/ficc/FiccReferenceService.java、BondReferencePolicy.java、BondReferenceSnapshot.java及相关测试/部署配置，直接依赖按需阅读，不全库重构。
+5. 本任务仅替换估值来源。当前估值筛选仍使用DM宽表，展示改用明细后可能晚间不同日；这是明确保留的既有筛选边界，不能声称本轮解决筛选/展示一致性，也不能擅改筛选含义。发现影响请给具体例子并记录，后续另立任务确认。
+
+二、字段与取值
+1. main_bond关联bond_uni_code与完整带市场后缀的bond_code。只处理FICC当前债券范围，不按裸代码合并市场，不因combination_code相同随意去重。
+2. 中债cb_valuation_domestic_boc：以未删除记录中最新估值日期的推荐口径为选行依据，完整收益率/净价/久期来自同一行。valuation_yield→valuationYield、valuation_net_price→valuationCleanPrice、valuation_date→valuationDate、valuation_modified_duration→duration；durationType沿用MODIFIED。
+3. 中债valuation_type的已核对映射：1到期→valuationBasis=MATURITY，2行权→EXERCISE。不要直接把DM数值当STC bondTypeFlag数值。reliability='推荐'采用DM-VAL-02已核对样本规则；同日同口径重复以update_time、id降序确定最新行，异常/歧义需中文日志，不随意取第一条。遇到最新日缺推荐行应明确缺失并记录，不静默改口径或把更早推荐日伪装成最新日。
+4. 中证cs_bond_valuation：选未删除的最新估值日记录；同日按update_time、id确定顺序。valuation_yield_m/net_price_m/full_price_m→csiValuationYield/csiValuationCleanPrice/csiValuationFullPrice；_e→csiExerciseYield/csiExerciseCleanPrice/csiExerciseFullPrice；valuation_date→csiValuationDate。保持百分数单位，不乘除100；允许行权整组为空，不能仅因债券含权就补造行权值。
+5. csiRating及其他评级来源保持不变，不能用缺少评级字段的估值表覆盖为空。csiRecommendedBasis仍保留接口，不新增依赖此字段的业务分支；已验证reliability=1对应EXERCISE，其他枚举必须有原契约/证据再映射，不能以猜测替代；没有证据时保留原来源及行为并在报告明确。
+6. 不新增中债全价输出，不要求选择日间/日终全价；本轮现有接口不消费它们。报价计算器算出的净价/全价是另一条链路，不改动。
+7. 身份、optionDate/optionType/maturityDate、评级、IBOR债券库、历史快照等不因估值替换改变。valuationId等既有辅助字段如需换来源，在字段对照表逐项说明，不能残留STC ID却代表DM数值；全局dataVendor不可简单改成DM，因为身份/期限仍来自STC。
+
+三、加载、刷新与失败处理
+1. 复用现有DM连接配置和连接池，不新增服务、连接凭据文件或客户端直连DM。源码启动与Jenkins/Salt配置同时可用；配置需由现有流程生成，不要求手工补example。
+2. 利用已有中债索引及新idx_cs_val_bond_date。按当前债券范围分批取最新行，禁止从亿行历史表全量装载/全表窗口排序，禁止每券一次网络往返。优先有限批量、索引支持的查询，先对少量券检查实际TBase执行计划。不要把附件DM-VAL-02的DDL文件整体运行：同文件包含未注释的DROP回退语句。
+3. 复用当前刷新与持久版本机制；单轮组装完成再发布，不边读边让消费者看到半份数据。供应商可以有不同估值日，保留各自真实日期；同一供应商某券的收益率/价格/口径不混用不同记录。
+4. 不仅按valuation_date发现变化：QA已观察历史补录与同日重写。首版可对当前券集重新查最新有效记录以保证正确，不以不可靠的时间水位跳过变化；不每60秒无条件扫亿行。若当前刷新周期与实测成本冲突，报告具体瓶颈，不自行堆叠新快照表/调度系统。
+5. 成功查询后确认某券无估值应按既有空值协议输出，不能填0或静默回退STC。源连接/查询失败是整轮失败：保留上一份完整已发布快照，中文ERROR含异常原因及耗时，不把部分结果标为READY；首次尚无有效数据应明确未就绪。发生源失败时不发布删除或推进成功水位。
+6. 初始化/加载/刷新日志包含service、component、state、mode、implementation、target、elapsedMillis及行数；INFO在控制台和启动日志可见，不打印凭据。代码注释与新增错误说明中文，保留协议标识，不无关翻译/删注释。
+
+四、必须完成的验证
+1. 构建、字段映射单元测试：中债到期/行权、DM与STC枚举区别；中证_m/_e/NULL；缺值、删除、重复行排序、刷新失败保留旧快照、补录与纠错。用独立测试数据验证异常，不能修改QA真实供应商行情数据。
+2. 真实链路：实际DM→测试BaseSvr真实响应（FiccReference内层）→QuoteSvr/Notification现有同步→当前同事客户端实际缓存/页面。覆盖240210.IB、242480004.IB、031771008.IB及含权补充券；逐一比对估值日、收益率、净价、中证全价与行权组，验证原optionDate不丢失、偏离使用正确中债口径。
+3. 不允许手工往下游缓存补字段让测试通过。保留脱敏源记录、请求响应、客户端缓存与截图证据。刷新/重启后新值能到达、无变化时版本不空转；既有历史展示快照不被当前估值改写。
+4. 估值筛选使用宽表的不同日场景明确测试记录，不能以筛选通过证明展示同批。本轮不改共享库来隐藏差异。
+5. 先用独立测试实例/现有测试会话验证，避免同名服务、端口和单写锁冲突；不得擅自重启共享QA正在使用的服务。需要切换共享服务才能验收时先报告窗口。环境不具备时标为端到端未完成，不能作为已验收版本交付。
+6. 不开展压力测试或自行提高并发。记录正常测试启动和单轮刷新实际耗时/行数，不能把2ms单券查询宣称为全量加载性能。若安全完成真实全量启动需要额外负载实验，先回报计划。
+
+五、完成回邮
+1. 主题：【DM-VAL-03完成待评审】BaseSvr DM估值接入＋真实链路验证。
+2. 附完整BaseSvr受版本控制的源码ZIP（保留工程/构建/配置模板/测试），另附相对实际sourceBranch的补丁或git bundle；给出基线分支、基线SHA、实现SHA、testedCommit、文件清单与ZIP SHA256。不要打入密码、私有运行配置、日志或构建产物。
+3. 附简单中文说明：为什么改、字段映射、刷新/缺失/失败规则、配置变化、合并部署/回退步骤；附验证报告，逐项区分通过、失败、未测以及仍保留的筛选日期差异。
+4. 在工程已有memo记录，并以adrian提交、沿用仓库邮箱；不要直接合并或推同事主干，保持独立分支。回复邮件代表交付待审，Codex审查后再决定合并与发布。
