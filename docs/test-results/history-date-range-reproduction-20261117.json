@@ -1,0 +1,40 @@
+{
+  "task": "历史报价日期筛选调查",
+  "date": "2026-11-17",
+  "status": "已本机端到端复现，等待日期语义确认，未改产品",
+  "backendCommit": "87512c0c",
+  "clientCommit": "9e9e41ac4",
+  "request": {
+    "fromDate": "2026-10-30",
+    "toDate": "2026-10-30",
+    "pageNumber": 1,
+    "pageSize": 50
+  },
+  "requestId": "STC-3ccdd8b64cce4cd49aad225e5425808e",
+  "actual": {
+    "totalCount": 34,
+    "quoteDatesBeforeRange": 26,
+    "earliestQuoteTime": "2026-09-24T13:30:09.643+08:00"
+  },
+  "example": {
+    "quoteId": "Q-1562179914692558849",
+    "quoteTime": "2026-10-20T19:05:15.563+08:00",
+    "operationDate": "2026-10-30",
+    "lastOperation": "2026-10-30T21:32:06.434+08:00",
+    "status": "REFERRED"
+  },
+  "verified": [
+    "真实桌面日历结束日11/17→11/16：5行变0行；改回11/17恢复5行",
+    "手输结束日11/16亦发出正确请求并清空表格",
+    "真实桌面开始日10/30、结束日10/30，显示34行及10/20、10/14等报价时间",
+    "真实数据库核对34行中26行quote_time早于选中日期"
+  ],
+  "cause": "HistorySearchSql按operation_date过滤，页面报价时间列展示quoteTime；日期控件及传参正常，过滤与展示的日期语义不同。",
+  "evidencePrivate": ".tmp/qa-source-mail-20261117/history-date-range-reproduction.jpg",
+  "limits": [
+    "未连接QA或宣称已确认QA具体操作",
+    "未改SQL、索引、数据库数据或客户端",
+    "未运行性能测试"
+  ],
+  "proposal": "待用户确认后按报价时间日期筛选，结束日采用次日零点开区间；保留操作日期用于审计。需考虑旧记录缺少quoteTime和同券多日快照，不能擅自伪造日期。"
+}
