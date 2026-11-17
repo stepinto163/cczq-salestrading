@@ -1,0 +1,68 @@
+{
+  "task": "历史日期范围按报价时间筛选",
+  "date": "2026-11-17",
+  "status": "本机端到端验证通过；QA/TBase未验收",
+  "productChanges": [
+    "QuoteSvr HistorySearchSql.java：fromDate/toDate按quote_time的上海时区起止午夜闭开区间筛选"
+  ],
+  "clientChanges": false,
+  "schemaChanges": false,
+  "requires": "已有history.daily.version=5的quote_time列；本修复不另增数据库迁移",
+  "before": {
+    "range": [
+      "2026-10-30",
+      "2026-10-30"
+    ],
+    "rows": 34,
+    "outsideQuoteDate": 26
+  },
+  "after": {
+    "rows": 8,
+    "outsideQuoteDate": 0,
+    "desktopRows": 8,
+    "exportRows": 8,
+    "exportMatchesLiveResponseIdsAndOrder": true
+  },
+  "verification": {
+    "maven": {
+      "tests": 234,
+      "passed": 233,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "source": "本次构建日志各模块汇总，非target残留XML"
+    },
+    "mavenExclusion": "RequestParserTest（外部识别服务未就绪）",
+    "isolatedPostgres": {
+      "HistoryDateRangeSmoke": 23,
+      "HistoryQuoteTimeSmoke": 25,
+      "HistorySearchSmoke": 188,
+      "HistoryQueryOptimizationSmoke": 486,
+      "DailyQuoteHistorySmoke": 116
+    },
+    "liveGatewayCases": 10,
+    "livePaginationPages": 4,
+    "boundaries": [
+      "Shanghai start midnight inclusive",
+      "end-day final microsecond included",
+      "next-day midnight excluded",
+      "UTC inputs and DB session UTC/Asia/Shanghai",
+      "later cancellation still found by original quote date",
+      "NULL quote_time excluded",
+      "daily final revision selected before filter"
+    ]
+  },
+  "privateEvidence": [
+    ".tmp/qa-source-mail-20261117/history-date-live.json",
+    ".tmp/qa-source-mail-20261117/history-date-fixed-client.jpg",
+    ".tmp/qa-source-mail-20261117/history-date-export.xlsx"
+  ],
+  "limits": [
+    "未运行性能测试，既有索引未变；新日期过滤下QA/TBase计划及大数据性能待验证",
+    "旧记录缺少quote_time不再命中日期范围，不伪填操作日期",
+    "保留按操作日的每日快照粒度，同一报价的跨日历史快照不合并",
+    "CalSvr/ParserSvr未在线，本次只验历史查询",
+    "未推产品代码、未发邮件或部署QA"
+  ],
+  "backendCommit": "b2902621"
+}
