@@ -1,0 +1,56 @@
+销交平台今日源码合并包 20261117-R1
+
+一、包含哪些最终改动
+1. 历史报价显示当时报价的债券资料、评级、估值和剩余期限，债券资料筛选仍按当前资料。旧历史没有保存资料时显示缺失，不用最新数据补造。客户端历史页面及导出同时改为读取每行reference。
+2. 历史报价统一按quoteTime倒序，空时间置后，分页/导出顺序一致；QuoteSvr启动自动迁移history.daily.version至5，增加quote_time并更新相关索引/触发器。
+3. 历史日期条件改按页面报价时间：上海时区开始日00:00（含）至结束日次日00:00（不含）。不再按操作日期筛选，避免跨日撤价导致范围外报价混入。
+4. QT群帖在QuoteSvr持久路由及去重。复用quotes[].institutionName，新增可选quotes[].chatGroupNumber；机构专属规则优先于群默认。未配置时选首次有效接收人并保存，后续稳定归属；失效配置按已批准规则改派，重复业务行不重复创建。QtIntake保留收件箱和可靠转发。
+5. 三服务按topic配置日志正文UTF-8字节上限，默认8192；精确主题优先于最长前缀，再到默认；超限明确TRUNCATED。只写现有DPS日志，没有SUMMARY/PREVIEW/FULL模式、独立报文文件或额外写入队列。
+6. 正常心跳默认不记录，payloadLog.heartbeat.enabled=true可热启日志，不影响心跳传输；业务更新与故障日志保留。报文按用户要求保留实际字段值和完整topic，不增加REDACTED或非法JSON替代值。QT FIX字段值同样保留。
+7. Common保留先前的JdbcStore字符串数组NULL编码修复，避免今天导入QA旧源码时覆盖。该项为既有修复保留，不称为新功能。
+
+二、源码与合并方式
+本包提供五个组件完整受控源码，以及分别对应基线的补丁：
+- cgws-ficc-saletrading-common：以QA今早ec700d1原始导入快照为基线。
+- cgws-ficc-saletrading-quotesvr：以QA补发的2f41ab8完整源码为基线。
+- cgws-ficc-saletrading-notificationsvr：以QA今早506c329原始源码为基线。
+- cgws-ficc-saletrading-qtintakesvr：以本地今天群帖改动前1896d8b2所含模块为基线，QA若已有其他修改须比对。
+- STC.SalesTrading.Plugin：以同事31b53bb08源码为基线；本轮只改历史展示的4个文件，完整插件源码用于比对，不覆盖QA后续改动。
+基线、目标完整提交号、改动/删除文件、来源目录、补丁校验结果见manifest.json。
+patches/*.patch均从对应组件根目录使用git apply --check检查，再按QA实际分支合并；补丁不匹配时停止自动覆盖，保留QA已合入改动。不要把本包当作同事未修改原版，也不要重放当天已否决的试验方案。
+client目标为9e9e41ac4；本包未修改其他客户端页面、Common、Data.Plugin，不覆盖整个客户端工程。
+tools/api-debugger提供受控测试工具源码；测试工具不是客户端产品变更。
+不包含BaseSvr、BondSearch Core或DM估值切换代码。DM-VAL-03仍为已发给QA的独立开发任务，不能把该任务说明当作本包已实现功能。
+
+三、构建、配置及升级
+1. 先备份QA当前源码/构建物、QuoteSvr数据库及QtIntake收件箱，记录各组件实际提交。安排维护窗口停止接入及写入，防止新旧协议或迁移期间混跑。
+2. 使用既有Maven父POM/依赖环境先构建安装Common 0.1.1-SNAPSHOT，再构建QuoteSvr、NotificationSvr、QtIntakeSvr；各服务javalib核对同一份Common，不能混放旧0.1.0。
+3. Common、QuoteSvr及NotificationSvr升级完成后再恢复QtIntake；QT同一FIX身份不能在本机和QA同时登录。本机QtIntake交付前已停止。
+4. 服务配置由Jenkins/Salt自动渲染。三个服务均包含config/payload-log.properties及对应Salt模板/参数；源码Run/Debug配置也齐全。共享连接仍使用既有ATS_ROOT/control，不要求复制example或临时补配置。
+   payloadLog.default=8192
+   payloadLog.reloadSeconds=30
+   payloadLog.heartbeat.enabled=false
+   payloadLog.ficc.reference.sync=4096
+   payloadLog.stc.base.*=4096
+   其他主题规则见源码。大小必须为正整数，不支持无限制；无效热更保留旧值并报错。最终配置不能残留早期模式/独立文件参数。
+5. QuoteSvr groupRouting.reloadSeconds默认60，由Salt groupRoutingReloadSeconds生成；规则表修改自动重载，调整检查周期需重启。QtIntake默认groupDedup.policy=SERVER_ROUTING_V1。
+6. QuoteSvr使用已有共享DBPool MYSQL0查询STC账号映射；源码和Salt的DBPoolResource及资源配置须一起合并，保留QA实际连接参数。
+7. QuoteSvr启动自动建立qt_group_routes、qt_group_deliveries并执行历史版本5迁移。新表位于QuoteSvr自身schema；不用另建STC库试验路由表。历史迁移有回填、索引重建和短期表锁，不能套用本机小数据耗时。失败应回滚并拒绝就绪，须检查日志；不可只修改版本标记或用旧程序直接运行版本5数据库。
+8. 前端在当前同事工程中合并插件的4个改动文件并按既有VS构建流程重建。历史排序和日期过滤不要求额外前端改动；历史reference展示必须使用本次插件改动。
+
+四、QA回归清单
+1. 检查Common依赖唯一、服务配置渲染完整，启动/就绪日志无初始化错误，数据库history.daily.version=5。
+2. 历史快照：新建后撤销报价，核对返回reference及历史页面/导出；资料变化后筛选走当前资料，显示仍是报价时保存的值。旧未记录资料显示缺失，不用缓存补齐。
+3. 时间：无筛选、有筛选、跨页、导出均按报价时间倒序；测试单日、跨日撤销、开始/结束边界，页面日期和结果一致。QA/TBase大数据执行计划仍待验证，不宣称已完成性能验收。
+4. 路由：同一真实QT群帖多接收人、副本重放、Bid/Ofr多行；只产生一份对应业务行。核对机构专属/群默认/首次自动分配/失效改派、60秒重载，以及归属与非归属可见性。四副本正常转发不等于生成四份报价。
+5. 日志：请求/回复使用同一requestId；订阅与PUSH有topic；真实日志字段/主题与收到的消息相同。设小字节上限后只截断日志，不截断客户端数据；改大上限并等待RELOADED，完整正文恢复。
+6. 心跳日志false→true→false：客户端一直收到心跳，只有开启时有正常心跳日志；同topic业务UPDATE和故障日志仍保留。QT FIX心跳正常传输不受影响。
+7. 附件测试源码中的本机地址、端口和账号是本机验证入口；QA按本环境配置测试入口，不把127.0.0.1:28600当作QA地址。真实群帖测试先确认测试群和单一FIX实例；不要直接在共享业务群造数或自动启动大负载测试。
+
+五、实际验证及边界
+- 最终组件回归：Common143项（142通过/1项PostgresCrmTest缺外部配置跳过）、Quote45、Notification2、Qt60，共249通过/1跳过；Quote实连RequestParserTest整类沿用排除。不是所有依赖均完成实连验收。
+- 历史快照、排序和日期范围均做过本机真实GW→服务/数据库→同事客户端页面与Excel导出核对；QT路由做过真实PRL→接入→QuoteSvr→数据库/GW→桌面报价确认核对。各结果文件保留当时执行范围，不把组件模拟时钟当真实日终等待。
+- 最终日志版本在真实本机GW核对请求/回复/发布正文、完整topic与客户端消息一致；心跳关→开→关通过。QT FIX发送字段经真实socket loopback核对；本轮真实PRL观察窗口未出现FIX心跳，不宣称该场景已实机验收。
+- 本包未在QA/TBase部署，未做百万报价/并发压力、长期运行或全客户端遍历。CalSvr/ParserSvr本机不可用，相关计算/解析不属于本轮通过范围。
+- 包装验收另记录在package-verification.json：补丁对声明基线应用、应用后逐文件等于完整源码、压缩包CRC和SHA-256。包装验证不替代QA功能验收。
+- 请QA合并后回邮实际提交号、渲染配置检查、数据库迁移结果、上述回归结果及失败请求/错误；不要只回复“合并成功”。

@@ -228,3 +228,5 @@
 - 11月17日晚再更正：用户要求诊断原值，Common与QT删除字段/topic遮蔽和非法JSON替换，仅保留字节限制及心跳开关；249组件通过/1跳过，真实GW请求/响应/发布/订阅数据一致。规则写入AGENTS，QA未验、邮件暂停。[记录](2026-11-17.md#更正诊断日志记录实际字段值不再擅自遮蔽)、[验证](../test-results/raw-payload-logging-20261117.json)。
 
 - 原值日志后端本地提交：`9fd59da9bae554b9fa4b2a05cf3d88f8b537774d`，分支codex/topic-payload-logging-20261117；产品未推送，后端memo已归档。
+
+- 11月17日源码汇总包20261117-R1已获163 SMTP接受：Common/Quote/Notification/Qt＋客户端历史插件，五份完整源码与基线补丁、配置/迁移说明及测试。五组件补丁及ZIP哈希通过，QA合并部署待回邮。[说明](../QA今日源码合并说明-20261117-R1.txt)、[交付证据](../test-results/qa-delivery-20261117-R1.json)、[记录](2026-11-17.md#今日源码汇总打包并发送qa20261117-r1)。
