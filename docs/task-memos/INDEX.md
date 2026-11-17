@@ -204,3 +204,5 @@
 - 11月17日QT新设计已批准并实现：每行chatGroupNumber＋既有institutionName，QuoteSvr持久路由/去重，60秒热刷新；4帖真实链路及3次桌面观察通过，组件回归Common125通过1跳过、QuoteSvr45、QtIntake60。产品本地审阅、QA未验收，临时权限恢复、本机FIX接收已停。跨仓源码位置及全部边界见[最终实施记录](2026-11-17.md#qt群路由按报价行协议完成最终批准设计)、[脱敏结果](../test-results/qt-group-routing-live-20261117.json)。
 
 - 本轮后端提交：`1aa15725`（`.tmp/qa-source-mail-20261117/backend`，`codex/qt-group-routing-20261117`）；后端自身记录为该目录下`docs/task-memos/2026-11-17.md`。仅本地提交，未推送产品分支。
+
+- 11月17日DM估值替代仅评估：结构覆盖中债与中证到期/行权，建议BaseSvr FICC适配统一切换；两个本机DM库估值明细均空，真实口径/覆盖/性能未验。补充估值筛选现用DM宽表、展示现用STC，须一起核对。未改产品，[评估记录](2026-11-17.md#dm替代stc估值来源的可行性评估仅调查)。
