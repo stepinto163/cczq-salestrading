@@ -1,0 +1,104 @@
+{
+  "date": "2026-11-17",
+  "scope": "主题报文日志；只读真实网关及受控本机FIX回环",
+  "componentTests": [
+    {
+      "module": "common",
+      "tests": 139,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "module": "quotesvr",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "notificationsvr",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "qtintakesvr",
+      "tests": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "quoteExcludedTest": "RequestParserTest（外部Parser依赖，沿用本轮既定范围）",
+  "commonSkippedTest": "PostgresCrmTest（未提供crm.test.config）",
+  "salt": [
+    {
+      "service": "quotesvr",
+      "saltQAResolved": true,
+      "matchesSourceDefaults": true,
+      "propertyCount": 12
+    },
+    {
+      "service": "notificationsvr",
+      "saltQAResolved": true,
+      "matchesSourceDefaults": true,
+      "propertyCount": 12
+    },
+    {
+      "service": "qtintakesvr",
+      "saltQAResolved": true,
+      "matchesSourceDefaults": true,
+      "propertyCount": 12
+    }
+  ],
+  "live": [
+    {
+      "service": "QuoteSvr",
+      "replyMatchesGateway": true,
+      "matches": 1
+    },
+    {
+      "service": "NotificationSvr",
+      "replyMatchesGateway": true,
+      "matches": 1
+    },
+    {
+      "service": "QtIntakeSvr",
+      "replyMatchesGateway": true,
+      "matches": 1
+    },
+    {
+      "service": "NotificationSvr",
+      "pushMatchesGateway": true,
+      "topicSessionMasked": true
+    },
+    {
+      "service": "QtIntakeSvr",
+      "liveFixLogonMasked": true
+    }
+  ],
+  "fullHistoryRowsCompared": 50,
+  "comparisonNote": "客户端JSON日期反序列化会去掉毫秒末尾零；按同一时刻归一化后逐字段比较",
+  "fullSummaryPreviewDataEqual": true,
+  "automaticReloadAllThreeServices": true,
+  "qtFinalStatusRequestIdCorrelated": true,
+  "invalidPublishRejectedCode": "1001",
+  "invalidPublishFullFileMatchesReply": true,
+  "tenMiBFunctionalTest": "通过，既有128MiB测试堆，非压力测试",
+  "finalCommonJarSha256": "8662e45769b5e146f79bb1fe81627ee4a134d50b711658c98414b5547d46a842",
+  "allRuntimeAndBuildDependencyHashesMatch": true,
+  "startupConsoleAndFileReadyChecked": true,
+  "runtimeDefaultsRestored": true,
+  "localQtStoppedAfterPendingZero": true,
+  "qaJenkinsExecuted": false,
+  "qaRuntimeValidated": false,
+  "desktopUiTested": false,
+  "emailSent": false,
+  "limitations": [
+    "未做压力或长期运行测试",
+    "本轮未对外部群发布报价，FIX业务收发由本机socket回环测试覆盖",
+    "完整报文超限或队列饱和时只保留摘要"
+  ]
+}
