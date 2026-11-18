@@ -1,0 +1,31 @@
+QA后端源码合并说明 — 20261118-R2
+
+一、范围与原因
+本包接续20261118-R1，仅交付QuoteSvr与ParserSvr；不含客户端、Common、NotificationSvr、BaseSvr、QtIntake或BondSearch Core更新，不涉及数据库迁移。
+1. QuoteSvr：本机配置有精确识别接口，但Salt部署模板漏注册，QA出现1003 handler:ficc.quote.accurate.identify does not exist。补齐Salt注册，同时将本机及Salt日志配置统一为应用、DPS、启动三类日志。
+2. ParserSvr：QuoteSvr已传raw=true并期待原始解析对象，原Parser忽略该字段并返回转换后的数组，造成实际识别成功却被判定1002。新增可选raw开关，true返回原始对象；省略或false保留原数组协议。补充fastjson2 2.0.52运行依赖，避免干净部署时网关JSON工具类初始化失败。
+
+二、源码版本与合并
+QuoteSvr来源：codex/topic-payload-logging-20261117，57aa27b0 → d84bbd21。基线已与上封R1邮件的QuoteSvr完整源码逐文件核对。
+ParserSvr来源：codex/topic-payload-intake-20261117，798be74a → 29e2fa44。R1未包含ParserSvr；此基线是本机修复前提交，不声称与QA现有Parser版本一致。
+sources/<模块名>/提供指定提交的完整模块源码，patches/<模块名>.patch只包含本次变更。请先对照manifest.json及changedFiles，不要覆盖QA独有修复。两个补丁已在各自基线上实际应用，并逐文件核对等于包内完整源码。
+Parser模块名为cgws-ficc-parsersvr，已包含服务及Java识别引擎。如QA仍使用拆分旧目录，请按补丁中的类路径合并并核对现有构建流水线；不要仅替换同名文件后认为已完成升级。
+
+三、构建与部署核对
+沿用QA现有Jenkins/Salt流程，分别构建并部署QuoteSvr、ParserSvr。本包不要求手工复制example配置或填连接信息。
+QuoteSvr须核对最终生成的control/QuoteSvr/resourceCfg.ini含RecognizeIntentionQuoteHandler及ficc.quote.accurate.identify映射。仅改源码配置、不更新Salt模板不能解决QA问题。
+QuoteSvr的control/QuoteSvr/log4j.ini及Salt同名模板决定日志文件分流；正文大小和心跳开关仍由config/payload-log.properties控制，默认8192 UTF-8字节，正常心跳默认关闭，本次不改变策略。
+ParserSvr须部署服务JAR及本次构建的完整依赖（包含fastjson2-2.0.52.jar）；沿用流水线替换javalib的机制，避免旧服务JAR/旧独立引擎JAR与新合并模块同时加载。共享ATS_ROOT配置、字典、许可证沿用现有环境。
+
+四、已执行验证与QA回归
+QuoteSvr：13项针对性测试通过；真实网关接口可达，应用/DPS/启动实际文件分流已验证。
+ParserSvr：181项组件测试通过，0失败/错误/跳过；真实网关验证raw缺省/false为数组、true为对象；空文本1001、无法识别1002、正常单条及两条均0000。
+本机真实STP→GW→QuoteSvr→ParserSvr→STP精确报价页面已通过：输入以下两行，成功2条、失败0条，券码、方向、价格、数量、清算速度一致：
+bid 240210.IB 2.9155 2000 T+1
+ofr 210210.IB 2.8 1000 T+0
+本次只验识别预览，未点击确认、未写正式报价；不代表全业务回归或QA验收。QA须使用本环境实际存在的债券再走以上页面，并核对无1003/错误1002、旧raw缺省调用兼容及实际日志路径。
+validation/quotesvr-deployment-config-20261118.json记录较早的Parser协议阻塞；该阻塞已由本包Parser修复解除，最终结果以validation/parser-raw-recognition-20261118.json为准。保留早期记录用于追溯。
+请回邮实际合并提交、部署版本和上述回归结果。如发生冲突请提供文件及差异，不要以本机通过替代QA验收。
+
+五、包校验
+manifest.json记录来源、基线与目标提交；file-sha256.json记录包内文件摘要。ZIP附带独立SHA256校验文件。版本R2独立保留，不覆盖R1。
