@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-18",
+  "scope": "本机FIX回放、真实接收转发、运行中QuoteSvr、现有CRM数据库及STP桌面",
+  "productChanges": ["QuoteSvr QT接入机构全称/简称识别", "已确定机构内联系人识别"],
+  "componentTests": {"quoteServerPassed": 65, "newMatchingTests": 9, "qtIntakePassed": 61, "failures": 0, "externalRequestParserTestsRun": false},
+  "liveCases": [
+    {"case": "机构简称精确匹配且机构内联系人唯一", "institutionResolved": true, "contactResolved": true, "desktopConfirmation": "成功"},
+    {"case": "机构简称唯一包含匹配，未填联系人", "institutionResolved": true, "contactResolved": false, "gatewayConfirmationCode": "0000"},
+    {"case": "机构全称精确匹配、联系人包含候选不唯一", "institutionResolved": true, "contactResolved": false, "desktopConfirmation": "UNRESOLVED_COUNTERPARTY/contactId", "gatewayConfirmationCode": "1001"},
+    {"case": "机构包含候选不唯一", "institutionResolved": false, "contactResolved": false, "gatewayConfirmationCode": "1001"},
+    {"case": "机构无匹配", "institutionResolved": false, "contactResolved": false, "gatewayConfirmationCode": "1001"}
+  ],
+  "gatewayFieldChecksPassed": 5,
+  "databaseFieldsChecked": ["institution_id", "institution_name", "contact_id", "contact_name", "status"],
+  "desktop": {"clientChanged": false, "login": "既有本机测试账号", "page": "报价录入/报价确认", "recognizedNamesShown": true, "manualSelectionRequiredForAmbiguity": true, "afterCleanupRefresh": "0组0条"},
+  "cleanup": {"initialWrongDirectorySamplesDeleted": 5, "verifiedSamplesDeleted": 5, "remainingUndeletedTestQuotes": 0},
+  "environment": {"quoteServerPid": 28036, "crmDatabase": "ibor_dev_20261013", "crmActiveInstitutionsObserved": 397929, "modifiedCrmData": false, "externalQtFixConnected": false, "qaVerified": false},
+  "privateEvidence": [".tmp/qt-crm-real-directory-20261118/evidence.json", ".tmp/qt-crm-gateway-fields.json", ".tmp/qt-crm-gateway-confirm.json", ".tmp/qt-crm-gateway-cleanup.json", ".tmp/qt-crm-quotesvr.console.log"],
+  "limitations": ["使用本机FIX构造报文回放，未验证外部QT生产来报及QA部署", "未执行压力或性能基准测试", "首次误用旧ficc_ibor样本名称，实际服务查询ibor_dev_20261013，因此首次无匹配不计入成功识别", "桌面有选中/编辑状态时清理后列表未立即消失，经刷新并确认放弃编辑后为空；未修改客户端此行为"]
+}
