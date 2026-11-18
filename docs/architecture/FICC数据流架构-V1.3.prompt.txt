@@ -1,0 +1,42 @@
+Redesign the attached FICC data flow diagram into a considerably simpler, manager-facing ARCHITECTURE OVERVIEW. The attached image is the edit target and factual reference, NOT a density/layout template. User explicitly dislikes the permission-code table and explanatory rectangles. Remove ALL permission codes, tables, API names, database table names, policy detail, cache implementation, disclaimers, explanatory callouts, long captions and tiny text. Keep only services, data sources, consumers, and short flow labels. A polished spacious white-background landscape infographic (roughly 3:2), large legible Chinese and English service names, restrained navy/blue/teal/purple colors, thin orthogonal arrows, no crossings where possible. No footnotes, legend paragraphs, numbered field lists or pending markers. Around one third of prior text density. Every box is a real system/service/data source, NEVER a comment.
+
+Title: “FICC 销交平台 · 数据流总览”
+Small version “V1.3”
+Four spacious horizontal bands, first and fourth compact, middle two larger. Repeated named services are the same service; no need to explain this in image. Use simple bilateral arrows for request-response to avoid duplicate arrows.
+
+Band 1 “登录与权限”:
+One STC / FICC 客户端 box on left ↔ GW 网关 center, forks ↔ LoginSvr with small subtitle 登录认证 and ↔ AdminSvr with subtitle 用户权限. Only those 4 boxes. Labels 登录 and 权限加载 as appropriate. No role-code table or permission rules/cache boxes.
+
+Band 2 “基础资料、估值与 CRM”:
+Left three data sources “STC 基础资料与估值”, “DM 数据”, “IBOR 数据”.
+STC → BaseSvr labeled 债券资料 / 估值; DM → BaseSvr labeled 补充资料; IBOR → BaseSvr labeled 券库.
+BaseSvr subtitle 资料整合 → a compact recipient group containing QuoteSvr, NotificationSvr and “客户端（经 GW）”, branch labeled 资料同步. These boxes only service names, no cache text.
+DM → QuoteSvr / NotificationSvr separate slim direct path labeled 债券筛选. DO NOT show a new independent search service; library internals deliberately abstracted out.
+IBOR second branch → CRMSvr subtitle 机构 / 联系人 → QuoteSvr labeled CRM 数据. Keep this distinct and visibly connected; use an extra QuoteSvr box in CRM sublane if needed for clean layout. No actual table names. Nothing falsely says DM supplies display valuation.
+
+Band 3 “报价与提醒”:
+Left “外部 QT” → QtIntakeSvr → QuoteSvr center; labels 群报价 and 报价接入.
+QuoteSvr ↔ GW ↔ “FICC 客户端” on right, labels 报价操作 / 行情查询.
+Under QuoteSvr two small peer services ParserSvr subtitle 文本识别 and CalSvr subtitle 收益率 / 净价 / 全价, each MUST be visibly connected bidirectionally to QuoteSvr by its own branch, no unattached arrows.
+QuoteSvr → NotificationSvr labeled 报价更新 → same GW/client or repeated GW/client labeled 报价提醒; reverse small arrow for 提醒设置 optional if layout fits.
+Below QuoteSvr one database cylinder “报价与历史数据” ↔ QuoteSvr, labeled 保存 / 查询.
+Below NotificationSvr cylinder “提醒数据” ↔ NotificationSvr. No table names, audit triggers, retry, cutoff, grouping/dedup policies or exception explanations.
+
+Band 4 “STC 行情与成交”:
+“STC 行情与成交来源” → three service boxes MDSvr, EMSSvr, OHLCSvr → GW → “FICC 客户端”.
+Short labels beside the three service paths respectively 行情, 成交, K线. No separate cache boxes or detail panels. Show actual arrows not a list.
+
+Keep service names exact. No CRM direct-adapter alternatives or other low-level technical commentary. Focus on readable service connections, generous whitespace and consistent type. Preserve all four business areas; simplify detail instead of deleting critical data sources. Image should look like a clean executive architecture diagram, not a documentation page.
+
+Correction pass 1:
+Edit this image with a precise correction ONLY to the second band 基础资料、估值与CRM. Preserve all other bands and all overall appearance. The current arrows mistakenly join DM and IBOR and send the filter flow to the client. Redraw this band cleanly with SEPARATE labeled connections:
+STC→BaseSvr 债券资料/估值.
+DM→BaseSvr 补充资料.
+IBOR→BaseSvr 券库 (must end at BaseSvr, not CRMSvr).
+IBOR→CRMSvr 机构/联系人 (a separate branch).
+CRMSvr→lower QuoteSvr CRM数据.
+BaseSvr→upper QuoteSvr, NotificationSvr and 客户端（经GW） labeled资料同步.
+For the remaining DM筛选 flow: avoid additional complex arrow trunks. Remove the problematic DM horizontal branch altogether and put the small text “DM 筛选数据” inside ONLY the upper QuoteSvr and NotificationSvr boxes as a second short line. To make dataflow explicit, draw two thin blue dashed arrows from DM node to ONLY these two service boxes along an uncluttered route at top of this band. If space is tight, enlarge this band slightly. No DM arrow into the client, no joined DM/IBOR source lines, no DM→CRMSvr. Maintain overview simplicity and large legible typography. Nothing else should change.
+
+Correction pass 2:
+Very precise final connector repair. Preserve the entire image exactly, with one change: in the second panel, the blue solid arrow labeled 债券资料 / 估值 currently starts floating below the STC source box. Connect its left endpoint to the RIGHT EDGE of the “STC 基础资料与估值” box at x~388 y~362, then bend down to its existing horizontal line at y~395 and continue right into BaseSvr. Thus there is a clear continuous solid blue line FROM STC基础资料与估值 TO BaseSvr. This source box must not remain disconnected. All other connections, text, layout and colors must remain identical. Do not add explanations or any new nodes.
