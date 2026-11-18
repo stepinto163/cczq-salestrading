@@ -1,0 +1,43 @@
+Create a precise, professional Chinese software data-flow architecture diagram for the FICC sales-trading platform. This is an engineering documentation image, not a conceptual illustration. Use a large high-resolution landscape canvas, approximately 16:10, white background, generous spacing, dark navy typography, crisp simplified Chinese text, thin orthogonal connectors with obvious arrowheads. No photographs, decorative 3D, logos, or invented services. Title: “FICC 销交平台 · 数据流架构”. Subtitle: “基于当前本地源码核对｜2026-11-18｜逻辑数据流，非部署拓扑”.
+
+Arrange THREE visually distinct horizontal swimlane PANELS. Repeat a service node if needed to avoid tangled lines; include a small legend “同名节点代表同一服务；客户端远程调用与推送经 GW”. Blue = reference data, teal = quote business, purple = market/trade feeds, amber dashed = pending. Label each important arrow with its data, not just an unlabeled connection. Avoid crossing arrows and ensure all arrows end at the right nodes. Keep concise text readable at full size.
+
+TOP PANEL (about 28%): “① 基础资料与估值”
+On left three source blocks stacked:
+“STC 基础资料 / 估值库” with tiny second line “债券、发行人、日期；中债 / 中证估值”
+“DM 数据库” second line “评级、分类、区域、担保人、筛选字段”
+“IBOR 数据库” second line “券库归属”
+All three feed central box “BaseSvr” / “FICC 资料整合”. From BaseSvr arrow labeled “ficc.reference.sync｜全量 / 增量” branches to right-side three compact recipients “QuoteSvr 资料缓存”, “NotificationSvr 资料缓存”, “客户端 FICC 资料缓存” (client via GW, can label branch “经 GW”). The client cache second line “本地持久化；按日期计算剩余期限”.
+A separate LOWER path in same panel from DM database (not from BaseSvr) to “BondSearch Core｜进程内库” then right to “QuoteSvr / NotificationSvr 筛选”. Explicit small annotation: “两服务各自加载 DM 筛选快照，非独立 SearchSvr”.
+Amber dashed note box near the valuation source: “待确认：DM 估值替代 STC 估值（QA 任务）”. Do NOT draw an active solid arrow showing DM supplies current display valuations. A tiny factual caption: “当前核对：展示估值来自 STC；部分估值筛选来自 DM 宽表”.
+
+MIDDLE PANEL (about 46%): “② 报价接入、业务处理与历史”
+Main horizontal flow across upper part:
+“外部 QT 群消息” → arrow “FIX” → “QtIntakeSvr” / “转换、持久收件箱、可靠转发” → arrow “报价接入” → large central “QuoteSvr” / “群路由 · 去重 · 跨日校验 · 报价生命周期” → arrow “报价列表 / 最优价 / 增量推送” → “GW” → “FICC 客户端”.
+Show reverse arrow from FICC client via GW toward QuoteSvr labeled “新建 / 确认 / 修改 / 撤销”. Keep these opposite directions visually separated.
+
+Small three dependency nodes just below QuoteSvr in a row, linked as request/result pairs:
+“ParserSvr” caption “文本识别 → 预览”
+“CRMSvr” caption “机构 / 交易员查询与校验”
+“CalSvr” caption “收益率 / 净价 / 全价换算”
+These connect to QuoteSvr only. Do not put ParserSvr on QT FIX mandatory path. Small note under dependencies: “识别预览不落报价；确认由客户端另行提交。换算价格 ≠ 供应商估值”.
+QuoteSvr also sends arrow labeled “状态恢复 + 报价 / 价格增量” to “NotificationSvr” / “关注券、筛选条件、用户偏好 → 提醒”.
+NotificationSvr sends “提醒 / 更新” via GW to the client; reverse client-to-NotificationSvr arrow labeled “提醒设置 / 已读”. Can use a small repeated GW near NotificationSvr and a labeled repeated client endpoint if less cluttered; this represents SAME services.
+Below QuoteSvr show persistence cylinder “报价数据库” with internal mini-sequence “quotes → history → quote_history_daily” and label above arrow from QuoteSvr “事务写入；触发器维护每日快照”. Draw a separate return QUERY arrow from cylinder to QuoteSvr labeled “历史查询”. Below database caption: “历史展示：当时资料 / 估值快照；资料筛选：当前数据”. Do not imply all pending draft updates enter formal history.
+Below NotificationSvr show separate logical cylinder “提醒持久数据” / “偏好 · 提醒 · 已读状态” with two-way persistence connector. These are logical datasets, not necessarily separate database instances.
+Make quote store and reminder store separated from traffic to client so main flow arrows never terminate in database unless intended.
+
+BOTTOM PANEL (about 20%): “③ STC 行情与成交 → 客户端”
+Left source box “STC 既有外部接入” / “上游适配器边界（本图不展开）”.
+Three independent purple lanes from this boundary to:
+“MDSvr” arrow “行情报价 / CT 多档” to “STC 客户端行情缓存”
+“EMSSvr” arrow “市场成交 / 本方成交 / 最新成交” to “STC 客户端成交缓存”
+“OHLCSvr” arrow “开 / 高 / 低 / 昨收” to “STC 客户端 OHLC”
+These three go through a shared vertical slim box “GW” before the caches, or put “经 GW” above the three arrows, never reverse the data direction.
+All three caches feed final “FICC 页面 / 债券详情面板”.
+Clear footer caption in this panel: “STC 行情 ≠ FICC 自有报价；成交读取不代表确认报价会自动成交”.
+
+Bottom small footnote: “实线：源码已核对路径；虚线：待确认变化。未逐项验证 QA 部署。客户端可使用既有 STC 基础资料接口；CRM 存在按环境配置的直库适配器。”
+Do not include RecommendSvr (deployment unverified). Do not show a standalone FiccBaseSvr. Do not show the browser directly connecting to databases. Do not draw client local data plugins as responsible for ALL reference sync: FICC plugin has its own cache. The diagram must be carefully designed, balanced, uncluttered and factual with correctly spelled names and readable Chinese.
+
+修订提示：保持原图所有节点、文字和布局不变，仅补上IBOR数据库右侧到BaseSvr底部的蓝色正交箭头，标注券库归属；与DM筛选连线交叉处无连接点。最终采用内置image_gen定向编辑后的图片。
