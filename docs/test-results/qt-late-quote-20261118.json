@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-18",
+  "feature": "拒绝QT跨日迟到报价",
+  "rule": "sourceTime在配置营业时区的日期早于当前日期则拒绝；不使用接收时间或tradeDate",
+  "components": {
+    "QuoteSvr": {
+      "passed": 56,
+      "excluded": "RequestParserTest（外部QA）"
+    },
+    "QtIntakeSvr": {
+      "passed": 61
+    }
+  },
+  "live": {
+    "upstream": "本机FIX socket回放，未连接外部QT",
+    "chain": [
+      "QTradeFixReceiver",
+      "DurableInbox",
+      "QuoteForwarder",
+      "真实QuoteSvr",
+      "PostgreSQL",
+      "GW",
+      "STP报价确认"
+    ],
+    "cases": [
+      {
+        "case": "昨日报价晚到",
+        "code": "1001",
+        "field": "sourceTime",
+        "stored": false
+      },
+      {
+        "case": "今日来源且次日交易",
+        "code": "0000",
+        "drafts": 1
+      },
+      {
+        "case": "昨日同协商更新",
+        "code": "1001",
+        "priceUnchanged": true,
+        "revisionUnchanged": true
+      }
+    ],
+    "rejectedArchiveCount": 2,
+    "pendingInboxCount": 0,
+    "desktopDraftCount": 1,
+    "desktopPrice": "2.5",
+    "latePriceNotApplied": "9.9",
+    "gatewayCleanupPassed": true,
+    "desktopCountAfterCleanup": 0
+  },
+  "qaVerified": false,
+  "externalQtVerified": false,
+  "frontendChanged": false,
+  "schemaChanged": false,
+  "configurationChanged": false,
+  "privateEvidence": ".tmp/late-qt-live-20261118/evidence.json"
+}
