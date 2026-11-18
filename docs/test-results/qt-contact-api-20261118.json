@@ -1,0 +1,47 @@
+{
+  "date": "2026-11-18",
+  "environment": "QT PRL",
+  "scope": "真实只读HTTP接口验证，不是FICC接入端到端验收",
+  "configurationSource": "D:/workspace/greatewall/sc-app-stc-qtradesvr/sc-app-stc-qtradesvr/salt-formula/sc-app-stc-qtradesvr/config.yaml:QA.APP.Svr1",
+  "requests": [
+    {"operation": "源码control凭据查询配置账号标签", "httpStatus": 200, "code": 1002, "meaning": "非本机构成员"},
+    {"operation": "源码control凭据查询捕获收件人标签", "httpStatus": 200, "code": 1002, "meaning": "非本机构成员"},
+    {"operation": "源码control凭据U48查询本机构用户", "httpStatus": 200, "code": 1006, "meaning": "该appid下不支持传输此接口数据"},
+    {"operation": "QA凭据查询第一个配置账号标签", "httpStatus": 200, "code": 0, "tags": 2, "elapsedMillis": 85},
+    {"operation": "QA凭据批量查询两个配置账号标签", "httpStatus": 200, "code": 1002, "meaning": "第二个配置账号不属于本机构"},
+    {"operation": "QA凭据下载第一个标签第一页U46", "httpStatus": 200, "code": 0, "total": 5, "received": 5, "elapsedMillis": 1514},
+    {"operation": "QA凭据下载第二个标签第一页U46", "httpStatus": 200, "code": 0, "total": 1, "received": 1, "elapsedMillis": 1041},
+    {"operation": "QA凭据查询捕获收件人标签", "httpStatus": 200, "code": 1002, "meaning": "三个捕获收件人均不属于该REST应用机构"},
+    {"operation": "QA凭据U48查询本机构用户", "httpStatus": 200, "code": 1006, "meaning": "该appid下不支持传输此接口数据"}
+  ],
+  "download": {
+    "authorizedAccounts": 1,
+    "labels": 2,
+    "rows": 6,
+    "distinctContacts": 6,
+    "nonemptyNickId": 6,
+    "nonemptyNickName": 6,
+    "nonemptyInstiShortName": 6,
+    "nonemptyInstiFullName": 2,
+    "nonemptyOrgID": 2,
+    "nonemptyOrgInterBankID": 2,
+    "nonemptyQNo": 0,
+    "allReturnedLabelTotalsSatisfied": true,
+    "coverage": "仅一个账号两个个人标签，不代表全机构或全部聊天对手"
+  },
+  "comparison": {
+    "primarySource": ".tmp/qa-source-mail-20261117/qt-group-identity-fix-private.txt",
+    "capturedDistinctSenderIds": 1,
+    "matchedSenderIds": 0,
+    "additionalCurrentLogDistinctSenderIds": 3,
+    "additionalCurrentLogMatches": 0,
+    "crossApiIdentityEqualityVerified": false
+  },
+  "privateEvidenceDirectory": ".tmp/qt-contact-api-20261118",
+  "limitations": [
+    "未更改产品源码、配置或数据库，未启动外部FIX会话",
+    "未取得失败报价发送者的正向匹配，不能宣称解决CRM识别问题",
+    "U48当前REST应用无接口权限，按QNo查询尚未验证",
+    "耗时为单次请求观察，不是性能测试"
+  ]
+}
