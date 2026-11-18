@@ -1,0 +1,57 @@
+Redesign and expand the supplied FICC architecture diagram into a MORE DETAILED, FINAL Chinese engineering data-flow poster for a manager. Use the source image as a factual/style reference, not as an immutable canvas. The new version MUST include all its existing data-flow domains PLUS the explicit IBOR CRM source and authentication/permission loading described below. Use a generous high-resolution PORTRAIT canvas approximately 3:4, enough space for FOUR horizontal panels. Clear readable simplified Chinese, exact English identifiers, white background, navy headings, rounded subtle tinted rectangles, database cylinders, labeled orthogonal arrowheads, minimal crossings. Crisp vector-like infographic. NO pending review/待确认/QA task/deployment-verification notes. Do not claim a new service exists. Title “FICC 销交平台 · 数据流与权限架构”. Subtitle “V1.2｜2026-11-18｜逻辑数据流”. Small legend: blue = reference/CRM, teal = quote/notification, purple = STC market/trade, slate = identity/permissions. Legend note “同名节点代表同一服务；客户端远程调用与推送经 GW”.
+
+PANEL 1 (~25% height): “① 登录认证与客户端权限”
+Diagram left two-stage flow, right compact permission table.
+Left:
+Client node “STC / FICC 客户端” sends “登录” to “GW”, GW sends “认证” to “LoginSvr”; return arrow labels “登录结果 / 会话”.
+A SECOND, SEPARATE request path from client via GW to “AdminSvr”, label “登录后：用户角色查询 / roleModulesActionQuery”; return arrow from AdminSvr to client-side box “角色权限缓存”, label “模块 + 动作授权”. Cache arrow to box “客户端页面 / 按钮 / 字段检查”. Small note “角色权限变更后重新登录加载”. Do not show LoginSvr as supplying module/action permission grants.
+Right exact table with header “客户端权限码 / 控制范围”:
+4028 | 销交平台入口
+402801 | 报价录入、新建 / 编辑入口
+402802 | 行情中心
+402803 | 报价管理
+402804 | 查看非本人机构 / 对方交易员
+402805 | 导出报价
+402808 | 代操作未启用
+Below table short note: “非本人报价操作受限；无 402804 时客户端隐藏机构 / 对方交易员，保留本方归属交易员。”
+Below left diagram explicit contrasting TWO BOUNDARIES side by side, concise and legible:
+“客户端：检查角色缓存；控制页面、操作入口和字段显示”
+“后端：校验会话、报价归属与可见性；当前未按 4028xx 动作码裁剪响应”
+Add a small arrow from “QuoteSvr / NotificationSvr” to repeated “LoginSvr” labeled “会话身份校验” if room, keep separate from client grants. No implied admin bypass or live permission push.
+
+PANEL 2 (~27%): “② 基础资料、估值与 CRM”
+Use two clear sublanes:
+Upper sublane sources left “STC 基础资料 / 估值库” (债券、发行人、到期日、行权日 / 类型；中债 / 中证估值), “DM 数据库” (评级、分类、区域、担保人), “IBOR 数据库” (券库归属). Three blue arrows to central “BaseSvr｜FICC 资料整合”. BaseSvr arrow “ficc.reference.sync｜全量 / 增量” branches to “QuoteSvr 资料缓存”, “NotificationSvr 资料缓存”, “客户端 FICC 资料缓存（经 GW）”. Small client-cache note “插件内同步与本地存储；按日期计算剩余期限”.
+DM ALSO feeds a separate node “BondSearch Core｜进程内库” then “QuoteSvr / NotificationSvr 筛选”. Note “两服务各自加载 DM 快照；非独立 SearchSvr”. Header tiny factual caption “展示估值来自 STC；部分估值筛选来自 DM 宽表”. No pending DM replacement.
+Lower sublane REQUIRED explicit CRM:
+“IBOR CRM 表” cylinder with exact lines “crm_org / crm_contact” and “crm_contact_org_rel” → arrow “机构 / 联系人 / 机构关系” → “CRMSvr｜目录加载与查询” → arrow “查询 / ID校验 / 名称识别” → “QuoteSvr”. A thin request arrow can point QuoteSvr→CRMSvr separately labeled “CRM 请求”; avoid ambiguity, data-return arrow CRMSvr→QuoteSvr.
+Small note “共享数据源 FICC_CRM；按环境配置连接 IBOR”. Do not imply CRM tables are in DM. IBOR also has separate bond-library-to-BaseSvr flow.
+
+PANEL 3 (~31%): “③ 报价接入、计算、提醒与历史”
+Horizontal spine:
+“外部 QT 群消息” → FIX → “QtIntakeSvr” (转换 / 持久收件箱 / 可靠转发) → “QuoteSvr” (跨日校验 / 群路由 / 去重 / CRM识别 / 报价生命周期) → “GW” → “FICC 客户端”.
+QuoteSvr→client arrow “报价列表 / 最优价 / 增量”.
+Separate client→GW→QuoteSvr return arrow “新建 / 确认 / 修改 / 撤销”.
+Below QuoteSvr:
+“ParserSvr” with request/result two-way link “文本识别 / 预览”; note “预览不落报价；客户端另行提交”.
+“CalSvr” request/result link “收益率 / 净价 / 全价换算”; note “换算价格 ≠ 供应商估值”.
+No need to repeat CRM node here because panel2 supplies the exact CRM path.
+QuoteSvr arrow to “NotificationSvr” labeled “状态恢复 + 报价 / 价格增量”.
+NotificationSvr→GW→client “提醒 / 更新”; client→NotificationSvr via GW “提醒设置 / 已读”. Repeated endpoints allowed, labeled SAME names.
+Below QuoteSvr cylinder “报价持久数据” with interior “quotes → history → quote_history_daily”. Arrow from QuoteSvr labeled “事务写入 / 触发器维护”; return arrow “历史查询”.
+Caption “历史展示：当时资料与估值快照；资料筛选：当前数据”. Tiny note “普通草稿编辑不写正式业务历史”.
+Below NotificationSvr cylinder “提醒持久数据” / “偏好、提醒、已读状态” with read/write arrows.
+NotificationSvr smaller text “关注券 / 筛选规则 / 用户偏好 → 提醒”.
+Small routing note under QtIntake or QuoteSvr: “群 + 机构优先 → 群默认 → 首个有效接收人持久化；规则定时重载”.
+Keep text small but readable, do not let lines run through boxes.
+
+PANEL 4 (~14%): “④ STC 行情与成交数据”
+“STC 既有外部接入” (上游适配器边界) branches to three distinct rows:
+“MDSvr” → “GW” → “STC 行情缓存” → “FICC 页面 / 债券详情”, label “行情报价 / CT多档”.
+“EMSSvr” → same GW → “STC 成交缓存” → same FICC endpoint, label “市场成交 / 本方成交 / 最新成交”.
+“OHLCSvr” → same GW → “STC OHLC” → same FICC endpoint, label “开 / 高 / 低 / 昨收”.
+Single shared vertical GW is fine.
+Bottom caption “STC 行情 ≠ FICC 自有报价；读取成交数据不代表确认报价会自动成交”.
+
+FINAL footnote “逻辑存储不表示独立数据库实例。客户端另可使用 STC 基础资料接口；CRM 支持按环境配置直库适配器。”
+Preserve all factual boundaries. Do not add RecommendSvr, standalone FiccBaseSvr, cloud, new databases, broker logos, or downstream automated order execution. Do not include pending/review banners. The result must be aesthetically polished and readable as a formal engineering poster, with enough space for every listed label.
