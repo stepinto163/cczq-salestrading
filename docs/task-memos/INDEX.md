@@ -324,3 +324,7 @@
 - 历史修复后端提交`6c6eef05`，20261119-R2包已获163 SMTP接受，仅QuoteSvr、数据库升级6。[合并说明](../QA历史报价最终版本合并说明-20261119-R2.txt)、[交付证据](../test-results/qa-delivery-20261119-R2.json)；QA部署验收待回邮，未推产品分支。
 
 - 11月19日精确识别调查：真实GW确认“明+1/明+0”丢失明日含义，identify响应没有tradeDate，客户端靠旧settlType推算；未改产品。[记录](2026-11-19.md#精确报价明1与交易日下发核查仅调查)、[接口证据](../test-results/settlement-recognition-20261119.json)。
+
+- 11月19日明+N与交易日修复：Parser规范别名，Common/Quote显式下发tradeDate且兼容旧settlType；真实GW六组和同事STP双行通过，QA待验。[记录](2026-11-19.md#明加清算速度及交易日下发修复20261119-r3)、[合并说明](../QA清算速度交易日合并说明-20261119-R3.md)、[证据](../test-results/settlement-recognition-fixed-20261119.json)。
+
+- 明加清算修复已提交：后端519592cc、Parser e81cd7d2；20261119-R3已获163 SMTP接受，QA待合并复测。[邮件与包校验](../test-results/qa-delivery-20261119-R3.json)。
