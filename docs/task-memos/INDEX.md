@@ -340,3 +340,5 @@
 - Bid范围截图调查：本机GW及同事STP的BETWEEN正常；确认未选计价方式时显示%却按原始price筛选，QA请求/报价类型待核对，未改产品。[记录](2026-11-19.md#bid收益率范围筛选截图调查未修改产品)、[证据](../test-results/bid-range-investigation-20261119.json)。
 
 - Bid筛选后续决定：用户确认由前端处理计价方式/单位一致性，后端及Core不改；前端尚未实施验收。[决定](2026-11-19.md#bid筛选处理决定用户确认前端处理)。
+
+- 长城交易员空白调查：本机报价/历史均保存owner ID，真实GW→同事STP今日报价姓名正常；QA接口ownerUserId及姓名映射代码待核对，未改产品。[记录](2026-11-19.md#报价管理长城交易员空白调查未修改产品)、[证据](../test-results/quote-owner-investigation-20261119.json)。
