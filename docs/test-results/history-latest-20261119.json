@@ -1,0 +1,80 @@
+{
+  "task": "历史报价每笔最终一行与quoteTime倒序",
+  "date": "2026-11-19",
+  "scope": "QuoteSvr；客户端源码不改",
+  "databaseMigration": {
+    "from": 5,
+    "to": 6,
+    "beforeRows": 4316,
+    "afterRows": 4197,
+    "finalSnapshotHashesMatched": 4197,
+    "auditRowsUnchanged": 16394,
+    "elapsedMillis": 236,
+    "database": "本机PostgreSQL；非QA TBase",
+    "transactionRollbackTest": "PASS"
+  },
+  "standaloneChecks": {
+    "DailyQuoteHistorySmoke": 121,
+    "HistoryDateRangeSmoke": 23,
+    "HistoryQuoteTimeSmoke": 25,
+    "HistoryLatestVersionSmoke": 21,
+    "HistorySearchSmoke": 188,
+    "HistoryQueryOptimizationSmoke": 486
+  },
+  "maven": {
+    "passed": 47,
+    "skipped": 20,
+    "failed": 0,
+    "excluded": [
+      "RequestParserTest（既有外连后台线程问题）"
+    ]
+  },
+  "gateway": {
+    "before": {
+      "unfiltered": [
+        39,
+        32
+      ],
+      "filtered": [
+        34,
+        28
+      ]
+    },
+    "after": {
+      "unfiltered": [
+        30,
+        30
+      ],
+      "filtered": [
+        26,
+        26
+      ]
+    },
+    "countsMeaning": "[返回行数,唯一quoteId数]；两笔最终quoteTime归10月30日，不再出现在20日",
+    "pageSize": 10,
+    "sort": "quoteTime DESC, quoteId ASC",
+    "newQuoteCreateConfirmUpdateRefer": 3,
+    "result": "PASS"
+  },
+  "desktop": {
+    "clientCommit": "9e9e41ac4",
+    "page": "历史报价",
+    "dateRange": [
+      "2026-10-20",
+      "2026-10-20"
+    ],
+    "totalCount": 30,
+    "quoteTimeDescendingVisible": true,
+    "screenshot": "screenshots/history-latest-20261119.jpg",
+    "historyStorage": "响应直接映射页面行，不持久写入历史SQLite缓存"
+  },
+  "knownBaselineFailures": [
+    "QuoteEndOfDaySmoke：过期待确认quoteTime为空，日期查询找不到（原v5 jar也失败）",
+    "HistoricalQuoteDisplaySmoke：同一过期待确认日期查询问题（原v5 jar也失败）"
+  ],
+  "limitations": [
+    "QA TBase本次结构升级及执行计划未实测",
+    "未运行百万数据/并发性能测试",
+    "不是全功能回归；过期待确认缺quoteTime的既有问题未在本轮改变语义"
+  ]
+}

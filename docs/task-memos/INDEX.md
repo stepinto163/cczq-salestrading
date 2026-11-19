@@ -318,3 +318,7 @@
 - 11月19日BaseSvr邮件bd291c3原样合并（Base bca8366/aa85f11）；Quote消费端完整评级保留修复11d12b18，B+/BBB+/A-1/空评级经真实GW、历史表、客户端缓存及历史页验证通过。用户否决的STC补取草稿已撤销，未部署。非空DM估值本机无数据、QA未验，产品未推送。[主记录](2026-11-19.md#最新basesvr邮件合并与quotesvr评级保留修复)、[Base记录](sources/basesvr/2026-11-19.md)、[后端记录](sources/qa-backend/2026-11-19.md)、[验收摘要](../test-results/dm-rating-compat-20261119.json)。
 
 - 11月19日评级修复20261119-R1已获163 SMTP接受：Common完整源码＋两文件补丁＋测试证据，要求Quote/Notification同步更新依赖；Base保持QA bd291c3，不含客户端。补丁/源码/ZIP校验通过，QA合并验收待回邮。[合并说明](../QA评级兼容修复合并说明-20261119-R1.txt)、[交付证据](../test-results/qa-delivery-20261119-R1.json)、[记录](2026-11-19.md#评级兼容修复打包并发送qa20261119-r1)。
+
+- 11月19日历史最终一行修复：QuoteSvr版本6，4197份最终快照/16394审计一致，真实GW和同事STP验证；旧待确认两项失败另列、TBase待QA。[主记录](2026-11-19.md#历史报价每笔最终一行及quotetime排序修复20261119-r2)、[后端记录](sources/qa-backend/2026-11-19.md)、[摘要](../test-results/history-latest-20261119.json)。
+
+- 历史修复后端提交`6c6eef05`，20261119-R2包已获163 SMTP接受，仅QuoteSvr、数据库升级6。[合并说明](../QA历史报价最终版本合并说明-20261119-R2.txt)、[交付证据](../test-results/qa-delivery-20261119-R2.json)；QA部署验收待回邮，未推产品分支。
