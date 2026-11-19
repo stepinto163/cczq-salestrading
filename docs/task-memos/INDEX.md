@@ -344,3 +344,5 @@
 - 长城交易员空白调查：本机报价/历史均保存owner ID，真实GW→同事STP今日报价姓名正常；QA接口ownerUserId及姓名映射代码待核对，未改产品。[记录](2026-11-19.md#报价管理长城交易员空白调查未修改产品)、[证据](../test-results/quote-owner-investigation-20261119.json)。
 
 - QA识别截图调查：旧客户端本地简析可把买→Ofr、2.035的小数035→报量35；原文本机Quote返回业务1002，不能推断QA重启。原券资料及QA请求待核对，未改产品。[记录](2026-11-19.md#qa精确识别错误与重启疑问仅调查)、[证据](../test-results/recognition-fallback-investigation-20261119.json)。
+
+- Parser空结果本机根因明确：DM有2600006.IB，Parser所读STC bond_list_info没有；七位码01券对照通过。另发现缺券原因未透传，QA待核对，未改产品。[记录](2026-11-19.md#parser原文空结果根因追查dm有券stc资料缺券本机确认)、[QA只读SQL](../test-results/QA核对Parser债券资料-20261119.sql)。
