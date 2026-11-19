@@ -322,3 +322,5 @@
 - 11月19日历史最终一行修复：QuoteSvr版本6，4197份最终快照/16394审计一致，真实GW和同事STP验证；旧待确认两项失败另列、TBase待QA。[主记录](2026-11-19.md#历史报价每笔最终一行及quotetime排序修复20261119-r2)、[后端记录](sources/qa-backend/2026-11-19.md)、[摘要](../test-results/history-latest-20261119.json)。
 
 - 历史修复后端提交`6c6eef05`，20261119-R2包已获163 SMTP接受，仅QuoteSvr、数据库升级6。[合并说明](../QA历史报价最终版本合并说明-20261119-R2.txt)、[交付证据](../test-results/qa-delivery-20261119-R2.json)；QA部署验收待回邮，未推产品分支。
+
+- 11月19日精确识别调查：真实GW确认“明+1/明+0”丢失明日含义，identify响应没有tradeDate，客户端靠旧settlType推算；未改产品。[记录](2026-11-19.md#精确报价明1与交易日下发核查仅调查)、[接口证据](../test-results/settlement-recognition-20261119.json)。
