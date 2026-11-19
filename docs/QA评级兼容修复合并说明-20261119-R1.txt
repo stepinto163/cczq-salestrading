@@ -1,0 +1,36 @@
+QA评级兼容修复合并说明 — 20261119-R1
+
+一、合并范围
+本包只提交Common评级保留修复，接续20261118-R2，独立编号，不覆盖旧包。
+包含cgws-ficc-saletrading-common完整源码、此次两文件补丁、回归测试及本机验收证据。不包含客户端源码。
+BaseSvr使用QA刚发来的rel_0.1.1 @bd291c3499038f122aa914bfd074af0b0405b1b8；本机已原样合并并验证。本次没有新的BaseSvr补丁，QA无需再次覆盖该服务源码。
+没有QuoteSvr/NotificationSvr独有源码、BondSearch Core、ParserSvr、QtIntake、数据库结构或配置改动。
+
+二、为什么改、改哪里
+新版BaseSvr提供DM完整主体/债项评级文本；Common的FilterDictionaries.normalizeAttributes原来按筛选字典删除字典外值，导致B+、BBB+等有效评级在QuoteSvr接收后丢失，并进入空评级历史快照。
+1. src/main/java/ficc/common/FilterDictionaries.java：展示资料中的issuerRating、bondRating保留上游原值，缺失仍为空；不新增STC/模拟数据补取，不扩大筛选选项，不改BondSearch Core宽表筛选口径。
+2. src/test/java/ficc/common/client/FiccBaseDataClientTest.java：覆盖新旧Base协议、完整评级、增量改级、清空评级及原快照隔离。
+未经用户确认的STC评级补取草稿已撤销，未构建/部署，不在本包中。
+
+三、来源与合并方式
+后端工作分支codex/topic-payload-logging-20261117；修复前d84bbd21，目标11d12b18。
+sources/cgws-ficc-saletrading-common/为目标提交完整源码；patches/cgws-ficc-saletrading-common.patch为本次两文件差异。补丁路径相对于Common模块根目录。
+QA请先比对本地变更：优先合并此次补丁；完整源码供核对，不得覆盖QA独有修复。manifest.json记录完整提交号、文件清单、基线核验及SHA256。
+
+四、构建及部署
+先通过现有流水线构建/发布Common 0.1.1-SNAPSHOT，再重建并部署QuoteSvr和NotificationSvr，使两个服务均携带本次Common；仅替换QuoteSvr主JAR而留下旧Common不会生效。
+核对最终服务包javalib中Common只有正确版本，重启两个服务使内存资料重新同步。沿用现有Jenkins/Salt生成配置，不要求手工补example配置。本次无需数据库迁移。
+BaseSvr继续运行上述QA原版。回退时恢复原Common及对应服务包，评级丢失问题也会恢复；不重写历史数据。
+
+五、实际验证与限制
+本机真实BaseSvr返回109296券，主体评级59742条、债项62072条非空；303券至少一项超出旧字典。该数量不是QA的270/62，不要求不同数据环境数量一致。
+本机确认旧QuoteSvr丢失081800037.IB的B+、081900204.IB的BBB+；修复后两者及A-1、无评级共四类样本经过真实网关创建、撤销、历史表/历史响应、同事客户端SQLite及历史页面核对一致。没有手工填下游字段。截图及摘要在validation/。
+BaseSvr39测试通过；Common145通过1跳过；QuoteSvr67通过（启用本机PG，排除既有RequestParserTest）。首次Quote全套执行因该测试连接QA的后台线程导致fork超时，不能记作全套通过。NotificationSvr2项通过。
+本机DM估值明细表为空，非空估值数值端到端未验；本包修复不改变估值逻辑。不是全功能或性能回归，也不代表QA验收。
+
+六、QA回归与回邮
+1. 从真实Base响应选出字典外主体、债项评级，核对QuoteSvr ficc.base.get保留原值，同时检查AAA/A-1和空评级。
+2. 通过正常接口建立测试报价并撤销，在history.search与实际客户端历史页面核对报价时点评级；日期范围需包含测试日。不要手工补下游参考资料。
+3. 同步发生真实评级更新/清空后检查增量接收，确保原历史快照不被最新评级覆盖；已有空历史数据不使用今天评级回填。
+4. 核对NotificationSvr资料同步READY、后续正常增量及原有筛选行为不变。本次没有把BBB/B+新增为筛选条件。
+请回邮Common合并提交、两服务部署版本和以上实际验证结果；若补丁冲突，保留QA现有修复并回报差异。
