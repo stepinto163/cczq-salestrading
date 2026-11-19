@@ -336,3 +336,5 @@
 - 流动性配置已修复：Quote/Notification源码与Salt共4文件，无Core/前端修改；连续边界152断言、真实历史/提醒筛选、STP信用全部A及S+A通过，QA未部署。[记录](2026-11-19.md#流动性分档配置修复与真实链路验收)、[摘要](../test-results/liquidity-grade-20261119.json)。
 
 - 流动性分档20261119-R4包已获163 SMTP接受：Quote/Notification完整源码+4文件变化补丁+验收证据，QA待合并复测。[说明](../QA流动性分档合并说明-20261119-R4.md)、[发送与校验记录](../test-results/qa-delivery-20261119-R4.json)。
+
+- Bid范围截图调查：本机GW及同事STP的BETWEEN正常；确认未选计价方式时显示%却按原始price筛选，QA请求/报价类型待核对，未改产品。[记录](2026-11-19.md#bid收益率范围筛选截图调查未修改产品)、[证据](../test-results/bid-range-investigation-20261119.json)。

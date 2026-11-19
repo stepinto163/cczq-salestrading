@@ -1,0 +1,147 @@
+{
+  "date": "2026-11-19",
+  "status": "调查完成，未修改产品",
+  "backendCommit": "d5f71c68f6ae935b72d744edd43849de508aac65",
+  "clientCommit": "9e9e41ac4ac1cc8157ebfb1726f996a9442ca7c7",
+  "liveGatewayCases": [
+    {
+      "case": "baseline",
+      "filter": {
+        "market": "CREDIT",
+        "conditions": []
+      },
+      "totalCount": 2,
+      "returnedPrices": [
+        "100.174",
+        "2.0"
+      ]
+    },
+    {
+      "case": "lower1",
+      "filter": {
+        "market": "CREDIT",
+        "conditions": [
+          {
+            "field": "bidPrice",
+            "operator": "GTE",
+            "value": 1
+          }
+        ]
+      },
+      "totalCount": 2,
+      "returnedPrices": [
+        "100.174",
+        "2.0"
+      ]
+    },
+    {
+      "case": "range1_100",
+      "filter": {
+        "market": "CREDIT",
+        "conditions": [
+          {
+            "field": "bidPrice",
+            "operator": "BETWEEN",
+            "value": [
+              1,
+              100
+            ]
+          }
+        ]
+      },
+      "totalCount": 1,
+      "returnedPrices": [
+        "2.0"
+      ]
+    },
+    {
+      "case": "range1_101",
+      "filter": {
+        "market": "CREDIT",
+        "conditions": [
+          {
+            "field": "bidPrice",
+            "operator": "BETWEEN",
+            "value": [
+              1,
+              101
+            ]
+          }
+        ]
+      },
+      "totalCount": 2,
+      "returnedPrices": [
+        "100.174",
+        "2.0"
+      ]
+    },
+    {
+      "case": "range1_3",
+      "filter": {
+        "market": "CREDIT",
+        "conditions": [
+          {
+            "field": "bidPrice",
+            "operator": "BETWEEN",
+            "value": [
+              1,
+              3
+            ]
+          }
+        ]
+      },
+      "totalCount": 1,
+      "returnedPrices": [
+        "2.0"
+      ]
+    },
+    {
+      "case": "yield_range1_3",
+      "filter": {
+        "market": "CREDIT",
+        "conditions": [
+          {
+            "field": "bidPrice",
+            "operator": "BETWEEN",
+            "value": [
+              1,
+              3
+            ]
+          },
+          {
+            "field": "quoteType",
+            "operator": "IN",
+            "value": [
+              "1"
+            ]
+          }
+        ]
+      },
+      "totalCount": 1,
+      "returnedPrices": [
+        "2.0"
+      ]
+    }
+  ],
+  "desktop": {
+    "page": "行情中心/信用全部",
+    "range": [
+      1,
+      100
+    ],
+    "returnedPrice": "2.0000",
+    "excludedCleanPrice": "100.1740",
+    "requestConfirmedInClientLog": true,
+    "requestOperator": "BETWEEN",
+    "quoteTypeConditionPresent": false,
+    "screenshot": "screenshots/bid-range-1-100-20261119.jpg"
+  },
+  "scope": "真实本机GW/QuoteSvr及同事STP，使用真实基础资料，通过正常接口创建测试报价；未补基础资料字段。",
+  "cleanup": "所有本轮测试报价经refer/delete正常清理，审计记录按正常机制保留。",
+  "qa": "未取得截图对应请求及报价quoteType，不能断言QA根因已完全确认。",
+  "finding": "bidPrice按quote.price筛选；前端未选择计价方式时显示%，但请求不带quoteType。范围运算本机正常。",
+  "failedAttempts": [
+    "最初只读查询没有存续报价，不能据此证明范围有效。",
+    "首次净价测试报价误带yieldType，被1001拒绝；修正探针后通过，已创建收益率测试报价正常清理。"
+  ]
+}
