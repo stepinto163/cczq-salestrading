@@ -304,3 +304,5 @@
 - 11月18日QT CRM识别：QuoteSvr机构全称/简称精确优先、唯一包含回退、机构内联系人；65+61组件通过，本机FIX→真实CRM/GW→STP确认成功及多义阻止已验，QA未验。[记录](2026-11-18.md#qt机构全称简称与联系人唯一识别本机验收)。
 
 - QT CRM识别后端本地提交 `57aa27b0`（codex/topic-payload-logging-20261117）；[后端备忘归档](sources/qa-backend/2026-11-18.md#qt机构全称简称与联系人唯一识别本机验收)、[本机验证摘要](../test-results/qt-crm-recognition-20261118.json)。产品未推送，QA未部署。
+
+- 11月19日BaseSvr邮件bd291c3原样合并（Base bca8366/aa85f11）；Quote消费端完整评级保留修复11d12b18，B+/BBB+/A-1/空评级经真实GW、历史表、客户端缓存及历史页验证通过。用户否决的STC补取草稿已撤销，未部署。非空DM估值本机无数据、QA未验，产品未推送。[主记录](2026-11-19.md#最新basesvr邮件合并与quotesvr评级保留修复)、[Base记录](sources/basesvr/2026-11-19.md)、[后端记录](sources/qa-backend/2026-11-19.md)、[验收摘要](../test-results/dm-rating-compat-20261119.json)。
