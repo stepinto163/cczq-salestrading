@@ -1,0 +1,70 @@
+{
+  "date": "2026-11-19",
+  "scope": "QuoteSvr/NotificationSvr源码及Salt部署配置4文件；Core/客户端/接口不变",
+  "bands": "S:90:100,A:70:90,B:50:70,C:25:50,D:0:25",
+  "semantics": "按顺序首命中：S=[90,100],A=[70,90),B=[50,70),C=[25,50),D=[0,25)",
+  "boundaryChecks": {
+    "configs": 6,
+    "assertions": 114,
+    "qaLocallyRenderedConfigs": 2,
+    "renderedAssertions": 38,
+    "jenkinsPipelineExecuted": false
+  },
+  "historyGateway": {
+    "range": [
+      "2026-09-01",
+      "2026-11-19"
+    ],
+    "countsBeforeTestCreation": {
+      "S": 1,
+      "A": 4,
+      "B": 1,
+      "C": 4,
+      "D": 14,
+      "S,A": 5
+    },
+    "eachReturnedSecurityMatchedRealDmScore": true,
+    "multiSelectUnionVerified": true
+  },
+  "notificationGateway": {
+    "source": "真实GW创建两笔报价→事件→NotificationSvr；DM未改",
+    "A": "只命中80分券",
+    "S": "只命中95分券",
+    "B": "排除这两券",
+    "cleanup": "两轮各2笔测试报价已删除、关注组删除、偏好恢复；审计及历史记录按正常业务保留"
+  },
+  "desktop": {
+    "clientCommit": "9e9e41ac4",
+    "page": "行情中心信用全部",
+    "A": {
+      "securityId": "102580247.IB",
+      "dmScore": 80,
+      "rows": 1
+    },
+    "S,A": {
+      "securityIds": [
+        "102580247.IB",
+        "242480004.IB"
+      ],
+      "dmScores": [
+        80,
+        95
+      ],
+      "rows": 2
+    },
+    "screenshots": [
+      "screenshots/liquidity-grade-A-20261119.jpg",
+      "screenshots/liquidity-grade-SA-20261119.jpg"
+    ],
+    "cache": "价格视图响应映射客户端内存行，未补写基础资料缓存"
+  },
+  "qaDeployed": false,
+  "productSourceChanged": false,
+  "configurationChanged": true,
+  "issuesDuringValidation": [
+    "最初DB只读脚本用错配置键，修正为DBUsername/DBPasswd后读取成功",
+    "首轮提醒测试偏好请求缺布尔字段，被1001拒绝，未改变偏好；修正测试请求后两轮通过",
+    "一行Python核对命令转义失败，改为文件脚本通过",
+    "客户端档位按钮需点击筛选才应用，选择按钮本身不自动重查；按实际操作通过"
+  ]
+}

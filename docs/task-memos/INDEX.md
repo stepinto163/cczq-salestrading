@@ -330,3 +330,5 @@
 - 明加清算修复已提交：后端519592cc、Parser e81cd7d2；20261119-R3已获163 SMTP接受，QA待合并复测。[邮件与包校验](../test-results/qa-delivery-20261119-R3.json)。
 
 - 11月19日流动性链路调查：Core同时支持评分/档位且自带配置转换；本机Quote/Notification缺分档配置，现有jar小型探针验证无配置为null、有配置映射有效。建议只补服务与Salt配置，不改Core；QA及真实筛选端到端未验、未实施。[记录](2026-11-19.md#流动性评分与档位链路核对仅调查与方案)。
+
+- 流动性配置已修复：Quote/Notification源码与Salt共4文件，无Core/前端修改；连续边界152断言、真实历史/提醒筛选、STP信用全部A及S+A通过，QA未部署。[记录](2026-11-19.md#流动性分档配置修复与真实链路验收)、[摘要](../test-results/liquidity-grade-20261119.json)。
