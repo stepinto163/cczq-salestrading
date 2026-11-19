@@ -328,3 +328,5 @@
 - 11月19日明+N与交易日修复：Parser规范别名，Common/Quote显式下发tradeDate且兼容旧settlType；真实GW六组和同事STP双行通过，QA待验。[记录](2026-11-19.md#明加清算速度及交易日下发修复20261119-r3)、[合并说明](../QA清算速度交易日合并说明-20261119-R3.md)、[证据](../test-results/settlement-recognition-fixed-20261119.json)。
 
 - 明加清算修复已提交：后端519592cc、Parser e81cd7d2；20261119-R3已获163 SMTP接受，QA待合并复测。[邮件与包校验](../test-results/qa-delivery-20261119-R3.json)。
+
+- 11月19日流动性链路调查：Core同时支持评分/档位且自带配置转换；本机Quote/Notification缺分档配置，现有jar小型探针验证无配置为null、有配置映射有效。建议只补服务与Salt配置，不改Core；QA及真实筛选端到端未验、未实施。[记录](2026-11-19.md#流动性评分与档位链路核对仅调查与方案)。
