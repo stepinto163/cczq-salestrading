@@ -362,3 +362,5 @@
 - R2已打包：Parser2f8211db、后端3aa13b38，三组件补丁与完整源码一致；尚缺163授权码，邮件未发，桌面及QA待验。[交付状态](../test-results/qa-delivery-20261120-R2.json)。
 
 - R2发送状态更正：已找回先前163授权码并于11月20日13:20获SMTP接受，包未覆盖；待QA合并及前端/桌面验收。[回执](../test-results/qa-delivery-20261120-R2.json)、[记录](2026-11-20.md#r2邮件已发送与凭据查找更正)。
+
+- QA schema核查：实际交付Quote=ficc_salestrading3、Notification=ficc_salestrading2，Quote差异来自11月17日QA源码导入；本机两者相同所以配置差异未被发现。未改库/配置，QA现场与统一方案待核对。[记录](2026-11-20.md#qa两个服务schema后缀不一致核查只读)、[证据](../test-results/qa-schema-alignment-20261120.json)。
