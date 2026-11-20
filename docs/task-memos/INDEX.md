@@ -360,3 +360,5 @@
 - 11月20日R2最终决定：恢复识别3/4，修复tradeDate并新增settlementDate；Parser/Common/Quote已实测16组，旧前端日期读取与桌面/QA待验，邮件未发。[记录](2026-11-20.md#交易日及结算日期修复并恢复qa旧识别编码20261120-r2)、[后端记录](sources/qa-backend/2026-11-20.md)、[对接说明](../QA交易日结算日与旧编码对接-20261120-R2.md)、[证据](../test-results/settlement-date-20261120-R2.json)。
 
 - R2已打包：Parser2f8211db、后端3aa13b38，三组件补丁与完整源码一致；尚缺163授权码，邮件未发，桌面及QA待验。[交付状态](../test-results/qa-delivery-20261120-R2.json)。
+
+- R2发送状态更正：已找回先前163授权码并于11月20日13:20获SMTP接受，包未覆盖；待QA合并及前端/桌面验收。[回执](../test-results/qa-delivery-20261120-R2.json)、[记录](2026-11-20.md#r2邮件已发送与凭据查找更正)。
