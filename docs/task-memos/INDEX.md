@@ -372,3 +372,5 @@
 - 11月20日共享提醒分组修复：后端ede4ff8d，根记录3b82bcf6；删除notification_settings，查询与推送统一Quote共享分组。真实网关/重启通过，桌面/QA未验收，产品未推送、未发邮件。[记录](2026-11-20.md#移除独立提醒分组并修复共享分组查询2026-11-20)、[验证](../test-results/notification-shared-groups-20261120.json)。
 
 - 11月20日CRM简称与搜索优先级：后端e10ee3b4、主仓b721d9b7；Common/Quote/CRMSvr修复，本机真实网关、数据库、同事STP页面通过。QA未验、未发邮件、产品未推送。[记录](2026-11-20.md#crm简称统一与查询优先级修复2026-11-20)、[证据](../test-results/crm-short-name-20261120.json)。
+
+- 20261120-R3：共享分组、CRM简称/排序后端四组件，17:34已获163 SMTP接受；主仓c7554c39、后端e10ee3b4，未推送产品。CRM本机页面通过，共享分组桌面和QA待验。[记录](2026-11-20.md#r3后端源码包已发送2026-11-20)、[回执](../test-results/qa-delivery-20261120-R3.json)。
