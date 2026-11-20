@@ -364,3 +364,5 @@
 - R2发送状态更正：已找回先前163授权码并于11月20日13:20获SMTP接受，包未覆盖；待QA合并及前端/桌面验收。[回执](../test-results/qa-delivery-20261120-R2.json)、[记录](2026-11-20.md#r2邮件已发送与凭据查找更正)。
 
 - QA schema核查：实际交付Quote=ficc_salestrading3、Notification=ficc_salestrading2，Quote差异来自11月17日QA源码导入；本机两者相同所以配置差异未被发现。未改库/配置，QA现场与统一方案待核对。[记录](2026-11-20.md#qa两个服务schema后缀不一致核查只读)、[证据](../test-results/qa-schema-alignment-20261120.json)。
+
+- settings同步核查：已交付代码有全量/增量/重连同步至Notification内存marketSettings；notification_settings保存提醒页独立分组，非Quote表镜像。QA实际同步尚未验证，未改产品。[记录](2026-11-20.md#quote-settings到notification的同步链路核查只读)。
