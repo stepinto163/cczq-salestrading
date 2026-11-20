@@ -346,3 +346,5 @@
 - QA识别截图调查：旧客户端本地简析可把买→Ofr、2.035的小数035→报量35；原文本机Quote返回业务1002，不能推断QA重启。原券资料及QA请求待核对，未改产品。[记录](2026-11-19.md#qa精确识别错误与重启疑问仅调查)、[证据](../test-results/recognition-fallback-investigation-20261119.json)。
 
 - Parser空结果本机根因明确：DM有2600006.IB，Parser所读STC bond_list_info没有；七位码01券对照通过。另发现缺券原因未透传，QA待核对，未改产品。[记录](2026-11-19.md#parser原文空结果根因追查dm有券stc资料缺券本机确认)、[QA只读SQL](../test-results/QA核对Parser债券资料-20261119.sql)。
+
+- 11月20日明+1节假日调查：确认R3 Quote日期换算直接plusDays(1)，真实周五请求返回周六；基础包已有WeekDateSettlement/TextUtil日历解析，建议复用并核对日历就绪。仅调查未修复。[记录](2026-11-20.md#明1节假日遗漏追查仅调查确认上一轮实现缺陷)、[证据](../test-results/settlement-holiday-investigation-20261120.json)。

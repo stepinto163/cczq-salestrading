@@ -1,0 +1,36 @@
+{
+  "scope": "本机真实GW只读识别；未改产品、未重启、未提交报价；本轮未做桌面验收",
+  "recognitionDate": "2026-11-20",
+  "introducedBy": "519592ccbc6e7b2b0a7167e01f8a90ee3f8632c7",
+  "cause": "QuoteSvr RecognizeIntentionService.resolveTradeDate对3/4编码直接plusDays(1)，绕过已有节假日日历",
+  "cases": [
+    {
+      "text": "bid 240210.IB 2.035 1000 明+1",
+      "code": "0000",
+      "rows": [
+        {
+          "tradeDate": "2026-11-21",
+          "settlType": "4"
+        }
+      ]
+    },
+    {
+      "text": "bid 240210.IB 2.035 1000 明+0",
+      "code": "0000",
+      "rows": [
+        {
+          "tradeDate": "2026-11-21",
+          "settlType": "3"
+        }
+      ]
+    }
+  ],
+  "existingUtilities": [
+    "sc.app.stc.utils.TextUtil.calWeekDate",
+    "sc.app.stc.utils.WeekDateSettlement.getDealDate",
+    "sc.app.stc.utils.WeekDateSettlement.GetNextWork"
+  ],
+  "calendarDependency": "BaseSvrClient的CNY_CIB节假日日历；未加载时不能保证顺延",
+  "previousTestGap": "R3仅周四至周五真实链路；单测沿用plusDays预期，未覆盖周末/节假日",
+  "qaVerified": false
+}
