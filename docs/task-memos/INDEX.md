@@ -370,3 +370,5 @@
 - 分组共享核查更正：产品原型和客户端目录共享，后端提醒列表却查独立groups而非已同步marketSettings，传共享ID可NOT_FOUND；本机旧客户端还未下推ID，QA版本待核对。仅调查未修复。[记录](2026-11-20.md#分组共享产品要求与提醒查询入口不一致更正前述判断只读)。
 
 - 11月20日共享提醒分组修复：后端ede4ff8d，根记录3b82bcf6；删除notification_settings，查询与推送统一Quote共享分组。真实网关/重启通过，桌面/QA未验收，产品未推送、未发邮件。[记录](2026-11-20.md#移除独立提醒分组并修复共享分组查询2026-11-20)、[验证](../test-results/notification-shared-groups-20261120.json)。
+
+- 11月20日CRM简称与搜索优先级：后端e10ee3b4、主仓b721d9b7；Common/Quote/CRMSvr修复，本机真实网关、数据库、同事STP页面通过。QA未验、未发邮件、产品未推送。[记录](2026-11-20.md#crm简称统一与查询优先级修复2026-11-20)、[证据](../test-results/crm-short-name-20261120.json)。

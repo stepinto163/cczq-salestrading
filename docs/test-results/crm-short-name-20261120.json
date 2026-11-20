@@ -1,0 +1,143 @@
+{
+  "date": "2026-11-20",
+  "scope": "CRM匹配后报价用简称；CRM搜索关联度优先、先排序后分页；未改客户端",
+  "before": "真实ficc.base.query搜索华林证券，第一页前列为重庆分公司、重庆大坪营业部、天津分公司；Quote校验强制覆盖机构全称",
+  "rules": [
+    "机构ID校验后优先CRM非空简称，否则全称",
+    "完整匹配、前缀匹配、包含匹配；同级按显示名称长度、名称、ID稳定排序",
+    "空关键词保留原有ID顺序；自动识别歧义规则不变"
+  ],
+  "builds": {
+    "common": {
+      "tests": 147,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "quote": {
+      "tests": 70,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 20
+    },
+    "crm": {
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  },
+  "gateway": [
+    {
+      "check": "简称精确匹配的总公司排第一",
+      "passed": true
+    },
+    {
+      "check": "全称精确匹配在分页前置顶",
+      "passed": true
+    },
+    {
+      "check": "分页顺序稳定：0",
+      "passed": true
+    },
+    {
+      "check": "分页顺序稳定：1",
+      "passed": true
+    },
+    {
+      "check": "分页顺序稳定：2",
+      "passed": true
+    },
+    {
+      "check": "create成功",
+      "passed": true
+    },
+    {
+      "check": "手工提交全称按CRM简称保存并返回",
+      "passed": true
+    },
+    {
+      "check": "confirm成功",
+      "passed": true
+    },
+    {
+      "check": "确认后仍为CRM简称",
+      "passed": true
+    },
+    {
+      "check": "update成功",
+      "passed": true
+    },
+    {
+      "check": "修改报价不会覆盖回全称",
+      "passed": true
+    },
+    {
+      "check": "真实QT接入接口创建成功",
+      "passed": true
+    },
+    {
+      "check": "QT全称自动匹配正确CRM机构",
+      "passed": true
+    },
+    {
+      "check": "QT自动匹配后保存及返回简称",
+      "passed": true
+    }
+  ],
+  "crmServer": [
+    {
+      "check": "独立CRMSvr真实搜索同样精确匹配置顶",
+      "passed": true
+    }
+  ],
+  "persistence": "真实手工与QT接入报价的quotes.institution_name，以及正式报价quote_history_daily.snapshot.institutionName均为华林证券；只读SQL核对，未补写上游字段",
+  "desktop": {
+    "client": "colleague_20261029/stc-client，9e9e41ac4，STP，test2，本机真实服务",
+    "passed": true,
+    "checks": [
+      "QT自动匹配后报价确认分组及报价机构显示华林证券",
+      "机构下拉第一项华林证券，其后分公司",
+      "点击候选并刷新后仍显示简称",
+      "清理真实测试报价后页面归零"
+    ],
+    "evidence": "crm-short-name-dropdown-20261120.png",
+    "notice": "Quote重启期间出现旧视图stream超时提示，后续页面已恢复；未作为本次排序修复内容"
+  },
+  "cleanup": [
+    {
+      "check": "桌面选取后仍保留简称",
+      "passed": true
+    },
+    {
+      "check": "refer成功",
+      "passed": true
+    },
+    {
+      "check": "delete成功",
+      "passed": true
+    },
+    {
+      "check": "桌面选取后仍保留简称",
+      "passed": true
+    },
+    {
+      "check": "delete成功",
+      "passed": true
+    }
+  ],
+  "runtime": "QuoteSvr PID55412及Common0.1.1；CRMSvr PID53824及其构建依赖Common0.1.0；QtIntake仍停止。未修改连接配置，Notification不重启。",
+  "intermediateFailures": [
+    "最初只更新CRMSvr排序，真实GW仍旧顺序；发现本机Quote采用postgresql模式，补PostgresCrmClient后通过",
+    "首次CRMSvr部署仅替换服务jar，旧运行Common缺ProtocolBoundary导致请求超时；备份并更新本模块构建产生的Common0.1.0依赖后通过",
+    "只读落库测试初次误用db.jdbcUrl/db.username，改为实际db.url/db.user后通过",
+    "首次桌面控件点击无坐标几何；重新观察并按截图点击、用户明确授权后本机登录成功"
+  ],
+  "boundaries": [
+    "没有做性能或压力测试",
+    "QA、外部真实QT FIX来源未验；本次使用真实Quote QT接入接口，不启动外部QT会话",
+    "本轮不重写已保存旧历史；新建、确认或修改报价时名称按CRM统一。CRM目录接口仍分别返回全称/简称，不改协议"
+  ],
+  "emailSent": false,
+  "productPushed": false
+}
