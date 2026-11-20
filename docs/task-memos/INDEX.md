@@ -350,3 +350,7 @@
 - 11月20日明+1节假日调查：确认R3 Quote日期换算直接plusDays(1)，真实周五请求返回周六；基础包已有WeekDateSettlement/TextUtil日历解析，建议复用并核对日历就绪。仅调查未修复。[记录](2026-11-20.md#明1节假日遗漏追查仅调查确认上一轮实现缺陷)、[证据](../test-results/settlement-holiday-investigation-20261120.json)。
 
 - 明+3追加实测：明+3/明天+3/T+3均返回成功但丢失+3，降为T+1；协议和解析问题已记录，尚未修复。[记录](2026-11-20.md#明3及t3识别追查真实接口未修复)、[证据](../test-results/tomorrow-three-investigation-20261120.json)。
+
+- 11月20日清算修复：Parser复用基础包CNY_CIB日历，Quote透传交易日/+N；真实GW10组通过，前端+N待同事修改、桌面受阻，端到端未完成。[记录](2026-11-20.md#清算解析复用基础包日历及保留清算速度20261120-r1)、[前端及QA说明](../QA清算日历与前端对接说明-20261120-R1.md)、[证据](../test-results/settlement-calendar-20261120.json)。
+
+- 清算修复20261120-R1已打包核验，Parser d5df454d、Quote 8575cdf1；待163授权码，邮件尚未发出；桌面及前端+N联调未验收。[交付状态](../test-results/qa-delivery-20261120-R1.json)、[后端备忘](sources/qa-backend/2026-11-20.md)。
