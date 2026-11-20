@@ -1,0 +1,130 @@
+{
+  "date": "2026-11-20",
+  "scope": "后端共享分组修复；删除独立notification_settings；不迁移、不改客户端",
+  "before": {
+    "realGateway": true,
+    "result": "共享Quote筛选组ID查询提醒返回1002，已复现",
+    "cleanup": true
+  },
+  "commonTests": {
+    "tests": 146,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "notificationTests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "databaseSmoke": "PASS 删除旧分组表，共享settings/偏好/已读保留，重复启动幂等；临时schema已清理",
+  "componentScenarios": {
+    "NotificationScenarioMatrix": 324,
+    "NotificationProtocolSmoke": 99,
+    "NotificationWorkingSetSmoke": 9
+  },
+  "realGatewayFinal": [
+    {
+      "check": "真实报价和共享关注券触发提醒",
+      "passed": true
+    },
+    {
+      "check": "共享ID组合筛选Bid通过",
+      "passed": true
+    },
+    {
+      "check": "QuoteSvr修改分组后提醒筛选改为Ofr",
+      "passed": true
+    },
+    {
+      "check": "已打开视图使用更新后的分组",
+      "passed": true
+    },
+    {
+      "check": "分组变化触发视图成员推送",
+      "passed": true
+    },
+    {
+      "check": "同一报价同时满足普通条件与分组条件",
+      "passed": true
+    },
+    {
+      "check": "已删除分组返回明确不存在",
+      "passed": true
+    },
+    {
+      "check": "删除条件组不影响关注券筛选",
+      "passed": true
+    },
+    {
+      "check": "关注券组改为空后不错误返回全部提醒",
+      "passed": true
+    },
+    {
+      "check": "测试报价和分组已清理、提醒偏好已恢复",
+      "passed": true
+    }
+  ],
+  "realGatewayRestart": [
+    {
+      "check": "真实报价和共享关注券触发提醒",
+      "passed": true
+    },
+    {
+      "check": "共享ID组合筛选Bid通过",
+      "passed": true
+    },
+    {
+      "check": "QuoteSvr修改分组后提醒筛选改为Ofr",
+      "passed": true
+    },
+    {
+      "check": "已打开视图使用更新后的分组",
+      "passed": true
+    },
+    {
+      "check": "分组变化触发视图成员推送",
+      "passed": true
+    },
+    {
+      "check": "同一报价同时满足普通条件与分组条件",
+      "passed": true
+    },
+    {
+      "check": "NotificationSvr重启从QuoteSvr全量恢复共享分组",
+      "passed": true
+    },
+    {
+      "check": "已删除分组返回明确不存在",
+      "passed": true
+    },
+    {
+      "check": "删除条件组不影响关注券筛选",
+      "passed": true
+    },
+    {
+      "check": "关注券组改为空后不错误返回全部提醒",
+      "passed": true
+    },
+    {
+      "check": "测试报价和分组已清理、提醒偏好已恢复",
+      "passed": true
+    }
+  ],
+  "desktop": {
+    "accepted": false,
+    "reason": "STP停在登录页，已请求用户登录；本机同事客户端9e9e41ac4提醒请求仍发送空分组ID数组，需同事接入"
+  },
+  "qaAccepted": false,
+  "emailSent": false,
+  "runtime": "只更新本机NotificationSvr及其Common依赖和resourceCfg；QtIntake保持停止，Quote未重启，schema配置未变",
+  "intermediateFailures": [
+    "原NotificationScenarioMatrix在工作集释放终态报价后仍从内存取测试源，空指针；修改测试源保存方式后324项通过，未改产品释放逻辑",
+    "首次Java命令的PowerShell参数转义错误；引号修正后执行",
+    "ProtocolSmoke调用漏第二个输出路径参数；补齐后99项通过",
+    "初次真实用例误把同券合并提醒当逐报价行；修正为一笔真实报价及独有数量条件，保留合并语义",
+    "测试拟用第二只250001.IB，本机真实基础资料缺券，撤回该测试输入；未补数据绕过",
+    "真实测试脚本漏view.query pageSize、重用已被SDK添加requestId的请求；分别补齐和每次克隆清除requestId后通过"
+  ]
+}

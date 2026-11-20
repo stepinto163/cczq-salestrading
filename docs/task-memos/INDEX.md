@@ -368,3 +368,5 @@
 - settings同步核查：已交付代码有全量/增量/重连同步至Notification内存marketSettings；notification_settings保存提醒页独立分组，非Quote表镜像。QA实际同步尚未验证，未改产品。[记录](2026-11-20.md#quote-settings到notification的同步链路核查只读)。
 
 - 分组共享核查更正：产品原型和客户端目录共享，后端提醒列表却查独立groups而非已同步marketSettings，传共享ID可NOT_FOUND；本机旧客户端还未下推ID，QA版本待核对。仅调查未修复。[记录](2026-11-20.md#分组共享产品要求与提醒查询入口不一致更正前述判断只读)。
+
+- 11月20日共享提醒分组修复：后端ede4ff8d，根记录3b82bcf6；删除notification_settings，查询与推送统一Quote共享分组。真实网关/重启通过，桌面/QA未验收，产品未推送、未发邮件。[记录](2026-11-20.md#移除独立提醒分组并修复共享分组查询2026-11-20)、[验证](../test-results/notification-shared-groups-20261120.json)。
