@@ -366,3 +366,5 @@
 - QA schema核查：实际交付Quote=ficc_salestrading3、Notification=ficc_salestrading2，Quote差异来自11月17日QA源码导入；本机两者相同所以配置差异未被发现。未改库/配置，QA现场与统一方案待核对。[记录](2026-11-20.md#qa两个服务schema后缀不一致核查只读)、[证据](../test-results/qa-schema-alignment-20261120.json)。
 
 - settings同步核查：已交付代码有全量/增量/重连同步至Notification内存marketSettings；notification_settings保存提醒页独立分组，非Quote表镜像。QA实际同步尚未验证，未改产品。[记录](2026-11-20.md#quote-settings到notification的同步链路核查只读)。
+
+- 分组共享核查更正：产品原型和客户端目录共享，后端提醒列表却查独立groups而非已同步marketSettings，传共享ID可NOT_FOUND；本机旧客户端还未下推ID，QA版本待核对。仅调查未修复。[记录](2026-11-20.md#分组共享产品要求与提醒查询入口不一致更正前述判断只读)。
