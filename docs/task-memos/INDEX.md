@@ -356,3 +356,7 @@
 - 清算修复20261120-R1已打包核验，Parser d5df454d、Quote 8575cdf1；待163授权码，邮件尚未发出；桌面及前端+N联调未验收。[交付状态](../test-results/qa-delivery-20261120-R1.json)、[后端备忘](sources/qa-backend/2026-11-20.md)。
 
 - 清算前端核对更正：同事9e9e41ac4仅支持T0..T3及Forward，未完整支持T12；DTO无TradeDate，识别/正式报价编码不同。仅文档更正，R1旧ZIP未覆盖且未发，发送前需新版本。[记录](2026-11-20.md#ficc客户端清算值全链路核对与前述说明更正)。
+
+- 11月20日R2最终决定：恢复识别3/4，修复tradeDate并新增settlementDate；Parser/Common/Quote已实测16组，旧前端日期读取与桌面/QA待验，邮件未发。[记录](2026-11-20.md#交易日及结算日期修复并恢复qa旧识别编码20261120-r2)、[后端记录](sources/qa-backend/2026-11-20.md)、[对接说明](../QA交易日结算日与旧编码对接-20261120-R2.md)、[证据](../test-results/settlement-date-20261120-R2.json)。
+
+- R2已打包：Parser2f8211db、后端3aa13b38，三组件补丁与完整源码一致；尚缺163授权码，邮件未发，桌面及QA待验。[交付状态](../test-results/qa-delivery-20261120-R2.json)。
