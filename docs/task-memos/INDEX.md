@@ -396,3 +396,5 @@
 - V1.8.1补交BaseSvr两项遗漏，163 SMTP已接受；QA合并/桌面待验，QA同步列为最高优先级规则。[记录](2026-11-24.md)。
 
 - 跨仓补交记录：[BaseSvr](sources/basesvr/2026-11-24.md)、[后端](sources/qa-backend/2026-11-24.md)；[QA同步台账](QA-SYNC.md)。
+
+- BaseSvr现有本机启动：首条日志至FICC预加载READY为31.782秒、109296条；bootstrap20.2秒不代表数据就绪，本机估值明细为空，非QA实测。[记录](2026-11-24.md)。
