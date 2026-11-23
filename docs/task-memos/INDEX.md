@@ -1,5 +1,7 @@
 # 工作记录统一入口
 
+- 11月23日 option-combo-arb 会话只读冲突：核实 VS Code 扩展独占目标写锁后停止其后台进程，原会话恢复 `idle`；手机重试待用户确认，未改期权源码。本地记录提交 a2e6ae10。[记录](2026-11-23.md#option-combo-arb-会话只读冲突解除)。
+
 - 11月22日更正：期权策略属于用户个人，已迁出FICC及Great Wall目录，独立入口D:/workspace/personal/option-combo-arb/README.md，工作记录为该仓docs/task-memos/INDEX.md。原docs/option-combo-arb已移除，历史设计记录保留；后续不在FICC维护。[迁移记录](2026-11-22.md#个人期权策略迁出FICC)、[11月19日历史记录](2026-11-19.md#期权组合套利原型状态接口与验收设计)。
 
 - 11月19日核对最新需求附件：历史章节未明确创建/更新时间排序；原型历史逐事件用event.time并把新事件置顶，与后端quoteTime及每笔最终一行不是同一口径。仅核查未改产品。[记录](2026-11-19.md#最新需求原型历史报价时间口径核查)。
