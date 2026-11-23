@@ -391,3 +391,8 @@
 - V1.8.0仅Quote源码已于11月24日通过163 SMTP发送，产品d431e072未推送；真实网关通过，QA/桌面待验。[记录](2026-11-24.md)。
 
 - 本次后端仓原始工作备忘归档：[qa-backend/2026-11-24](sources/qa-backend/2026-11-24.md)；[交付回执](../test-results/qa-delivery-V1.8.0.json)、[QA合并说明](../QA未确认报价日终历史修复-V1.8.0.md)。
+
+
+- V1.8.1补交BaseSvr两项遗漏，163 SMTP已接受；QA合并/桌面待验，QA同步列为最高优先级规则。[记录](2026-11-24.md)。
+
+- 跨仓补交记录：[BaseSvr](sources/basesvr/2026-11-24.md)、[后端](sources/qa-backend/2026-11-24.md)；[QA同步台账](QA-SYNC.md)。
