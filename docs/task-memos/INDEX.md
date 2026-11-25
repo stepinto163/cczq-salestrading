@@ -426,3 +426,5 @@
 - 后续确认：QA回传按用户要求合入本机隔离分支；六模块构建及原故障券真实接口通过，前置基线待补。后端记录来源.tmp/qa-source-mail-20261117/backend/docs/task-memos/2026-11-25.md；Base来源D:/workspace/greatewall/ficc/stc-cczq/cgws-app-salestrading-basesvr/docs/task-memos/2026-11-25.md。[实际结果](../QA源码回传审查-20261125.md#后续决定与实际合并结果取代上述尚未合并状态)。
 
 - QA回传本机源码提交：后端03227150、Base e620503；跨仓原备忘副本：[后端](sources/qa-backend/2026-11-25.md)、[Base](sources/basesvr/2026-11-25.md)。产品未推送，完整QA基线待补。
+
+- 11月25日Parser含权来源确认：STC bond.option_type，未使用DM embedded_option；三原故障券Parser/Quote真实只读响应一致，QA运行包未核查。[记录](2026-11-25.md#parsersvr是否存在dm含权枚举问题只读确认)、[证据](../test-results/parser-option-source-20261125.json)。
