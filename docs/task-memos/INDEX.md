@@ -428,3 +428,5 @@
 - QA回传本机源码提交：后端03227150、Base e620503；跨仓原备忘副本：[后端](sources/qa-backend/2026-11-25.md)、[Base](sources/basesvr/2026-11-25.md)。产品未推送，完整QA基线待补。
 
 - 11月25日Parser含权来源确认：STC bond.option_type，未使用DM embedded_option；三原故障券Parser/Quote真实只读响应一致，QA运行包未核查。[记录](2026-11-25.md#parsersvr是否存在dm含权枚举问题只读确认)、[证据](../test-results/parser-option-source-20261125.json)。
+
+- 11月25日23:01 QA无界面回邮复核：主流程49通过/1阻塞；全量426失败不能全归测试口径，250为数值IN差异，含权筛选尚全阻塞；QA报告已部署、UI未验。[复核](../QA无界面测试结果复核-20261125.md)。
