@@ -434,3 +434,7 @@
 - QA筛选失败复核建议已通过163回复并附报告，SMTP接受；请求实际部署代码最小复现与分项定责，尚待QA回复，无新源码发布。[回执](../test-results/qa-filter-review-reply-20261125.json)。
 
 - 11月26日用户错误提示修复V1.8.4：后端1e889b8d，Common/Quote/Notification增量包已163发送；17项真实接口通过，前端由同事配合，UI及QA未验。旧Parser价格调查已取消，仅本机服务操作。[记录](2026-11-26.md)、[源码仓记录](sources/qa-backend/2026-11-26.md)、[交付/前端要求](../QA用户错误提示修复-V1.8.4.md)、[回执](../test-results/qa-delivery-V1.8.4.json)。
+
+- 11月26日一次Unrefer及六字段去重：后端58a22b60，数据库80项、新旧专项及真实网关15项通过，4条报价已清理，用户免UI；按V1.8.5交付，QA待验。[记录](2026-11-26.md)、[合并/迁移说明](../QA一次还原与业务键去重-V1.8.5.md)、[接口证据](../test-results/unrefer-live-20261126.json)。
+
+- V1.8.5源码和迁移/测试说明已通过163发送，SMTP接受；主仓专项8a2e4c6e，QA尚未确认合并部署，产品未推送。[回执](../test-results/qa-delivery-V1.8.5.json)。
