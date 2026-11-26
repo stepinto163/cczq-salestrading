@@ -450,3 +450,7 @@
 - 11月26日行情原价/收益率排序分离：后端a3b3fa84（前序01e0ae9f），Common/Quote/Notification三组件；本机29项真实接口通过，43条过程报价全部清理，原2228017含权场景受本机CalSvr限制，QA/UI待验，按V1.8.7候选交付。[记录](2026-11-26.md)、[原仓记录](sources/qa-backend/2026-11-26.md)、[前端协作与QA合并](../QA-行情原价与收益率排序-V1.8.7.md)、[接口结果](../test-results/market-price-live-20261126.json)、[原场景阻塞](../test-results/market-price-option-blocked-20261126.json)。
 
 - V1.8.7候选源码与前端协作说明已通过163发送，SMTP接受；主仓eba5c5bb，后端a3b3fa84，QA/原含权/UI待回邮验收。[回执](../test-results/qa-delivery-V1.8.7.json)。
+
+- 11月26日用户纠正原STC共享档位约定：V1.8.8后端f73177bd移除V1.8.7新增价格簿比较字段，MDPriceLevel并列共档、时间次序保留，Notification按档选取；普通QUOTE行既有比较字段保留。真实36项通过，原含权/UI仍待QA。V1.8.7设计被取代，旧记录保留。[记录](2026-11-26.md)、[合并和前端更正](../QA-行情共享档位-V1.8.8.md)、[真实接口](../test-results/market-price-level-live-20261126.json)。
+
+- V1.8.8候选包已163回复发送，取代V1.8.7比较字段方案；后端f73177bd、主仓e18bb9db，QA待验。[回执](../test-results/qa-delivery-V1.8.8.json)。
