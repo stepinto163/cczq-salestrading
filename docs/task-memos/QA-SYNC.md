@@ -45,3 +45,18 @@
 | 真实网关专项及迁移说明 | 主仓8a2e4c6e | 4条测试报价已清理；用户明确免UI | 随包已发 | 待QA运行原场景并回邮 |
 
 包cgws-salestrading-backend-V1.8.5-20261126.zip，前序V1.8.4，SHA256 058a20d9a6274679e6ff377adde76e792a85eb8ab71cae4cba5b717e0650ba07。两组件增量，不包含前端。回执[qa-delivery-V1.8.5.json](../test-results/qa-delivery-V1.8.5.json)。QA原Unrefer去重现象根因未现场证实，不写成已确认缓存缺项。
+
+## 2026-11-26 V1.8.6
+
+| 组件/事项 | 源码提交 | 本机验证 | 发送 | QA状态 |
+|---|---|---|---|---|
+| Parser价格括号标签合并 | 原补丁b02fc259，最终cc371cc5 | 243项及16例Parser/Quote双真实接口通过 | 163 SMTP接受 | 待合并、部署、UI回归 |
+| Common摘要/正文分流 | 01e0ae9f | 164项，1跳过；实际日志通过 | 同包已发 | 待核对依赖与配置 |
+| QuoteSvr源码/Salt配置 | 01e0ae9f | 配置测试及实际重启、87事件分流、推送/告警通过 | 同包已发 | 待部署 |
+| NotificationSvr源码/Salt配置 | 01e0ae9f | 6项及实际重启、4事件分流、推送通过 | 同包已发 | 待部署 |
+| QtIntake源码/Salt配置及测试 | cc371cc5 | 61项，10旧环境依赖跳过；本地FIX socket回环通过 | 同包已发 | 实盘QT/Jenkins待验 |
+
+前序V1.8.5，五组件增量（13个源码/配置/测试文件），不是累计整仓包；旧版本依赖和前端协作待办继续保留。
+包：cgws-salestrading-backend-V1.8.6-20261126.zip；SHA256：bccdd3150be31c876b5cfb444cb741435f31c7dea804096e2f863cd6f7f2a6ef。
+原QA补丁已有未提交修改时须方法级合并，保留QA 0.1.1 POM；新Common和三个服务配置必须配套。
+[回执](../test-results/qa-delivery-V1.8.6.json)、[合并说明](../QA-Parser与DPS日志修复-V1.8.6.md)。没有QA回执，不能宣称已部署/验收。

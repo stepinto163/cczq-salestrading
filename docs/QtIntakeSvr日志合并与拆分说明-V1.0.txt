@@ -1,51 +1,42 @@
-﻿QtIntakeSvr 日志合并与拆分说明（V1.0）
+QtIntakeSvr 日志合并与拆分说明（V1.8.6更新）
 
-只改配置，不需要改 Java 代码。当前没有单独的“合并/拆分”开关。
-关键配置：logger 后面的 file / dpsMessages 决定写入哪个文件；Threshold 决定接收哪些日志级别。
+适用：本次Common日志修复及配套配置。QuoteSvr、NotificationSvr采用相同规则。
+日志正文仍在普通日志文件内，按主题字节上限输出实际值；不另存payload文件。
 
 配置位置
-服务目录：$ATS_ROOT/stc/QtIntakeSvr/control/QtIntakeSvr/log4j.ini
-仓库：iteration1/cgws-ficc-saletrading-qtintakesvr/control/QtIntakeSvr/log4j.ini
-部署副本：iteration1/cgws-ficc-saletrading-qtintakesvr/salt-formula/cgws-ficc-saletrading-qtintakesvr/files/control/QtIntakeSvr/log4j.ini
+$ATS_ROOT/stc/QtIntakeSvr/control/QtIntakeSvr/log4j.ini
+源码：iteration1/cgws-ficc-saletrading-qtintakesvr/control/QtIntakeSvr/log4j.ini
+Jenkins/Salt：该模块salt-formula/cgws-ficc-saletrading-qtintakesvr/files/control/QtIntakeSvr/log4j.ini
+修改源码和Salt对应项，由部署生成运行配置；替换同名项，不重复追加。
 
-一、合并到一个文件
-替换以下现有配置项，不要在文件末尾重复追加同名项：
-
-log4j.appender.file.Threshold=DEBUG
-log4j.logger.ficc.common.client.NetClientTransport=DEBUG,stdout,file
-log4j.logger.ficc.common.client.StcBaseSvrClientBridge=DEBUG,stdout,file
-log4j.logger.ficc.common.client.PostgresCrmClient=DEBUG,stdout,file
-log4j.logger.ficc.qtintake.messages=DEBUG,file
-
-结果：应用日志和DPS/FIX消息都写入
-$ATS_ROOT/log/QtIntakeSvr_YYYYMMDD.log
-
-二、恢复分开记录（当前默认）
-替换为：
-
+一、分开记录（默认）
+log4j.logger.ficc.dps.summary=INFO,stdout,file
+log4j.additivity.ficc.dps.summary=false
+log4j.logger.ficc.dps.payload=DEBUG,dpsMessages
+log4j.additivity.ficc.dps.payload=false
 log4j.appender.file.Threshold=INFO
 log4j.appender.dpsMessages.Threshold=DEBUG
-log4j.logger.ficc.common.client.NetClientTransport=DEBUG,stdout,file,dpsMessages
-log4j.logger.ficc.common.client.StcBaseSvrClientBridge=DEBUG,stdout,file,dpsMessages
-log4j.logger.ficc.common.client.PostgresCrmClient=DEBUG,stdout,file,dpsMessages
-log4j.logger.ficc.qtintake.messages=DEBUG,dpsMessages
 
-结果：
-应用日志：$ATS_ROOT/log/QtIntakeSvr_YYYYMMDD.log
-DPS/FIX日志：$ATS_ROOT/log/QtIntakeSvr-dps_YYYYMMDD.log
-分开模式下，通信INFO摘要可能出现在两个文件；DEBUG正文只进入DPS文件。
+应用文件：QtIntakeSvr_YYYYMMDD.log，每事件一行摘要，另保留业务WARN/ERROR。
+DPS文件：QtIntakeSvr-dps_YYYYMMDD.log，每事件一行正文，不再同时写INFO摘要。
+正文自带方向、完整主题、关联信息、sourceLogger、大小上限和截断标记，可独立排查。
 
-三、两种模式均保持以下设置
+二、合并到一个文件
+在上述配置中只改三项：
+log4j.logger.ficc.dps.summary=OFF
+log4j.logger.ficc.dps.payload=DEBUG,file
+log4j.appender.file.Threshold=DEBUG
 
-log4j.rootLogger=INFO,stdout,file
-log4j.additivity.ficc.common.client.NetClientTransport=false
-log4j.additivity.ficc.common.client.StcBaseSvrClientBridge=false
-log4j.additivity.ficc.common.client.PostgresCrmClient=false
-log4j.additivity.ficc.qtintake.messages=false
-log4j.appender.file.File=../../log/QtIntakeSvr
-log4j.appender.dpsMessages.File=../../log/QtIntakeSvr-dps
+两项additivity仍为false。正文只写应用文件一次，不再另写摘要。
+业务原logger继续写应用文件，WARN/ERROR不受摘要开关影响。
+如需恢复分开，恢复第一节三项值；不要把两个不同appender指向同一个文件。
 
-其余输出器定义、日期滚动设置保持原样。不要让两个不同输出器写同一个文件。
-主题正文长度上限、心跳开关仍按payload-log.properties生效；独立startup启动日志保持不变。
-发布时同步上述仓库配置及Salt部署副本，由Jenkins部署，重启服务后核对日志输出。
-本说明仅说明配置方法，本次没有修改运行配置或切换服务日志模式。
+三、其他开关
+正文是否开启由ficc.dps.payload的级别控制，不能再只设置NetClientTransport=DEBUG。
+主题正文长度和正常心跳仍由config/payload-log.properties控制；当前默认8KiB。
+日志策略不改变请求、应答和推送的实际内容。后台reference.sync没有新增抑制规则。
+源码启动配置使用console时，把stdout对应替换为现有console名称。
+独立startup文件和原有滚动策略保持不变。生效需按既有部署流程重启服务。
+
+兼容要求：Common和相关服务的log4j.ini必须一起更新；旧配置不能直接沿用到新Common。
+本次没有修改客户端、消息协议、旧日志文件或日志保留策略。
