@@ -446,3 +446,7 @@
 - V1.8.6五组件增量已通过163发送（主仓cc371cc5、后端01e0ae9f），SMTP接受；QA合并部署/UI待验，产品分支未推送。[交付回执](../test-results/qa-delivery-V1.8.6.json)。
 
 - 净价最优行情显示成收益率已定位：PriceBookService使用排序副本且PriceType固定3，旧测试亦固化该契约；FICC客户端与提醒还有MDEntryPx比较依赖。本轮仅审查，未改产品。[记录](2026-11-26.md#净价报价在最优行情被下发为收益率仅源码审查)。
+
+- 11月26日行情原价/收益率排序分离：后端a3b3fa84（前序01e0ae9f），Common/Quote/Notification三组件；本机29项真实接口通过，43条过程报价全部清理，原2228017含权场景受本机CalSvr限制，QA/UI待验，按V1.8.7候选交付。[记录](2026-11-26.md)、[原仓记录](sources/qa-backend/2026-11-26.md)、[前端协作与QA合并](../QA-行情原价与收益率排序-V1.8.7.md)、[接口结果](../test-results/market-price-live-20261126.json)、[原场景阻塞](../test-results/market-price-option-blocked-20261126.json)。
+
+- V1.8.7候选源码与前端协作说明已通过163发送，SMTP接受；主仓eba5c5bb，后端a3b3fa84，QA/原含权/UI待回邮验收。[回执](../test-results/qa-delivery-V1.8.7.json)。
