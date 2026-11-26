@@ -444,3 +444,5 @@
 - 11月26日Parser QA补丁合并及DPS双写修复完成本机验证：Parser243/Common164（1跳过）与真实16例双链路通过；日志分流及真实推送通过。V1.8.6待发送，QA/UI待验。[记录](2026-11-26.md)、[说明](../QA-Parser与DPS日志修复-V1.8.6.md)、[证据](../test-results/parser-log-live-20261126.json)。
 
 - V1.8.6五组件增量已通过163发送（主仓cc371cc5、后端01e0ae9f），SMTP接受；QA合并部署/UI待验，产品分支未推送。[交付回执](../test-results/qa-delivery-V1.8.6.json)。
+
+- 净价最优行情显示成收益率已定位：PriceBookService使用排序副本且PriceType固定3，旧测试亦固化该契约；FICC客户端与提醒还有MDEntryPx比较依赖。本轮仅审查，未改产品。[记录](2026-11-26.md#净价报价在最优行情被下发为收益率仅源码审查)。
