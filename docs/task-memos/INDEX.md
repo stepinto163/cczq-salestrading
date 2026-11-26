@@ -454,3 +454,9 @@
 - 11月26日用户纠正原STC共享档位约定：V1.8.8后端f73177bd移除V1.8.7新增价格簿比较字段，MDPriceLevel并列共档、时间次序保留，Notification按档选取；普通QUOTE行既有比较字段保留。真实36项通过，原含权/UI仍待QA。V1.8.7设计被取代，旧记录保留。[记录](2026-11-26.md)、[合并和前端更正](../QA-行情共享档位-V1.8.8.md)、[真实接口](../test-results/market-price-level-live-20261126.json)。
 
 - V1.8.8候选包已163回复发送，取代V1.8.7比较字段方案；后端f73177bd、主仓e18bb9db，QA待验。[回执](../test-results/qa-delivery-V1.8.8.json)。
+
+- 2026-11-27：V1.8.9候选，报价管理三框独立搜索/文本多归属人、SQL分页及代码名称缓存，真实56项通过；前端/QA待验。[记录](2026-11-27.md)。
+
+- 本轮后端提交9bb65e4a，来源归档：[后端备忘](sources/qa-backend/2026-11-27.md)。[QA/前端说明](../QA-报价管理三框独立搜索-V1.8.9.md)，[真实接口证据](../test-results/three-box-search-live-20261127.json)。
+
+- V1.8.9已163发送，SMTP接受时间Fri, 27 Nov 2026 07:34:02 +0800；包cgws-salestrading-backend-V1.8.9-20261127.zip，SHA256 fa3fd0847ab33bfbc2cfa1990939668b68c1ba0513c0469f617708c9c1ffa920。后端9bb65e4a、主仓5dce890c，三组件17个代码/测试/配置文件，基线patch试应用及归档哈希核验完成。QA合并/部署/UI验收仍待回邮；产品代码未推远端。[回执](../test-results/qa-delivery-V1.8.9.json)。
