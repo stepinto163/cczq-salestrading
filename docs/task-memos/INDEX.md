@@ -462,3 +462,5 @@
 - 本轮后端提交9bb65e4a，来源归档：[后端备忘](sources/qa-backend/2026-11-27.md)。[QA/前端说明](../QA-报价管理三框独立搜索-V1.8.9.md)，[真实接口证据](../test-results/three-box-search-live-20261127.json)。
 
 - V1.8.9已163发送，SMTP接受时间Fri, 27 Nov 2026 07:34:02 +0800；包cgws-salestrading-backend-V1.8.9-20261127.zip，SHA256 fa3fd0847ab33bfbc2cfa1990939668b68c1ba0513c0469f617708c9c1ffa920。后端9bb65e4a、主仓5dce890c，三组件17个代码/测试/配置文件，基线patch试应用及归档哈希核验完成。QA合并/部署/UI验收仍待回邮；产品代码未推远端。[回执](../test-results/qa-delivery-V1.8.9.json)。
+
+- 11月27日V1.8.11：QT自动CRM匹配失败清字段，规则不变；91组件/30真实接口检查通过，QA/UI待验。见[记录](2026-11-27.md)。
